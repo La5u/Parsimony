@@ -19,7 +19,8 @@ def main():
     analyze.add_argument('--ref', default='main', help='experiments Git commit/ref')
     analyze.add_argument('--dataset', help='Verified metadata JSONL (required for full-file analysis)')
     analyze.add_argument('--patch-only', action='store_true', help='less reliable hunk estimates, separate leaderboard mode')
-    analyze.add_argument('--limit', type=int, help='successful tasks to attempt per submission, sorted by ID')
+    analyze.add_argument('--limit', type=int, help='eligible tasks to attempt per submission, sorted by ID')
+    analyze.add_argument('--include-failed', action='store_true', help='also fetch/analyze explicitly failed patches where available')
     analyze.add_argument('--task', action='append', help='analyze this task ID only (repeatable); keeps full resolve-rate denominator')
     analyze.add_argument('--output', default='results.jsonl')
     board = commands.add_parser('leaderboard')
@@ -44,14 +45,16 @@ def main():
             if args.limit is not None and args.limit < 1:
                 parser.error('--limit must be positive')
             metadata = read_jsonl(args.dataset) if args.dataset else None
-            submissions = [load_submission(s, cache, args.ref, task_ids=args.task, limit=args.limit)
+            submissions = [load_submission(s, cache, args.ref, task_ids=args.task, limit=args.limit,
+                                           include_failed=args.include_failed)
                            for s in args.submissions]
             submissions += [load_manifest(s, cache) for s in args.manifest]
             names = [s['agent'] for s in submissions]
             if len(set(names)) != len(names):
                 parser.error('agent names collide; use manifests with distinct agent names')
             rows = (r for s in submissions for r in analyze_submission(
-                s, cache, metadata, args.limit, args.patch_only, task_ids=args.task))
+                s, cache, metadata, args.limit, args.patch_only, task_ids=args.task,
+                include_failed=args.include_failed))
         with Path(args.output).open('w') as stream:
             count = 0
             for row in rows:

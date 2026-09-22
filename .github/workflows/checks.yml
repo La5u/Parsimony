@@ -1,0 +1,24 @@
+name: Offline checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Standard-library unit tests
+        run: python -m unittest discover -s tests -q
+      - name: Validate contributed result bundles (no downloads or analysis)
+        run: python -m parsimony.contribute validate submissions
+      - name: Reproduce cached experimental scores (arithmetic only)
+        run: |
+          python -m parsimony.scoring score examples/ten-model-score-panel.json examples/ten-model-results.jsonl --output /tmp/parsimony-scores.json
+          cmp examples/ten-model-scores.json /tmp/parsimony-scores.json

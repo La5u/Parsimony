@@ -150,7 +150,7 @@ def without_docstrings(root):
     return root
 
 
-def normalized_tokens(source: str) -> list[str]:
+def normalized_tokens(source: str, keep_values: bool = False) -> list[str]:
     root = tree(source)
     if root is not None:
         # Canonical syntax removes redundant parentheses, quote styles and
@@ -164,11 +164,11 @@ def normalized_tokens(source: str) -> list[str]:
             if tok.type in ignored:
                 continue
             if tok.type == tokenize.NAME:
-                result.append(tok.string if keyword.iskeyword(tok.string) else 'ID')
+                result.append(tok.string if keep_values or keyword.iskeyword(tok.string) else 'ID')
             elif tok.type == tokenize.STRING:
-                result.append('STR')
+                result.append(tok.string if keep_values else 'STR')
             elif tok.type == tokenize.NUMBER:
-                result.append('NUM')
+                result.append(tok.string if keep_values else 'NUM')
             elif tok.type == getattr(tokenize, 'FSTRING_START', -1):
                 result.append('STR_START')
             elif tok.type == getattr(tokenize, 'FSTRING_MIDDLE', -1):
@@ -208,13 +208,15 @@ def structure(source: str):
 def measure(patch: str, get_source=None) -> dict:
     """get_source(path) provides exact base-commit text; otherwise estimate hunks."""
     totals = dict(tokens_added=0, tokens_deleted=0, net_tokens=0, churn=0,
-                  files_changed=0, ast_delta=0, complexity_delta=0)
+                  value_sensitive_churn=0, files_changed=0, ast_delta=0, complexity_delta=0)
     excluded = []
+    touched = []
     mode = 'full_file' if get_source else 'patch_only'
     if not get_source:
         totals['ast_delta'] = totals['complexity_delta'] = None
     for f in parse_patch(patch):
         path = f.new if f.new != '/dev/null' else f.old
+        touched.append(path)
         if not implementation(path) or (f.old != '/dev/null' and not implementation(f.old)):
             excluded.append(path)
             continue
@@ -237,6 +239,12 @@ def measure(patch: str, get_source=None) -> dict:
                 deleted += a2 - a1
         totals['tokens_added'] += added
         totals['tokens_deleted'] += deleted
+        # Diagnostic only: retain identifiers and literals to expose behavioral
+        # edits collapsed by the primary structural metric.
+        va, vb = normalized_tokens(before, keep_values=True), normalized_tokens(after, keep_values=True)
+        totals['value_sensitive_churn'] += sum((a2 - a1) + (b2 - b1)
+            for op, a1, a2, b1, b2 in difflib.SequenceMatcher(None, va, vb, autojunk=False).get_opcodes()
+            if op != 'equal')
         # Count implementation files with actual normalized changes, not formatting-only files.
         totals['files_changed'] += int(a != b)
         if get_source:
@@ -248,4 +256,4 @@ def measure(patch: str, get_source=None) -> dict:
                 totals['complexity_delta'] += sb[1] - sa[1]
     totals['net_tokens'] = totals['tokens_added'] - totals['tokens_deleted']
     totals['churn'] = totals['tokens_added'] + totals['tokens_deleted']
-    return {**totals, 'mode': mode, 'excluded_files': excluded}
+    return {**totals, 'mode': mode, 'touched_files': touched, 'excluded_files': excluded}

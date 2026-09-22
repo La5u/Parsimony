@@ -39,6 +39,17 @@ class AnalysisTests(unittest.TestCase):
         result = measure(patch, lambda p: self.fail('excluded path fetched'))
         self.assertEqual(result['churn'], 0)
         self.assertEqual(len(result['excluded_files']), 5)
+        self.assertEqual(result['touched_files'], result['excluded_files'])
+
+    def test_behavioral_edits_with_zero_normalized_footprint_are_visible_in_audit(self):
+        before = 'manager = base_manager\n'
+        after = 'manager = default_manager\n'
+        result = measure(diff(before, after, path='pkg/manager.py'), lambda p: before)
+        self.assertEqual(result['churn'], 0)
+        self.assertEqual(result['touched_files'], ['pkg/manager.py'])
+        self.assertEqual(result['files_changed'], 0)
+        self.assertGreater(result['value_sensitive_churn'], 0)
+        self.assertGreater(measure(diff('x = 1\n', 'x = 2\n'), lambda p: 'x = 1\n')['value_sensitive_churn'], 0)
 
     def test_add_delete_and_multiple_hunks(self):
         text = 'x = 1\n'

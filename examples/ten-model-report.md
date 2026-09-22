@@ -34,6 +34,29 @@ Lower median net normalized-token delta ranks first. Churn is added plus deleted
 | 9 | GPT-5.2 (high) | +18 | 26 | 72.8% |
 | 10 | DeepSeek V3.2 (high) | +22.5 | 37 | 70.0% |
 
+## Experimental 70/30 equal-task score
+
+The same cached measurements also have a frozen-panel score: **70% net-token percentile + 30% churn percentile per task**, mapped into the positive success band, then averaged equally across the ten tasks. Higher is better. This is not the median-net ranking above.
+
+| Rank | Model | Parsimony Score |
+|---|---|---:|
+| 1 | Kimi K2.5 (high) | 64.90 |
+| 2 | Claude Opus 4.6 | 62.48 |
+| 3 | GLM-5 (high) | 61.54 |
+| 4 | Claude Haiku 4.5 (high) | 57.88 |
+| 5 | Claude Sonnet 4.5 (high) | 56.98 |
+| 6 | MiniMax M2.5 (high) | 50.15 |
+| 7 | GPT-5 mini | 42.73 |
+| 8 | Gemini 3 Flash (high) | 41.99 |
+| 9 | GPT-5.2 (high) | 33.67 |
+| 10 | DeepSeek V3.2 (high) | 32.68 |
+
+All ten models solved all ten selected tasks, so failure penalties are zero **in this selected cohort**. The ten submissions themselves form the frozen reference panel, with self-comparisons counted as ties. Their average score is 50.5 by construction; these are reference-relative scores, not percentages correct.
+
+The ranking change reflects **both** adding churn and replacing a median raw-token summary with an equal-task mean of normalized percentiles. Do not attribute it solely to the 30% churn weight. The sample is still too small for robust model-superiority claims.
+
+See `ten-model-score-panel.json`, `ten-model-scores.json`, and [the scoring specification](../docs/scoring.md). No patch reanalysis was needed.
+
 ## Interpretation and limitations
 
 These are ten tasks from ten repositories, selected from the shared-solved intersection. That intersection favors easier tasks, and the one-task-per-repository sampling is not representative of SWE-bench's repository distribution. Ten tasks remain too few for a strong general claim; rankings changed substantially from the three-task sample.

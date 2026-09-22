@@ -30,7 +30,8 @@ def read_jsonl(path):
     return [json.loads(line) for line in Path(path).read_text().splitlines() if line.strip()]
 
 
-def analyze_submission(submission, cache, dataset=None, limit=None, patch_only=False, task_ids=None):
+def analyze_submission(submission, cache, dataset=None, limit=None, patch_only=False, task_ids=None,
+                       include_failed=False):
     metadata = {row['instance_id']: row for row in (dataset or [])}
     tasks = sorted(set(metadata) or (set(submission['predictions']) | submission['resolved'] |
                                     (submission['evaluated'] or set())))
@@ -47,7 +48,7 @@ def analyze_submission(submission, cache, dataset=None, limit=None, patch_only=F
         patch = submission['predictions'].get(task)
         resolved = task in submission['resolved']
         meta = metadata.get(task)
-        record = dict(schema_version=1, analyzer_version='0.1.0', python_version=platform.python_version(),
+        record = dict(schema_version=1, analyzer_version='0.2.0-beta', python_version=platform.python_version(),
                       agent=submission['agent'], task_id=task, resolved=resolved,
                       published_result_categories=[key for key, value in submission.get('result_details', {}).items()
                                                    if isinstance(value, list) and task in value],
@@ -63,7 +64,10 @@ def analyze_submission(submission, cache, dataset=None, limit=None, patch_only=F
         if meta:
             record['provenance'].update(repo=meta['repo'], base_commit=meta['base_commit'],
                                         reference_patch_sha256=hashlib.sha256(meta.get('patch', '').encode()).hexdigest())
-        if not resolved:
+        categories = set(record['published_result_categories'])
+        analyzable_failure = include_failed and bool(categories & {'unresolved', 'failed', 'not_resolved'}) \
+            and 'no_logs' not in categories
+        if not resolved and not analyzable_failure:
             yield record
             continue
         if selected is not None and task not in selected:
