@@ -89,10 +89,17 @@ def implementation(path: str) -> bool:
     p = PurePosixPath(path.lower())
     excluded = {'test', 'tests', 'testing', 'docs', 'doc', 'examples', 'benchmarks',
                 'vendor', 'vendored', 'third_party', 'third-party', 'external',
-                'generated', 'build', 'dist', 'migrations', '__pycache__', '.github',
+                'generated', 'build', 'dist', '__pycache__', '.github',
                 '_vendor', '_vendored', 'node_modules', '.venv', 'venv', 'fixtures',
                 'testdata', 'test_data', 'documentation'}
-    return (p.suffix == '.py' and not excluded.intersection(p.parts)
+    parts = p.parts
+    # Django's db/migrations package is framework implementation; migration
+    # script directories elsewhere remain excluded. Keep numbered scripts out.
+    django_migrations_core = (len(parts) >= 4 and parts[:3] == ('django', 'db', 'migrations')
+                              and not re.match(r'^\d{4,}_.*\.py$', p.name))
+    return (p.suffix == '.py' and not (excluded.intersection(parts)
+                                       - ({'migrations'} if django_migrations_core else set()))
+            and ('migrations' not in parts or django_migrations_core)
             and p.name not in {'test.py', 'tests.py'}
             and not p.name.startswith(('test_', 'conftest.', 'setup.', '_vendor'))
             and not p.name.endswith(('_test.py', '_pb2.py', '_pb2_grpc.py')))
