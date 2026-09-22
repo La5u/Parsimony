@@ -10,6 +10,8 @@ from urllib.parse import quote
 
 from .analysis import measure
 
+ANALYZER_VERSION = '0.2.1-beta'
+
 
 def fetch_dataset(cache):
     rows = []
@@ -48,7 +50,7 @@ def analyze_submission(submission, cache, dataset=None, limit=None, patch_only=F
         patch = submission['predictions'].get(task)
         resolved = task in submission['resolved']
         meta = metadata.get(task)
-        record = dict(schema_version=1, analyzer_version='0.2.0-beta', python_version=platform.python_version(),
+        record = dict(schema_version=1, analyzer_version=ANALYZER_VERSION, python_version=platform.python_version(),
                       agent=submission['agent'], task_id=task, resolved=resolved,
                       published_result_categories=[key for key, value in submission.get('result_details', {}).items()
                                                    if isinstance(value, list) and task in value],
