@@ -53,6 +53,17 @@ class BenchmarkTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             list(analyze_submission(submission, None, task_ids=['unknown'], patch_only=True))
 
+    def test_failed_patch_analysis_requires_opt_in_and_explicit_category(self):
+        submission = dict(agent='a', predictions={'failed': ''}, resolved=set(), evaluated={'failed', 'nolog'},
+                          result_details={'unresolved': ['failed'], 'no_logs': ['nolog']},
+                          provenance={'prediction_url': 'local'})
+        default = list(analyze_submission(submission, None, patch_only=True))
+        self.assertEqual([r['analysis_status'] for r in default], ['not_resolved', 'not_resolved'])
+        opted_in = list(analyze_submission(submission, None, patch_only=True, include_failed=True))
+        self.assertEqual([r['analysis_status'] for r in opted_in], ['ok', 'not_resolved'])
+        self.assertFalse(opted_in[0]['resolved'])
+        self.assertEqual(opted_in[0]['evaluation_result'], 'not_resolved')
+
     def test_modes_not_mixed(self):
         r = record('a', '1')
         r['metrics']['mode'] = 'patch_only'

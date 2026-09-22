@@ -156,7 +156,7 @@ def _load(agent: str, submission_url: str, prediction_url: str, results_url: str
 
 def _new_submission(agent: str, submission_url: str, base: str, ref: str,
                     cache: Cache, task_ids: list[str] | None,
-                    limit: int | None) -> dict[str, Any]:
+                    limit: int | None, include_failed: bool = False) -> dict[str, Any]:
     """Read the per-instance layout used by recent mini-SWE-agent runs."""
     metadata_url = base + "/metadata.yaml"
     result_url = base + "/per_instance_details.json"
@@ -184,14 +184,27 @@ def _new_submission(agent: str, submission_url: str, base: str, ref: str,
         raise ValueError("per_instance_details.json must be an object")
     resolved: set[str] = set()
     unresolved: set[str] = set()
+    no_logs: set[str] = set()
+    no_generation: set[str] = set()
     for task, detail in raw_details.items():
         if not isinstance(detail, dict) or type(detail.get("resolved")) is not bool:
             raise ValueError(f"invalid resolved boolean for {task}")
         task = str(task)
-        (resolved if detail["resolved"] else unresolved).add(task)
+        categories = {str(value).lower() for key, value in detail.items()
+                      if key in {"category", "result", "status", "failure_category"}}
+        if detail["resolved"]:
+            resolved.add(task)
+        elif "no_logs" in categories:
+            no_logs.add(task)
+        elif categories & {'no_generation', 'no_submission'}:
+            no_generation.add(task)
+        else:
+            # A per-instance record with resolved=false is an explicit failure.
+            unresolved.add(task)
 
-    evaluated = resolved | unresolved
-    wanted = resolved if task_ids is None else (resolved & {str(x) for x in task_ids})
+    evaluated = resolved | unresolved | no_logs | no_generation
+    candidates = resolved | (unresolved if include_failed else set())
+    wanted = candidates if task_ids is None else (candidates & {str(x) for x in task_ids})
     selected = sorted(wanted)
     if limit is not None:
         selected = selected[:limit]
@@ -212,6 +225,7 @@ def _new_submission(agent: str, submission_url: str, base: str, ref: str,
         locations[task] = location
 
     normalized = {"resolved": sorted(resolved), "unresolved": sorted(unresolved),
+                  "no_logs": sorted(no_logs), "no_generation": sorted(no_generation),
                   "missing_patch": sorted(missing)}
     return {"agent": agent or "unknown", "submission_url": submission_url,
             "predictions": predictions, "prediction_locations": locations,
@@ -227,7 +241,7 @@ def _new_submission(agent: str, submission_url: str, base: str, ref: str,
 
 def load_submission(submission: str, cache: Cache, ref: str = "main",
                     task_ids: list[str] | None = None,
-                    limit: int | None = None) -> dict[str, Any]:
+                    limit: int | None = None, include_failed: bool = False) -> dict[str, Any]:
     """Load a submission, supporting both monolithic and current layouts."""
     agent, prediction, results, origin, resolved_ref = _urls(submission, ref)
     try:
@@ -243,7 +257,8 @@ def load_submission(submission: str, cache: Cache, ref: str = "main",
             raise
         repo, actual_ref, path = gh
         base = f"https://raw.githubusercontent.com/{repo}/{actual_ref}/{path}".rstrip("/")
-        return _new_submission(agent, origin, base, actual_ref, cache, task_ids, limit)
+        return _new_submission(agent, origin, base, actual_ref, cache, task_ids, limit,
+                               include_failed=include_failed)
 
 
 def load_manifest(path: str | os.PathLike[str], cache: Cache) -> dict[str, Any]:

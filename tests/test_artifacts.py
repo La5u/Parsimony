@@ -76,6 +76,32 @@ class ArtifactsTests(unittest.TestCase):
                          'https://swe-bench-submissions.s3.amazonaws.com/bash-only/demo/logs/b/patch.diff')
         self.assertIn('/tree/main/evaluation/verified/demo', loaded['submission_url'])
 
+    def test_current_layout_fetches_only_explicit_failures_when_opted_in(self):
+        submission = 'https://github.com/SWE-bench/experiments/tree/main/evaluation/verified/demo'
+        requested = []
+        def fetch(url, _cache):
+            if url.endswith('/all_preds.jsonl'):
+                raise HTTPError(url, 404, 'missing', {}, None)
+            if url.endswith('/metadata.yaml'):
+                return b'assets:\n  logs: s3://swe-bench-submissions/bash-only/demo/logs\n'
+            if url.endswith('/per_instance_details.json'):
+                return (b'{"ok":{"resolved":true},"failed":{"resolved":false},'
+                        b'"nolog":{"resolved":false,"status":"no_logs"},'
+                        b'"nogeneration":{"resolved":false,"status":"no_generation"}}')
+            requested.append(url)
+            if url.endswith('/ok/patch.diff'):
+                return b'ok-patch'
+            if url.endswith('/failed/patch.diff'):
+                return b'failed-patch'
+            raise AssertionError('unexpected download: ' + url)
+        with patch('parsimony.artifacts._bytes', side_effect=fetch):
+            loaded = load_submission(submission, Cache(tempfile.mkdtemp()), include_failed=True)
+        self.assertEqual(loaded['predictions'], {'ok': 'ok-patch', 'failed': 'failed-patch'})
+        self.assertEqual(loaded['result_details']['unresolved'], ['failed'])
+        self.assertEqual(loaded['result_details']['no_logs'], ['nolog'])
+        self.assertEqual(loaded['result_details']['no_generation'], ['nogeneration'])
+        self.assertFalse(any('/nolog/' in url or '/nogeneration/' in url for url in requested))
+
     def test_current_layout_requires_real_boolean(self):
         submission = 'https://github.com/SWE-bench/experiments/tree/main/evaluation/verified/demo'
         def fetch(url, _cache):
