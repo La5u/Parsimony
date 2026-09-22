@@ -1,7 +1,7 @@
 import difflib
 import unittest
 
-from parsimony.analysis import apply_patch, generated, measure, normalized_tokens, parse_patch, structure
+from parsimony.analysis import apply_patch, generated, implementation, measure, normalized_tokens, parse_patch, structure
 
 
 def diff(before, after, path='pkg/core.py', old=None, new=None):
@@ -40,6 +40,19 @@ class AnalysisTests(unittest.TestCase):
         self.assertEqual(result['churn'], 0)
         self.assertEqual(len(result['excluded_files']), 5)
         self.assertEqual(result['touched_files'], result['excluded_files'])
+
+    def test_django_migration_core_included_but_migration_scripts_excluded(self):
+        for path in ('django/db/migrations/loader.py',
+                     'django/db/migrations/operations/models.py'):
+            self.assertTrue(implementation(path), path)
+        for path in ('myapp/migrations/0001_initial.py',
+                     'django/db/migrations/0001_initial.py'):
+            self.assertFalse(implementation(path), path)
+        before = 'x = 1\n'
+        patch = diff(before, 'x = 2\n', 'django/db/migrations/loader.py')
+        result = measure(patch, lambda p: before)
+        self.assertEqual(result['touched_files'], ['django/db/migrations/loader.py'])
+        self.assertEqual(result['excluded_files'], [])
 
     def test_behavioral_edits_with_zero_normalized_footprint_are_visible_in_audit(self):
         before = 'manager = base_manager\n'
