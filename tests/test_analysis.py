@@ -24,6 +24,22 @@ class AnalysisTests(unittest.TestCase):
         # A docstring sharing a line must not hide implementation code.
         self.assertIn('=', normalized_tokens('"docs"; x = 1\n'))
 
+    def test_block_move_is_not_zero_footprint(self):
+        before = 'def f():\n    while cond:\n        kern += 1\n    hit = kern in s\n    return hit\n'
+        after = 'def f():\n    while cond:\n        kern += 1\n        hit = kern in s\n    return hit\n'
+        result = measure(diff(before, after), lambda p: before)
+        self.assertGreater(result['churn'], 0)
+        self.assertEqual(result['value_sensitive_churn'], result['churn'])
+        self.assertEqual(normalized_tokens('def f():\n  return 1\n'),
+                         normalized_tokens('def f():\n    return 1\n'))
+
+    def test_fstring_literal_edit_has_diagnostic_footprint(self):
+        before = 'def f(x):\n    return f"unittest_{x}"\n'
+        after = 'def f(x):\n    return f"_unittest_{x}"\n'
+        result = measure(diff(before, after), lambda p: before)
+        self.assertEqual(result['churn'], 0)  # primary metric intentionally discards literals
+        self.assertGreater(result['value_sensitive_churn'], 0)
+
     def test_deletion_rewarded(self):
         before = 'def f(x):\n    if x:\n        return x\n    return 0\n'
         after = 'def f(x):\n    return x\n'

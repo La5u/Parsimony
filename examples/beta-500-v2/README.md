@@ -1,9 +1,10 @@
 # Verified 500 beta v2: two submissions, frozen population
 
-**Beta diagnostic, not an official benchmark leaderboard.** These are static code-footprint measurements gated by published SWE-bench Verified results; we did not execute agent patches or independently verify SWE-bench correctness. Both submissions use mini-SWE-agent v2.0.0; harness diversity and independent metric review are still missing.
+**Historical beta diagnostic (superseded for metric comparisons by the [investigation](investigation.md)); not an official benchmark leaderboard.** These are static code-footprint measurements gated by published SWE-bench Verified results; we did not execute agent patches or independently verify SWE-bench correctness. Both submissions use mini-SWE-agent v2.0.0; harness diversity and independent metric review are still missing.
 
 ## Provenance and reproduction
 
+- **Do not use the conditional median comparisons below as current scores:** the investigation found behavior-changing indentation moves and f-string literal edits that `0.3.0-beta` measured as zero. They remain here to make the investigation reproducible, not to rank models.
 - Analyzer commit: `70de30522a079a2a45673b48a2c7ce8c8b558ac5` (Python 3.14.7, `0.3.0-beta`). This commit fixes the false generated-file exclusions found in [the v1 audit](../beta-500/README.md) and includes Django's migration framework implementation while excluding migration scripts.
 - Dataset: `princeton-nlp/SWE-bench_Verified`, 500 test rows, SHA256 `82029e78b26e1da0ddc01653c98db18443fab1993e28dff052a38b01c3fd77f7`. Exact dataset JSONL is not checked in; verify the checksum after fetching.
 - Published results GitHub revision: `40f164d5b8f1d249bf95a6df8b74b577fd8e519d`; S3 patches are content-hashed **per task**, not versioned by the GitHub revision. Each record retains patch, result, base-commit provenance.
