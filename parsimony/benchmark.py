@@ -10,7 +10,7 @@ from urllib.parse import quote
 
 from .analysis import measure
 
-ANALYZER_VERSION = '0.3.0-beta'
+ANALYZER_VERSION = '0.3.1-beta'
 
 
 def fetch_dataset(cache):

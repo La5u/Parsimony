@@ -170,12 +170,16 @@ def normalized_tokens(source: str, keep_values: bool = False) -> list[str]:
         source = ast.unparse(without_docstrings(root))
     result = []
     ignored = {tokenize.ENCODING, tokenize.ENDMARKER, tokenize.NL, tokenize.NEWLINE,
-               tokenize.INDENT, tokenize.DEDENT, tokenize.COMMENT}
+               tokenize.COMMENT}
     try:
         for tok in tokenize.generate_tokens(io.StringIO(source).readline):
             if tok.type in ignored:
                 continue
-            if tok.type == tokenize.NAME:
+            if tok.type in (tokenize.INDENT, tokenize.DEDENT):
+                # Block structure changes behavior; use canonical symbols rather
+                # than indentation whitespace (also works for lexical fallback).
+                result.append('INDENT' if tok.type == tokenize.INDENT else 'DEDENT')
+            elif tok.type == tokenize.NAME:
                 result.append(tok.string if keep_values or keyword.iskeyword(tok.string) else 'ID')
             elif tok.type == tokenize.STRING:
                 result.append(tok.string if keep_values else 'STR')
@@ -184,7 +188,7 @@ def normalized_tokens(source: str, keep_values: bool = False) -> list[str]:
             elif tok.type == getattr(tokenize, 'FSTRING_START', -1):
                 result.append('STR_START')
             elif tok.type == getattr(tokenize, 'FSTRING_MIDDLE', -1):
-                result.append('STR_PART')
+                result.append(tok.string if keep_values else 'STR_PART')
             elif tok.type == getattr(tokenize, 'FSTRING_END', -1):
                 result.append('STR_END')
             elif tok.type == tokenize.ERRORTOKEN and tok.string.isspace():
