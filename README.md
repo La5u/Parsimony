@@ -1,6 +1,6 @@
 # Parsimony
 
-**Beta / research prototype.** No official cross-model ranking or validated full-benchmark score has been released. Sample rankings below are exploratory and must not be treated as model recommendations. The first [500-task coverage audit](examples/beta-500/README.md) found an exclusion defect. A corrected [two-submission beta audit](examples/beta-500-v2/README.md) covers the same frozen 500 tasks; neither is an official leaderboard.
+**Beta / research prototype.** No official cross-model ranking or validated full-benchmark score has been released. Sample rankings below are exploratory and must not be treated as model recommendations. The first [500-task coverage audit](examples/beta-500/README.md) found an exclusion defect. A new [indentation-aware two-submission beta audit](examples/beta-500-v3/README.md) reruns the same 500 tasks with analyzer `0.3.1-beta`; none of these audits is an official leaderboard.
 
 Among agents that **successfully solve the same SWE-bench issue**, which leave the smallest code footprint?
 
@@ -145,4 +145,4 @@ This MVP focuses on Python and unified text diffs. Binary/rename-only diffs, quo
 3. Evaluate score sensitivity to reference-panel composition, 70/30 weights, failure cap and task mix; report paired uncertainty and per-task outcomes. The beta tool currently covers weights/caps and paired-task resampling, **not** panel composition or task-selection bias.
 4. Expand to more models and harnesses on the **same frozen tasks** with consistent provenance. Add other programming languages only as separate versioned tracks once the Python metric is validated.
 
-The two-submission [beta audit](examples/beta-500-v2/README.md) advances (1), **not completion of this roadmap**: artifact/correctness verification and a preregistered score panel remain outstanding. Its [follow-up investigation](examples/beta-500-v2/investigation.md) found metric blind spots; the published `0.3.0-beta` measurements are historical and must be regenerated under `0.3.1-beta` before comparative claims.
+The two-submission [v3 beta audit](examples/beta-500-v3/README.md) advances (1), **not completion of this roadmap**: independent artifact/correctness verification and a preregistered score panel remain outstanding. The [v2 investigation](examples/beta-500-v2/investigation.md) documented the metric blind spots fixed in the v3 run; do not pool analyzer versions.
