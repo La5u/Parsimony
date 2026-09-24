@@ -1,6 +1,6 @@
 # 10 models × 10 shared tasks
 
-> **Regenerated with analyzer 0.4.0-beta** (commit `c5a2ee8`, Python 3.14.7). Same plan, tasks, pinned experiments commit and dataset checksum as the original 0.1.0 run, which is kept in git history (commit `51857a0`). The 70/30 score ranking is unchanged, and every score moved by less than one point. In the median-net table, Claude Sonnet 4.5 and MiniMax M2.5 swapped ranks 2 and 3. This is still a pipeline demo, not a model ranking.
+> **Regenerated with analyzer 0.4.0-beta** (commit `2d4cec6`, Python 3.14.7). Same plan, tasks, pinned experiments commit and dataset checksum as the original 0.1.0 run, which is kept in git history (commit `51857a0`). The 70/30 score ranking is unchanged, and every score moved by less than one point. In the median-net table, Claude Sonnet 4.5 and MiniMax M2.5 swapped ranks 2 and 3. This is still a pipeline demo, not a model ranking.
 
 All 10 submissions use **mini-SWE-agent v2.0.0**, dated 2026-02-17. This is a small matched-task sample, not an overall model ranking. No agent code or tests were executed.
 
