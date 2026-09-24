@@ -32,6 +32,14 @@ class SnapshotTests(unittest.TestCase):
         self.assertIn('https://x/logs/t/report.json', urls)
         self.assertIn('https://raw.githubusercontent.com/org/repo/abc/pkg/a%20b.py', urls)
 
+    def test_errored_record_sources_come_from_cached_patch(self):
+        errored = dict(task_id='e', metrics=None, analysis_status='error',
+                       provenance=dict(repo='org/repo', base_commit='abc', patch_location='https://x/e/patch.diff'))
+        (self.cache / key('https://x/e/patch.diff')).write_text(
+            '--- a/pkg/old.py\n+++ b/pkg/new.py\n@@ -1 +1 @@\n-x\n+y\n')
+        self.assertIn('https://raw.githubusercontent.com/org/repo/abc/pkg/old.py',
+                      referenced_urls([errored], self.cache))
+
     def test_round_trip_only_referenced_and_verified(self):
         archive = self.root / 'snap.tar.gz'
         summary = create([self.results], self.cache, archive)

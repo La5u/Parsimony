@@ -195,6 +195,13 @@ class AnalysisTests(unittest.TestCase):
         self.assertEqual(result['ast_delta'], 0)
         self.assertEqual(structure(before)[0], structure(after)[0])
 
+    def test_target_syntax_warnings_are_silent(self):
+        import warnings
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter('always')
+            self.assertIsNotNone(structure('x = "\\*"\n'))  # source text: x = "\*"
+        self.assertEqual([w for w in caught if issubclass(w.category, SyntaxWarning)], [])
+
     def test_invalid_ast_unavailable(self):
         self.assertIsNone(structure('print x\n'))
 

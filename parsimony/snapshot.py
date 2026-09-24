@@ -14,6 +14,8 @@ import tarfile
 from pathlib import Path
 from urllib.parse import quote
 
+from .analysis import parse_patch
+from .artifacts import _parse_predictions
 from .benchmark import read_jsonl
 
 FORMAT = 'parsimony-cache-snapshot-v1'
@@ -26,8 +28,28 @@ def key(url):
     return hashlib.sha256(url.encode('utf-8')).hexdigest()
 
 
-def referenced_urls(records):
-    """Every URL a record's analysis could have downloaded."""
+def cached_patch(record, cache_dir):
+    """The record's patch text from the cache, or None."""
+    location = record.get('provenance', {}).get('patch_location')
+    if not location or cache_dir is None:
+        return None
+    url, _, task = location.partition('#instance_id=')
+    path = Path(cache_dir) / key(url)
+    if not path.exists():
+        return None
+    data = path.read_bytes()
+    if not task:
+        return data.decode('utf-8', 'replace')
+    return _parse_predictions(data)[1].get(task)
+
+
+def referenced_urls(records, cache_dir=None):
+    """Every URL a record's analysis could have downloaded.
+
+    Base-commit sources come from recorded touched files and, when the patch is
+    cached, from re-parsing it: errored records carry no metrics, and renames
+    are fetched by their old path.
+    """
     urls = set(DATASET_URLS)
     for r in records:
         p = r.get('provenance', {})
@@ -38,11 +60,18 @@ def referenced_urls(records):
             urls.add(p['patch_location'].split('#instance_id=')[0])
         if p.get('failure_reports'):
             urls.add(p['failure_reports'].replace('<task>', r['task_id']))
-        if p.get('repo') and p.get('base_commit'):
-            for metrics in (r.get('metrics'), r.get('human_metrics')):
-                for path in (metrics or {}).get('touched_files', []):
-                    urls.add(f"https://raw.githubusercontent.com/{p['repo']}/{p['base_commit']}/"
-                             f"{quote(path, safe='/')}")
+        if not (p.get('repo') and p.get('base_commit')):
+            continue
+        paths = {path for metrics in (r.get('metrics'), r.get('human_metrics'))
+                 for path in (metrics or {}).get('touched_files', [])}
+        try:
+            patch = cached_patch(r, cache_dir)
+            if patch:
+                paths.update(f.old for f in parse_patch(patch) if f.old != '/dev/null')
+        except ValueError:
+            pass  # unparseable predictions/patches never reached a source download
+        for path in paths:
+            urls.add(f"https://raw.githubusercontent.com/{p['repo']}/{p['base_commit']}/{quote(path, safe='/')}")
     return urls
 
 
@@ -50,7 +79,7 @@ def create(result_paths, cache_dir, output):
     cache_dir = Path(cache_dir)
     records = [r for path in result_paths for r in read_jsonl(path)]
     entries, missing = [], 0
-    for url in sorted(referenced_urls(records)):
+    for url in sorted(referenced_urls(records, cache_dir)):
         path = cache_dir / key(url)
         if not path.exists():
             missing += 1  # e.g. excluded files that were never fetched, or directory prefixes

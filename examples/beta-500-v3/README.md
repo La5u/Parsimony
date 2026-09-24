@@ -1,5 +1,7 @@
 # Verified 500 beta v3: indentation-aware two-submission audit
 
+> **Superseded by [v4](../beta-500-v4/README.md)** (analyzer 0.4.0: identifier/literal edits count, minimal alignment, and all human references measure). Kept for history. Do not pool the two.
+
 **Beta diagnostic, not an official Parsimony Score or general model ranking.** This reruns both complete 500-task cohorts with the analyzer fix described in the [v2 investigation](../beta-500-v2/investigation.md). It gates footprint on published SWE-bench Verified outcomes; it does **not** execute patches, independently verify correctness, or calibrate a frozen full-task reference panel.
 
 ## Pinned inputs

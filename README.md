@@ -4,7 +4,7 @@ Among agents that **successfully solve the same SWE-bench issue**, which leave t
 
 Parsimony imports public **SWE-bench Verified** predictions and published evaluation results, statically measures their Python changes, and compares successful solutions. It makes no LLM API calls, runs no SWE-bench reruns, installs nothing from target repositories and never executes submitted code.
 
-> **Status: beta / research prototype.** No official cross-model ranking or validated full-benchmark score exists. Everything in `examples/` is exploratory and must not be read as a model recommendation. Analyzer `0.4.0-beta` changed the metric (see the [changelog](CHANGELOG.md)). The checked-in audits were produced with older analyzer versions and are not comparable with new runs.
+> **Status: beta / research prototype.** No official cross-model ranking or validated full-benchmark score exists. Everything in `examples/` is exploratory and must not be read as a model recommendation. Analyzer `0.4.0-beta` changed the metric (see the [changelog](CHANGELOG.md)). The current [two-submission 500-task audit](examples/beta-500-v4/README.md) uses it. Older audits are kept for history and are not comparable.
 
 ## Quick start
 
@@ -101,7 +101,12 @@ Missing logs or reports remain unknown, and a warning is printed when a submissi
 
 ### Provenance and caching
 
-`--ref COMMIT` pins GitHub results (S3 is not versioned by it). Records keep SHA256 hashes of predictions, results and each patch, artifact URLs, base commit, reference patch hash, analyzer version/commit/source hash and Python version. Downloads are cached atomically by URL under `.parsimony-cache/` (`--cache PATH` goes *before* the subcommand). Cached URLs are never refreshed, so use a new cache for mutable upstream changes. Keep the metadata JSONL and cache alongside results for reproducibility.
+`--ref COMMIT` pins GitHub results (S3 is not versioned by it). Records keep SHA256 hashes of predictions, results and each patch, artifact URLs, base commit, reference patch hash, analyzer version/commit/source hash and Python version. Downloads are cached atomically by URL under `.parsimony-cache/` (`--cache PATH` goes *before* the subcommand). Cached URLs are never refreshed, so use a new cache for mutable upstream changes. Keep the metadata JSONL and cache alongside results for reproducibility. To share exactly the bytes a result set depends on, pack a verified snapshot:
+
+```sh
+python -m parsimony.snapshot create examples/beta-500-v4/*-results.jsonl --output cache-v4.tar.gz
+python -m parsimony.snapshot restore cache-v4.tar.gz --cache .parsimony-cache  # checks every SHA256 first
+```
 
 ## Contributing
 
@@ -111,13 +116,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). `python -m parsimony.contribute export` 
 
 | Example | Analyzer | What it shows |
 |---|---|---|
-| [beta-500-v3](examples/beta-500-v3/README.md) | 0.3.1-beta | Two complete 500-task cohorts; coverage audit |
+| [beta-500-v4](examples/beta-500-v4/README.md) | 0.4.0-beta | Two complete 500-task cohorts; coverage audit, fresh-artifact recheck |
+| [beta-500-v3](examples/beta-500-v3/README.md) | 0.3.1-beta | Two complete 500-task cohorts; coverage audit (superseded by v4) |
 | [beta-500-v2 investigation](examples/beta-500-v2/investigation.md) | 0.3.0-beta | Metric blind spots fixed in 0.3.1 |
 | [beta-500](examples/beta-500/README.md) | 0.2.0-beta | First coverage audit (exclusion defect) |
 | [ten-model report](examples/ten-model-report.md), `ten-model-*.json` | 0.4.0-beta | 10 models × 10 shared-success tasks; pipeline demo only |
-| `smoke-results.jsonl` | 0.1.0 (legacy) | Live-artifact smoke test |
+| `smoke-results.jsonl` | 0.4.0-beta | Live-artifact smoke test, legacy layout (`--limit 5`, experiments `40f164d`) |
 
-`smoke-results.jsonl` predates every metric fix since. The ten-model sample was regenerated with 0.4.0 (`python -m examples.run_ten_models`); its 0.1.0 version is in git history.
+The smoke and ten-model samples were regenerated with 0.4.0 (`python -m examples.run_ten_models` for the latter). Their 0.1.0 versions are in git history.
 
 ## Limits and interpretation
 
@@ -127,7 +133,7 @@ Scope is Python and unified text diffs only: binary/rename-only diffs and quoted
 
 ## Roadmap (priority order)
 
-1. Freeze the full task population and independently reproduce public patch/result artifacts. Publish coverage and missingness before rankings. **Next:** rerun the full two-submission audit with 0.4.0 on a pinned commit.
+1. Freeze the full task population and independently reproduce public patch/result artifacts. Publish coverage and missingness before rankings. The [v4 audit](examples/beta-500-v4/README.md) does this for two submissions with a fresh-artifact recheck; more harnesses and independent review remain.
 2. Validate footprint against adversarial patches (identifier-only edits, excluded files, unrelated deletion). Compare alternative metrics without silently changing score versions.
 3. Evaluate score sensitivity to panel composition, weights, failure cap and task mix, with paired uncertainty and per-task outcomes.
 4. Expand to more models and harnesses on the **same frozen tasks**. Add other languages only as separate versioned tracks.
