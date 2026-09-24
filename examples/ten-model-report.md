@@ -1,5 +1,7 @@
 # 10 models × 10 shared tasks
 
+> **Legacy analyzer 0.1.0 — pipeline demo only.** These measurements predate every metric fix since, including block moves, f-strings, identifier/literal edits and generated-file exclusions (see the [changelog](../CHANGELOG.md)). They are not comparable with current results. The score panel was re-frozen under score version v0.3; the numbers are unchanged.
+
 All 10 submissions use **mini-SWE-agent v2.0.0**, dated 2026-02-17. This is a small matched-task sample, not an overall model ranking. No agent code or tests were executed.
 
 There were **211 tasks resolved by all 10 submissions**. We shuffled the sorted intersection with `random.Random(42)` and selected the first ten tasks from distinct repositories. This extends the original three-task cohort without removing or replacing tasks based on metrics:

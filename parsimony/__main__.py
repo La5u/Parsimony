@@ -1,11 +1,14 @@
 import argparse
 import json
+import os
 import platform
 import sys
+import tempfile
 from pathlib import Path
 
 from .artifacts import Cache, load_manifest, load_submission
-from .benchmark import ANALYZER_VERSION, analyze_submission, fetch_dataset, leaderboard, read_jsonl
+from .benchmark import (ANALYZER_VERSION, FAILED_CATEGORIES, analyze_submission, fetch_dataset, leaderboard,
+                        read_jsonl)
 
 
 def main():
@@ -24,7 +27,9 @@ def main():
     analyze.add_argument('--include-failed', action='store_true', help='also fetch/analyze explicitly failed patches where available')
     analyze.add_argument('--task', action='append', help='analyze this task ID only (repeatable); keeps full resolve-rate denominator')
     analyze.add_argument('--output', default='results.jsonl')
-    analyze.add_argument('--resume', action='store_true', help='append missing task records to existing output (one submission, no --limit/--task)')
+    analyze.add_argument('--resume', action='store_true',
+                         help='append missing task records to existing output and retry fetch errors '
+                              '(one submission, no --limit/--task)')
     board = commands.add_parser('leaderboard')
     board.add_argument('records', nargs='+')
     board.add_argument('--shared', action='store_true')
@@ -70,15 +75,30 @@ def main():
                         raise ValueError('resume file uses a different analysis mode')
                     categories = set(r.get('published_result_categories', []))
                     if (args.include_failed and not r['resolved'] and
-                            categories & {'unresolved', 'failed', 'not_resolved'} and
+                            categories & FAILED_CATEGORIES and
                             'no_logs' not in categories and r['analysis_status'] == 'not_resolved'):
                         raise ValueError('resume file has failures skipped without --include-failed')
+                # Network failures are retryable: drop them so they are re-analyzed below.
+                retry = [r for r in prior if r['analysis_status'] == 'fetch_error']
+                if retry:
+                    prior = [r for r in prior if r['analysis_status'] != 'fetch_error']
+                    fd, tmp = tempfile.mkstemp(dir=Path(args.output).resolve().parent)
+                    with os.fdopen(fd, 'w') as stream:
+                        stream.writelines(json.dumps(r, sort_keys=True) + '\n' for r in prior)
+                    os.replace(tmp, args.output)
+                    print(f'Retrying {len(retry)} fetch_error records', file=sys.stderr)
             remaining = ([m['instance_id'] for m in metadata if m['instance_id'] not in {r['task_id'] for r in prior}]
                          if args.resume else args.task)
             submissions = [load_submission(s, cache, args.ref, task_ids=remaining, limit=args.limit,
                                            include_failed=args.include_failed)
                            for s in args.submissions]
             submissions += [load_manifest(s, cache) for s in args.manifest]
+            if args.include_failed:
+                for s in submissions:
+                    details = s.get('result_details', {})
+                    if not any(isinstance(details.get(key), list) and details[key] for key in FAILED_CATEGORIES):
+                        print(f"warning: {s['agent']} publishes no explicit failed outcomes; --include-failed "
+                              'will analyze no failures and full-population scores stay bounds-only', file=sys.stderr)
             names = [s['agent'] for s in submissions]
             if len(set(names)) != len(names):
                 parser.error('agent names collide; use manifests with distinct agent names')
@@ -96,13 +116,17 @@ def main():
                 include_failed=args.include_failed)
                     if not args.resume or r['task_id'] in wanted)
         with Path(args.output).open('a' if args.command == 'analyze' and args.resume else 'w') as stream:
-            count = 0
+            count = fetch_errors = 0
             for row in rows:
                 stream.write(json.dumps(row, sort_keys=True) + '\n')
                 if args.command == 'analyze' and args.resume:
                     stream.flush()
                 count += 1
+                fetch_errors += row.get('analysis_status') == 'fetch_error'
         print(f'Wrote {count} records to {args.output}', file=sys.stderr)
+        if fetch_errors:
+            print(f'warning: {fetch_errors} records hit network errors; rerun with --resume to retry them',
+                  file=sys.stderr)
     except (OSError, ValueError, KeyError) as exc:
         parser.exit(1, f'error: {exc}\n')
 

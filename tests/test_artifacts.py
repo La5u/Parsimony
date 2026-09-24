@@ -121,6 +121,35 @@ class ArtifactsTests(unittest.TestCase):
                 load_submission(submission, Cache(tempfile.mkdtemp()))
         self.assertEqual(fetch.call_count, 1)
 
+    def test_legacy_failures_come_from_explicit_reports(self):
+        s3 = 'https://swe-bench-submissions.s3.amazonaws.com/verified/demo'
+        preds = b''.join(json.dumps({'instance_id': t, 'model_patch': 'p'}).encode() + b'\n'
+                         for t in ('ok', 'failed', 'unapplied', 'noreport', 'nogen'))
+        requested = []
+        def fetch(url, _cache):
+            if url.endswith('/all_preds.jsonl'):
+                return preds
+            if url.endswith('/results/results.json'):
+                return b'{"resolved": ["ok"], "no_generation": ["nogen"], "no_logs": []}'
+            requested.append(url)
+            task = url.split('/')[-2]
+            if task == 'noreport':
+                raise HTTPError(url, 404, 'missing', {}, None)
+            return json.dumps({task: {'resolved': False, 'patch_exists': True,
+                                      'patch_successfully_applied': task != 'unapplied'}}).encode()
+        with patch('parsimony.artifacts._bytes', side_effect=fetch):
+            plain = load_submission('demo', None)
+            self.assertNotIn('unresolved', plain['result_details'])
+            self.assertEqual(requested, [])
+            loaded = load_submission('demo', None, include_failed=True)
+            self.assertEqual(loaded['result_details']['unresolved'], ['failed'])
+            self.assertEqual(loaded['result_details']['no_report'], ['noreport', 'unapplied'])
+            self.assertEqual(requested, [f'{s3}/logs/{t}/report.json' for t in ('failed', 'noreport', 'unapplied')])
+            self.assertIn('failed', loaded['evaluated'])
+            requested.clear()
+            load_submission('demo', None, task_ids=['failed'], include_failed=True)
+            self.assertEqual(requested, [f'{s3}/logs/failed/report.json'])
+
     def test_cache(self):
         import io
         with tempfile.TemporaryDirectory() as directory:

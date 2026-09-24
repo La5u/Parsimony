@@ -32,6 +32,18 @@ class ScoringTests(unittest.TestCase):
         values = score_records(self.panel, refs)
         self.assertAlmostEqual(sum(r['score'] for r in values) / len(values), 50.5)
 
+    def test_out_of_scope_success_is_unmeasured_not_perfect(self):
+        refs = self.panel['tasks']['task']
+        hidden = record('hidden', net=0, churn=0)
+        hidden['metrics'].update(touched_files=['setup.py'], excluded_files=['setup.py'])
+        value = task_score(hidden, refs)
+        self.assertEqual((value['status'], value['score'], value['lower'], value['upper']),
+                         ('out_of_scope', None, 1, 100))
+        self.assertIsNone(score_records(self.panel, [hidden])[0]['score'])
+        # Nor may it calibrate a reference panel.
+        with self.assertRaisesRegex(ValueError, 'no successful reference'):
+            freeze([hidden], 'hidden-only')
+
     def test_ties_and_self_reference(self):
         panel = freeze([record()], 'self')
         result = score_records(panel, [record()])[0]

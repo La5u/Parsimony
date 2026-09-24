@@ -17,5 +17,6 @@
 - [ ] Public patch/result provenance and hashes retained; no secrets/cache committed.
 - [ ] Sample vs complete record coverage labeled correctly.
 - [ ] `python -m parsimony.contribute validate submissions` passes.
+- [ ] Records carry an `analyzer_commit` (analyzer committed before analysis).
 - [ ] `python -m unittest discover -s tests -q` passes.
 - [ ] Scalar scores, if discussed, include their frozen panel hash and command and are labeled experimental; the bundle summary remains the generated conventional metrics.

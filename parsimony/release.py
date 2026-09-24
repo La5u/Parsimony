@@ -12,6 +12,7 @@ import subprocess
 from pathlib import Path
 
 from .benchmark import read_jsonl
+from .scoring import out_of_scope
 
 
 def sha(path):
@@ -54,6 +55,9 @@ def audit(panel, records, dataset_path=None):
         group[task] = r
         if r['python_version'] != panel['python_version']:
             raise ValueError(f'incompatible Python version: {agent} / {task}')
+        # Records from 0.4.0 carry the analyzer commit; older ones are counted as unverified below.
+        if r.get('analyzer_commit', panel['analyzer_commit']) != panel['analyzer_commit']:
+            raise ValueError(f'analyzer commit differs from frozen population: {agent} / {task}')
         provenance = r.get('provenance', {})
         if provenance.get('repo') != ids[task]['repo'] or provenance.get('base_commit') != ids[task]['base_commit']:
             raise ValueError(f'base commit mismatch: {agent} / {task}')
@@ -77,8 +81,11 @@ def audit(panel, records, dataset_path=None):
         excluded = sorted({path for r in ok for path in r['metrics'].get('excluded_files', [])})
         zero_normalized_edits = sum(bool(r['metrics'].get('touched_files')) and r['metrics']['churn'] == 0
                                     for r in ok if 'churn' in r['metrics'])
-        hidden_value_edits = sum(r['metrics'].get('churn') == 0 and
-                                 r['metrics'].get('value_sensitive_churn', 0) > 0 for r in ok)
+        def value_only(m):
+            if 'structural_churn' in m:  # >= 0.4.0: identifier/literal edits count as churn
+                return m['churn'] > 0 and m['structural_churn'] == 0
+            return m.get('churn') == 0 and m.get('value_sensitive_churn', 0) > 0
+        hidden_value_edits = sum(value_only(r['metrics']) for r in ok)
         statuses = {status: sum(r['analysis_status'] == status for r in group.values())
                     for status in sorted({r['analysis_status'] for r in group.values()})}
         agents.append(dict(agent=agent, analyzer_version=next(iter(versions)),
@@ -87,7 +94,13 @@ def audit(panel, records, dataset_path=None):
                            failed_analyses=len(failed), resolved_missing_analysis=len(resolved) - len(successful),
                            analysis_status_counts=statuses, excluded_files=excluded,
                            zero_normalized_edit_records=zero_normalized_edits,
-                           value_only_edit_records=hidden_value_edits))
+                           value_only_edit_records=hidden_value_edits,
+                           out_of_scope_successes=sum(out_of_scope(r['metrics']) for r in successful),
+                           lexical_fallback_records=sum(bool(r['metrics'].get('lexical_files')) for r in ok),
+                           approximate_alignment_records=sum(bool(r['metrics'].get('approximate_files')) for r in ok),
+                           offset_hunk_records=sum(bool(r['metrics'].get('offset_hunks')) for r in ok),
+                           unverified_analyzer_commit_records=sum('analyzer_commit' not in r
+                                                                  for r in group.values())))
     return dict(status='beta-coverage-not-certification', population=panel['name'],
                 population_sha256=hashlib.sha256(json.dumps(panel, sort_keys=True).encode()).hexdigest(),
                 task_count=len(ids), agents=agents)

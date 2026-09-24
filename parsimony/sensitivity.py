@@ -6,11 +6,14 @@ import statistics
 from pathlib import Path
 
 from .benchmark import read_jsonl
-from .scoring import metrics, percentile, require, unique
+from .scoring import metrics, out_of_scope, percentile, require, unique
 
 
-def contributions(panel, records, net_weight=0.7, failure_cap=25):
+def contributions(panel, records, net_weight=0.7, failure_cap=25, net_floor=None):
+    """Per-task scores; ``net_floor=0`` removes credit for net deletion (anti-deletion variant)."""
     require(0 <= net_weight <= 1 and failure_cap >= 0, 'invalid sensitivity parameters')
+    def net(m):
+        return m['net_tokens'] if net_floor is None else max(m['net_tokens'], net_floor)
     unique(records)
     groups = {}
     for r in records:
@@ -30,10 +33,11 @@ def contributions(panel, records, net_weight=0.7, failure_cap=25):
                     (refs[0]['provenance']['repo'], refs[0]['provenance']['base_commit']),
                     f'{agent}: base commit mismatch on {task}')
             m = metrics(r['metrics'])
+            require(not out_of_scope(m), f'{agent}: every touched file out of scope on {task}')
             if r['resolved']:
-                net = percentile(m['net_tokens'], [ref['metrics']['net_tokens'] for ref in refs])
+                net_p = percentile(net(m), [net(ref['metrics']) for ref in refs])
                 churn = percentile(m['churn'], [ref['metrics']['churn'] for ref in refs])
-                values[task] = 1 + 99 * (net_weight * net + (1 - net_weight) * churn)
+                values[task] = 1 + 99 * (net_weight * net_p + (1 - net_weight) * churn)
             else:
                 categories = set(r.get('published_result_categories', []))
                 require(bool(categories & {'unresolved', 'failed', 'not_resolved'}) and 'no_logs' not in categories,
@@ -49,9 +53,11 @@ def contributions(panel, records, net_weight=0.7, failure_cap=25):
 def sensitivity(panel, records, draws=2000, seed=42):
     require(type(draws) is int and draws > 0, 'positive integer draws required')
     scenarios = {}
-    for weight, cap in ((0.5, 25), (0.7, 25), (1.0, 25), (0.7, 10), (0.7, 50)):
-        matrix = contributions(panel, records, weight, cap)
-        scenarios[f'net={weight:g},failure_cap={cap}'] = dict(
+    for weight, cap, floor in ((0.5, 25, None), (0.7, 25, None), (1.0, 25, None), (0.7, 10, None),
+                               (0.7, 50, None), (0.7, 25, 0)):
+        matrix = contributions(panel, records, weight, cap, floor)
+        label = f'net={weight:g},failure_cap={cap}' + ('' if floor is None else f',net_floor={floor}')
+        scenarios[label] = dict(
             sorted(((agent, statistics.mean(scores.values())) for agent, scores in matrix.items()),
                    key=lambda pair: -pair[1]))
     matrix = contributions(panel, records)

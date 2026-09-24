@@ -2,7 +2,7 @@
 
 Use pull requests to add or update **reproducible result bundles**, not hand-edited scores. All tools use the Python standard library. We welcome small samples when they are clearly labeled.
 
-**Current bundle format:** successful-solution footprint medians, resolve rate and per-task measurements. The [70/30 signed-score calculator](docs/scoring.md) is experimental and separate from bundle validation; do not substitute scalar scores for the generated median summary. You may include a reproducible scalar-score command and frozen panel hash in the PR description. Failed-patch analysis is available with `analyze --include-failed` for supported layouts, but existing bundles and sample scores do not contain it.
+**Current bundle format:** successful-solution footprint medians, resolve rate and per-task measurements. The [70/30 signed-score calculator](docs/scoring.md) is experimental and separate from bundle validation; do not substitute scalar scores for the generated median summary. You may include a reproducible scalar-score command and frozen panel hash in the PR description. Records from `analyze --include-failed` may be exported: failed-patch measurements need an explicit failed category (`unresolved`/`failed`/`not_resolved`) and never enter the median summary. Existing bundles and sample scores do not contain them.
 
 ## Fast path: existing analysis, no heavy computation
 
@@ -53,10 +53,18 @@ If you introduce a new layout, add a small adapter and mocked tests. Do not call
 - Include the analysis/export commands, Python version, analyzer commit and dataset revision/checksum in the PR description.
 - Explain task selection **before** discussing the resulting rank. Disclose missing/failed analyses and exclusions.
 - Commit all three generated bundle files; regenerate summaries instead of editing them.
-- Run `python -m unittest discover -s tests -q` and the offline validator.
+- Run `python -m unittest discover -s tests -q` and the offline validator. Commit the analyzer first so records carry an `analyzer_commit`.
 - Include before/after summaries and the reason for a score update. Do not conflate analyzer corrections with improved model behavior.
 
-GitHub Actions runs only offline unit tests and bundle validation. It checks checksums, task uniqueness, basic metric identities, resolve totals, scope labels and recomputed summaries. **It cannot prove that contributed measurements match the remote patches or that published results are authentic.** Maintainers review artifact provenance and may reproduce selected measurements before merging. A checksum detects changed bytes, not fabricated data.
+GitHub Actions runs offline unit tests and bundle validation on every PR. It checks checksums, task uniqueness, basic metric identities, resolve totals, scope labels and recomputed summaries. A checksum detects changed bytes, not fabricated data. Offline validation therefore **cannot prove that contributed measurements match the remote patches**.
+
+Maintainers re-verify a random sample before merging, either with the manual `verify` workflow (Actions → Offline checks → Run workflow) or locally:
+
+```sh
+python -m parsimony.contribute verify submissions/your-bundle --dataset verified.jsonl --sample 25
+```
+
+This re-downloads each sampled patch from its recorded `patch_location` and checks its SHA256. For records made with the current analyzer version, it also re-measures the patch at the recorded base commit and requires identical metrics. Older-version records get a hash check only. Neither check proves that the upstream published results are authentic.
 
 Successful patches only are eligible for today's efficiency metrics. The experimental scalar calculator supports bounded failure penalties, but auditing failed-patch coverage and approving an official fixed benchmark/reference panel remain release work. Contributions do not automatically change the frozen sample panel or establish an official benchmark release.
 

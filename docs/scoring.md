@@ -1,6 +1,8 @@
-# Parsimony scoring specification — experimental v0.2
+# Parsimony scoring specification — experimental v0.3
 
 **Status:** the offline calculator is implemented as `python -m parsimony.scoring`. It consumes existing full-file JSONL; it does not download artifacts, tokenize patches or execute code. The existing `leaderboard` command still reports medians separately. This is an experimental scoring rule, not a validated official benchmark release.
+
+v0.3 differs from v0.2 only in the `out_of_scope` rule; the ten-model sample scores are numerically unchanged.
 
 ## 1. Goals
 
@@ -61,7 +63,7 @@ failed_task_score = −25 × failure_burden
 - Increasing growth or churn cannot improve a failure's score.
 - The scale floor handles all-zero reference patches; bounding limits the effect of one enormous failed attempt.
 
-The **25-point cap is provisional**. The user-selected 70/30 weights express a preference, not an empirically established law. Validate sensitivity before an official release; never tune weights to reproduce familiar rankings.
+The **25-point cap is provisional**. `python -m parsimony.sensitivity` also reports a `net_floor=0` variant: net deltas below zero are clamped, so deleting code (for example untested code that SWE-bench tests cannot protect) earns no net credit. The user-selected 70/30 weights express a preference, not an empirically established law. Validate sensitivity before an official release; never tune weights to reproduce familiar rankings.
 
 ### Should a huge successful patch lose to a near-empty failure?
 
@@ -97,7 +99,8 @@ Never confuse absent artifacts with an empty patch or an evaluated failure.
 | Evaluated, explicitly empty failed patch | Failure score 0 |
 | Explicit published no-generation/no-submission | `no_attempt`, score 0; no fabricated metrics |
 | Missing logs or evaluation outcome | Unknown correctness |
-| Missing patch, analysis error or skipped task | No point score for required missing measurements |
+| Missing patch, analysis/fetch error or skipped task | No point score for required missing measurements |
+| Every touched file out of scope (`out_of_scope`) | No point score; excluded from reference panels |
 
 The calculator requires an explicit failed result category (`unresolved`, `failed` or `not_resolved`) before assigning failure penalties. Mere absence from a resolved list is insufficient. `no_logs` stays unknown. `analyze --include-failed` now obtains and analyzes explicitly failed patches for supported layouts; old result files and missing patches still yield bounds rather than fabricated footprint penalties.
 
@@ -109,7 +112,7 @@ Per-task bounds are:
 
 Average bounds using the fixed task denominator. Any unknown contribution makes the overall `score` null; incomplete entries appear after complete scores without a ranked point estimate. Zero-width intervals indicate complete scores. Withholding data must not improve ranking eligibility.
 
-Non-Python/excluded edits remain outside scope, not proven zero cost. Preserve exclusions and audit suspicious scope shifts. Identifier/literal edits can change behavior while having zero normalized footprint.
+Non-Python/excluded edits remain outside scope, not proven zero cost. A success that changes **only** excluded files is `out_of_scope`: bounds `[1, 100]`, never the best percentile, and never a reference. Preserve exclusions and audit suspicious scope shifts. Since analyzer 0.4.0, identifier/literal edits count toward primary churn.
 
 ## 7. Examples
 
@@ -135,7 +138,7 @@ Two equally weighted tasks scoring 34 and −12.5 produce `(34 − 12.5) / 2 = 1
 ```sh
 # Freeze once; use a new name/path for a changed panel.
 python -m parsimony.scoring freeze examples/ten-model-results.jsonl \
-  --name ten-model-ten-task-70-30-v0.2 \
+  --name ten-model-ten-task-70-30-v0.3 \
   --output examples/ten-model-score-panel.json
 
 # Recompute scores from already-measured JSONL, with no patch analysis.
