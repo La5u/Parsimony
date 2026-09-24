@@ -41,6 +41,22 @@ class ReleaseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'totals disagree'):
             audit(self.panel, [{**self.record, 'resolved': False}])
 
+    def test_analyzer_commit_enforced_when_recorded(self):
+        with self.assertRaisesRegex(ValueError, 'analyzer commit'):
+            audit(self.panel, [{**self.record, 'analyzer_commit': 'b' * 40}])
+        row = audit(self.panel, [{**self.record, 'analyzer_commit': 'a' * 40}])['agents'][0]
+        self.assertEqual(row['unverified_analyzer_commit_records'], 0)
+        self.assertEqual(audit(self.panel, [self.record])['agents'][0]['unverified_analyzer_commit_records'], 1)
+
+    def test_out_of_scope_and_value_only_counts(self):
+        hidden = {**self.record, 'metrics': {'mode': 'full_file', 'churn': 0, 'structural_churn': 0,
+                                             'touched_files': ['setup.py'], 'excluded_files': ['setup.py']}}
+        row = audit(self.panel, [hidden])['agents'][0]
+        self.assertEqual((row['out_of_scope_successes'], row['zero_normalized_edit_records']), (1, 1))
+        renamed = {**self.record, 'metrics': {'mode': 'full_file', 'churn': 2, 'structural_churn': 0,
+                                              'touched_files': ['a.py'], 'excluded_files': []}}
+        self.assertEqual(audit(self.panel, [renamed])['agents'][0]['value_only_edit_records'], 1)
+
     def test_dataset_population_is_unique(self):
         self.dataset.write_text(self.dataset.read_text() * 2)
         with self.assertRaisesRegex(ValueError, 'unique'):

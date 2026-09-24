@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .benchmark import read_jsonl
 
-VERSION = 'parsimony-70-30-v0.2'
+VERSION = 'parsimony-70-30-v0.3'
 
 
 def require(condition, message):
@@ -23,6 +23,11 @@ def metrics(m):
     require(m['net_tokens'] == m['tokens_added'] - m['tokens_deleted'], 'net mismatch')
     require(m['churn'] == m['tokens_added'] + m['tokens_deleted'], 'churn mismatch')
     return m
+
+
+def out_of_scope(m):
+    """Every touched file was excluded: the fix is unmeasured, not a zero footprint."""
+    return bool(m.get('touched_files')) and len(m.get('excluded_files', [])) == len(m['touched_files'])
 
 
 def unique(records):
@@ -43,7 +48,8 @@ def freeze(records, name):
     for r in records:
         if not r['resolved'] or r['analysis_status'] != 'ok':
             continue
-        metrics(r['metrics'])
+        if out_of_scope(metrics(r['metrics'])):
+            continue  # an unmeasured patch cannot calibrate footprint percentiles
         tasks[r['task_id']].append({key: r[key] for key in ('agent', 'metrics', 'provenance')})
     for task, refs in tasks.items():
         require(bool(refs), f'no successful reference patch for {task}; select the cohort explicitly')
@@ -81,6 +87,9 @@ def task_score(record, refs):
         return dict(status='missing_metrics', score=None,
                     lower=1 if resolved else -25, upper=100 if resolved else 0)
     m = metrics(record['metrics'])
+    if out_of_scope(m):
+        return dict(status='out_of_scope', score=None,
+                    lower=1 if resolved else -25, upper=100 if resolved else 0)
     expected = refs[0]['provenance']
     actual = record['provenance']
     require((actual.get('repo'), actual.get('base_commit')) == (expected['repo'], expected['base_commit']),

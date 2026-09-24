@@ -1,7 +1,25 @@
 import copy
+import difflib
 import unittest
+from urllib.error import HTTPError, URLError
 
+from parsimony import benchmark
 from parsimony.benchmark import analyze_submission, leaderboard
+
+
+class FakeCache:
+    def __init__(self, error=None, source=b'x = 1\n'):
+        self.error, self.source, self.calls = error, source, 0
+
+    def get(self, url):
+        self.calls += 1
+        if self.error:
+            raise self.error
+        return self.source
+
+
+def edit(path='pkg/core.py'):
+    return ''.join(difflib.unified_diff(['x = 1\n'], ['x = 2\n'], 'a/' + path, 'b/' + path))
 
 
 def record(agent, task, resolved=True, net=1):
@@ -62,7 +80,34 @@ class BenchmarkTests(unittest.TestCase):
         opted_in = list(analyze_submission(submission, None, patch_only=True, include_failed=True))
         self.assertEqual([r['analysis_status'] for r in opted_in], ['ok', 'not_resolved'])
         self.assertFalse(opted_in[0]['resolved'])
-        self.assertEqual(opted_in[0]['evaluation_result'], 'not_resolved')
+        self.assertEqual(opted_in[0]['evaluation_result'], 'failed')
+        self.assertEqual(opted_in[1]['evaluation_result'], 'no_logs')
+
+    def full_file(self, cache, agent='a'):
+        submission = dict(agent=agent, predictions={'t': edit()}, resolved={'t'}, evaluated={'t'},
+                          provenance={'prediction_url': 'local'})
+        meta = [dict(instance_id='t', repo='org/repo', base_commit='abc', patch=edit())]
+        return list(analyze_submission(submission, cache, meta))[0]
+
+    def test_network_failures_are_retryable_not_analysis_errors(self):
+        benchmark.human_cache.clear()
+        for error in (URLError('offline'), HTTPError('u', 503, 'busy', {}, None), TimeoutError('slow')):
+            row = self.full_file(FakeCache(error))
+            self.assertEqual(row['analysis_status'], 'fetch_error', error)
+            self.assertIsNone(row['metrics'])
+        missing = self.full_file(FakeCache(HTTPError('u', 404, 'missing', {}, None)))
+        self.assertEqual(missing['analysis_status'], 'error')
+        self.assertIn('does not exist at the base commit', missing['analysis_error'])
+
+    def test_human_patch_measured_once_and_identity_recorded(self):
+        benchmark.human_cache.clear()
+        cache = FakeCache()
+        first, second = self.full_file(cache, 'a'), self.full_file(cache, 'b')
+        self.assertEqual(cache.calls, 3)  # model a, human once, model b
+        self.assertEqual(first['human_metrics'], second['human_metrics'])
+        self.assertEqual(first['model_human_ratio'], 1.0)
+        self.assertEqual(len(first['analyzer_source_sha256']), 64)
+        self.assertIn('analyzer_commit', first)
 
     def test_modes_not_mixed(self):
         r = record('a', '1')
