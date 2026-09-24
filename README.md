@@ -114,10 +114,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). `python -m parsimony.contribute export` 
 | [beta-500-v3](examples/beta-500-v3/README.md) | 0.3.1-beta | Two complete 500-task cohorts; coverage audit |
 | [beta-500-v2 investigation](examples/beta-500-v2/investigation.md) | 0.3.0-beta | Metric blind spots fixed in 0.3.1 |
 | [beta-500](examples/beta-500/README.md) | 0.2.0-beta | First coverage audit (exclusion defect) |
-| [ten-model report](examples/ten-model-report.md), `ten-model-*.json` | **0.1.0 (legacy)** | 10 models × 10 shared-success tasks; pipeline demo only |
+| [ten-model report](examples/ten-model-report.md), `ten-model-*.json` | 0.4.0-beta | 10 models × 10 shared-success tasks; pipeline demo only |
 | `smoke-results.jsonl` | 0.1.0 (legacy) | Live-artifact smoke test |
 
-The 0.1.0 examples predate every metric fix since and are kept only so the scoring arithmetic stays reproducible in CI (`python -m examples.run_ten_models` regenerates them).
+`smoke-results.jsonl` predates every metric fix since. The ten-model sample was regenerated with 0.4.0 (`python -m examples.run_ten_models`); its 0.1.0 version is in git history.
 
 ## Limits and interpretation
 

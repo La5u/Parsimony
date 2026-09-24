@@ -54,7 +54,7 @@ class ContributionTests(unittest.TestCase):
             self.assertEqual(verify([record], dataset, Cache())['failures'], 1)
             record['provenance']['patch_sha256'] = '0' * 64
             self.assertFalse(verify([record], dataset, Cache())['results'][0]['patch_sha256_matches'])
-        old = self.record  # 0.1.0 records: hash-only check
+        old = dict(self.record, analyzer_version='0.1.0')  # older analyzers: hash-only check
         with patch('parsimony.contribute.fetch_patch', return_value='tampered'):
             row = verify([old], [], Cache())['results'][0]
         self.assertIsNone(row['metrics_match'])

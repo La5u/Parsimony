@@ -59,6 +59,19 @@ class ResumeTests(unittest.TestCase):
             rows = [json.loads(line) for line in output.read_text().splitlines()]
             self.assertEqual([(r['task_id'], r['analysis_status']) for r in rows], [('a', 'ok'), ('b', 'ok')])
 
+    def test_resume_rejects_other_analyzer_source(self):
+        with tempfile.TemporaryDirectory() as temp:
+            dataset = Path(temp) / 'dataset.jsonl'
+            dataset.write_text(json.dumps({'instance_id': 'a', 'repo': 'org/repo', 'base_commit': 'abc'}) + '\n')
+            output = Path(temp) / 'results.jsonl'
+            output.write_text(json.dumps(dict(agent='agent', task_id='a', analyzer_version=ANALYZER_VERSION,
+                                              python_version=platform.python_version(), analyzer_commit=None,
+                                              analyzer_source_sha256='0' * 64, analysis_status='ok',
+                                              provenance={'ref': 'main'})) + '\n')
+            args = ['parsimony', 'analyze', 'example', '--dataset', str(dataset), '--resume', '--output', str(output)]
+            with patch('sys.argv', args), self.assertRaises(SystemExit):
+                main()
+
 
 if __name__ == '__main__':
     unittest.main()

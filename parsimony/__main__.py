@@ -7,8 +7,8 @@ import tempfile
 from pathlib import Path
 
 from .artifacts import Cache, load_manifest, load_submission
-from .benchmark import (ANALYZER_VERSION, FAILED_CATEGORIES, analyze_submission, fetch_dataset, leaderboard,
-                        read_jsonl)
+from .benchmark import (ANALYZER_VERSION, FAILED_CATEGORIES, analyze_submission, analyzer_identity, fetch_dataset,
+                        leaderboard, read_jsonl)
 
 
 def main():
@@ -67,6 +67,10 @@ def main():
                     seen.add(key)
                     if r['analyzer_version'] != ANALYZER_VERSION or r['python_version'] != platform.python_version():
                         raise ValueError('resume file uses incompatible analyzer/Python version')
+                    if 'analyzer_source_sha256' in r and \
+                            (r.get('analyzer_commit'), r['analyzer_source_sha256']) != analyzer_identity():
+                        raise ValueError('resume file was produced by a different analyzer commit/source; '
+                                         'check out that commit to resume')
                     if r['provenance'].get('ref') != args.ref:
                         raise ValueError('resume file uses a different experiments ref')
                     if r['analysis_status'] in {'not_selected', 'limit'}:
