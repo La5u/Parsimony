@@ -156,7 +156,7 @@ def _load(agent: str, submission_url: str, prediction_url: str, results_url: str
 
 def _new_submission(agent: str, submission_url: str, base: str, ref: str,
                     cache: Cache, task_ids: list[str] | None,
-                    limit: int | None) -> dict[str, Any]:
+                    limit: int | None, include_failed: bool = False) -> dict[str, Any]:
     """Read the per-instance layout used by recent mini-SWE-agent runs."""
     metadata_url = base + "/metadata.yaml"
     result_url = base + "/per_instance_details.json"
@@ -184,14 +184,27 @@ def _new_submission(agent: str, submission_url: str, base: str, ref: str,
         raise ValueError("per_instance_details.json must be an object")
     resolved: set[str] = set()
     unresolved: set[str] = set()
+    no_logs: set[str] = set()
+    no_generation: set[str] = set()
     for task, detail in raw_details.items():
         if not isinstance(detail, dict) or type(detail.get("resolved")) is not bool:
             raise ValueError(f"invalid resolved boolean for {task}")
         task = str(task)
-        (resolved if detail["resolved"] else unresolved).add(task)
+        categories = {str(value).lower() for key, value in detail.items()
+                      if key in {"category", "result", "status", "failure_category"}}
+        if detail["resolved"]:
+            resolved.add(task)
+        elif "no_logs" in categories:
+            no_logs.add(task)
+        elif categories & {'no_generation', 'no_submission'}:
+            no_generation.add(task)
+        else:
+            # A per-instance record with resolved=false is an explicit failure.
+            unresolved.add(task)
 
-    evaluated = resolved | unresolved
-    wanted = resolved if task_ids is None else (resolved & {str(x) for x in task_ids})
+    evaluated = resolved | unresolved | no_logs | no_generation
+    candidates = resolved | (unresolved if include_failed else set())
+    wanted = candidates if task_ids is None else (candidates & {str(x) for x in task_ids})
     selected = sorted(wanted)
     if limit is not None:
         selected = selected[:limit]
@@ -212,6 +225,7 @@ def _new_submission(agent: str, submission_url: str, base: str, ref: str,
         locations[task] = location
 
     normalized = {"resolved": sorted(resolved), "unresolved": sorted(unresolved),
+                  "no_logs": sorted(no_logs), "no_generation": sorted(no_generation),
                   "missing_patch": sorted(missing)}
     return {"agent": agent or "unknown", "submission_url": submission_url,
             "predictions": predictions, "prediction_locations": locations,
@@ -225,15 +239,60 @@ def _new_submission(agent: str, submission_url: str, base: str, ref: str,
                            "ref": ref, "layout": "mini-swe-agent-per-instance-v1"}}
 
 
+def _legacy_failures(submission: dict[str, Any], cache: Cache, task_ids: list[str] | None) -> dict[str, Any]:
+    """Add explicit failures from per-task ``logs/<task>/report.json`` files.
+
+    Legacy ``results.json`` files list only resolved/no_generation/no_logs, so
+    absence from ``resolved`` is not evidence of an evaluated failure. The
+    per-task evaluation report is: only ``resolved: false`` with an applied
+    patch becomes ``unresolved``; a missing report stays unknown.
+    """
+    details = submission["result_details"]
+    if any(isinstance(details.get(key), list) for key in ("unresolved", "failed", "not_resolved")):
+        return submission
+    prediction_url = submission["provenance"]["prediction_url"]
+    if not prediction_url.startswith("https://swe-bench-submissions.s3.amazonaws.com/"):
+        return submission
+    logs = prediction_url.rsplit("/", 1)[0] + "/logs"
+    listed = set(submission["resolved"])
+    for key in ("no_generation", "no_logs"):
+        listed.update(str(x) for x in details.get(key) or [])
+    candidates = sorted(set(submission["predictions"]) - listed)
+    if task_ids is not None:
+        candidates = [t for t in candidates if t in set(task_ids)]
+    unresolved, unreported = [], []
+    for task in candidates:
+        try:
+            report = json.loads(_bytes(f"{logs}/{task}/report.json", cache).decode("utf-8")).get(task)
+        except HTTPError as exc:
+            if exc.code != 404:
+                raise
+            exc.close()
+            unreported.append(task)
+            continue
+        if not isinstance(report, dict) or type(report.get("resolved")) is not bool:
+            raise ValueError(f"invalid evaluation report for {task}")
+        if report["resolved"]:
+            raise ValueError(f"report marks {task} resolved but results.json does not")
+        if report.get("patch_exists", True) and report.get("patch_successfully_applied", True):
+            unresolved.append(task)
+        else:
+            unreported.append(task)
+    details = dict(details, unresolved=unresolved, no_report=unreported)
+    evaluated = (submission["evaluated"] or set(submission["resolved"])) | set(unresolved)
+    provenance = dict(submission["provenance"], failure_reports=logs + "/<task>/report.json")
+    return dict(submission, result_details=details, evaluated=evaluated, provenance=provenance)
+
+
 def load_submission(submission: str, cache: Cache, ref: str = "main",
                     task_ids: list[str] | None = None,
-                    limit: int | None = None) -> dict[str, Any]:
+                    limit: int | None = None, include_failed: bool = False) -> dict[str, Any]:
     """Load a submission, supporting both monolithic and current layouts."""
     agent, prediction, results, origin, resolved_ref = _urls(submission, ref)
     try:
-        # Keep the legacy path entirely unchanged (including its selection
-        # semantics); selection is meaningful only to the fallback adapter.
-        return _load(agent, origin, prediction, results, cache, resolved_ref)
+        # The monolithic layout downloads every prediction at once; selection
+        # only limits which failure reports are fetched (with include_failed).
+        loaded = _load(agent, origin, prediction, results, cache, resolved_ref)
     except HTTPError as exc:
         if exc.code != 404:
             raise
@@ -243,7 +302,9 @@ def load_submission(submission: str, cache: Cache, ref: str = "main",
             raise
         repo, actual_ref, path = gh
         base = f"https://raw.githubusercontent.com/{repo}/{actual_ref}/{path}".rstrip("/")
-        return _new_submission(agent, origin, base, actual_ref, cache, task_ids, limit)
+        return _new_submission(agent, origin, base, actual_ref, cache, task_ids, limit,
+                               include_failed=include_failed)
+    return _legacy_failures(loaded, cache, task_ids) if include_failed else loaded
 
 
 def load_manifest(path: str | os.PathLike[str], cache: Cache) -> dict[str, Any]:

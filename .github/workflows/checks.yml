@@ -1,0 +1,57 @@
+name: Offline checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sample:
+        description: Recorded patches to re-fetch and re-measure per run
+        default: '25'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      matrix:
+        # Tests only: published measurements must use one pinned interpreter
+        # (tokenization differs across versions).
+        python-version: ['3.12', '3.13', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Standard-library unit tests
+        run: python -m unittest discover -s tests -q
+      - name: Validate contributed result bundles (no downloads or analysis)
+        run: python -m parsimony.contribute validate submissions
+      - name: Reproduce cached experimental scores (arithmetic only)
+        run: |
+          python -m parsimony.scoring score examples/ten-model-score-panel.json examples/ten-model-results.jsonl --output /tmp/parsimony-scores.json
+          cmp examples/ten-model-scores.json /tmp/parsimony-scores.json
+
+  verify:
+    # Networked: re-download a random sample of recorded patches, check their
+    # SHA256 and re-measure them with the current analyzer. Run manually on
+    # contribution PRs; offline checks above cannot detect fabricated metrics.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Download Verified metadata
+        run: python -m parsimony dataset --output verified.jsonl
+      - name: Re-verify contributed bundles
+        run: |
+          if find submissions -mindepth 2 -name records.jsonl | grep -q .; then
+            python -m parsimony.contribute verify submissions --dataset verified.jsonl \
+              --sample "${{ inputs.sample }}" --output verify.json
+          else
+            echo 'No contributed bundles to verify'
+          fi
