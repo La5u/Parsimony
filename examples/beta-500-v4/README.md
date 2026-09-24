@@ -4,14 +4,14 @@
 
 ## Pinned inputs
 
-- Analyzer commit `c5a2ee8f49a2ebc0278785a0929c9b6c2538467a`, version `0.4.0-beta`, Python 3.14.7. Every record carries this `analyzer_commit` and one `analyzer_source_sha256`, and `release audit` enforces them against the population. **Never pool** these records with v1–v3.
+- Analyzer commit `2d4cec612e5ed0c5ce98ca0f6cb8dc6d99ed1464`, version `0.4.0-beta`, Python 3.14.7. Every record carries this `analyzer_commit` and one `analyzer_source_sha256`, and `release audit` enforces them against the population. The records were produced from a pre-publication commit whose message was later reworded. Its tree is byte-identical to `2d4cec6`, so the commit references were re-pointed. Each record's `analyzer_source_sha256` (`4db958a4…`) is exactly what `2d4cec6` computes, so this can be checked. **Never pool** these records with v1–v3.
 - Dataset `princeton-nlp/SWE-bench_Verified`, 500 tasks, JSONL SHA256 `82029e78b26e1da0ddc01653c98db18443fab1993e28dff052a38b01c3fd77f7` (same as v3; bytes not committed).
 - GitHub experiments revision `40f164d5b8f1d249bf95a6df8b74b577fd8e519d` (same as v3). S3 patches are not versioned by this ref; each record carries its patch SHA256 and URL.
 - SHA256 of the files in this directory:
-  - [Population manifest](population.json): `bae090cdecae1634a22f4584db64589a2853b0d6e32ec0897fbef26e0699c402`
-  - [Opus results](opus46-results.jsonl): `a420eefc9dfe08a50a75c1460774023209d9120aa19559bf5aa813ced97ded7f`
-  - [Sonnet results](sonnet45-results.jsonl): `95351943fe3df2c58e699928102064d2d88d11a2b87a9aa857fd67aba90cfecc`
-  - [coverage.json](coverage.json): `52700ad54cc7871c7c4b4c433b2aa5e5ff97d6489e9d7817c6743a3c5ee76add`
+  - [Population manifest](population.json): `409dad6a622f0d58abcdc650edf56b5e44936ad182c63c2dd1504730cd593904`
+  - [Opus results](opus46-results.jsonl): `7a2a733e245bcb22c39093e9a6c55f2faac6cc128045375601a8d35dff55f56f`
+  - [Sonnet results](sonnet45-results.jsonl): `d419bda363ec7ec70ae938cfb292032c2ed7f1292f12a36625d65004abf51260`
+  - [coverage.json](coverage.json): `f168334edca7006a1b28303efbdb73ccef9538036f04ad2ce8d09805a5f2653b`
 
 On a checkout of the pinned analyzer commit:
 

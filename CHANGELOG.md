@@ -33,7 +33,7 @@ Contributions:
 
 Packaging: package version `0.4.0b0`. `requires-python >=3.12` because f-string tokenization differs before 3.12. CI tests 3.12–3.14, but published measurements must use one pinned interpreter.
 
-Results: the two-submission [v4 audit](examples/beta-500-v4/README.md), plus the ten-model and smoke samples, were regenerated with 0.4.0. `python -m parsimony.snapshot` packs a verified cache snapshot for reproducing them offline. `ast.parse` `SyntaxWarning`s from target sources are silenced.
+Commit references in the published 0.4.0 records point to `2d4cec6` (v4 audit, ten-model) and `53f1525` (smoke). These are reworded but tree-identical versions of the commits that ran; the recorded `analyzer_source_sha256` values verify this. Results: the two-submission [v4 audit](examples/beta-500-v4/README.md), plus the ten-model and smoke samples, were regenerated with 0.4.0. `python -m parsimony.snapshot` packs a verified cache snapshot for reproducing them offline. `ast.parse` `SyntaxWarning`s from target sources are silenced.
 
 ## 0.3.1-beta — 2026-09-24
 
