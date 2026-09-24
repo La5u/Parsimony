@@ -2,7 +2,7 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
-## 0.4.0-beta (unreleased)
+## 0.4.0-beta — 2026-09-24
 
 Metric changes:
 
@@ -33,7 +33,7 @@ Contributions:
 
 Packaging: package version `0.4.0b0`. `requires-python >=3.12` because f-string tokenization differs before 3.12. CI tests 3.12–3.14, but published measurements must use one pinned interpreter.
 
-Not yet done: the checked-in `beta-500-v3` audit and ten-model sample were **not** regenerated with 0.4.0 and remain valid only as records of their own versions.
+Results: the two-submission [v4 audit](examples/beta-500-v4/README.md), plus the ten-model and smoke samples, were regenerated with 0.4.0. `python -m parsimony.snapshot` packs a verified cache snapshot for reproducing them offline. `ast.parse` `SyntaxWarning`s from target sources are silenced.
 
 ## 0.3.1-beta — 2026-09-24
 

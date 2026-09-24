@@ -7,6 +7,7 @@ import io
 import keyword
 import re
 import tokenize
+import warnings
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 
@@ -170,7 +171,10 @@ def apply_patch(source: str, file: FilePatch, offsets: list | None = None) -> st
 
 def tree(source: str):
     try:
-        return ast.parse(source)
+        # Target repositories' own invalid escapes etc. are not analysis problems.
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', SyntaxWarning)
+            return ast.parse(source)
     except (SyntaxError, ValueError, RecursionError):
         return None
 
