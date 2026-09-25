@@ -88,7 +88,7 @@ def parse_patch(patch: str) -> list[FilePatch]:
 
 def implementation(path: str) -> bool:
     p = PurePosixPath(path.lower())
-    excluded = {'test', 'tests', 'testing', 'docs', 'doc', 'examples', 'benchmarks',
+    excluded = {'test', 'tests', 'docs', 'doc', 'examples', 'benchmarks',
                 'vendor', 'vendored', 'third_party', 'third-party', 'external',
                 'generated', 'build', 'dist', '__pycache__', '.github',
                 '_vendor', '_vendored', 'node_modules', '.venv', 'venv', 'fixtures',
@@ -101,7 +101,9 @@ def implementation(path: str) -> bool:
     # Likewise django/test/ is the public testing framework (TestCase, Client,
     # runner), not the project's own tests.
     django_test_framework = len(parts) >= 3 and parts[:2] == ('django', 'test')
-    return (p.suffix == '.py' and not (excluded.intersection(parts)
+    # A top-level testing/ directory is a test suite (pytest); nested ones such as
+    # sympy/testing/ or lib/matplotlib/testing/ are shipped library code.
+    return (p.suffix == '.py' and parts[0] != 'testing' and not (excluded.intersection(parts)
                                        - ({'migrations'} if django_migrations_core else set())
                                        - ({'test'} if django_test_framework else set()))
             and ('migrations' not in parts or django_migrations_core)
@@ -509,7 +511,9 @@ def measure(patch: str, get_source=None) -> dict:
         else:
             before = ''.join(line[1:] for h in f.hunks for line in h[4] if line[0] in ' -')
             after = ''.join(line[1:] for h in f.hunks for line in h[4] if line[0] in ' +')
-        if generated(before) or generated(after):
+        # Only the base commit decides: a patch must not hide its own edits by
+        # adding a generated-file header. New files are always the patch's own code.
+        if f.old != '/dev/null' and generated(before):
             excluded.append(path)
             continue
         # Canonicalize both sides or neither: mixing an ast.unparse rendering
