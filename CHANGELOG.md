@@ -2,6 +2,15 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## 0.5.1-beta — 2026-09-26
+
+Fixes from the [adversarial validation](docs/adversarial-validation.md) (`tests/test_adversarial.py`):
+
+- **A patch can no longer hide an edit by adding a generated-file header.** Only the base commit's version of a file decides whether it is generated; new files are always measured. Previously adding `# Auto-generated, do not edit` to an edited file excluded the whole file.
+- **Only a top-level `testing/` directory is excluded.** Nested ones such as `sympy/testing/` and `lib/matplotlib/testing/` are library code.
+
+No published measurement changes: all 5,010 published records re-measure identically, so they keep their 0.5.0 label. `contribute verify` compares against the running analyzer version, so re-verifying them needs a 0.5.0 checkout.
+
 ## 0.5.0-beta — 2026-09-25
 
 Metric change: **coding units replace lexical tokens as the primary footprint.**
