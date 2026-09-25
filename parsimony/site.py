@@ -51,7 +51,9 @@ def bootstrap(board, draws, seed):
 
 
 def build(panel, records, draws=2000, seed=42):
-    board = score_records(panel, records)
+    # Rank by score, or by the midpoint of the possible range when some tasks are unscored.
+    board = sorted(score_records(panel, records),
+                   key=lambda e: -(e['score'] if e['score'] is not None else (e['lower'] + e['upper']) / 2))
     groups = {}
     for r in records:
         groups.setdefault(r['agent'], {})[r['task_id']] = r
@@ -62,11 +64,17 @@ def build(panel, records, draws=2000, seed=42):
         ok = [r for r in group.values() if r['resolved'] and r['analysis_status'] == 'ok'
               and r['metrics']['churn'] is not None]
         statuses = [t['status'] for t in entry['tasks'].values()]
+        solved_scores = [t['score'] for t in entry['tasks'].values() if t['status'] == 'resolved']
+        # Failure penalty from the failures that could be measured; complete only when nothing is unscored.
+        known_penalty = -sum(t['score'] for t in entry['tasks'].values()
+                             if t['status'] == 'failed' and t['score'] is not None) / len(entry['tasks'])
         models.append(dict(
             agent=entry['agent'], name=label(entry['agent']), score=entry['score'],
             lower=entry['lower'], upper=entry['upper'], ci=intervals[entry['agent']]['ci'],
             top=intervals[entry['agent']]['top'],
             success_credit=entry['success_credit'], failure_penalty=entry['failure_penalty'],
+            known_failure_penalty=known_penalty,
+            solved_mean=statistics.fmean(solved_scores) if solved_scores else None,
             resolve_rate=entry['published_resolve_rate'],
             solved=statuses.count('resolved'), failed=statuses.count('failed'),
             unscored=sum(t['score'] is None for t in entry['tasks'].values()),

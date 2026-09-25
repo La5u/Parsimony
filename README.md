@@ -108,6 +108,10 @@ python -m parsimony.snapshot create examples/beta-500-v4/*-results.jsonl --outpu
 python -m parsimony.snapshot restore cache-v4.tar.gz --cache .parsimony-cache  # checks every SHA256 first
 ```
 
+## Website
+
+`python -m parsimony.site PANEL RECORDS... --output site/index.html` renders a single self-contained page from a frozen panel and measured JSONL, offline: leaderboard with paired-bootstrap intervals, method, a per-task explorer and limits. [`site/index.html`](site/index.html) is built from the [ten-model × 500-task results](examples/ten-model-500/README.md) and can be served as is (for example with GitHub Pages from `/site`). Edit `site/template.html` for layout and copy.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). `python -m parsimony.contribute export` turns existing JSONL into a checksummed bundle under `submissions/`. PR checks validate it offline. `contribute verify` (also a manual CI job) re-downloads recorded patches, checks hashes and re-measures them.
@@ -116,12 +120,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). `python -m parsimony.contribute export` 
 
 | Example | Analyzer | What it shows |
 |---|---|---|
+| [ten-model-500](examples/ten-model-500/README.md) | 0.5.0-beta | Ten models × all 500 tasks with failures; frozen panel, scores and intervals (the website's data) |
 | [beta-500-v5](examples/beta-500-v5/README.md) | 0.5.0-beta | Two complete 500-task cohorts in coding units; units vs tokens, coverage audit, fresh-artifact recheck |
 | [beta-500-v4](examples/beta-500-v4/README.md) | 0.4.0-beta | Two complete 500-task cohorts in tokens (superseded by v5) |
 | [beta-500-v3](examples/beta-500-v3/README.md) | 0.3.1-beta | Two complete 500-task cohorts; coverage audit (superseded by v4) |
 | [beta-500-v2 investigation](examples/beta-500-v2/investigation.md) | 0.3.0-beta | Metric blind spots fixed in 0.3.1 |
 | [beta-500](examples/beta-500/README.md) | 0.2.0-beta | First coverage audit (exclusion defect) |
-| [ten-model report](examples/ten-model-report.md), `ten-model-*.json` | 0.5.0-beta | 10 models × 10 shared-success tasks; pipeline demo only |
+| [ten-model report](examples/ten-model-report.md), `ten-model-*.json` | 0.5.0-beta | 10 models × 10 shared-success tasks; pipeline demo (superseded by ten-model-500) |
 | `smoke-results.jsonl` | 0.5.0-beta | Live-artifact smoke test, legacy layout (`--limit 5`, experiments `40f164d`) |
 
 The smoke and ten-model samples were regenerated with 0.5.0 (`python -m examples.run_ten_models` for the latter). Earlier versions are in git history.
@@ -137,4 +142,5 @@ Scope is Python and unified text diffs only: binary/rename-only diffs and quoted
 1. Freeze the full task population and independently reproduce public patch/result artifacts. Publish coverage and missingness before rankings. The [v5 audit](examples/beta-500-v5/README.md) does this for two submissions with a fresh-artifact recheck; more harnesses and independent review remain.
 2. Validate footprint against adversarial patches (identifier-only edits, excluded files, unrelated deletion). Compare alternative metrics without silently changing score versions.
 3. Evaluate score sensitivity to panel composition, weights, failure cap and task mix, with paired uncertainty and per-task outcomes.
-4. Expand to more models and harnesses on the **same frozen tasks**. Add other languages only as separate versioned tracks.
+4. Validate units against blind human preferences on patch pairs, and add readability diagnostics (test-input hardcoding, nesting depth, reuse of existing helpers).
+5. Expand to more models and harnesses on the **same frozen tasks**. Add other languages only as separate versioned tracks.
