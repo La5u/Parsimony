@@ -14,7 +14,7 @@ Metric change: **coding units replace lexical tokens as the primary footprint.**
 - `model_human_ratio` is unit churn over human unit churn. `leaderboard` sorts by `median_net_units` and also reports token medians. `release audit` reports `unmeasured_unit_records`.
 - Scoring `parsimony-70-30-v0.4`: the same formula over units.
 
-Results: the two-submission [v5 audit](examples/beta-500-v5/README.md), plus the ten-model and smoke samples, were regenerated with 0.5.0 from the v4 cache snapshot (no downloads). Unit and token churn have a Spearman correlation of 0.99 on the v5 cohorts. The ten-model 70/30 scores moved: GLM-5 and Opus swapped second and third, and Sonnet and Haiku swapped fourth and fifth.
+Results and site: [ten models × 500 tasks](examples/ten-model-500/README.md) with failed patches, a frozen 439-task panel and paired-bootstrap intervals (analyzer commit `b2316a9`, measurement code identical to `54bd8a6`). `python -m parsimony.site` renders it as a static page in `site/index.html`. The two-submission [v5 audit](examples/beta-500-v5/README.md), plus the ten-model and smoke samples, were regenerated with 0.5.0 from the v4 cache snapshot (no downloads). Unit and token churn have a Spearman correlation of 0.99 on the v5 cohorts. The ten-model 70/30 scores moved: GLM-5 and Opus swapped second and third, and Sonnet and Haiku swapped fourth and fifth.
 
 ## 0.4.0-beta — 2026-09-24
 
