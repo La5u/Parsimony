@@ -4,7 +4,7 @@ Among agents that **successfully solve the same SWE-bench issue**, which leave t
 
 Parsimony imports public **SWE-bench Verified** predictions and published evaluation results, statically measures their Python changes, and compares successful solutions. It makes no LLM API calls, runs no SWE-bench reruns, installs nothing from target repositories and never executes submitted code.
 
-> **Status: beta / research prototype.** No official cross-model ranking or validated full-benchmark score exists. Everything in `examples/` is exploratory and must not be read as a model recommendation. Analyzer `0.5.0-beta` replaced lexical tokens with **coding units** (AST elements) as the primary metric (see the [changelog](CHANGELOG.md)). The published audits predate it and are kept for history; they are not comparable.
+> **Status: beta / research prototype.** No official cross-model ranking or validated full-benchmark score exists. Everything in `examples/` is exploratory and must not be read as a model recommendation. Analyzer `0.5.0-beta` replaced lexical tokens with **coding units** (AST elements) as the primary metric (see the [changelog](CHANGELOG.md)). The current [two-submission 500-task audit](examples/beta-500-v5/README.md) uses it. Older audits are kept for history and are not comparable.
 
 ## Quick start
 
@@ -75,7 +75,7 @@ python -m parsimony.release audit population.json all-results.jsonl \
   --dataset verified.jsonl --output coverage.json
 ```
 
-The manifest pins dataset bytes, task IDs/base commits, Python version and analyzer commit. `audit` checks records against it: population, duplicates, base commits, resolve totals and the `analyzer_commit` each 0.4.0 record carries. It reports coverage, statuses, exclusions, zero-footprint, value-only, out-of-scope, lexical and approximate records. This is **coverage reporting, not authenticity certification**. An official score additionally needs a preregistered, deduplicated successful-reference panel covering every frozen task.
+The manifest pins dataset bytes, task IDs/base commits, Python version and analyzer commit. `audit` checks records against it: population, duplicates, base commits, resolve totals and the `analyzer_commit` every record carries since 0.4.0. It reports coverage, statuses, exclusions, zero-footprint, value-only, out-of-scope, lexical and approximate records. This is **coverage reporting, not authenticity certification**. An official score additionally needs a preregistered, deduplicated successful-reference panel covering every frozen task.
 
 ## Artifacts, failed patches and caching
 
@@ -116,14 +116,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). `python -m parsimony.contribute export` 
 
 | Example | Analyzer | What it shows |
 |---|---|---|
-| [beta-500-v4](examples/beta-500-v4/README.md) | 0.4.0-beta | Two complete 500-task cohorts; coverage audit, fresh-artifact recheck |
+| [beta-500-v5](examples/beta-500-v5/README.md) | 0.5.0-beta | Two complete 500-task cohorts in coding units; units vs tokens, coverage audit, fresh-artifact recheck |
+| [beta-500-v4](examples/beta-500-v4/README.md) | 0.4.0-beta | Two complete 500-task cohorts in tokens (superseded by v5) |
 | [beta-500-v3](examples/beta-500-v3/README.md) | 0.3.1-beta | Two complete 500-task cohorts; coverage audit (superseded by v4) |
 | [beta-500-v2 investigation](examples/beta-500-v2/investigation.md) | 0.3.0-beta | Metric blind spots fixed in 0.3.1 |
 | [beta-500](examples/beta-500/README.md) | 0.2.0-beta | First coverage audit (exclusion defect) |
-| [ten-model report](examples/ten-model-report.md), `ten-model-*.json` | 0.4.0-beta | 10 models × 10 shared-success tasks; pipeline demo only |
-| `smoke-results.jsonl` | 0.4.0-beta | Live-artifact smoke test, legacy layout (`--limit 5`, experiments `40f164d`) |
+| [ten-model report](examples/ten-model-report.md), `ten-model-*.json` | 0.5.0-beta | 10 models × 10 shared-success tasks; pipeline demo only |
+| `smoke-results.jsonl` | 0.5.0-beta | Live-artifact smoke test, legacy layout (`--limit 5`, experiments `40f164d`) |
 
-The smoke and ten-model samples were regenerated with 0.4.0 (`python -m examples.run_ten_models` for the latter). Their 0.1.0 versions are in git history.
+The smoke and ten-model samples were regenerated with 0.5.0 (`python -m examples.run_ten_models` for the latter). Earlier versions are in git history.
 
 ## Limits and interpretation
 
@@ -133,7 +134,7 @@ Scope is Python and unified text diffs only: binary/rename-only diffs and quoted
 
 ## Roadmap (priority order)
 
-1. Freeze the full task population and independently reproduce public patch/result artifacts. Publish coverage and missingness before rankings. The [v4 audit](examples/beta-500-v4/README.md) does this for two submissions with a fresh-artifact recheck; more harnesses and independent review remain.
+1. Freeze the full task population and independently reproduce public patch/result artifacts. Publish coverage and missingness before rankings. The [v5 audit](examples/beta-500-v5/README.md) does this for two submissions with a fresh-artifact recheck; more harnesses and independent review remain.
 2. Validate footprint against adversarial patches (identifier-only edits, excluded files, unrelated deletion). Compare alternative metrics without silently changing score versions.
 3. Evaluate score sensitivity to panel composition, weights, failure cap and task mix, with paired uncertainty and per-task outcomes.
 4. Expand to more models and harnesses on the **same frozen tasks**. Add other languages only as separate versioned tracks.

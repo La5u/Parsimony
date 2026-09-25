@@ -2,7 +2,7 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
-## 0.5.0-beta — unreleased
+## 0.5.0-beta — 2026-09-25
 
 Metric change: **coding units replace lexical tokens as the primary footprint.**
 
@@ -13,6 +13,8 @@ Metric change: **coding units replace lexical tokens as the primary footprint.**
 - Tokens remain diagnostics: `tokens_added`, `tokens_deleted`, `net_tokens` and the new `token_churn` (formerly `churn`).
 - `model_human_ratio` is unit churn over human unit churn. `leaderboard` sorts by `median_net_units` and also reports token medians. `release audit` reports `unmeasured_unit_records`.
 - Scoring `parsimony-70-30-v0.4`: the same formula over units.
+
+Results: the two-submission [v5 audit](examples/beta-500-v5/README.md), plus the ten-model and smoke samples, were regenerated with 0.5.0 from the v4 cache snapshot (no downloads). Unit and token churn have a Spearman correlation of 0.99 on the v5 cohorts. The ten-model 70/30 scores moved: GLM-5 and Opus swapped second and third, and Sonnet and Haiku swapped fourth and fifth.
 
 ## 0.4.0-beta — 2026-09-24
 
