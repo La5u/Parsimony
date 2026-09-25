@@ -83,7 +83,7 @@ def audit(panel, records, dataset_path=None):
                                     for r in ok if 'churn' in r['metrics'])
         def value_only(m):
             if 'structural_churn' in m:  # >= 0.4.0: identifier/literal edits count as churn
-                return m['churn'] > 0 and m['structural_churn'] == 0
+                return bool(m['churn']) and m['structural_churn'] == 0
             return m.get('churn') == 0 and m.get('value_sensitive_churn', 0) > 0
         hidden_value_edits = sum(value_only(r['metrics']) for r in ok)
         statuses = {status: sum(r['analysis_status'] == status for r in group.values())
@@ -96,6 +96,7 @@ def audit(panel, records, dataset_path=None):
                            zero_normalized_edit_records=zero_normalized_edits,
                            value_only_edit_records=hidden_value_edits,
                            out_of_scope_successes=sum(out_of_scope(r['metrics']) for r in successful),
+                           unmeasured_unit_records=sum(r['metrics'].get('churn', 0) is None for r in ok),
                            lexical_fallback_records=sum(bool(r['metrics'].get('lexical_files')) for r in ok),
                            approximate_alignment_records=sum(bool(r['metrics'].get('approximate_files')) for r in ok),
                            offset_hunk_records=sum(bool(r['metrics'].get('offset_hunks')) for r in ok),

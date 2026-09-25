@@ -6,14 +6,14 @@ import statistics
 from pathlib import Path
 
 from .benchmark import read_jsonl
-from .scoring import metrics, out_of_scope, percentile, require, unique
+from .scoring import measured, metrics, out_of_scope, percentile, require, unique
 
 
 def contributions(panel, records, net_weight=0.7, failure_cap=25, net_floor=None):
     """Per-task scores; ``net_floor=0`` removes credit for net deletion (anti-deletion variant)."""
     require(0 <= net_weight <= 1 and failure_cap >= 0, 'invalid sensitivity parameters')
     def net(m):
-        return m['net_tokens'] if net_floor is None else max(m['net_tokens'], net_floor)
+        return m['net_units'] if net_floor is None else max(m['net_units'], net_floor)
     unique(records)
     groups = {}
     for r in records:
@@ -27,7 +27,7 @@ def contributions(panel, records, net_weight=0.7, failure_cap=25, net_floor=None
             require(r is not None, f'{agent}: missing task {task}')
             require((r['analyzer_version'], r['python_version']) ==
                     (panel['analyzer_version'], panel['python_version']), 'incompatible analyzer/Python version')
-            require(r['analysis_status'] == 'ok' and r.get('metrics'),
+            require(measured(r),
                     f'{agent}: incomplete measurements for {task}')
             require((r['provenance'].get('repo'), r['provenance'].get('base_commit')) ==
                     (refs[0]['provenance']['repo'], refs[0]['provenance']['base_commit']),
@@ -43,7 +43,7 @@ def contributions(panel, records, net_weight=0.7, failure_cap=25, net_floor=None
                 require(bool(categories & {'unresolved', 'failed', 'not_resolved'}) and 'no_logs' not in categories,
                         f'{agent}: unknown failure category on {task}')
                 scale = max(1, statistics.median(ref['metrics']['churn'] for ref in refs))
-                growth = max(m['net_tokens'], 0)
+                growth = max(m['net_units'], 0)
                 values[task] = -failure_cap * (net_weight * growth / (scale + growth) +
                                                 (1 - net_weight) * m['churn'] / (scale + m['churn']))
         out[agent] = values

@@ -4,7 +4,7 @@ Among agents that **successfully solve the same SWE-bench issue**, which leave t
 
 Parsimony imports public **SWE-bench Verified** predictions and published evaluation results, statically measures their Python changes, and compares successful solutions. It makes no LLM API calls, runs no SWE-bench reruns, installs nothing from target repositories and never executes submitted code.
 
-> **Status: beta / research prototype.** No official cross-model ranking or validated full-benchmark score exists. Everything in `examples/` is exploratory and must not be read as a model recommendation. Analyzer `0.4.0-beta` changed the metric (see the [changelog](CHANGELOG.md)). The current [two-submission 500-task audit](examples/beta-500-v4/README.md) uses it. Older audits are kept for history and are not comparable.
+> **Status: beta / research prototype.** No official cross-model ranking or validated full-benchmark score exists. Everything in `examples/` is exploratory and must not be read as a model recommendation. Analyzer `0.5.0-beta` replaced lexical tokens with **coding units** (AST elements) as the primary metric (see the [changelog](CHANGELOG.md)). The published audits predate it and are kept for history; they are not comparable.
 
 ## Quick start
 
@@ -40,14 +40,14 @@ Output has one record per agent/task, including failures, unavailable analyses a
 
 1. **Correctness gate.** Only tasks listed as resolved in the published results earn efficiency credit. The resolve rate is published resolved / 500. Parsimony trusts published evaluation and does not revalidate correctness.
 2. **Before vs. after.** Each touched implementation file is fetched at the dataset's exact `base_commit`, and the patch is applied in memory with strict position/context validation. Unapplicable patches are recorded as errors, never scored as zero. Network failures are recorded as retryable `fetch_error`.
-3. **Normalized tokens.** Parseable Python is canonicalized with `ast` (docstrings removed, `ast.unparse`) and then tokenized. Comments, whitespace, indentation width, redundant parentheses, quote style and optional trailing commas are ignored. Canonical `INDENT`/`DEDENT` block boundaries, keywords, operators, **identifiers and literals** are kept. If either side of a file fails to parse, both sides are tokenized lexically (`lexical_files`).
-4. **Alignment.** Token counts come from an exact minimum edit script (Myers diff). Rewrites needing more than 500 token edits use a line-anchored approximation and are flagged (`approximate_files`).
-5. **Footprint.** `net_tokens = added − deleted`, `churn = added + deleted`. Negative net is genuine shrinking. `files_changed` counts implementation files whose normalized tokens differ. The `structural_churn` diagnostic maps identifiers/literals to placeholders (the pre-0.4 primary metric).
+3. **Coding units.** Each side is parsed with `ast` (docstrings removed) and walked in source order. A unit is one syntactic element: a statement (`if`, `return`, assignment, `def`), an expression (call, attribute access, arithmetic or boolean operation), each comparison, a name or a literal. Each statement block also ends with one `EndBlock` unit, so nesting and moving code into or out of a block count. Punctuation, brackets, commas, load/store markers, comments, formatting and name length are not units: `if x.count(y) > 0: foo(a, b)` is 12 units. Units are unknown (null), never zero, when a file does not parse on both sides (`lexical_files`).
+4. **Alignment.** Unit counts come from an exact minimum edit script (Myers diff) over the unit sequence. Rewrites needing more than 500 edits use a line-anchored approximation and are flagged (`approximate_files`).
+5. **Footprint.** `net_units = added − deleted`, `churn = added + deleted`. Negative net is genuine shrinking. A renamed name or changed literal is one changed unit; the `structural_churn` diagnostic ignores identifier/literal values. The pre-0.5 metric, normalized lexical tokens (`net_tokens`, `token_churn`), remains a diagnostic. `files_changed` counts implementation files whose normalized code differs.
 6. **Scope.** Only `.py` implementation files count. Excluded: test/doc/example/benchmark directories, test filenames, `setup.py`/`conftest.py`, generated files (header comments only), protobuf output, migration scripts, vendored and build output. Django's `db/migrations/` and `test/` framework packages count as implementation. Every record lists `touched_files` and `excluded_files`. See `implementation()` for the exact rules.
 7. **Structure (diagnostic).** Full-file AST-node delta and a simple cyclomatic proxy delta (functions/lambdas, branches, loops, handlers, extra boolean operands, comprehension loops/filters, non-default match cases). These are null if either side does not parse.
 8. **Human comparison.** The dataset's human `patch` (not `test_patch`) is measured identically. `model_human_ratio` = model churn / human churn, or null when the human churn is zero.
 
-`leaderboard` reports medians (net, churn, human ratio, files, AST and complexity deltas), sample counts and resolve rate, sorted by median net tokens. `--shared` uses the intersection of resolved **and** analyzable tasks, which avoids task-mix confounding but can favor easy tasks.
+`leaderboard` reports medians (net, churn, human ratio, files, AST and complexity deltas), sample counts and resolve rate, sorted by median net units. `--shared` uses the intersection of resolved **and** analyzable tasks, which avoids task-mix confounding but can favor easy tasks.
 
 ## Experimental single score (70% net / 30% churn)
 
@@ -129,7 +129,7 @@ The smoke and ten-model samples were regenerated with 0.4.0 (`python -m examples
 
 **Code footprint is not technical debt.** Small code can be cryptic, incorrect beyond the benchmark tests, insecure or hard to maintain. Larger changes may add valuable validation. Human patches are a baseline, not an optimum. Net-weighted scores reward deletion, and SWE-bench tests do not protect untested code, so check the `net_floor` sensitivity variant.
 
-Scope is Python and unified text diffs only: binary/rename-only diffs and quoted paths are unsupported. There is no call-graph, runtime, maintainability or behavioral-equivalence modeling. Path and generated-file filters are heuristic. Interpreter tokenizer/AST changes (notably f-strings) change results.
+Scope is Python and unified text diffs only: binary/rename-only diffs and quoted paths are unsupported. There is no call-graph, runtime, maintainability or behavioral-equivalence modeling. Path and generated-file filters are heuristic. Interpreter tokenizer/AST changes (notably f-strings) change results. Coding units measure size and nesting, not readability: a test-specific hardcoded branch can cost fewer units than a general fix.
 
 ## Roadmap (priority order)
 

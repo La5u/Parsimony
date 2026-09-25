@@ -9,8 +9,8 @@ def record(agent='a', task='task', net=10, churn=10, resolved=True):
                 analyzer_version='0.1', python_version='3.14', resolve_rate=0.5,
                 published_result_categories=['resolved' if resolved else 'unresolved'],
                 provenance=dict(repo='org/repo', base_commit='abc'),
-                metrics=dict(mode='full_file', net_tokens=net, churn=churn,
-                             tokens_added=(churn + net) // 2, tokens_deleted=(churn - net) // 2))
+                metrics=dict(mode='full_file', net_units=net, churn=churn,
+                             units_added=(churn + net) // 2, units_deleted=(churn - net) // 2))
 
 
 class ScoringTests(unittest.TestCase):
