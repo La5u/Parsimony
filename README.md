@@ -110,7 +110,7 @@ python -m parsimony.snapshot restore cache-v4.tar.gz --cache .parsimony-cache  #
 
 ## Website
 
-`python -m parsimony.site PANEL RECORDS... --output site/index.html` renders a single self-contained page from a frozen panel and measured JSONL, offline: leaderboard with paired-bootstrap intervals, method, a per-task explorer and limits. [`site/index.html`](site/index.html) is built from the [ten-model × 500-task results](examples/ten-model-500/README.md) and can be served as is (for example with GitHub Pages from `/site`). Edit `site/template.html` for layout and copy.
+`python -m parsimony.site PANEL RECORDS... --output site/index.html` renders a single self-contained page from a frozen panel and measured JSONL, offline: leaderboard with 95% intervals, a short method, per-task results and limits. [`site/index.html`](site/index.html) is built from the [ten-model × 500-task results](examples/ten-model-500/README.md) and can be served as is (for example with GitHub Pages from `/site`). Edit `site/template.html` for layout and copy.
 
 ## Contributing
 
