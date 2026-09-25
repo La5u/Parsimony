@@ -138,7 +138,7 @@ Two equally weighted tasks scoring 34 and −12.5 produce `(34 − 12.5) / 2 = 1
 ```sh
 # Freeze once; use a new name/path for a changed panel.
 python -m parsimony.scoring freeze examples/ten-model-results.jsonl \
-  --name ten-model-ten-task-70-30-v0.3 \
+  --name ten-model-ten-task-70-30-v0.4 \
   --output examples/ten-model-score-panel.json
 
 # Recompute scores from already-measured JSONL, with no patch analysis.

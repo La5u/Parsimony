@@ -1,6 +1,6 @@
 # 10 models × 10 shared tasks
 
-> **Regenerated with analyzer 0.4.0-beta** (commit `2d4cec6`, Python 3.14.7). Same plan, tasks, pinned experiments commit and dataset checksum as the original 0.1.0 run, which is kept in git history (commit `51857a0`). The 70/30 score ranking is unchanged, and every score moved by less than one point. In the median-net table, Claude Sonnet 4.5 and MiniMax M2.5 swapped ranks 2 and 3. This is still a pipeline demo, not a model ranking.
+> **Regenerated with analyzer 0.5.0-beta** (commit `54bd8a6`, Python 3.14.7), which measures **coding units** (AST elements) instead of lexical tokens. Same plan, tasks, pinned experiments commit and dataset checksum as the original 0.1.0 run; the 0.4.0 version is in git history (commit `f621010`). This is still a pipeline demo, not a model ranking.
 
 All 10 submissions use **mini-SWE-agent v2.0.0**, dated 2026-02-17. This is a small matched-task sample, not an overall model ranking. No agent code or tests were executed.
 
@@ -21,20 +21,20 @@ All **100 model-patch analyses and 100 corresponding human-reference analyses su
 
 ## Sample ranking
 
-Lower median net normalized-token delta ranks first. Churn is added plus deleted tokens, reported separately; a smaller net delta does not necessarily mean less editing.
+Lower median net coding-unit delta ranks first. Churn is units added plus deleted, reported separately; a smaller net delta does not necessarily mean less editing. Token medians (the pre-0.5 metric) are shown for comparison.
 
-| Rank | Model | Median net tokens | Median churn | Published resolve rate |
-|---|---|---:|---:|---:|
-| 1 | Claude Opus 4.6 | +2 | 12.5 | 75.6% |
-| 2 | Claude Sonnet 4.5 (high) | +6 | 12.5 | 71.4% |
-| 3 | MiniMax M2.5 (high) | +6.5 | 13 | 75.8% |
-| 4 | Kimi K2.5 (high) | +8.5 | 11.5 | 70.8% |
-| 5 | Claude Haiku 4.5 (high) | +10 | 11.5 | 66.6% |
-| 6 | Gemini 3 Flash (high) | +10.5 | 29 | 75.8% |
-| 7 | GLM-5 (high) | +14.5 | 17.5 | 72.8% |
-| 8 | GPT-5 mini | +14.5 | 19.5 | 56.2% |
-| 9 | GPT-5.2 (high) | +21 | 29 | 72.8% |
-| 10 | DeepSeek V3.2 (high) | +27.5 | 43 | 70.0% |
+| Rank | Model | Median net units | Median unit churn | Median net tokens | Median token churn | Published resolve rate |
+|---|---|---:|---:|---:|---:|---:|
+| 1 | Claude Opus 4.6 | +2 | 10 | +2 | 12.5 | 75.6% |
+| 2 | MiniMax M2.5 (high) | +4 | 10 | +6.5 | 13 | 75.8% |
+| 3 | Claude Sonnet 4.5 (high) | +4.5 | 10 | +6 | 12.5 | 71.4% |
+| 4 | Kimi K2.5 (high) | +6.5 | 11 | +8.5 | 11.5 | 70.8% |
+| 5 | Gemini 3 Flash (high) | +7 | 20 | +10.5 | 29 | 75.8% |
+| 6 | Claude Haiku 4.5 (high) | +7.5 | 10 | +10 | 11.5 | 66.6% |
+| 7 | GLM-5 (high) | +9.5 | 11 | +14.5 | 17.5 | 72.8% |
+| 8 | GPT-5 mini | +9.5 | 13.5 | +14.5 | 19.5 | 56.2% |
+| 9 | GPT-5.2 (high) | +15.5 | 19.5 | +21 | 29 | 72.8% |
+| 10 | DeepSeek V3.2 (high) | +20.5 | 29 | +27.5 | 43 | 70.0% |
 
 ## Experimental 70/30 equal-task score
 
@@ -42,14 +42,14 @@ The same cached measurements also have a frozen-panel score: **70% net-token per
 
 | Rank | Model | Parsimony Score |
 |---|---|---:|
-| 1 | Kimi K2.5 (high) | 64.16 |
-| 2 | Claude Opus 4.6 | 62.63 |
-| 3 | GLM-5 (high) | 61.84 |
-| 4 | Claude Haiku 4.5 (high) | 58.17 |
-| 5 | Claude Sonnet 4.5 (high) | 56.84 |
-| 6 | MiniMax M2.5 (high) | 50.30 |
-| 7 | GPT-5 mini | 43.03 |
-| 8 | Gemini 3 Flash (high) | 41.39 |
+| 1 | Kimi K2.5 (high) | 63.37 |
+| 2 | GLM-5 (high) | 62.83 |
+| 3 | Claude Opus 4.6 | 60.05 |
+| 4 | Claude Sonnet 4.5 (high) | 56.19 |
+| 5 | Claude Haiku 4.5 (high) | 55.40 |
+| 6 | MiniMax M2.5 (high) | 52.13 |
+| 7 | GPT-5 mini | 45.01 |
+| 8 | Gemini 3 Flash (high) | 43.37 |
 | 9 | GPT-5.2 (high) | 33.82 |
 | 10 | DeepSeek V3.2 (high) | 32.83 |
 
@@ -57,7 +57,7 @@ All ten models solved all ten selected tasks, so failure penalties are zero **in
 
 The ranking change reflects **both** adding churn and replacing a median raw-token summary with an equal-task mean of normalized percentiles. Do not attribute it solely to the 30% churn weight. The sample is still too small for robust model-superiority claims.
 
-Paired-task bootstrap 95% intervals (`python -m parsimony.sensitivity`) span roughly 20 points per model and overlap across the top six. No model is the top scorer in more than 37% of resamples, and the `net_floor=0` anti-deletion variant changes no rank.
+Compared with the 0.4.0 token scores, GLM-5 and Opus swapped second and third, Sonnet and Haiku swapped fourth and fifth, and Kimi and the bottom five kept their ranks. Paired-task bootstrap 95% intervals (`python -m parsimony.sensitivity`) span roughly 20 points per model and overlap across the top six. No model is the top scorer in more than 35% of resamples, and the `net_floor=0` anti-deletion variant changes no rank.
 
 See `ten-model-score-panel.json`, `ten-model-scores.json`, and [the scoring specification](../docs/scoring.md).
 
@@ -65,9 +65,9 @@ See `ten-model-score-panel.json`, `ten-model-scores.json`, and [the scoring spec
 
 These are ten tasks from ten repositories, selected from the shared-solved intersection. That intersection favors easier tasks, and the one-task-per-repository sampling is not representative of SWE-bench's repository distribution. Ten tasks remain too few for a strong general claim; rankings changed substantially from the three-task sample.
 
-Under 0.1.0, the Django and pytest human patches measured zero churn, because identifier and literal edits were normalized away. For example, the Django fix changes `_default_manager` to `_base_manager`. Since 0.4.0 these real semantic edits count (Django churn 2, pytest 10), so model/human ratios now cover all ten tasks.
+Under 0.1.0, the Django and pytest human patches measured zero churn, because identifier and literal edits were normalized away. For example, the Django fix changes `_default_manager` to `_base_manager`. Since 0.4.0 these real semantic edits count (Django churn 2 units, pytest 10), so model/human ratios now cover all ten tasks.
 
-Full per-task token, AST and complexity deltas are retained in JSONL. Medians can conceal variation between individual patches. Parsimony measures footprint, not semantic correctness beyond published evaluation or all technical debt.
+Full per-task unit, token, AST and complexity deltas are retained in JSONL. Medians can conceal variation between individual patches. Parsimony measures footprint, not semantic correctness beyond published evaluation or all technical debt.
 
 ## Reproduce and inspect
 
