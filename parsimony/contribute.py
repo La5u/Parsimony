@@ -55,14 +55,21 @@ def check_records(records, agent):
                 'unresolved metrics require an explicit failed category')
         m = r['metrics']
         require(m['mode'] == 'full_file', 'patch-only estimates are not accepted as full-file contributions')
-        for key in ('tokens_added', 'tokens_deleted', 'churn', 'files_changed'):
+        for key in ('tokens_added', 'tokens_deleted', 'token_churn', 'files_changed'):
             require(type(m[key]) is int and m[key] >= 0, f'invalid {key}')
         require(m['net_tokens'] == m['tokens_added'] - m['tokens_deleted'], 'net token mismatch')
-        require(m['churn'] == m['tokens_added'] + m['tokens_deleted'], 'churn mismatch')
+        require(m['token_churn'] == m['tokens_added'] + m['tokens_deleted'], 'token churn mismatch')
+        # Unit fields are all None when a file does not parse, otherwise consistent integers.
+        units = [m[key] for key in ('units_added', 'units_deleted', 'net_units', 'churn', 'structural_churn')]
+        require(all(u is None for u in units) or all(type(u) is int for u in units), 'partial unit metrics')
+        if m['churn'] is not None:
+            require(min(units[0], units[1], units[3], units[4]) >= 0, 'invalid unit counts')
+            require(m['net_units'] == m['units_added'] - m['units_deleted'], 'net unit mismatch')
+            require(m['churn'] == m['units_added'] + m['units_deleted'], 'churn mismatch')
         require(provenance.get('base_commit') and provenance.get('repo') and provenance.get('patch_sha256'),
                 'full-file source and patch provenance required')
         human = r.get('human_metrics')
-        expected_ratio = m['churn'] / human['churn'] if human and human['churn'] else None
+        expected_ratio = m['churn'] / human['churn'] if human and human['churn'] and m['churn'] is not None else None
         require(r.get('model_human_ratio') == expected_ratio, 'model/human ratio mismatch')
     require(len(signatures) == 1, 'mixed analyzer/Python versions or resolve totals')
     require(len(ids) <= 500, 'too many Verified tasks')

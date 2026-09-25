@@ -2,6 +2,18 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## 0.5.0-beta — unreleased
+
+Metric change: **coding units replace lexical tokens as the primary footprint.**
+
+- A unit is one AST element: a statement, an expression (call, attribute access, arithmetic/boolean operation), each comparison in a chain, a name or a literal. Operators are folded into their expression, and load/store markers and containers (`Expr`, `arguments`, `withitem`, `FormattedValue`) are not units. Punctuation no longer counts: `foo(a, b)` was 6 tokens and is 4 units, and an `if` statement is its header plus one `EndBlock` unit.
+- `EndBlock` ends every statement block (`body`, `else`, `finally`), so moving a statement into or out of a block is an edit and nesting costs a unit.
+- Units are aligned with the existing Myers diff over the preorder unit sequence. `net_units`, `units_added`, `units_deleted` and `churn` are primary. `structural_churn` is now unit churn with identifier/literal values ignored.
+- Units are null (unknown) when any measured file does not parse on both sides. Scoring treats such records as missing measurements and gives them bounds.
+- Tokens remain diagnostics: `tokens_added`, `tokens_deleted`, `net_tokens` and the new `token_churn` (formerly `churn`).
+- `model_human_ratio` is unit churn over human unit churn. `leaderboard` sorts by `median_net_units` and also reports token medians. `release audit` reports `unmeasured_unit_records`.
+- Scoring `parsimony-70-30-v0.4`: the same formula over units.
+
 ## 0.4.0-beta — 2026-09-24
 
 Metric changes:

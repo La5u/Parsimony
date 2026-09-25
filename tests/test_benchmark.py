@@ -25,14 +25,14 @@ def edit(path='pkg/core.py'):
 def record(agent, task, resolved=True, net=1):
     return dict(agent=agent, task_id=task, resolved=resolved, resolve_rate=0.5,
                 analysis_status='ok', model_human_ratio=None,
-                metrics=dict(mode='full_file', net_tokens=net, churn=abs(net),
+                metrics=dict(mode='full_file', net_units=net, churn=abs(net),
                              files_changed=1, ast_delta=net, complexity_delta=0))
 
 
 class BenchmarkTests(unittest.TestCase):
     def test_failed_never_ranked(self):
         rows = leaderboard([record('a', '1', False, -999), record('a', '2', True, 10)])
-        self.assertEqual(rows[0]['median_net_tokens'], 10)
+        self.assertEqual(rows[0]['median_net_units'], 10)
         self.assertEqual(rows[0]['successful_tasks_analyzed'], 1)
 
     def test_shared(self):
@@ -50,7 +50,7 @@ class BenchmarkTests(unittest.TestCase):
 
     def test_empty_shared_is_not_zero_score(self):
         rows = leaderboard([record('a', '1'), record('b', '2')], shared=True)
-        self.assertTrue(all(r['median_net_tokens'] is None for r in rows))
+        self.assertTrue(all(r['median_net_units'] is None for r in rows))
 
     def test_correctness_gate_and_limit_keep_denominator(self):
         submission = dict(agent='a', predictions={'a': '', 'b': '', 'c': ''}, resolved={'a', 'b'},

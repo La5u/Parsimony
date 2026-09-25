@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .benchmark import read_jsonl
 
-VERSION = 'parsimony-70-30-v0.3'
+VERSION = 'parsimony-70-30-v0.4'
 
 
 def require(condition, message):
@@ -17,12 +17,17 @@ def require(condition, message):
 
 def metrics(m):
     require(m and m.get('mode') == 'full_file', 'full-file metrics required')
-    for key in ('tokens_added', 'tokens_deleted', 'churn'):
+    for key in ('units_added', 'units_deleted', 'churn'):
         require(type(m[key]) is int and m[key] >= 0, f'invalid {key}')
-    require(type(m['net_tokens']) is int, 'integer net delta required')
-    require(m['net_tokens'] == m['tokens_added'] - m['tokens_deleted'], 'net mismatch')
-    require(m['churn'] == m['tokens_added'] + m['tokens_deleted'], 'churn mismatch')
+    require(type(m['net_units']) is int, 'integer net delta required')
+    require(m['net_units'] == m['units_added'] - m['units_deleted'], 'net mismatch')
+    require(m['churn'] == m['units_added'] + m['units_deleted'], 'churn mismatch')
     return m
+
+
+def measured(r):
+    """Complete full-file unit measurements (units are None when a file does not parse)."""
+    return r['analysis_status'] == 'ok' and bool(r.get('metrics')) and r['metrics'].get('churn') is not None
 
 
 def out_of_scope(m):
@@ -46,7 +51,7 @@ def freeze(records, name):
     require(len(versions) == 1, 'mixed analyzer/Python versions')
     tasks = {r['task_id']: [] for r in records}
     for r in records:
-        if not r['resolved'] or r['analysis_status'] != 'ok':
+        if not r['resolved'] or not measured(r):
             continue
         if out_of_scope(metrics(r['metrics'])):
             continue  # an unmeasured patch cannot calibrate footprint percentiles
@@ -83,7 +88,7 @@ def task_score(record, refs):
         return dict(status='no_attempt', score=0, lower=0, upper=0)
     if not resolved and (not failed or 'no_logs' in categories):
         return dict(status='unknown', score=None, lower=-25, upper=100)
-    if record['analysis_status'] != 'ok' or record.get('metrics') is None:
+    if not measured(record):
         return dict(status='missing_metrics', score=None,
                     lower=1 if resolved else -25, upper=100 if resolved else 0)
     m = metrics(record['metrics'])
@@ -95,13 +100,13 @@ def task_score(record, refs):
     require((actual.get('repo'), actual.get('base_commit')) == (expected['repo'], expected['base_commit']),
             'candidate base repository/commit differs from frozen reference')
     if resolved:
-        net = percentile(m['net_tokens'], [r['metrics']['net_tokens'] for r in refs])
+        net = percentile(m['net_units'], [r['metrics']['net_units'] for r in refs])
         churn = percentile(m['churn'], [r['metrics']['churn'] for r in refs])
         score = 1 + 99 * (0.7 * net + 0.3 * churn)
         details = dict(net_percentile=net, churn_percentile=churn)
     else:
         scale = max(1, statistics.median(r['metrics']['churn'] for r in refs))
-        growth = max(m['net_tokens'], 0)
+        growth = max(m['net_units'], 0)
         burden = 0.7 * growth / (scale + growth) + 0.3 * m['churn'] / (scale + m['churn'])
         score = -25 * burden
         details = dict(failure_scale=scale, failure_burden=burden)

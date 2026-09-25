@@ -1,14 +1,14 @@
-# Parsimony scoring specification — experimental v0.3
+# Parsimony scoring specification — experimental v0.4
 
 **Status:** the offline calculator is implemented as `python -m parsimony.scoring`. It consumes existing full-file JSONL; it does not download artifacts, tokenize patches or execute code. The existing `leaderboard` command still reports medians separately. This is an experimental scoring rule, not a validated official benchmark release.
 
-v0.3 differs from v0.2 only in the `out_of_scope` rule; the ten-model sample scores are numerically unchanged.
+v0.4 applies the v0.3 rule to coding units (`net_units`, unit `churn`, analyzer 0.5.0) instead of normalized tokens. A record whose units are unknown (a file does not parse) gets bounds, like any missing measurement. v0.3 differed from v0.2 only in the `out_of_scope` rule.
 
 ## 1. Goals
 
 - Every task contributes equally, independent of repository or patch size.
 - Only published successful solutions receive positive efficiency credit.
-- **70% net normalized-token delta / 30% churn**, after per-task normalization.
+- **70% net coding-unit delta / 30% churn**, after per-task normalization.
 - Failed attempts receive bounded, nonpositive footprint penalties.
 - A frozen reference panel prevents scores drifting as entrants change.
 
@@ -26,7 +26,7 @@ An official release would additionally freeze the dataset revision/checksum, exa
 
 ## 3. Successful-task score: blend normalized percentiles
 
-For task `t`, let `D` be net normalized tokens (added minus deleted) and `H` be churn (added plus deleted). For either metric `x`, smaller is better. Against that task's frozen successful references:
+For task `t`, let `D` be net coding units (added minus deleted) and `H` be churn (added plus deleted). For either metric `x`, smaller is better. Against that task's frozen successful references:
 
 ```text
 p_x = (number of references with a larger x
@@ -37,11 +37,11 @@ footprint_percentile = 0.70 × p_D + 0.30 × p_H
 successful_task_score = 1 + 99 × footprint_percentile
 ```
 
-**Normalize first, blend second.** Do not mix raw net/churn counts across tasks. A task involving thousands of tokens gets the same influence as a small fix. More deletion improves the net component; more churn lowers the churn component. Unlike lexicographic ordering, high churn can outweigh a small net-percentile advantage.
+**Normalize first, blend second.** Do not mix raw net/churn counts across tasks. A task involving thousands of units gets the same influence as a small fix. More deletion improves the net component; more churn lowers the churn component. Unlike lexicographic ordering, high churn can outweigh a small net-percentile advantage.
 
 Success scores are from 1 to 100. Tying every reference on both metrics yields 50.5. Beating every reference on both gives 100. Matching a human patch does not necessarily mean 50.5: calibration uses the frozen submission panel, not the human alone.
 
-Percentiles are coarse when reference counts are small. They also saturate: exceeding the largest reference by ten tokens or a million tokens yields the same component percentile. Always report raw footprint metrics alongside the score. The blend penalizes rewrites more than net-only ordering but does not eliminate all gaming or replace review of exclusions.
+Percentiles are coarse when reference counts are small. They also saturate: exceeding the largest reference by ten units or a million units yields the same component percentile. Always report raw footprint metrics alongside the score. The blend penalizes rewrites more than net-only ordering but does not eliminate all gaming or replace review of exclusions.
 
 ## 4. Failed-task score: same 70/30 priorities, no deletion credit
 
@@ -59,7 +59,7 @@ failed_task_score = −25 × failure_burden
 
 - Failures score between −25 and 0, never positive efficiency credit.
 - A verified zero-footprint failure scores 0: neutral, not success.
-- Deletion earns no credit on failure: negative net is clamped to zero, while deleted tokens still contribute to churn.
+- Deletion earns no credit on failure: negative net is clamped to zero, while deleted units still contribute to churn.
 - Increasing growth or churn cannot improve a failure's score.
 - The scale floor handles all-zero reference patches; bounding limits the effect of one enormous failed attempt.
 
@@ -69,7 +69,7 @@ The **25-point cap is provisional**. `python -m parsimony.sensitivity` also repo
 
 **Not on the same task.** Even the worst success scores 1; the best failure scores 0. Otherwise doing nothing could beat difficult but correct implementations. Bulky successes can rank poorly among successful solutions without being treated as failures.
 
-This does not claim every passing patch is maintainable or safe. If a benchmark has an independently defined validity/security requirement, adjudicate it explicitly rather than inferring invalidity from patch size. High AST/cyclomatic growth can still go unpenalized by token metrics: report it, do not silently change the scoring rule.
+This does not claim every passing patch is maintainable or safe. If a benchmark has an independently defined validity/security requirement, adjudicate it explicitly rather than inferring invalidity from patch size. High AST/cyclomatic growth can still go unpenalized by unit counts: report it, do not silently change the scoring rule.
 
 ## 5. Equal-weight single score
 

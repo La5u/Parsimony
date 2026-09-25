@@ -376,6 +376,81 @@ def token_diff(a_lines, b_lines):
     return added, deleted, True
 
 
+# Syntax that is not a coding unit of its own: load/store markers, operators
+# (folded into their expression's label) and pure containers.
+NON_UNITS = (ast.expr_context, ast.operator, ast.unaryop, ast.cmpop, ast.boolop,
+             ast.Module, ast.Expr, ast.arguments, ast.withitem, ast.FormattedValue)
+
+
+def unit_labels(node, keep_values=True):
+    """Coding units a node contributes: one per statement, expression, name or literal.
+
+    A comparison chain counts one unit per comparison and a boolean operation
+    one per extra operand. Without values, identifiers/literals become their
+    node type, like ``structural_churn``'s placeholders.
+    """
+    kind = type(node).__name__
+    if isinstance(node, NON_UNITS):
+        return []
+    if isinstance(node, ast.Compare):
+        return [f'Compare:{type(op).__name__}' for op in node.ops]
+    if isinstance(node, ast.BoolOp):
+        return [f'BoolOp:{type(node.op).__name__}'] * (len(node.values) - 1)
+    if isinstance(node, (ast.BinOp, ast.AugAssign, ast.UnaryOp)):
+        return [f'{kind}:{type(node.op).__name__}']
+    if isinstance(node, (ast.Global, ast.Nonlocal)):
+        return [f'{kind}:{name}' if keep_values else kind for name in node.names]
+    if not keep_values:
+        return [kind]
+    if isinstance(node, ast.Constant):
+        return [f'Constant:{node.value!r}']
+    # Identifiers (Name.id, Attribute.attr, FunctionDef.name, arg.arg, keyword.arg,
+    # alias names, ImportFrom.module, MatchClass.kwd_attrs, ...) are part of the unit.
+    names = [value for field, value in ast.iter_fields(node) if isinstance(value, str)]
+    names += [item for field, value in ast.iter_fields(node) if isinstance(value, list)
+              for item in value if isinstance(item, str)]
+    return [':'.join([kind, *names])]
+
+
+END_BLOCK = 'EndBlock'
+
+
+def unit_lines(root, keep_values=True) -> list[tuple]:
+    """Preorder coding units of a docstring-free tree, grouped into runs by source line.
+
+    Each statement block (a body, ``else`` or ``finally``) ends with one
+    ``EndBlock`` unit, so moving a statement into or out of a block is an edit
+    and every level of nesting costs a unit.
+    """
+    lines = []
+    stack = [(root, 0)]
+    while stack:
+        node, line = stack.pop()
+        if node is END_BLOCK:
+            labels = [END_BLOCK]
+        else:
+            line = getattr(node, 'lineno', line)
+            labels = unit_labels(node, keep_values)
+        if labels:
+            if lines and lines[-1][0] == line:
+                lines[-1][1].extend(labels)
+            else:
+                lines.append((line, labels))
+        if node is END_BLOCK:
+            continue
+        children = []
+        for field, value in ast.iter_fields(node):
+            if isinstance(value, ast.AST):
+                children.append(value)
+            elif isinstance(value, list):
+                children.extend(item for item in value if isinstance(item, ast.AST))
+                if (field in ('body', 'orelse', 'finalbody') and value and isinstance(value[0], ast.stmt)
+                        and not isinstance(node, ast.Module)):
+                    children.append(END_BLOCK)
+        stack.extend((child, line) for child in reversed(children))
+    return [tuple(labels) for _, labels in lines]
+
+
 def structure(source: str, stripped=None):
     """AST node count and cyclomatic proxy; ``stripped`` is a tree already without docstrings."""
     if stripped is None:
@@ -401,9 +476,17 @@ def structure(source: str, stripped=None):
 
 
 def measure(patch: str, get_source=None) -> dict:
-    """get_source(path) provides exact base-commit text; otherwise estimate hunks."""
-    totals = dict(tokens_added=0, tokens_deleted=0, net_tokens=0, churn=0,
-                  structural_churn=0, files_changed=0, ast_delta=0, complexity_delta=0)
+    """get_source(path) provides exact base-commit text; otherwise estimate hunks.
+
+    The primary footprint counts coding units (``unit_lines``); normalized
+    lexical tokens remain a diagnostic. Unit fields are None when any measured
+    file does not parse on both sides, since units need a syntax tree.
+    """
+    totals = dict(units_added=0, units_deleted=0, net_units=0, churn=0, structural_churn=0,
+                  tokens_added=0, tokens_deleted=0, net_tokens=0, token_churn=0,
+                  files_changed=0, ast_delta=0, complexity_delta=0)
+    unit_fields = ('units_added', 'units_deleted', 'net_units', 'churn', 'structural_churn')
+    units_known = True
     offsets = []
     excluded = []
     touched = []
@@ -436,22 +519,27 @@ def measure(patch: str, get_source=None) -> dict:
         if not parsed:
             lexical.append(path)
         la, lb = (lexemes(canonical(root) if parsed else text) for root, text in zip(roots, (before, after)))
-        # Primary footprint retains identifiers and literals, so a changed name
-        # or constant is a changed token rather than a free edit.
         a, b = group_lines(la), group_lines(lb)
         added, deleted, rough = token_diff(a, b)
         totals['tokens_added'] += added
         totals['tokens_deleted'] += deleted
-        # Diagnostic: identifier/literal-insensitive churn (the pre-0.4 metric).
-        s_added, s_deleted, s_rough = token_diff(group_lines(la, False), group_lines(lb, False))
-        totals['structural_churn'] += s_added + s_deleted
-        if rough or s_rough:
+        if parsed:
+            # canonical() already stripped docstrings from these trees.
+            added, deleted, rough_units = token_diff(*(unit_lines(root) for root in roots))
+            # Diagnostic: identifier/literal-insensitive unit churn.
+            s_added, s_deleted, s_rough = token_diff(*(unit_lines(root, False) for root in roots))
+            totals['units_added'] += added
+            totals['units_deleted'] += deleted
+            totals['structural_churn'] += s_added + s_deleted
+            rough = rough or rough_units or s_rough
+        else:
+            units_known = False
+        if rough:
             approximate.append(path)
         # Count implementation files with actual normalized changes, not formatting-only files.
         totals['files_changed'] += int(a != b)
         if get_source:
-            # canonical() already stripped docstrings from these trees; stripping
-            # twice would also drop a string statement that became first.
+            # Stripping docstrings twice would also drop a string statement that became first.
             sa, sb = (structure('', stripped=root) if parsed else None for root in roots)
             if sa is None or sb is None:
                 totals['ast_delta'] = totals['complexity_delta'] = None
@@ -459,6 +547,10 @@ def measure(patch: str, get_source=None) -> dict:
                 totals['ast_delta'] += sb[0] - sa[0]
                 totals['complexity_delta'] += sb[1] - sa[1]
     totals['net_tokens'] = totals['tokens_added'] - totals['tokens_deleted']
-    totals['churn'] = totals['tokens_added'] + totals['tokens_deleted']
+    totals['token_churn'] = totals['tokens_added'] + totals['tokens_deleted']
+    totals['net_units'] = totals['units_added'] - totals['units_deleted']
+    totals['churn'] = totals['units_added'] + totals['units_deleted']
+    if not units_known:
+        totals.update(dict.fromkeys(unit_fields))
     return {**totals, 'mode': mode, 'touched_files': touched, 'excluded_files': excluded,
             'lexical_files': lexical, 'approximate_files': approximate, 'offset_hunks': len(offsets)}

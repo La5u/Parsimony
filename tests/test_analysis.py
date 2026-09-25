@@ -1,10 +1,11 @@
+import ast
 import difflib
 import random
 import time
 import unittest
 
 from parsimony.analysis import (apply_patch, generated, implementation, measure, myers, myers_blocks,
-                                normalized_tokens, parse_patch, structure, token_diff)
+                                normalized_tokens, parse_patch, structure, token_diff, unit_lines)
 
 
 def diff(before, after, path='pkg/core.py', old=None, new=None):
@@ -43,10 +44,38 @@ class AnalysisTests(unittest.TestCase):
         self.assertEqual(result['churn'], 2)
         self.assertEqual(result['structural_churn'], 0)
 
+    def test_coding_units(self):
+        def count(source):
+            return sum(map(len, unit_lines(ast.parse(source))))
+        # If + its block end, one comparison, one call, one attribute, names and literal.
+        self.assertEqual(count('if x.count(y) > 0:\n    foo(a, b)\n'), 12)
+        # Brackets, dots, commas and colons are not units; a name costs 1 however long.
+        self.assertEqual(count('foo(a, b)\n'), count('a_much_longer_function_name(first, second)\n'))
+        self.assertEqual(count('x = (((1)))\n'), count('x = 1\n'))
+        # One unit per comparison and per extra boolean operand.
+        self.assertEqual(count('a < b < c\n'), 5)
+        self.assertEqual(count('a and b and c\n'), 5)
+        # Load/store markers, operators and containers are folded away.
+        self.assertEqual(unit_lines(ast.parse('x += 1\n')), [('AugAssign:Add', 'Name:x', 'Constant:1')])
+        self.assertEqual(unit_lines(ast.parse('from os import path as p\n')),
+                         [('ImportFrom:os', 'alias:path:p')])
+        self.assertEqual(unit_lines(ast.parse('x = y\n'), keep_values=False), [('Assign', 'Name', 'Name')])
+
+    def test_unit_footprint(self):
+        before = 'def f(items):\n    return items\n'
+        renamed = measure(diff(before, 'def f(values):\n    return values\n'), lambda p: before)
+        self.assertEqual((renamed['net_units'], renamed['churn'], renamed['structural_churn']), (0, 4, 0))
+        guarded = measure(diff(before, 'def f(items):\n    if items:\n        return items\n    return []\n'),
+                          lambda p: before)
+        # If, Name:items, EndBlock, Return, List (the old return moves into the block unchanged).
+        self.assertEqual((guarded['units_added'], guarded['units_deleted']), (5, 0))
+        self.assertEqual(guarded['token_churn'], guarded['tokens_added'] + guarded['tokens_deleted'])
+
     def test_deletion_rewarded(self):
         before = 'def f(x):\n    if x:\n        return x\n    return 0\n'
         after = 'def f(x):\n    return x\n'
         result = measure(diff(before, after), lambda p: before)
+        self.assertLess(result['net_units'], 0)
         self.assertLess(result['net_tokens'], 0)
         self.assertGreater(result['churn'], 0)
         self.assertEqual(result['complexity_delta'], -1)
@@ -80,7 +109,7 @@ class AnalysisTests(unittest.TestCase):
         before = 'manager = base_manager\n'
         after = 'manager = default_manager\n'
         result = measure(diff(before, after, path='pkg/manager.py'), lambda p: before)
-        self.assertEqual((result['net_tokens'], result['churn'], result['files_changed']), (0, 2, 1))
+        self.assertEqual((result['net_units'], result['churn'], result['files_changed']), (0, 2, 1))
         self.assertEqual(result['structural_churn'], 0)
         for old, new in (('x = 1\n', 'x = 2\n'), ('y = a - b\n', 'y = b - a\n')):
             self.assertGreater(measure(diff(old, new), lambda p: old)['churn'], 0)
@@ -91,9 +120,12 @@ class AnalysisTests(unittest.TestCase):
         before = ''.join(f'def g{i}(x):\n    """doc {i}"""\n    return (x+{i},)\n' for i in range(20))
         after = before + 'print "x"\n'
         result = measure(diff(before, after), lambda p: before)
-        self.assertEqual(result['churn'], 2)  # `print` and the string, not a canonical re-render
+        self.assertEqual(result['token_churn'], 2)  # `print` and the string, not a canonical re-render
         self.assertEqual(result['lexical_files'], ['pkg/core.py'])
         self.assertIsNone(result['ast_delta'])
+        # Coding units need a syntax tree: unknown, never zero.
+        for key in ('units_added', 'units_deleted', 'net_units', 'churn', 'structural_churn'):
+            self.assertIsNone(result[key], key)
 
     def test_myers_is_minimal(self):
         def lcs(a, b):
@@ -122,6 +154,8 @@ class AnalysisTests(unittest.TestCase):
         result = measure(diff(before, after), lambda p: before)
         self.assertLess(time.perf_counter() - started, 10)
         self.assertEqual(result['tokens_added'] - result['tokens_deleted'], 4)
+        # Import, alias, and x + y*999 -> (x - y*999) + 1 adds only BinOp:Sub and Constant:1.
+        self.assertEqual((result['units_added'], result['units_deleted']), (4, 0))
         self.assertEqual(result['approximate_files'], [])
 
     def test_token_diff_is_minimal_and_flags_large_rewrites(self):
@@ -140,7 +174,7 @@ class AnalysisTests(unittest.TestCase):
         text = 'x = 1\n'
         added = measure(diff('', text, old='/dev/null'), lambda p: self.fail('new file fetched'))
         deleted = measure(diff(text, '', new='/dev/null'), lambda p: text)
-        self.assertEqual(added['net_tokens'], -deleted['net_tokens'])
+        self.assertEqual(added['net_units'], -deleted['net_units'])
         before = ''.join(f'x{i} = {i}\n' for i in range(30))
         after = before.replace('x0 = 0', 'x0 = foo()').replace('x29 = 29', 'x29 = bar()')
         file = parse_patch(diff(before, after))[0]

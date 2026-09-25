@@ -13,7 +13,7 @@ from urllib.parse import quote
 
 from .analysis import measure
 
-ANALYZER_VERSION = '0.4.0-beta'
+ANALYZER_VERSION = '0.5.0-beta'
 FAILED_CATEGORIES = {'unresolved', 'failed', 'not_resolved'}
 
 
@@ -164,7 +164,7 @@ def analyze_submission(submission, cache, dataset=None, limit=None, patch_only=F
                 human, error = human_cache[key]
                 if human is not None:
                     record['human_metrics'] = human
-                    if human['churn']:
+                    if human['churn'] and record['metrics']['churn'] is not None:
                         record['model_human_ratio'] = record['metrics']['churn'] / human['churn']
                 else:
                     record['human_error'] = error
@@ -205,9 +205,10 @@ def leaderboard(records, shared=False, agents=None, mode='full_file'):
         rows.append(dict(agent=agent, resolve_rate=next(iter(rates), None),
                          successful_tasks_analyzed=len(subset), comparison='shared' if shared else 'individual',
                          mode=mode, task_ids=sorted(ids),
-                         median_net_tokens=median('net_tokens'), median_churn=median('churn'),
+                         median_net_units=median('net_units'), median_churn=median('churn'),
+                         median_net_tokens=median('net_tokens'), median_token_churn=median('token_churn'),
                          median_model_human_ratio=statistics.median(ratios) if ratios else None,
                          human_ratio_tasks=len(ratios), median_files_changed=median('files_changed'),
                          median_ast_delta=median('ast_delta'), median_complexity_delta=median('complexity_delta'),
                          structure_tasks=sum(r['metrics'].get('ast_delta') is not None for r in subset)))
-    return sorted(rows, key=lambda r: (r['median_net_tokens'] is None, r['median_net_tokens'] or 0, r['agent']))
+    return sorted(rows, key=lambda r: (r['median_net_units'] is None, r['median_net_units'] or 0, r['agent']))
