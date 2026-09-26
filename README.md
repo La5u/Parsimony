@@ -142,5 +142,6 @@ Scope is Python and unified text diffs only: binary/rename-only diffs and quoted
 1. Freeze the full task population and independently reproduce public patch/result artifacts. Publish coverage and missingness before rankings. The [v5 audit](examples/beta-500-v5/README.md) does this for two submissions with a fresh-artifact recheck; more harnesses and independent review remain.
 2. Validate footprint against adversarial patches. [Done for 0.5.1](docs/adversarial-validation.md): formatting, renames, excluded files, generated headers and deletions are tested; unrelated deletion, moved code and hardcoded test inputs remain known limitations.
 3. Evaluate score sensitivity to panel composition, weights, failure cap and task mix, with paired uncertainty and per-task outcomes.
+   [Stability report for ten models × 500 tasks](examples/ten-model-500/sensitivity.md) (`python -m parsimony.stability`): weights and cap never change a rank; six of nine adjacent pairs are statistically tied.
 4. Validate units against blind human preferences on patch pairs, and add readability diagnostics (test-input hardcoding, nesting depth, reuse of existing helpers).
 5. Expand to more models and harnesses on the **same frozen tasks**. Add other languages only as separate versioned tracks.
