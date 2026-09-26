@@ -36,7 +36,7 @@ Neither fix changes a published measurement: all 5,010 published records (ten mo
 
 ## Known limitations
 
-- **Unrelated deletion earns net credit.** The analyzer cannot tell whether deleted code was related to the issue. Deleting an unused function lowers net units by 12. Churn, 30% of the score, still charges for it, and the `net_floor=0` sensitivity variant removes the credit. SWE-bench's tests do not protect untested code.
+- **Unrelated deletion earns net credit.** The analyzer cannot tell whether deleted code was related to the issue. Deleting an unused function lowers net units by 12. Churn, 20% of the score, still charges for it, and the `net_floor=0` sensitivity variant removes the credit. SWE-bench's tests do not protect untested code.
 - **Moved code counts as edits.** Swapping two functions costs 8 units although nothing changed. Moves are rare in bug fixes; a tree-diff with move detection would fix this.
 - **Hardcoding a test's input is cheaper than fixing the bug.** The special case costs 12 units, the general fix 14. Tokens happened to tie these on churn and favor the general fix on net; units reverse that because they no longer charge for the literal list's brackets and commas. Size cannot detect this: it needs a separate check comparing new literals and branches with the task's hidden tests.
 

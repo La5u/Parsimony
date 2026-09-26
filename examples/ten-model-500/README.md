@@ -5,8 +5,9 @@
 ## Pinned inputs
 
 - Analyzer commit `b2316a9`, version `0.5.0-beta`, Python 3.14.7. Measurement code is identical to `54bd8a6` (v5 audit); the commit adds only the site builder. Opus and Sonnet records were re-measured with it and match v5 in every field except analyzer identity.
+- Scoring `parsimony-80-20-v0.5` (80% net units / 20% churn), panel `ten-model-439-solved-80-20-v0.5`.
 - Dataset SHA256 `82029e78b26e1da0ddc01653c98db18443fab1993e28dff052a38b01c3fd77f7`, experiments revision `40f164d5b8f1d249bf95a6df8b74b577fd8e519d` (both as in v5).
-- SHA256: [population.json](population.json) `a19f7243…`, [score-panel.json](score-panel.json) `e39a5778…`, [scores.json](scores.json) `bc21fca9…`, [coverage.json](coverage.json) `0b60e075…`.
+- SHA256: [population.json](population.json) `a19f7243…`, [score-panel.json](score-panel.json) `843f0d25…`, [scores.json](scores.json) `e493ec69…`, [coverage.json](coverage.json) `0b60e075…`.
 
 ```sh
 for m in claude-4-6-opus claude-4-5-sonnet-high claude-4-5-haiku-high deepseek-3-2-high gemini-3-flash-high \
@@ -45,20 +46,20 @@ Every successful patch was measured. All 19 errors and 4 unknown-unit records ar
 
 | Model | Score | 95% interval | Resolved | Per solve | Median net units | Median churn |
 |---|---:|---|---:|---:|---:|---:|
-| Claude Opus 4.6 | 49.1 | 46.1–51.7 | 75.6% | 58.4 | +8 | 12 |
-| MiniMax M2.5 (high) | 47.9–48.1 | 45.7–51.1 | 75.8% | 57.0 | +8 | 12 |
-| Kimi K2.5 (high) | 44.5 | 42.0–47.9 | 70.8% | 57.4 | +7 | 11 |
-| Gemini 3 Flash (high) | 43.8 | 40.8–46.3 | 75.8% | 52.4 | +10 | 14 |
-| GLM-5 (high) | 42.4 | 39.9–45.5 | 72.8% | 53.1 | +9 | 13 |
-| Claude Sonnet 4.5 (high) | 39.3 | 37.1–42.8 | 71.4% | 50.9 | +9 | 14 |
-| Claude Haiku 4.5 (high) | 35.5 | 33.2–39.2 | 66.6% | 50.7 | +8 | 13 |
-| DeepSeek V3.2 (high) | 29.8–30.0 | 27.6–33.6 | 70.0% | 40.9 | +12.5 | 18 |
-| GPT-5.2 (high) | 28.4 | 26.0–31.3 | 72.8% | 37.1 | +15.5 | 24 |
-| GPT-5 mini | 25.2–25.8 | 23.7–30.0 | 56.2% | 45.2 | +9 | 13 |
+| Claude Opus 4.6 | 49.1 | 46.0–51.7 | 75.6% | 58.3 | +8 | 12 |
+| MiniMax M2.5 (high) | 47.8–48.0 | 45.6–50.9 | 75.8% | 56.8 | +8 | 12 |
+| Kimi K2.5 (high) | 44.4–44.5 | 41.9–47.9 | 70.8% | 57.3 | +7 | 11 |
+| Gemini 3 Flash (high) | 44.1 | 41.2–46.7 | 75.8% | 52.8 | +10 | 14 |
+| GLM-5 (high) | 42.4 | 39.9–45.5 | 72.8% | 53.0 | +9 | 13 |
+| Claude Sonnet 4.5 (high) | 39.2–39.3 | 37.1–42.8 | 71.4% | 50.8 | +9 | 14 |
+| Claude Haiku 4.5 (high) | 35.4 | 33.0–39.0 | 66.6% | 50.4 | +8 | 13 |
+| DeepSeek V3.2 (high) | 30.0–30.2 | 27.8–33.8 | 70.0% | 41.0 | +12.5 | 18 |
+| GPT-5.2 (high) | 28.7 | 26.3–31.8 | 72.8% | 37.4 | +15.5 | 24 |
+| GPT-5 mini | 25.2–25.8 | 23.7–30.0 | 56.2% | 45.1 | +9 | 13 |
 
 - **The score is mostly correctness.** A solved task scores 1–100 and a failure −25–0, so resolve rate dominates. *Per solve* (mean score over a model's solved tasks, 50.5 typical) isolates footprint.
 - **Footprint separates models clearly at the extremes.** Opus, Kimi and MiniMax write the smallest successful patches (per solve 57–58). GPT-5.2 and DeepSeek write the largest (37–41), with median churn roughly double.
-- **Intervals** come from 2,000 paired resamples of the 421 tasks where every model has a point score. Opus is first in 64% of resamples and MiniMax in 36%; no other model tops any meaningful share.
+- **Intervals** come from 2,000 paired resamples of the 421 tasks where every model has a point score. Opus is first in 66% of resamples and MiniMax in 34%; no other model tops any meaningful share.
 - Gemini 3 Flash solves as many tasks as MiniMax but ranks fourth, because its successful patches are larger.
 
 ## Limits

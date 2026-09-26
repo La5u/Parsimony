@@ -49,9 +49,9 @@ Output has one record per agent/task, including failures, unavailable analyses a
 
 `leaderboard` reports medians (net, churn, human ratio, files, AST and complexity deltas), sample counts and resolve rate, sorted by median net units. `--shared` uses the intersection of resolved **and** analyzable tasks, which avoids task-mix confounding but can favor easy tasks.
 
-## Experimental single score (70% net / 30% churn)
+## Experimental single score (80% net / 20% churn)
 
-See [the scoring specification](docs/scoring.md). Per-task percentiles against a frozen reference panel are blended 70/30 and averaged with equal task weights. Successes score 1 to 100. Explicitly failed attempts get a nonpositive footprint penalty down to −25. Missing measurements, unknown outcomes and **out-of-scope successes** (every touched file excluded) produce bounds, not invented scores.
+See [the scoring specification](docs/scoring.md). Per-task percentiles against a frozen reference panel are blended 80/20 and averaged with equal task weights. Successes score 1 to 100. Explicitly failed attempts get a nonpositive footprint penalty down to −25. Missing measurements, unknown outcomes and **out-of-scope successes** (every touched file excluded) produce bounds, not invented scores.
 
 ```sh
 python -m parsimony.scoring score examples/ten-model-score-panel.json \

@@ -9,7 +9,7 @@ from .benchmark import read_jsonl
 from .scoring import measured, metrics, out_of_scope, percentile, require, unique
 
 
-def contributions(panel, records, net_weight=0.7, failure_cap=25, net_floor=None):
+def contributions(panel, records, net_weight=0.8, failure_cap=25, net_floor=None):
     """Per-task scores; ``net_floor=0`` removes credit for net deletion (anti-deletion variant)."""
     require(0 <= net_weight <= 1 and failure_cap >= 0, 'invalid sensitivity parameters')
     def net(m):
@@ -53,8 +53,8 @@ def contributions(panel, records, net_weight=0.7, failure_cap=25, net_floor=None
 def sensitivity(panel, records, draws=2000, seed=42):
     require(type(draws) is int and draws > 0, 'positive integer draws required')
     scenarios = {}
-    for weight, cap, floor in ((0.5, 25, None), (0.7, 25, None), (1.0, 25, None), (0.7, 10, None),
-                               (0.7, 50, None), (0.7, 25, 0)):
+    for weight, cap, floor in ((0.8, 25, None), (0.5, 25, None), (0.7, 25, None), (1.0, 25, None),
+                               (0.8, 10, None), (0.8, 50, None), (0.8, 25, 0)):
         matrix = contributions(panel, records, weight, cap, floor)
         label = f'net={weight:g},failure_cap={cap}' + ('' if floor is None else f',net_floor={floor}')
         scenarios[label] = dict(

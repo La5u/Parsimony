@@ -24,7 +24,7 @@ class ScoringTests(unittest.TestCase):
         self.assertAlmostEqual(value['score'], 34)
         rewrite = task_score(record('rewrite', net=4, churn=1000), refs)
         small = task_score(record('small', net=5, churn=9), refs)
-        self.assertAlmostEqual(rewrite['score'], 70.3)
+        self.assertAlmostEqual(rewrite['score'], 80.2)
         self.assertGreater(small['score'], rewrite['score'])
 
     def test_reference_panel_average_is_midpoint(self):
@@ -53,7 +53,7 @@ class ScoringTests(unittest.TestCase):
         refs = freeze([record()], 'failure')['tasks']['task']
         self.assertEqual(task_score(record(resolved=False, net=0, churn=0), refs)['score'], 0)
         self.assertAlmostEqual(task_score(record(resolved=False), refs)['score'], -12.5)
-        self.assertAlmostEqual(task_score(record(resolved=False, net=-10), refs)['score'], -3.75)
+        self.assertAlmostEqual(task_score(record(resolved=False, net=-10), refs)['score'], -2.5)
         worst_success = task_score(record(net=1000000, churn=1000000), refs)['score']
         self.assertEqual(worst_success, 1)
         self.assertGreater(worst_success, task_score(record(resolved=False, net=0, churn=0), refs)['score'])

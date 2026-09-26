@@ -1,14 +1,16 @@
-# Parsimony scoring specification — experimental v0.4
+# Parsimony scoring specification — experimental v0.5
 
 **Status:** the offline calculator is implemented as `python -m parsimony.scoring`. It consumes existing full-file JSONL; it does not download artifacts, tokenize patches or execute code. The existing `leaderboard` command still reports medians separately. This is an experimental scoring rule, not a validated official benchmark release.
 
-v0.4 applies the v0.3 rule to coding units (`net_units`, unit `churn`, analyzer 0.5.0) instead of normalized tokens. A record whose units are unknown (a file does not parse) gets bounds, like any missing measurement. v0.3 differed from v0.2 only in the `out_of_scope` rule.
+v0.5 (`parsimony-80-20-v0.5`) changes only the weights, from 70% net / 30% churn to 80% net / 20% churn, for both successes and failures. Measurements are unchanged.
+
+v0.4 applied the v0.3 rule to coding units (`net_units`, unit `churn`, analyzer 0.5.0) instead of normalized tokens. A record whose units are unknown (a file does not parse) gets bounds, like any missing measurement. v0.3 differed from v0.2 only in the `out_of_scope` rule.
 
 ## 1. Goals
 
 - Every task contributes equally, independent of repository or patch size.
 - Only published successful solutions receive positive efficiency credit.
-- **70% net coding-unit delta / 30% churn**, after per-task normalization.
+- **80% net coding-unit delta / 20% churn**, after per-task normalization.
 - Failed attempts receive bounded, nonpositive footprint penalties.
 - A frozen reference panel prevents scores drifting as entrants change.
 
@@ -33,7 +35,7 @@ p_x = (number of references with a larger x
        + 0.5 × number of references with an equal x)
       / number of successful references
 
-footprint_percentile = 0.70 × p_D + 0.30 × p_H
+footprint_percentile = 0.80 × p_D + 0.20 × p_H
 successful_task_score = 1 + 99 × footprint_percentile
 ```
 
@@ -43,7 +45,7 @@ Success scores are from 1 to 100. Tying every reference on both metrics yields 5
 
 Percentiles are coarse when reference counts are small. They also saturate: exceeding the largest reference by ten units or a million units yields the same component percentile. Always report raw footprint metrics alongside the score. The blend penalizes rewrites more than net-only ordering but does not eliminate all gaming or replace review of exclusions.
 
-## 4. Failed-task score: same 70/30 priorities, no deletion credit
+## 4. Failed-task score: same 80/20 priorities, no deletion credit
 
 For a known evaluated failure with complete full-file metrics:
 
@@ -53,7 +55,7 @@ s = max(1, median(churn of this task's successful references))
 
 growth_burden = G / (s + G)
 churn_burden  = H / (s + H)
-failure_burden = 0.70 × growth_burden + 0.30 × churn_burden
+failure_burden = 0.80 × growth_burden + 0.20 × churn_burden
 failed_task_score = −25 × failure_burden
 ```
 
@@ -63,7 +65,7 @@ failed_task_score = −25 × failure_burden
 - Increasing growth or churn cannot improve a failure's score.
 - The scale floor handles all-zero reference patches; bounding limits the effect of one enormous failed attempt.
 
-The **25-point cap is provisional**. `python -m parsimony.sensitivity` also reports a `net_floor=0` variant: net deltas below zero are clamped, so deleting code (for example untested code that SWE-bench tests cannot protect) earns no net credit. The user-selected 70/30 weights express a preference, not an empirically established law. Validate sensitivity before an official release; never tune weights to reproduce familiar rankings.
+The **25-point cap is provisional**. `python -m parsimony.sensitivity` also reports a `net_floor=0` variant: net deltas below zero are clamped, so deleting code (for example untested code that SWE-bench tests cannot protect) earns no net credit. The user-selected 80/20 weights express a preference, not an empirically established law. Validate sensitivity before an official release; never tune weights to reproduce familiar rankings.
 
 ### Should a huge successful patch lose to a near-empty failure?
 
@@ -119,7 +121,7 @@ Non-Python/excluded edits remain outside scope, not proven zero cost. A success 
 Reference `(net, churn)` pairs are `(5, 9)`, `(10, 10)`, `(10, 30)`.
 
 - Candidate `(10, 20)`: both percentiles are `1/3`; score **34**.
-- Candidate `(4, 1000)`: net percentile `1`, churn percentile `0`; score **70.3**, not 100.
+- Candidate `(4, 1000)`: net percentile `1`, churn percentile `0`; score **80.2**, not 100.
 - Candidate `(5, 9)`: both percentiles are `5/6`; score **83.5**. A small net disadvantage can therefore beat a massive rewrite.
 
 For a failed task with reference scale `s = 10`:
@@ -128,8 +130,8 @@ For a failed task with reference scale `s = 10`:
 |---|---:|
 | `(0, 0)` | 0 |
 | `(10, 10)` | −12.5 |
-| `(−10, 10)` | −3.75 |
-| `(0, 20)` | −5 |
+| `(−10, 10)` | −2.5 |
+| `(0, 20)` | −10/3 ≈ −3.33 |
 
 Two equally weighted tasks scoring 34 and −12.5 produce `(34 − 12.5) / 2 = 10.75`, regardless of repository size.
 
@@ -138,7 +140,7 @@ Two equally weighted tasks scoring 34 and −12.5 produce `(34 − 12.5) / 2 = 1
 ```sh
 # Freeze once; use a new name/path for a changed panel.
 python -m parsimony.scoring freeze examples/ten-model-results.jsonl \
-  --name ten-model-ten-task-70-30-v0.4 \
+  --name ten-model-ten-task-80-20-v0.5 \
   --output examples/ten-model-score-panel.json
 
 # Recompute scores from already-measured JSONL, with no patch analysis.

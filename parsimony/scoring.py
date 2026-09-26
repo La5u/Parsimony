@@ -1,4 +1,4 @@
-"""Offline 70/30 task-normalized scoring of existing full-file measurements."""
+"""Offline 80/20 task-normalized scoring of existing full-file measurements."""
 import argparse
 import hashlib
 import json
@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .benchmark import read_jsonl
 
-VERSION = 'parsimony-70-30-v0.4'
+VERSION = 'parsimony-80-20-v0.5'
 
 
 def require(condition, message):
@@ -63,7 +63,7 @@ def freeze(records, name):
     analyzer, python = next(iter(versions))
     return dict(score_version=VERSION, name=name, scope='fixed-cohort-sample',
                 analyzer_version=analyzer, python_version=python,
-                net_weight=0.7, churn_weight=0.3, failure_cap=25,
+                net_weight=0.8, churn_weight=0.2, failure_cap=25,
                 tasks={task: sorted(refs, key=lambda r: r['agent']) for task, refs in sorted(tasks.items())})
 
 
@@ -102,12 +102,12 @@ def task_score(record, refs):
     if resolved:
         net = percentile(m['net_units'], [r['metrics']['net_units'] for r in refs])
         churn = percentile(m['churn'], [r['metrics']['churn'] for r in refs])
-        score = 1 + 99 * (0.7 * net + 0.3 * churn)
+        score = 1 + 99 * (0.8 * net + 0.2 * churn)
         details = dict(net_percentile=net, churn_percentile=churn)
     else:
         scale = max(1, statistics.median(r['metrics']['churn'] for r in refs))
         growth = max(m['net_units'], 0)
-        burden = 0.7 * growth / (scale + growth) + 0.3 * m['churn'] / (scale + m['churn'])
+        burden = 0.8 * growth / (scale + growth) + 0.2 * m['churn'] / (scale + m['churn'])
         score = -25 * burden
         details = dict(failure_scale=scale, failure_burden=burden)
     return dict(status='resolved' if resolved else 'failed', score=score, lower=score, upper=score, **details)
@@ -115,7 +115,7 @@ def task_score(record, refs):
 
 def score_records(panel, records):
     require(panel['score_version'] == VERSION, 'unsupported score version')
-    require((panel['net_weight'], panel['churn_weight'], panel['failure_cap']) == (0.7, 0.3, 25),
+    require((panel['net_weight'], panel['churn_weight'], panel['failure_cap']) == (0.8, 0.2, 25),
             'weights differ from score version')
     require(bool(panel['tasks']), 'empty task set')
     for refs in panel['tasks'].values():
