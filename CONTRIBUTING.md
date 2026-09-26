@@ -2,7 +2,7 @@
 
 Use pull requests to add or update **reproducible result bundles**, not hand-edited scores. All tools use the Python standard library. We welcome small samples when they are clearly labeled.
 
-**Current bundle format:** successful-solution footprint medians, resolve rate and per-task measurements. The [70/30 signed-score calculator](docs/scoring.md) is experimental and separate from bundle validation; do not substitute scalar scores for the generated median summary. You may include a reproducible scalar-score command and frozen panel hash in the PR description. Records from `analyze --include-failed` may be exported: failed-patch measurements need an explicit failed category (`unresolved`/`failed`/`not_resolved`) and never enter the median summary. Existing bundles and sample scores do not contain them.
+**Current bundle format:** successful-solution footprint medians, resolve rate and per-task measurements. The [80/20 signed-score calculator](docs/scoring.md) is experimental and separate from bundle validation; do not substitute scalar scores for the generated median summary. You may include a reproducible scalar-score command and frozen panel hash in the PR description. Records from `analyze --include-failed` may be exported: failed-patch measurements need an explicit failed category (`unresolved`/`failed`/`not_resolved`) and never enter the median summary. Existing bundles and sample scores do not contain them.
 
 ## Fast path: existing analysis, no heavy computation
 

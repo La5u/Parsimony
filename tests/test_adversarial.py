@@ -105,7 +105,7 @@ class AdversarialTests(unittest.TestCase):
 
     def test_known_limitation_unrelated_deletion_earns_net_credit(self):
         # The analyzer cannot tell related from unrelated code: deleting an unused
-        # function lowers net units. Churn (30% of the score) still charges for it,
+        # function lowers net units. Churn (20% of the score) still charges for it,
         # and the net_floor=0 sensitivity variant removes the credit.
         result = run(BASE + UNUSED, BASE)
         self.assertEqual((result['net_units'], result['churn']), (-12, 12))

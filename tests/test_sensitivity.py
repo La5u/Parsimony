@@ -25,7 +25,7 @@ class SensitivityTests(unittest.TestCase):
         default = contributions(panel, refs + [deleter])['deleter']['task']
         floored = contributions(panel, refs + [deleter], net_floor=0)['deleter']['task']
         self.assertGreater(default, floored)
-        self.assertIn('net=0.7,failure_cap=25,net_floor=0', sensitivity(panel, refs, draws=5)['scenario_scores'])
+        self.assertIn('net=0.8,failure_cap=25,net_floor=0', sensitivity(panel, refs, draws=5)['scenario_scores'])
 
     def test_incomplete_candidate_is_not_resampled(self):
         panel = freeze([record()], 'sample')

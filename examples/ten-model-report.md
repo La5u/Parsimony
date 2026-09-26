@@ -36,28 +36,28 @@ Lower median net coding-unit delta ranks first. Churn is units added plus delete
 | 9 | GPT-5.2 (high) | +15.5 | 19.5 | +21 | 29 | 72.8% |
 | 10 | DeepSeek V3.2 (high) | +20.5 | 29 | +27.5 | 43 | 70.0% |
 
-## Experimental 70/30 equal-task score
+## Experimental 80/20 equal-task score
 
-The same cached measurements also have a frozen-panel score: **70% net-token percentile + 30% churn percentile per task**, mapped into the positive success band, then averaged equally across the ten tasks. Higher is better. This is not the median-net ranking above.
+The same cached measurements also have a frozen-panel score: **80% net-unit percentile + 20% churn percentile per task** (scoring `parsimony-80-20-v0.5`), mapped into the positive success band, then averaged equally across the ten tasks. Higher is better. This is not the median-net ranking above.
 
 | Rank | Model | Parsimony Score |
 |---|---|---:|
-| 1 | Kimi K2.5 (high) | 63.37 |
-| 2 | GLM-5 (high) | 62.83 |
-| 3 | Claude Opus 4.6 | 60.05 |
-| 4 | Claude Sonnet 4.5 (high) | 56.19 |
-| 5 | Claude Haiku 4.5 (high) | 55.40 |
-| 6 | MiniMax M2.5 (high) | 52.13 |
-| 7 | GPT-5 mini | 45.01 |
-| 8 | Gemini 3 Flash (high) | 43.37 |
-| 9 | GPT-5.2 (high) | 33.82 |
-| 10 | DeepSeek V3.2 (high) | 32.83 |
+| 1 | Kimi K2.5 (high) | 62.88 |
+| 2 | GLM-5 (high) | 62.18 |
+| 3 | Claude Opus 4.6 | 60.50 |
+| 4 | Claude Sonnet 4.5 (high) | 56.44 |
+| 5 | Claude Haiku 4.5 (high) | 54.76 |
+| 6 | MiniMax M2.5 (high) | 52.58 |
+| 7 | GPT-5 mini | 44.36 |
+| 8 | Gemini 3 Flash (high) | 43.77 |
+| 9 | GPT-5.2 (high) | 34.26 |
+| 10 | DeepSeek V3.2 (high) | 33.27 |
 
 All ten models solved all ten selected tasks, so failure penalties are zero **in this selected cohort**. The ten submissions themselves form the frozen reference panel, with self-comparisons counted as ties. Their average score is 50.5 by construction; these are reference-relative scores, not percentages correct.
 
-The ranking change reflects **both** adding churn and replacing a median raw-token summary with an equal-task mean of normalized percentiles. Do not attribute it solely to the 30% churn weight. The sample is still too small for robust model-superiority claims.
+The ranking change reflects **both** adding churn and replacing a median raw-token summary with an equal-task mean of normalized percentiles. Do not attribute it solely to the 20% churn weight. The sample is still too small for robust model-superiority claims.
 
-Compared with the 0.4.0 token scores, GLM-5 and Opus swapped second and third, Sonnet and Haiku swapped fourth and fifth, and Kimi and the bottom five kept their ranks. Paired-task bootstrap 95% intervals (`python -m parsimony.sensitivity`) span roughly 20 points per model and overlap across the top six. No model is the top scorer in more than 35% of resamples, and the `net_floor=0` anti-deletion variant changes no rank.
+Moving from the 70/30 weights (`parsimony-70-30-v0.4`) to 80/20 changes no rank; the gap between Kimi and GLM-5 widens from 0.54 to 0.70 points. Compared with the 70/30 scores under the 0.4.0 token analyzer, GLM-5 and Opus swapped second and third, Sonnet and Haiku swapped fourth and fifth, and Kimi and the bottom five kept their ranks. Paired-task bootstrap 95% intervals (`python -m parsimony.sensitivity`) span roughly 16 to 28 points per model and overlap across the top six. No model is the top scorer in more than 31% of resamples, and the `net_floor=0` anti-deletion variant changes no rank.
 
 See `ten-model-score-panel.json`, `ten-model-scores.json`, and [the scoring specification](../docs/scoring.md).
 

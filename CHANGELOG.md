@@ -2,6 +2,27 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Scoring parsimony-80-20-v0.5 — 2026-09-26
+
+Scoring change only: **80% net units / 20% churn** replaces 70/30, for both the success percentile blend and the failure burden. The analyzer (0.5.1-beta) and every measurement are unchanged. All results were re-scored offline from the committed JSONL. The panels were refrozen under new names (`ten-model-ten-task-80-20-v0.5`, `ten-model-439-solved-80-20-v0.5`) with the same tasks and references. The sensitivity grid now uses 0.8 as the baseline and keeps 0.5, 0.7 and 1.0 as alternatives.
+
+The ten models × 500 tasks leaderboard keeps the same order. Scores move by about 0.3 points at most:
+
+| Rank | Model | Score 70/30 | Score 80/20 | Per solve 70/30 | Per solve 80/20 |
+|---:|---|---:|---:|---:|---:|
+| 1 | Claude Opus 4.6 | 49.1 | 49.1 | 58.4 | 58.3 |
+| 2 | MiniMax M2.5 (high) | 47.9–48.1 | 47.8–48.0 | 57.0 | 56.8 |
+| 3 | Kimi K2.5 (high) | 44.5 | 44.4–44.5 | 57.4 | 57.3 |
+| 4 | Gemini 3 Flash (high) | 43.8 | 44.1 | 52.4 | 52.8 |
+| 5 | GLM-5 (high) | 42.4 | 42.4 | 53.1 | 53.0 |
+| 6 | Claude Sonnet 4.5 (high) | 39.3 | 39.2–39.3 | 50.9 | 50.8 |
+| 7 | Claude Haiku 4.5 (high) | 35.5 | 35.4 | 50.7 | 50.4 |
+| 8 | DeepSeek V3.2 (high) | 29.8–30.0 | 30.0–30.2 | 40.9 | 41.0 |
+| 9 | GPT-5.2 (high) | 28.4 | 28.7 | 37.1 | 37.4 |
+| 10 | GPT-5 mini | 25.2–25.8 | 25.2–25.8 | 45.2 | 45.1 |
+
+Opus is now first in 66% of bootstrap resamples (was 64%) and MiniMax in 34% (was 36%). The 10-task sample also keeps its order.
+
 ## 0.5.1-beta — 2026-09-26
 
 Fixes from the [adversarial validation](docs/adversarial-validation.md) (`tests/test_adversarial.py`):
