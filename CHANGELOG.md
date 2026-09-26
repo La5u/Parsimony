@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Results: Claude Opus 4.5 added to ten models × 500 tasks — 2026-09-26
+
+Results only; no measurement or scoring change. Claude Opus 4.5 (high) (`20260217_mini-v2.0.0_claude-4-5-opus-high`) was measured with the same analyzer commit (`b2316a9`, 0.5.0-beta) and Python 3.14.7, and scored against the unchanged ten-model panel without becoming a reference; the ten original scores do not change. It ranks first (≈52.3). GPT-5.2 Codex and Gemini 3 Pro (high) are left out because their published per-task results are missing or mark every task unresolved. See [the example README](examples/ten-model-500/README.md#newcomers).
+
 ## Scoring parsimony-80-20-v0.5 — 2026-09-26
 
 Scoring change only: **80% net units / 20% churn** replaces 70/30, for both the success percentile blend and the failure burden. The analyzer (0.5.1-beta) and every measurement are unchanged. All results were re-scored offline from the committed JSONL. The panels were refrozen under new names (`ten-model-ten-task-80-20-v0.5`, `ten-model-439-solved-80-20-v0.5`) with the same tasks and references. The sensitivity grid now uses 0.8 as the baseline and keeps 0.5, 0.7 and 1.0 as alternatives.
