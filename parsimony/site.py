@@ -16,7 +16,8 @@ NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude
          'claude-4-5-haiku-high': 'Claude Haiku 4.5 (high)', 'deepseek-3-2-high': 'DeepSeek V3.2 (high)',
          'gemini-3-flash-high': 'Gemini 3 Flash (high)', 'glm-5-high': 'GLM-5 (high)',
          'gpt-5-2-high': 'GPT-5.2 (high)', 'gpt-5-mini': 'GPT-5 mini', 'kimi-k2-5-high': 'Kimi K2.5 (high)',
-         'minimax-2-5-high': 'MiniMax M2.5 (high)'}
+         'minimax-2-5-high': 'MiniMax M2.5 (high)', 'claude-4-5-opus-high': 'Claude Opus 4.5 (high)',
+         'gpt-5-2-codex': 'GPT-5.2 Codex', 'gemini-3-pro-high': 'Gemini 3 Pro (high)'}
 
 
 def label(agent):

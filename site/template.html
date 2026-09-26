@@ -124,7 +124,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const signed = (v) => (v === null || v === undefined) ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 
-  $('board-intro').textContent = `Ten models on the ${data.task_count} SWE-bench Verified tasks that at least one of them solved.`;
+  const n = data.models.length;
+  $('board-intro').textContent = n === 10
+    ? `Ten models on the ${data.task_count} SWE-bench Verified tasks that at least one of them solved.`
+    : `${n} models on the ${data.task_count} SWE-bench Verified tasks that at least one of the ten reference models solved.`;
   const tiered = data.models.every((m) => m.tier !== undefined);
   $('tier-head').hidden = $('tier-note').hidden = !tiered;
   document.querySelector('#board tbody').innerHTML = data.models.map((m, i) => {
