@@ -20,7 +20,9 @@ PREFIX = re.compile(r'^\d{8}_mini-v[\d.]+_')
 NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude Sonnet 4.5',
          'claude-4-5-haiku-high': 'Claude Haiku 4.5', 'deepseek-3-2-high': 'DeepSeek V3.2',
          'gemini-3-flash-high': 'Gemini 3 Flash', 'glm-5-high': 'GLM-5', 'gpt-5-2-high': 'GPT-5.2',
-         'gpt-5-mini': 'GPT-5 mini', 'kimi-k2-5-high': 'Kimi K2.5', 'minimax-2-5-high': 'MiniMax M2.5'}
+         'gpt-5-mini': 'GPT-5 mini', 'kimi-k2-5-high': 'Kimi K2.5', 'minimax-2-5-high': 'MiniMax M2.5',
+         'claude-4-5-opus-high': 'Claude Opus 4.5', 'gpt-5-2-codex': 'GPT-5.2 Codex',
+         'gemini-3-pro-high': 'Gemini 3 Pro'}
 WEIGHTS = (0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
 CAPS = (0, 10, 25, 50)
 
@@ -213,8 +215,9 @@ def analyze(panel, records, draws=2000, seed=42):
         if c != cap:
             scenarios[f'failure_cap={c}'] = dict(family='failure_cap', **summarize(matrix(panel, groups, weight, c)))
 
+    # Only panel members have references to leave out; models scored against the panel are never references.
     leave_one_out = {}
-    for agent in sorted(groups):
+    for agent in sorted({r['agent'] for refs in panel['tasks'].values() for r in refs}):
         reduced, orphans = drop_agent(panel, agent)
         scenarios[f'panel_without={agent}'] = dict(family='panel', **summarize(matrix(reduced, groups, weight, cap)))
         leave_one_out[agent] = dict(orphaned_tasks=orphans,
@@ -324,7 +327,7 @@ def render(result, command):
     base = result['scenarios']['baseline']
     boot = result['bootstrap']
     b = result['baseline']
-    out = ['# Score sensitivity: ten models × 500 tasks', '',
+    out = [f'# Score sensitivity: {len(order)} models × 500 tasks', '',
            f"Analysis, not a score release. Baseline `{result['score_version']}` "
            f"(net {b['net_weight']:g} / churn {b['churn_weight']:g}, failure cap {b['failure_cap']:g}), "
            f"panel `{result['panel']}`: {result['task_count']} tasks, point estimates on the "
@@ -355,7 +358,7 @@ def render(result, command):
     names = [n for n, s in result['scenarios'].items() if s['family'] in ('baseline', 'weights', 'failure_cap')]
     out += scenario_table(result, names, order)
     out += ['', '## Panel composition', '',
-            'Each model\'s references removed in turn (all ten still scored); tasks whose only reference was '
+            'Each panel model\'s references removed in turn (every model still scored); tasks whose only reference was '
             'that model\'s patch leave the panel. The dedup panel counts byte-identical patches once per task '
             f"({result['dedup_references_removed']} of {result['panel_references']} references removed).", '',
             '| Panel without | References removed | Tasks orphaned | Ranking changes vs baseline |', '|---|---:|---:|---|']
