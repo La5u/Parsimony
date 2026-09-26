@@ -37,7 +37,7 @@ table { border-collapse: collapse; width: 100%; font-size: 0.93rem; font-variant
 th, td { padding: 7px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--rule); }
 th { font-weight: 600; color: var(--muted); font-size: 0.8rem; }
 th:first-child, td:first-child, .left { text-align: left; }
-tr.tier-break td { border-top: 1px solid var(--muted); }
+tr.tier-break td { border-top: 2px solid var(--muted); }
 .range { color: var(--muted); font-size: 0.8rem; }
 .r { color: var(--good); }
 .f { color: var(--bad); }
@@ -65,7 +65,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       <thead>
         <tr>
           <th id="tier-head" hidden>Tier</th>
-          <th>Model</th>
+          <th class="left">Model</th>
           <th>Score</th>
           <th>95% CI</th>
           <th>Solved</th>
@@ -136,7 +136,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const brk = tiered && i > 0 && m.tier !== data.models[i - 1].tier;
     return `<tr${brk ? ' class="tier-break"' : ''}>
       ${tiered ? `<td>${m.tier}</td>` : ''}
-      <td>${esc(m.name)}</td>
+      <td class="left">${esc(m.name)}</td>
       <td>${score}</td>
       <td class="range">${fmt(m.ci[0])}–${fmt(m.ci[1])}</td>
       <td>${fmt(m.resolve_rate * 100)}%</td>
