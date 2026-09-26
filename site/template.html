@@ -37,6 +37,7 @@ table { border-collapse: collapse; width: 100%; font-size: 0.93rem; font-variant
 th, td { padding: 7px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--rule); }
 th { font-weight: 600; color: var(--muted); font-size: 0.8rem; }
 th:first-child, td:first-child, .left { text-align: left; }
+tr.tier-break td { border-top: 1px solid var(--muted); }
 .range { color: var(--muted); font-size: 0.8rem; }
 .r { color: var(--good); }
 .f { color: var(--bad); }
@@ -63,6 +64,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     <table id="board">
       <thead>
         <tr>
+          <th id="tier-head" hidden>Tier</th>
           <th>Model</th>
           <th>Score</th>
           <th>95% CI</th>
@@ -74,6 +76,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       <tbody></tbody>
     </table>
   </div>
+  <p class="small muted" id="tier-note" style="margin-top:8px" hidden>Models in the same tier are not statistically distinguishable (<a href="https://github.com/La5u/Parsimony/blob/main/examples/ten-model-500/sensitivity.md">sensitivity report</a>).</p>
   <p class="small muted" style="margin-top:8px">Score: mean over all tasks, from −25 to 100. Per solve: mean score over the tasks the model solved, where 50.5 is average. Median churn: units added plus removed per solved task.</p>
 
   <h2 id="method">Method</h2>
@@ -122,10 +125,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 
   $('board-intro').textContent = `Ten models on the ${data.task_count} SWE-bench Verified tasks that at least one of them solved.`;
-  document.querySelector('#board tbody').innerHTML = data.models.map((m) => {
+  const tiered = data.models.every((m) => m.tier !== undefined);
+  $('tier-head').hidden = $('tier-note').hidden = !tiered;
+  document.querySelector('#board tbody').innerHTML = data.models.map((m, i) => {
     const score = m.score !== null ? fmt(m.score)
       : fmt(m.lower) === fmt(m.upper) ? '≈' + fmt(m.lower) : `${fmt(m.lower)}–${fmt(m.upper)}`;
-    return `<tr>
+    const brk = tiered && i > 0 && m.tier !== data.models[i - 1].tier;
+    return `<tr${brk ? ' class="tier-break"' : ''}>
+      ${tiered ? `<td>${m.tier}</td>` : ''}
       <td>${esc(m.name)}</td>
       <td>${score}</td>
       <td class="range">${fmt(m.ci[0])}–${fmt(m.ci[1])}</td>
