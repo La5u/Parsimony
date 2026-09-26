@@ -135,14 +135,15 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   $('board-intro').textContent = n === 10
     ? `Ten models on the ${data.task_count} SWE-bench Verified tasks that at least one of them solved.`
     : `${n} models on the ${data.task_count} SWE-bench Verified tasks that at least one of the ten reference models solved.`;
-  const tiered = data.models.every((m) => m.tier !== undefined);
+  const tiered = data.models.some((m) => m.tier != null);
   $('tier-head').hidden = $('tier-note').hidden = !tiered;
   document.querySelector('#board tbody').innerHTML = data.models.map((m, i) => {
     const score = m.score !== null ? fmt(m.score)
       : fmt(m.lower) === fmt(m.upper) ? '≈' + fmt(m.lower) : `${fmt(m.lower)}–${fmt(m.upper)}`;
-    const brk = tiered && i > 0 && m.tier !== data.models[i - 1].tier;
+    const prev = data.models[i - 1];
+    const brk = i > 0 && m.tier != null && prev.tier != null && m.tier !== prev.tier;
     return `<tr${brk ? ' class="tier-break"' : ''}>
-      ${tiered ? `<td>${m.tier}</td>` : ''}
+      ${tiered ? `<td>${m.tier ?? ''}</td>` : ''}
       <td class="left">${esc(m.name)}</td>
       <td>${score}</td>
       <td class="range">${fmt(m.ci[0])}–${fmt(m.ci[1])}</td>

@@ -114,6 +114,13 @@ def tiers(sensitivity):
     return result
 
 
+def add_tiers(models, sensitivity):
+    """Set each model's tier; a model missing from the sensitivity analysis gets None (shown empty)."""
+    tier = tiers(sensitivity)
+    for model in models:
+        model['tier'] = tier.get(model['agent'])
+
+
 def render(data, standalone=True):
     # Escape '<' so no data string can close the embedding <script> element.
     payload = json.dumps(data, separators=(',', ':')).replace('<', '\\u003c')
@@ -139,9 +146,7 @@ def main():
         data = build(json.loads(raw), [r for path in args.records for r in read_jsonl(path)])
         data['panel_sha256'] = hashlib.sha256(raw).hexdigest()
         if args.sensitivity:
-            tier = tiers(json.loads(Path(args.sensitivity).read_text()))
-            for model in data['models']:
-                model['tier'] = tier[model['agent']]
+            add_tiers(data['models'], json.loads(Path(args.sensitivity).read_text()))
         Path(args.output).write_text(render(data, not args.fragment))
         if args.data:
             Path(args.data).write_text(json.dumps(data, indent=1) + '\n')

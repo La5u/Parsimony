@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest import mock
 
 from parsimony.scoring import freeze
-from parsimony.site import build, label, main, render, tiers
+from parsimony.site import add_tiers, build, label, main, render, tiers
 from tests.test_scoring import record
 
 
@@ -51,6 +51,11 @@ class TierTests(unittest.TestCase):
             pair('c', 'd', True, ['without_repo=x/y']),     # distinguishable but flips
             pair('d', 'e', True)])                          # firm boundary
         self.assertEqual(tiers(sensitivity), dict(a=1, b=2, c=2, d=2, e=3))
+
+    def test_model_missing_from_sensitivity_gets_no_tier(self):
+        models = [dict(agent='a'), dict(agent='new'), dict(agent='b')]
+        add_tiers(models, dict(ranking=['a', 'b'], adjacent_pairs=[pair('a', 'b', True)]))
+        self.assertEqual([m['tier'] for m in models], [1, None, 2])
 
     def test_single_model(self):
         self.assertEqual(tiers(dict(ranking=['a'], adjacent_pairs=[])), dict(a=1))

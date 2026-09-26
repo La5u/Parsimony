@@ -102,6 +102,19 @@ class StabilityTests(unittest.TestCase):
         self.assertTrue(text.startswith('# '))
         self.assertIn('**Verdict.**', text)
 
+    def test_newcomer_is_scored_but_never_a_reference(self):
+        panel_records = cohort()
+        panel = freeze(panel_records, 'p')
+        newcomer = [rec('d', t, 1, 1) for t in ('t1', 't2', 't3', 't4')]
+        result = analyze(panel, panel_records + newcomer, draws=50, seed=1)
+        self.assertEqual(sorted(result['leave_one_out']), ['a', 'b', 'c'])
+        self.assertNotIn('panel_without=d', result['scenarios'])
+        self.assertEqual(result['panel_references'], sum(len(r) for r in panel['tasks'].values()))
+        for scenario in result['scenarios'].values():
+            self.assertIn('d', scenario['ranking'])
+        # Scored against the unchanged panel: its smallest patches beat every reference.
+        self.assertEqual(result['ranking'][0], 'd')
+
 
 if __name__ == '__main__':
     unittest.main()
