@@ -19,6 +19,25 @@ python -m parsimony.scoring score examples/ten-model-500/score-panel.json *.json
 python -m parsimony.site examples/ten-model-500/score-panel.json *.jsonl --output site/index.html
 ```
 
+## Adding the other v2.0.0 submissions (not yet measured)
+
+SWE-bench also publishes three more Verified runs with the same harness (mini-SWE-agent v2.0.0) that are not in the results above: Claude Opus 4.5 (high), GPT-5.2 Codex and Gemini 3 Pro (high). Score them against the existing panel, so the reference patches and the ten scores above stay unchanged, then rerun the stability analysis and rebuild the site. Use the same dataset, experiments revision and Python version as above:
+
+```sh
+for m in 20260217_mini-v2.0.0_claude-4-5-opus-high 20260219_mini-v2.0.0_gpt-5-2-codex \
+         20260226_mini-v2.0.0_gemini-3-pro-high; do
+  python -m parsimony analyze $m --dataset verified.jsonl \
+    --ref 40f164d5b8f1d249bf95a6df8b74b577fd8e519d --include-failed \
+    --output examples/ten-model-500/${m#*_mini-v2.0.0_}.jsonl
+done
+python -m parsimony.stability examples/ten-model-500/score-panel.json examples/ten-model-500/*.jsonl \
+  --output examples/ten-model-500/sensitivity.json
+python -m parsimony.site examples/ten-model-500/score-panel.json examples/ten-model-500/*.jsonl \
+  --sensitivity examples/ten-model-500/sensitivity.json --output site/index.html
+```
+
+The 61 tasks none of the ten solved stay out of the population, so a newcomer gets no credit for solving them. Gemini 3.5 Flash is also published, but with mini-SWE-agent v2.4.2, so it is left out to keep one harness.
+
 ## Scored population
 
 - **439 tasks** that at least one of the ten models solved. The 61 tasks nobody solved have no successful reference patch and cannot calibrate footprint. Choosing tasks by panel success is a known bias: an official release needs a population chosen independently of the candidates.
