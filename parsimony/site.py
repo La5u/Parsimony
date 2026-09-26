@@ -101,6 +101,18 @@ def build(panel, records, draws=2000, seed=42):
                 bootstrap_tasks=common, draws=draws, models=models, tasks=tasks)
 
 
+def tiers(sensitivity):
+    """Tier per agent: a new tier starts after each adjacent pair that is distinguishable and never flips."""
+    pairs = sensitivity['adjacent_pairs']
+    tier = 1
+    result = {pairs[0]['a']: tier} if pairs else {a: 1 for a in sensitivity.get('ranking', [])}
+    for pair in pairs:
+        if pair['distinguishable'] and not pair['flips_in']:
+            tier += 1
+        result[pair['b']] = tier
+    return result
+
+
 def render(data, standalone=True):
     # Escape '<' so no data string can close the embedding <script> element.
     payload = json.dumps(data, separators=(',', ':')).replace('<', '\\u003c')
@@ -118,12 +130,17 @@ def main():
     parser.add_argument('records', nargs='+')
     parser.add_argument('--output', default='site/index.html')
     parser.add_argument('--data', help='also write the page data as JSON here')
+    parser.add_argument('--sensitivity', help='sensitivity.json from parsimony.stability; adds tiers')
     parser.add_argument('--fragment', action='store_true', help='omit the <html>/<head> wrapper')
     args = parser.parse_args()
     try:
         raw = Path(args.panel).read_bytes()
         data = build(json.loads(raw), [r for path in args.records for r in read_jsonl(path)])
         data['panel_sha256'] = hashlib.sha256(raw).hexdigest()
+        if args.sensitivity:
+            tier = tiers(json.loads(Path(args.sensitivity).read_text()))
+            for model in data['models']:
+                model['tier'] = tier[model['agent']]
         Path(args.output).write_text(render(data, not args.fragment))
         if args.data:
             Path(args.data).write_text(json.dumps(data, indent=1) + '\n')
