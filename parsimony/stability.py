@@ -120,11 +120,16 @@ def summarize(values, tasks=None):
     return dict(task_count=len(tasks), common_tasks=len(common_tasks(values, tasks)), ranking=ranking, models=out)
 
 
+def reference_agent(ref):
+    """The model behind a reference; pooled panels label attempts as ``agent#attempt``."""
+    return ref['agent'].split('#', 1)[0]
+
+
 def drop_agent(panel, agent):
     """The panel rebuilt without one model's references; tasks left without a reference are removed."""
     tasks, orphans = {}, []
     for task, refs in panel['tasks'].items():
-        kept = [r for r in refs if r['agent'] != agent]
+        kept = [r for r in refs if reference_agent(r) != agent]
         if kept:
             tasks[task] = kept
         else:
@@ -254,11 +259,11 @@ def analyze(panel, records, draws=2000, seed=42):
 
     # Only panel members have references to leave out; models scored against the panel are never references.
     leave_one_out = {}
-    for agent in sorted({r['agent'] for refs in panel['tasks'].values() for r in refs}):
+    for agent in sorted({reference_agent(r) for refs in panel['tasks'].values() for r in refs}):
         reduced, orphans = drop_agent(panel, agent)
         scenarios[f'panel_without={agent}'] = dict(family='panel', **summarize(matrix(reduced, groups, weight, cap)))
         leave_one_out[agent] = dict(orphaned_tasks=orphans,
-                                    references_removed=sum(r['agent'] == agent
+                                    references_removed=sum(reference_agent(r) == agent
                                                            for refs in panel['tasks'].values() for r in refs))
     deduped, removed = dedup(panel)
     scenarios['panel_dedup'] = dict(family='panel', **summarize(matrix(deduped, groups, weight, cap)))

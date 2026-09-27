@@ -5,7 +5,8 @@ from urllib.error import HTTPError
 
 from parsimony.deepswe import (attempts, blank_context, choose_configs, cluster, dataset_rows, display_name,
                                fetch_patch, load_submission, pooled_panel, read_tasks)
-from parsimony.stability import bootstrap, clusters
+from parsimony.scoring import score_records
+from parsimony.stability import bootstrap, clusters, drop_agent
 from tests.test_scoring import record
 
 TOML = '''schema_version = "1.3"
@@ -122,7 +123,11 @@ class DeepSWETests(unittest.TestCase):
         self.assertEqual(sorted(panel['tasks']), ['t#1', 't#2'])  # u has no passing patch
         refs = panel['tasks']['t#1']
         self.assertIs(refs, panel['tasks']['t#2'])
-        self.assertEqual(sorted(r['agent'] for r in refs), ['a', 'a', 'b'])
+        self.assertEqual(sorted(r['agent'] for r in refs), ['a#1', 'a#2', 'b#1'])
+        # Scoring accepts the pooled panel, and leaving a model out removes all its attempts.
+        self.assertEqual(len(score_records(panel, records)), 2)
+        reduced, _ = drop_agent(panel, 'a')
+        self.assertEqual([r['agent'] for r in reduced['tasks']['t#1']], ['b#1'])
 
     def test_bootstrap_resamples_attempts_of_a_task_together(self):
         self.assertEqual(clusters(['t#1', 't#2', 'u#1', 'v']), [['t#1', 't#2'], ['u#1'], ['v']])

@@ -202,8 +202,9 @@ def fetch_patch(cache, url, tries=4):
 def pooled_panel(records, name):
     """Freeze a panel whose items share their task's references across attempts.
 
-    Every passing patch of a task, from any attempt, is a reference for each of that task's items;
-    references keep the configuration's agent name, so leaving a model out removes all its attempts.
+    Every passing patch of a task, from any attempt, is a reference for each of that task's items.
+    A reference is labelled ``<agent>#<attempt>``, so each is unique; the stability analysis strips
+    the attempt, so leaving a model out removes all its attempts.
     Tasks without any measured, in-scope passing patch cannot calibrate footprint and are left out.
     """
     usable = {cluster(r['task_id']) for r in records
@@ -212,9 +213,6 @@ def pooled_panel(records, name):
                  for r in records if cluster(r['task_id']) in usable]
     pooled = freeze(relabeled, name)
     items = sorted({r['task_id'] for r in records})
-    for refs in pooled['tasks'].values():
-        for ref in refs:
-            ref['agent'] = ref['agent'].rsplit('#', 1)[0]
     pooled['tasks'] = {item: pooled['tasks'][cluster(item)] for item in items if cluster(item) in pooled['tasks']}
     pooled['scope'] = 'fixed-cohort-sample-pooled-attempts'
     return pooled
