@@ -2,6 +2,12 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Results: DeepSWE, 26 current models — 2026-09-27
+
+New importer `python -m parsimony.deepswe` for [DeepSWE](https://deepswe.datacurve.ai), a 2026 benchmark that runs every model with mini-SWE-agent four times per task and publishes each run's patch and pass/fail. [examples/deepswe-python](examples/deepswe-python/README.md) measures its 34 Python tasks for 26 current models (Claude Opus 5, Fable 5, GPT-5.6, Kimi K3, GLM-5.3, DeepSeek V4, Grok 4.6, …) and is now the site's main board; the SWE-bench Verified board moves to `site/verified.html`.
+
+Each attempt is an item (`task#attempt`) scored against every passing patch of its task; the stability analysis and the site resample the attempts of a task together, which leaves results with one item per task unchanged. The site builder gains `--benchmark` and `--nav`. Measurement and scoring are unchanged.
+
 ## Results: 33 models × 500 tasks — 2026-09-27
 
 [examples/mini-swe-agent-500](examples/mini-swe-agent-500/README.md) replaces the ten-model results as the site's data: 33 models run by SWE-bench with mini-SWE-agent v0.0.0–v2.0.0, measured with analyzer 0.5.2 and scored against a new panel frozen from all 33 (`mini-swe-agent-33-448-solved-80-20-v0.5`). Five models run under two agent versions show that the version alone moves a score by up to 5.6 points.

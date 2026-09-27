@@ -135,7 +135,8 @@ def build(panel, records, draws=2000, seed=42):
             cells.append([scored['status'][0], m.get('net_units'), m.get('churn'),
                           None if scored['score'] is None else round(scored['score'], 1)])
         tasks.append([task, human, cells])
-    references = {r['agent'] for refs in panel['tasks'].values() for r in refs}
+    # Pooled panels label references agent#attempt; count models, not attempts.
+    references = {r['agent'].split('#', 1)[0] for refs in panel['tasks'].values() for r in refs}
     versions = sorted({m.group(1) for a in order if (m := VERSION_OF.match(a))},
                       key=lambda v: tuple(int(x) for x in v[1:].split('.')))
     return dict(score_version=VERSION, panel=panel['name'], references=len(references), harness=versions, analyzer_version=panel['analyzer_version'],
