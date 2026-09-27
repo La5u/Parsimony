@@ -19,7 +19,7 @@ import re
 import tempfile
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -154,6 +154,15 @@ def _load(agent: str, submission_url: str, prediction_url: str, results_url: str
                            "submission_url": submission_url, "ref": ref}}
 
 
+def _s3_prefix_exists(url: str, cache: Cache) -> bool:
+    """Whether the public SWE-bench bucket lists at least one key under ``url``/."""
+    root = "https://swe-bench-submissions.s3.amazonaws.com/"
+    prefix = url[len(root):].rstrip("/") + "/"
+    listing = _bytes(root + "?list-type=2&max-keys=1&prefix=" + quote(prefix, safe="/"), cache)
+    match = re.search(rb"<KeyCount>(\d+)</KeyCount>", listing)
+    return bool(match and int(match.group(1)))
+
+
 def _new_submission(agent: str, submission_url: str, base: str, ref: str,
                     cache: Cache, task_ids: list[str] | None,
                     limit: int | None, include_failed: bool = False) -> dict[str, Any]:
@@ -177,6 +186,16 @@ def _new_submission(agent: str, submission_url: str, base: str, ref: str,
     if parsed.scheme != "s3" or parsed.netloc != "swe-bench-submissions" or not parsed.path.strip("/"):
         raise ValueError("metadata assets.logs is not an official SWE-bench S3 location")
     logs_url = "https://swe-bench-submissions.s3.amazonaws.com/" + parsed.path.lstrip("/").rstrip("/")
+    logs_source = "metadata"
+    if not _s3_prefix_exists(logs_url, cache):
+        # A few metadata files name a folder that does not exist (another run's
+        # name, different letter case, or no /logs suffix); their patches are in
+        # the bucket's standard bash-only/<submission>/logs folder.
+        standard = ("https://swe-bench-submissions.s3.amazonaws.com/bash-only/"
+                    + base.rstrip("/").rsplit("/", 1)[-1] + "/logs")
+        if standard == logs_url or not _s3_prefix_exists(standard, cache):
+            raise ValueError("metadata assets.logs folder is empty and no standard logs folder exists")
+        logs_url, logs_source = standard, "standard-folder"
 
     result_bytes = _bytes(result_url, cache)
     raw_details = json.loads(result_bytes.decode("utf-8"))
@@ -236,7 +255,8 @@ def _new_submission(agent: str, submission_url: str, base: str, ref: str,
                            "results_sha256": hashlib.sha256(result_bytes).hexdigest(),
                            "metadata_sha256": hashlib.sha256(metadata_bytes).hexdigest(),
                            "reported_model": "", "submission_url": submission_url,
-                           "ref": ref, "layout": "mini-swe-agent-per-instance-v1"}}
+                           "ref": ref, "layout": "mini-swe-agent-per-instance-v1",
+                           "logs_source": logs_source}}
 
 
 def _legacy_failures(submission: dict[str, Any], cache: Cache, task_ids: list[str] | None) -> dict[str, Any]:

@@ -21,6 +21,12 @@ class FilePatch:
 
 def parse_patch(patch: str) -> list[FilePatch]:
     """Parse unified text diffs, rejecting malformed/incomplete hunks."""
+    # git ends every diff with a newline (a file without one gets a
+    # '\\ No newline' marker line). Some published patch files lost that final
+    # newline in storage, which turns a trailing blank context line into an
+    # empty line without a newline; restore it rather than reject the patch.
+    if patch and not patch.endswith('\n'):
+        patch += '\n'
     # Do not silently omit implementation renames/binary changes when they
     # accompany supported text edits elsewhere in the same patch.
     for block in re.split(r'(?m)^diff --git ', patch)[1:]:

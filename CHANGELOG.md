@@ -2,6 +2,13 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## 0.5.2-beta — 2026-09-27
+
+Two fixes for older published mini-SWE-agent runs (July–August 2025):
+
+- **A patch file missing its final newline is repaired, not rejected.** git ends every diff with a newline (a file without one gets a `\ No newline` marker), but these runs stored patches with it stripped. That turned a trailing blank context line into an empty line without a newline, so most of their patches failed with "patch context differs from base commit" (for example 244 of o3's 292 solved patches). Records now carry `provenance.patch_final_newline_restored`.
+- **Patches are found when `metadata.yaml` names a folder that does not exist.** For four runs it points to another run's folder, uses different letter case, or omits `/logs`. When the named S3 folder is empty, the analyzer uses the bucket's standard `bash-only/<submission>/logs` folder and records `provenance.logs_source`.
+
 ## Results: Claude Opus 4.5 added to ten models × 500 tasks — 2026-09-26
 
 Results only; no measurement or scoring change. Claude Opus 4.5 (high) (`20260217_mini-v2.0.0_claude-4-5-opus-high`) was measured with the same analyzer commit (`b2316a9`, 0.5.0-beta) and Python 3.14.7, and scored against the unchanged ten-model panel without becoming a reference; the ten original scores do not change. It ranks first (≈52.3). GPT-5.2 Codex and Gemini 3 Pro (high) are left out because their published per-task results are missing or mark every task unresolved. See [the example README](examples/ten-model-500/README.md#newcomers).

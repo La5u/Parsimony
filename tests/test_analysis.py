@@ -14,6 +14,14 @@ def diff(before, after, path='pkg/core.py', old=None, new=None):
 
 
 class AnalysisTests(unittest.TestCase):
+    def test_patch_missing_final_newline_is_restored(self):
+        # A stored patch whose final newline was stripped: its last context line
+        # (a blank line) must still match the base file.
+        source = 'a = 1\nb = 2\n\n'
+        patch = '--- a/x.py\n+++ b/x.py\n@@ -1,3 +1,3 @@\n-a = 1\n+a = 3\n b = 2\n '
+        self.assertEqual(apply_patch(source, parse_patch(patch)[0]), 'a = 3\nb = 2\n\n')
+        self.assertEqual(parse_patch(patch), parse_patch(patch + '\n'))
+
     def test_normalization(self):
         self.assertEqual(normalized_tokens('x = "hello" # comment\ny=102\n'),
                          normalized_tokens("long_name='bye'\nz = 0xff\n"))
