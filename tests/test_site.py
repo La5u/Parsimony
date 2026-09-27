@@ -66,12 +66,21 @@ class MainTests(unittest.TestCase):
             (tmp / 'r.jsonl').write_text(''.join(json.dumps(r) + '\n' for r in records))
             argv = ['site', str(tmp / 'panel.json'), str(tmp / 'r.jsonl'), '--output', str(tmp / 'index.html'),
                     '--data', str(tmp / 'data.json'), *[a.replace('TMP', str(tmp)) for a in extra]]
-            if extra:
+            if '--sensitivity' in extra:
                 (tmp / 'sensitivity.json').write_text(json.dumps(sensitivity({'agent-a': [1, 1], 'agent-b': [1, 2]})))
             with mock.patch.object(sys, 'argv', argv), redirect_stdout(StringIO()):
                 main()
             self.assertTrue((tmp / 'index.html').read_text().startswith('<!doctype html>'))
+            self.last = Path(tempfile.mkdtemp())
+            (self.last / 'data.json').write_text((tmp / 'data.json').read_text())
             return json.loads((tmp / 'data.json').read_text())['models']
+
+    def test_benchmark_and_nav(self):
+        models = self.run_main('--benchmark', 'deepswe', '--nav', 'Other board=other.html')
+        self.assertEqual(len(models), 2)
+        data = json.loads((self.last / 'data.json').read_text())
+        self.assertEqual(data['benchmark']['name'], 'DeepSWE')
+        self.assertEqual(data['nav'], [dict(label='Other board', url='other.html')])
 
     def test_build_without_sensitivity(self):
         self.assertTrue(all('rank_range' not in m for m in self.run_main()))

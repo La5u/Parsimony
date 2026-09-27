@@ -15,6 +15,7 @@ from pathlib import Path
 
 from .benchmark import read_jsonl
 from .scoring import metrics, percentile, require, score_records, task_score, unique
+from .deepswe import display_name
 
 PREFIX = re.compile(r'^\d{8}_mini-v[\d.]+[_-]')
 NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude Sonnet 4.5',
@@ -37,6 +38,8 @@ CAPS = (0, 10, 25, 50)
 
 
 def label(agent):
+    if agent.startswith('deepswe-'):
+        return display_name(agent)
     short = PREFIX.sub('', agent)
     return NAMES.get(short, short)
 

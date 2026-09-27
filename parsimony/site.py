@@ -8,6 +8,7 @@ import statistics
 from pathlib import Path
 
 from .benchmark import read_jsonl
+from .deepswe import display_name
 from .scoring import VERSION, score_records
 
 TEMPLATE = Path(__file__).resolve().parent.parent / 'site' / 'template.html'
@@ -32,7 +33,19 @@ NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude
          'qwen2-5-coder-32b-instruct': 'Qwen2.5-Coder 32B', 'kimi-k2-instruct': 'Kimi K2 Instruct'}
 
 
+BENCHMARKS = {
+    'verified': dict(name='SWE-bench Verified', url='https://www.swebench.com', reference="Maintainers' fix",
+                     task_url='https://github.com/{owner}/{repo}/pull/{number}', task_link="Maintainers' pull request",
+                     results="SWE-bench's published results", attempts=1),
+    'deepswe': dict(name='DeepSWE', url='https://deepswe.datacurve.ai', reference='Reference solution',
+                    task_url='https://github.com/datacurve-ai/deep-swe/tree/main/tasks/{task}', task_link='Task on GitHub',
+                    results="DeepSWE's published results", attempts=4),
+}
+
+
 def label(agent):
+    if agent.startswith('deepswe-'):
+        return display_name(agent)
     short = PREFIX.sub('', agent)
     return NAMES.get(short, short)
 
@@ -157,11 +170,15 @@ def main():
     parser.add_argument('--data', help='also write the page data as JSON here')
     parser.add_argument('--sensitivity', help='sensitivity.json from parsimony.stability; adds rank ranges')
     parser.add_argument('--fragment', action='store_true', help='omit the <html>/<head> wrapper')
+    parser.add_argument('--benchmark', choices=sorted(BENCHMARKS), default='verified')
+    parser.add_argument('--nav', action='append', default=[], metavar='LABEL=URL', help='link to another board')
     args = parser.parse_args()
     try:
         raw = Path(args.panel).read_bytes()
         data = build(json.loads(raw), [r for path in args.records for r in read_jsonl(path)])
         data['panel_sha256'] = hashlib.sha256(raw).hexdigest()
+        data['benchmark'] = BENCHMARKS[args.benchmark]
+        data['nav'] = [dict(zip(('label', 'url'), item.split('=', 1))) for item in args.nav]
         if args.sensitivity:
             add_rank_ranges(data['models'], json.loads(Path(args.sensitivity).read_text()))
             report = Path(args.sensitivity).with_suffix('.md').as_posix()

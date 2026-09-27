@@ -3,8 +3,8 @@ import unittest
 from pathlib import Path
 from urllib.error import HTTPError
 
-from parsimony.deepswe import (attempts, blank_context, choose_configs, cluster, dataset_rows, load_submission,
-                               pooled_panel, read_tasks)
+from parsimony.deepswe import (attempts, blank_context, choose_configs, cluster, dataset_rows, display_name,
+                               fetch_patch, load_submission, pooled_panel, read_tasks)
 from parsimony.stability import bootstrap, clusters
 from tests.test_scoring import record
 
@@ -64,6 +64,35 @@ class DeepSWETests(unittest.TestCase):
         trials = ([trial('m_max', 't', f'a{i}', patch=False) for i in range(4)] +
                   [trial('m_high', 't', f'b{i}') for i in range(4)] + [trial('n_high', 't', f'c{i}') for i in range(4)])
         self.assertEqual([c['config'] for c in choose_configs(board, trials)], ['n_high', 'm_high'])
+
+    def test_choose_configs_skips_unavailable_patches(self):
+        board = [dict(model='m', reasoning_effort='max', config='m_max', pass_rate=0.8),
+                 dict(model='m', reasoning_effort='high', config='m_high', pass_rate=0.7)]
+        trials = [trial('m_max', 't', 'a'), trial('m_high', 't', 'b')]
+        chosen = choose_configs(board, trials, available=lambda config: config != 'm_max')
+        self.assertEqual([c['config'] for c in chosen], ['m_high'])
+
+    def test_fetch_patch_treats_forbidden_as_missing(self):
+        class Forbidden:
+            def get(self, url):
+                raise HTTPError(url, 403, 'forbidden', {}, None)
+        self.assertIsNone(fetch_patch(Forbidden(), 'https://cdn.example/x'))
+
+        class Flaky:
+            calls = 0
+            def get(self, url):
+                self.calls += 1
+                if self.calls < 3:
+                    raise ConnectionResetError('reset')
+                return b'patch'
+        self.assertEqual(fetch_patch(Flaky(), 'https://cdn.example/x'), 'patch')
+
+    def test_display_names(self):
+        names = {'gpt_5_6_sol_max': 'GPT-5.6 Sol (max)', 'claude_opus_5_max': 'Claude Opus 5 (max)',
+                 'glm_5_3_flash_max': 'GLM-5.3 Flash (max)', 'kimi_k2_7_code_default': 'Kimi K2.7 Code',
+                 'qwen3_8_max_xhigh': 'Qwen3.8 Max (xhigh)', 'deepseek_v4_pro_max': 'DeepSeek V4 Pro (max)'}
+        for config, name in names.items():
+            self.assertEqual(display_name(f'deepswe-v1.1_mini_swe_agent_{config}'), name)
 
     def test_attempts_are_numbered_by_start_time(self):
         trials = [trial('c', 't', 'late', started='2026-09-02'), trial('c', 't', 'early', started='2026-09-01'),
