@@ -509,6 +509,12 @@ def measure(patch: str, get_source=None) -> dict:
         if not implementation(path) or (f.old != '/dev/null' and not implementation(f.old)):
             excluded.append(path)
             continue
+        # A new file at the repository root is an agent's scratch script (reproduce_issue.py
+        # and the like), not part of the fix: library code lives in packages, and no
+        # maintainer fix in SWE-bench Verified adds one.
+        if f.old == '/dev/null' and '/' not in path:
+            excluded.append(path)
+            continue
         if not f.hunks:
             raise ValueError('file has no text hunks')
         if get_source:

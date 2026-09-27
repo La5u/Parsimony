@@ -8,6 +8,7 @@ Two fixes for older published mini-SWE-agent runs (July–August 2025):
 
 - **A patch file missing its final newline is repaired, not rejected.** git ends every diff with a newline (a file without one gets a `\ No newline` marker), but these runs stored patches with it stripped. That turned a trailing blank context line into an empty line without a newline, so most of their patches failed with "patch context differs from base commit" (for example 244 of o3's 292 solved patches). Records now carry `provenance.patch_final_newline_restored`.
 - **Patches are found when `metadata.yaml` names a folder that does not exist.** For four runs it points to another run's folder, uses different letter case, or omits `/logs`. When the named S3 folder has no per-task folders, the analyzer uses the bucket's standard `bash-only/<submission>/logs` folder and records `provenance.logs_source`.
+- **New files at the repository root are excluded as scratch scripts.** Before mini-SWE-agent v2.0.0, submitted patches kept the scripts agents write while working (`reproduce_issue.py`, `comprehensive_test.py`, …): up to 94% of a model's solved patches, against none under v2.0.0, which drops them. Library code lives in packages and no maintainer fix in SWE-bench Verified adds a root-level file. Edits to existing root-level files still count.
 
 ## Results: Claude Opus 4.5 added to ten models × 500 tasks — 2026-09-26
 
