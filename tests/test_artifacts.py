@@ -39,6 +39,8 @@ class ArtifactsTests(unittest.TestCase):
         details = json.dumps({'b': {'resolved': False}, 'a': {'resolved': True},
                               'c': {'resolved': True}}).encode()
         def fetch(url, _cache):
+            if '?list-type=2' in url:
+                return b'<KeyCount>1</KeyCount>'
             if url.endswith('/all_preds.jsonl'):
                 raise HTTPError(url, 404, 'missing', {}, None)
             if url.endswith('/metadata.yaml'):
@@ -57,6 +59,8 @@ class ArtifactsTests(unittest.TestCase):
 
     def test_current_layout_name_null_logs_and_download_limit(self):
         def fetch(url, _cache):
+            if '?list-type=2' in url:
+                return b'<KeyCount>1</KeyCount>'
             if url.endswith('/all_preds.jsonl'):
                 raise HTTPError(url, 404, 'missing', {}, None)
             if url.endswith('/metadata.yaml'):
@@ -80,6 +84,8 @@ class ArtifactsTests(unittest.TestCase):
         submission = 'https://github.com/SWE-bench/experiments/tree/main/evaluation/verified/demo'
         requested = []
         def fetch(url, _cache):
+            if '?list-type=2' in url:
+                return b'<KeyCount>1</KeyCount>'
             if url.endswith('/all_preds.jsonl'):
                 raise HTTPError(url, 404, 'missing', {}, None)
             if url.endswith('/metadata.yaml'):
@@ -102,9 +108,44 @@ class ArtifactsTests(unittest.TestCase):
         self.assertEqual(loaded['result_details']['no_generation'], ['nogeneration'])
         self.assertFalse(any('/nolog/' in url or '/nogeneration/' in url for url in requested))
 
+    def test_current_layout_falls_back_to_standard_logs_folder(self):
+        submission = 'https://github.com/SWE-bench/experiments/tree/main/evaluation/verified/demo'
+        def fetch(url, _cache):
+            if '?list-type=2' in url:
+                return b'<KeyCount>1</KeyCount>' if 'prefix=bash-only/demo/logs/' in url else b'<KeyCount>0</KeyCount>'
+            if url.endswith('/all_preds.jsonl'):
+                raise HTTPError(url, 404, 'missing', {}, None)
+            if url.endswith('/metadata.yaml'):
+                return b'assets:\n  logs: s3://swe-bench-submissions/bash-only/Other-Run/logs\n'
+            if url.endswith('/per_instance_details.json'):
+                return b'{"a": {"resolved": true}}'
+            if url == 'https://swe-bench-submissions.s3.amazonaws.com/bash-only/demo/logs/a/patch.diff':
+                return b'patch-a'
+            raise AssertionError('unexpected download: ' + url)
+        with patch('parsimony.artifacts._bytes', side_effect=fetch):
+            loaded = load_submission(submission, Cache(tempfile.mkdtemp()))
+        self.assertEqual(loaded['predictions'], {'a': 'patch-a'})
+        self.assertEqual(loaded['provenance']['logs_source'], 'standard-folder')
+
+    def test_current_layout_rejects_empty_logs_folders(self):
+        submission = 'https://github.com/SWE-bench/experiments/tree/main/evaluation/verified/demo'
+        def fetch(url, _cache):
+            if '?list-type=2' in url:
+                return b'<KeyCount>0</KeyCount>'
+            if url.endswith('/all_preds.jsonl'):
+                raise HTTPError(url, 404, 'missing', {}, None)
+            if url.endswith('/metadata.yaml'):
+                return b'assets:\n  logs: s3://swe-bench-submissions/bash-only/Other-Run/logs\n'
+            raise AssertionError('unexpected download: ' + url)
+        with patch('parsimony.artifacts._bytes', side_effect=fetch):
+            with self.assertRaisesRegex(ValueError, 'no standard logs folder'):
+                load_submission(submission, Cache(tempfile.mkdtemp()))
+
     def test_current_layout_requires_real_boolean(self):
         submission = 'https://github.com/SWE-bench/experiments/tree/main/evaluation/verified/demo'
         def fetch(url, _cache):
+            if '?list-type=2' in url:
+                return b'<KeyCount>1</KeyCount>'
             if url.endswith('/all_preds.jsonl'):
                 raise HTTPError(url, 404, 'missing', {}, None)
             if url.endswith('/metadata.yaml'):
@@ -127,6 +168,8 @@ class ArtifactsTests(unittest.TestCase):
                          for t in ('ok', 'failed', 'unapplied', 'noreport', 'nogen'))
         requested = []
         def fetch(url, _cache):
+            if '?list-type=2' in url:
+                return b'<KeyCount>1</KeyCount>'
             if url.endswith('/all_preds.jsonl'):
                 return preds
             if url.endswith('/results/results.json'):

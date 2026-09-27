@@ -13,7 +13,7 @@ from urllib.parse import quote
 
 from .analysis import measure
 
-ANALYZER_VERSION = '0.5.1-beta'
+ANALYZER_VERSION = '0.5.2-beta'
 FAILED_CATEGORIES = {'unresolved', 'failed', 'not_resolved'}
 
 
@@ -118,7 +118,8 @@ def analyze_submission(submission, cache, dataset=None, limit=None, patch_only=F
                       provenance={**submission['provenance'], 'instance_id': task,
                                   'patch_location': submission.get('prediction_locations', {}).get(
                                       task, submission['provenance']['prediction_url'] + '#instance_id=' + task),
-                                  'patch_sha256': hashlib.sha256(patch.encode()).hexdigest() if patch is not None else None},
+                                  'patch_sha256': hashlib.sha256(patch.encode()).hexdigest() if patch is not None else None,
+                                  'patch_final_newline_restored': bool(patch) and not patch.endswith('\n')},
                       metrics=None, human_metrics=None, model_human_ratio=None,
                       analysis_status='not_resolved')
         if meta:
