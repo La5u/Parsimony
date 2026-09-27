@@ -76,13 +76,13 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       <tbody></tbody>
     </table>
   </div>
-  <p class="small muted" id="tier-note" style="margin-top:8px" hidden>Models in the same tier are not statistically distinguishable (<a href="https://github.com/La5u/Parsimony/blob/main/examples/ten-model-500/sensitivity.md">sensitivity report</a>).</p>
+  <p class="small muted" id="tier-note" style="margin-top:8px" hidden>Models in the same tier are not statistically distinguishable (<a id="tier-link" href="https://github.com/La5u/Parsimony">sensitivity report</a>).</p>
   <p class="small muted" style="margin-top:8px">Score: mean over all tasks, from −25 to 100. Per solve: mean score over the tasks the model solved, where 50.5 is average. Median churn: units added plus removed per solved task.</p>
 
   <h2 id="method">Method</h2>
   <ul>
     <li>Each patch is applied to the task's base commit and both versions of each changed file are parsed. Nothing is executed.</li>
-    <li>On each task, a passing patch is ranked against all passing patches from these ten models: 80% on net units added, 20% on units changed.</li>
+    <li>On each task, a passing patch is ranked against all passing patches from the reference models: 80% on net units added, 20% on units changed.</li>
     <li>A failed patch scores from −25 to 0, depending on how much code it added.</li>
     <li>Test, docs and generated files are excluded. Only Python is measured.</li>
   </ul>
@@ -105,7 +105,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <h2 id="limits">Limits</h2>
   <ul>
     <li>Smaller is not always better. Units measure size, not readability or design.</li>
-    <li>Scores are relative to these ten models, which all use the same agent harness (mini-SWE-agent v2.0.0).</li>
+    <li id="harness-limit">Scores are relative to the reference models, which all use the same agent harness (mini-SWE-agent).</li>
     <li>Pass/fail comes from SWE-bench's published results; tests are not rerun.</li>
   </ul>
 
@@ -125,9 +125,17 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 
   const n = data.models.length;
-  $('board-intro').textContent = n === 10
-    ? `Ten models on the ${data.task_count} SWE-bench Verified tasks that at least one of them solved.`
-    : `${n} models on the ${data.task_count} SWE-bench Verified tasks that at least one of the ten reference models solved.`;
+  const refs = data.references ?? n;
+  $('board-intro').textContent = refs === n
+    ? `${n} models on the ${data.task_count} SWE-bench Verified tasks that at least one of them solved.`
+    : `${n} models on the ${data.task_count} SWE-bench Verified tasks that at least one of the ${refs} reference models solved.`;
+  const versions = data.harness || [];
+  if (versions.length > 1) {
+    $('harness-limit').textContent = `Scores are relative to the reference models. All use the mini-SWE-agent harness, but versions ${versions[0]} to ${versions[versions.length - 1]}, so part of a gap between models can come from the harness version.`;
+  } else if (versions.length === 1) {
+    $('harness-limit').textContent = `Scores are relative to the reference models, which all use the same agent harness (mini-SWE-agent ${versions[0]}).`;
+  }
+  if (data.sensitivity_url) $('tier-link').href = data.sensitivity_url;
   const tiered = data.models.some((m) => m.tier != null);
   $('tier-head').hidden = $('tier-note').hidden = !tiered;
   document.querySelector('#board tbody').innerHTML = data.models.map((m, i) => {

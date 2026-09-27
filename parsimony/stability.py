@@ -16,13 +16,20 @@ from pathlib import Path
 from .benchmark import read_jsonl
 from .scoring import metrics, percentile, require, score_records, task_score, unique
 
-PREFIX = re.compile(r'^\d{8}_mini-v[\d.]+_')
+PREFIX = re.compile(r'^\d{8}_mini-v[\d.]+[_-]')
 NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude Sonnet 4.5',
          'claude-4-5-haiku-high': 'Claude Haiku 4.5', 'deepseek-3-2-high': 'DeepSeek V3.2',
          'gemini-3-flash-high': 'Gemini 3 Flash', 'glm-5-high': 'GLM-5', 'gpt-5-2-high': 'GPT-5.2',
          'gpt-5-mini': 'GPT-5 mini', 'kimi-k2-5-high': 'Kimi K2.5', 'minimax-2-5-high': 'MiniMax M2.5',
          'claude-4-5-opus-high': 'Claude Opus 4.5', 'gpt-5-2-codex': 'GPT-5.2 Codex',
-         'gemini-3-pro-high': 'Gemini 3 Pro'}
+         'gemini-3-pro-high': 'Gemini 3 Pro', 'Llama-4-Maverick-17B-Instruct': 'Llama 4 Maverick',
+         'claude-3-7-sonnet-20250219': 'Claude 3.7 Sonnet', 'claude-sonnet-4-20250514': 'Claude Sonnet 4',
+         'gemini-2.5-pro': 'Gemini 2.5 Pro', 'o3-2025-04-16': 'o3', 'claude-4-opus-20250514': 'Claude Opus 4',
+         'gpt-5-nano': 'GPT-5 nano', 'gpt-5': 'GPT-5', 'gpt-oss-120b': 'gpt-oss-120b', 'glm-4.5': 'GLM-4.5',
+         'gemini-3-pro-preview-20251118': 'Gemini 3 Pro (preview)', 'gpt-5.1-2025-11-13': 'GPT-5.1',
+         'gpt-5.1-codex': 'GPT-5.1 Codex', 'minimax-m2': 'MiniMax M2', 'glm-4.6': 'GLM-4.6',
+         'devstral-2512': 'Devstral 2512', 'devstral-small-2512': 'Devstral Small 2512',
+         'kimi-k2-thinking': 'Kimi K2 Thinking', 'gpt-5.2-2025-12-11': 'GPT-5.2'}
 WEIGHTS = (0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
 CAPS = (0, 10, 25, 50)
 
