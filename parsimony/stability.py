@@ -149,6 +149,14 @@ def quantile(values, p):
     return ordered[int(p * (len(ordered) - 1))]
 
 
+def clusters(tasks):
+    """Tasks grouped for resampling: items ``task#attempt`` of one task form one group."""
+    groups = {}
+    for t in tasks:
+        groups.setdefault(t.split('#', 1)[0], []).append(t)
+    return list(groups.values())
+
+
 def bootstrap(values, tasks, draws=2000, seed=42):
     """Paired task bootstrap over all tasks: rank distribution and paired CIs on every difference.
 
@@ -164,8 +172,9 @@ def bootstrap(values, tasks, draws=2000, seed=42):
     rng = random.Random(seed)
     lows, highs = {a: [] for a in agents}, {a: [] for a in agents}
     ranks = {a: [0] * len(agents) for a in agents}
+    groups = clusters(tasks)
     for _ in range(draws):
-        drawn = rng.choices(tasks, k=len(tasks))
+        drawn = [t for g in rng.choices(groups, k=len(groups)) for t in g]
         low = {a: statistics.fmean(values[a][t][1] for t in drawn) for a in agents}
         high = {a: statistics.fmean(values[a][t][2] for t in drawn) for a in agents}
         for position, a in enumerate(sorted(agents, key=lambda a: (-(low[a] + high[a]), a))):
@@ -352,7 +361,7 @@ def render(result, command):
     base = result['scenarios']['baseline']
     boot = result['bootstrap']
     b = result['baseline']
-    out = [f'# Score sensitivity: {len(order)} models × 500 tasks', '',
+    out = [f'# Score sensitivity: {len(order)} models', '',
            f"Analysis, not a score release. Baseline `{result['score_version']}` "
            f"(net {b['net_weight']:g} / churn {b['churn_weight']:g}, failure cap {b['failure_cap']:g}), "
            f"panel `{result['panel']}`: {result['task_count']} tasks. Scores average all tasks; an unscored "

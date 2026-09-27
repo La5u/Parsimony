@@ -50,12 +50,16 @@ def bootstrap(board, draws, seed):
     percentile bootstrap.
     """
     tasks = list(board[0]['tasks'])
+    groups = {}
+    for t in tasks:  # items task#attempt of one task are resampled together
+        groups.setdefault(t.split('#', 1)[0], []).append(t)
+    groups = list(groups.values())
     rng = random.Random(seed)
     lows = {e['agent']: [] for e in board}
     highs = {e['agent']: [] for e in board}
     top = dict.fromkeys(lows, 0.0)
     for _ in range(draws):
-        drawn = rng.choices(tasks, k=len(tasks))
+        drawn = [t for g in rng.choices(groups, k=len(groups)) for t in g]
         low = {e['agent']: statistics.fmean(e['tasks'][t]['lower'] for t in drawn) for e in board}
         high = {e['agent']: statistics.fmean(e['tasks'][t]['upper'] for t in drawn) for e in board}
         mid = {a: low[a] + high[a] for a in low}
