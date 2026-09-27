@@ -1,6 +1,6 @@
 # Ten models × 500 Verified tasks, plus Claude Opus 4.5 (analyzer 0.5.0)
 
-**Beta research preview, not an official ranking.** Every SWE-bench Verified task for the ten mini-SWE-agent v2.0.0 submissions of 2026-02-17, measured in coding units, including explicitly failed patches. This replaces the [10-task demo](../ten-model-report.md) as the main result: it includes failures and has uncertainty over hundreds of tasks. It is rendered as the [site](../../site/index.html) with `python -m parsimony.site`. Claude Opus 4.5 (high), from the same run, was added later and is scored against the ten-model panel without becoming a reference (see [Newcomers](#newcomers)).
+**Beta research preview, not an official ranking.** Every SWE-bench Verified task for the ten mini-SWE-agent v2.0.0 submissions of 2026-02-17, measured in coding units, including explicitly failed patches. This replaces the [10-task demo](../ten-model-report.md) as the main result: it includes failures and has uncertainty over hundreds of tasks. It was the [site](../../site/index.html)'s data until the [33-model results](../mini-swe-agent-500/README.md), which re-measure these runs with analyzer 0.5.2, replaced it. Claude Opus 4.5 (high), from the same run, was added later and is scored against the ten-model panel without becoming a reference (see [Newcomers](#newcomers)).
 
 ## Pinned inputs
 
