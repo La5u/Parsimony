@@ -110,7 +110,7 @@ python -m parsimony.snapshot restore cache-v4.tar.gz --cache .parsimony-cache  #
 
 ## Website
 
-`python -m parsimony.site PANEL RECORDS... --output site/index.html` renders a single self-contained page from a frozen panel and measured JSONL, offline: leaderboard with 95% intervals, a short method, per-task results and limits. [`site/index.html`](site/index.html) is built from the [33-model × 500-task results](examples/mini-swe-agent-500/README.md) and is served at [parsimony.lasu.dev](https://parsimony.lasu.dev) (Cloudflare Pages, output directory `site`). Edit `site/template.html` for layout and copy. `--sensitivity examples/mini-swe-agent-500/sensitivity.json` adds each model's 95% bootstrap rank range from the stability analysis.
+`python -m parsimony.site PANEL RECORDS... --output site/index.html` renders a single self-contained page from a frozen panel and measured JSONL, offline: leaderboard with 95% intervals, a short method, per-task results and limits. [`site/index.html`](site/index.html) (the main board) is built from the [DeepSWE results](examples/deepswe-python/README.md) with `--benchmark deepswe`, and [`site/verified.html`](site/verified.html) from the [33-model SWE-bench Verified results](examples/mini-swe-agent-500/README.md); `--nav LABEL=URL` links the boards. Both are served at [parsimony.lasu.dev](https://parsimony.lasu.dev) (Cloudflare Pages, output directory `site`). Edit `site/template.html` for layout and copy. `--sensitivity examples/mini-swe-agent-500/sensitivity.json` adds each model's 95% bootstrap rank range from the stability analysis.
 
 ## Contributing
 
@@ -120,7 +120,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). `python -m parsimony.contribute export` 
 
 | Example | Analyzer | What it shows |
 |---|---|---|
-| [mini-swe-agent-500](examples/mini-swe-agent-500/README.md) | 0.5.2-beta | 33 models × all 500 tasks with failures, mini-SWE-agent v0.0.0–v2.0.0; frozen panel, scores, rank ranges and an agent-version check (the website's data) |
+| [deepswe-python](examples/deepswe-python/README.md) | 0.5.2-beta | 26 current models (2026) × 34 DeepSWE Python tasks × 4 attempts, one agent (mini-SWE-agent); imported with `python -m parsimony.deepswe` (the website's main board) |
+| [mini-swe-agent-500](examples/mini-swe-agent-500/README.md) | 0.5.2-beta | 33 models × all 500 tasks with failures, mini-SWE-agent v0.0.0–v2.0.0; frozen panel, scores, rank ranges and an agent-version check (the website's second board) |
 | [ten-model-500](examples/ten-model-500/README.md) | 0.5.0-beta | Ten models (plus Claude Opus 4.5) × all 500 tasks, mini-SWE-agent v2.0.0 only; superseded as the website's data |
 | [beta-500-v5](examples/beta-500-v5/README.md) | 0.5.0-beta | Two complete 500-task cohorts in coding units; units vs tokens, coverage audit, fresh-artifact recheck |
 | [beta-500-v4](examples/beta-500-v4/README.md) | 0.4.0-beta | Two complete 500-task cohorts in tokens (superseded by v5) |
