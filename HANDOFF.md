@@ -7,7 +7,7 @@ State of Parsimony after the cloud sessions of 2026-09-26/27, for continuing loc
 - **Site** (Cloudflare Pages, output directory `site`, served at https://parsimony.lasu.dev; every push to `main` redeploys):
   - `site/index.html` is the main board: [DeepSWE](examples/deepswe-python/README.md), 26 current models × 34 Python tasks × 4 attempts.
   - `site/verified.html` is the second board: [SWE-bench Verified](examples/mini-swe-agent-500/README.md), 33 mini-SWE-agent models × 500 tasks.
-  - The leaderboard shows a 95% bootstrap **rank range** per model (no tiers).
+  - The headline board orders by **footprint credit** (mean over scored, in-scope passing patches), with resolve rate and scored/published solve counts separate. Models solve different task subsets; no footprint uncertainty is claimed. All-task scores, 95% CIs and bootstrap rank ranges are retained in expandable diagnostics.
 - **Analyzer 0.5.2-beta** (see [CHANGELOG](CHANGELOG.md)): repairs patch files missing their final newline, falls back to the standard S3 logs folder when `metadata.yaml` names a wrong one, and excludes new root-level files (agent scratch scripts).
 - **Statistics** (`parsimony/stability.py`, `parsimony/site.py`): everything uses all tasks. An unscored task counts at the middle of its bounds for scores and ranking, at its worst and best case for intervals; a difference is "distinguishable" only in the worst case. Items `task#attempt` of one task are resampled together; with one item per task this is identical to a plain task bootstrap.
 - Older result sets (`examples/ten-model-500`, `beta-500-*`) are history and use older analyzers.
@@ -61,7 +61,7 @@ The Verified dataset is `python -m parsimony dataset --output verified.jsonl` (S
 
 ## Open ideas, roughly in priority order
 
-1. **Make footprint the headline.** The score is mostly resolve rate on Verified; *Per solve* is Parsimony's own signal. Consider sorting by a footprint score on solved tasks with resolve rate as its own column.
+1. **Footprint is now the headline.** Both pages were rebuilt offline with per-solve credit first; original all-task diagnostics remain separate. Follow-up: same-task footprint comparisons and dedicated conditional-footprint uncertainty (do not reuse all-task rank ranges). Tests cover ordering, ties, missing/out-of-scope solves, coverage and task-cell alignment.
 2. **More DeepSWE tasks:** measuring TypeScript and Go (likely via tree-sitter as an optional dependency, a separate versioned track) would take DeepSWE from 34 to 103 tasks.
 3. **Keep DeepSWE current:** re-run `configs` and `analyze` when new models appear (the live leaderboard updates).
 4. **Report broken SWE-bench submissions upstream** (`SWE-bench/experiments`): Gemini 3 Pro (high) `per_instance_details.json` marks all 500 tasks unresolved; GPT-5.2 Codex has no results file; Claude 3.7 Sonnet has 402 patches missing on S3; four runs' `metadata.yaml` name wrong S3 folders.

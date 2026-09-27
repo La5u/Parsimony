@@ -31,6 +31,8 @@ python -m parsimony.site score-panel.json *.jsonl --sensitivity sensitivity.json
 
 ## Results
 
+This table retains the original all-task score ordering and uncertainty. The website now leads with **Per solve** (footprint credit), with these all-task statistics in separate diagnostics; their intervals and ranks do not apply to the footprint ordering.
+
 | Rank (95%) | Model | Score | 95% interval | Resolved | Per solve | Median net units | Median churn | Churn vs reference |
 |---:|---|---:|---|---:|---:|---:|---:|---:|
 | 1–2 | Claude Fable 5 (xhigh) | 53.2 | 40.9–65.0 | 74.3% | 76.0 | +1430 | 1445 | 0.86× |
