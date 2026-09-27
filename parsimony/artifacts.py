@@ -186,16 +186,6 @@ def _new_submission(agent: str, submission_url: str, base: str, ref: str,
     if parsed.scheme != "s3" or parsed.netloc != "swe-bench-submissions" or not parsed.path.strip("/"):
         raise ValueError("metadata assets.logs is not an official SWE-bench S3 location")
     logs_url = "https://swe-bench-submissions.s3.amazonaws.com/" + parsed.path.lstrip("/").rstrip("/")
-    logs_source = "metadata"
-    if not _s3_prefix_exists(logs_url, cache):
-        # A few metadata files name a folder that does not exist (another run's
-        # name, different letter case, or no /logs suffix); their patches are in
-        # the bucket's standard bash-only/<submission>/logs folder.
-        standard = ("https://swe-bench-submissions.s3.amazonaws.com/bash-only/"
-                    + base.rstrip("/").rsplit("/", 1)[-1] + "/logs")
-        if standard == logs_url or not _s3_prefix_exists(standard, cache):
-            raise ValueError("metadata assets.logs folder is empty and no standard logs folder exists")
-        logs_url, logs_source = standard, "standard-folder"
 
     result_bytes = _bytes(result_url, cache)
     raw_details = json.loads(result_bytes.decode("utf-8"))
@@ -222,6 +212,17 @@ def _new_submission(agent: str, submission_url: str, base: str, ref: str,
             unresolved.add(task)
 
     evaluated = resolved | unresolved | no_logs | no_generation
+    logs_source = "metadata"
+    probe = min(evaluated, default=None)
+    if probe is not None and not _s3_prefix_exists(logs_url + "/" + probe, cache):
+        # A few metadata files name the wrong folder (another run's name,
+        # different letter case, or no /logs suffix); their per-task folders
+        # are in the bucket's standard bash-only/<submission>/logs folder.
+        standard = ("https://swe-bench-submissions.s3.amazonaws.com/bash-only/"
+                    + base.rstrip("/").rsplit("/", 1)[-1] + "/logs")
+        if standard == logs_url or not _s3_prefix_exists(standard + "/" + probe, cache):
+            raise ValueError("metadata assets.logs folder has no task folders and no standard logs folder exists")
+        logs_url, logs_source = standard, "standard-folder"
     candidates = resolved | (unresolved if include_failed else set())
     wanted = candidates if task_ids is None else (candidates & {str(x) for x in task_ids})
     selected = sorted(wanted)

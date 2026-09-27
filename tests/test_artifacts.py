@@ -112,11 +112,11 @@ class ArtifactsTests(unittest.TestCase):
         submission = 'https://github.com/SWE-bench/experiments/tree/main/evaluation/verified/demo'
         def fetch(url, _cache):
             if '?list-type=2' in url:
-                return b'<KeyCount>1</KeyCount>' if 'prefix=bash-only/demo/logs/' in url else b'<KeyCount>0</KeyCount>'
+                return b'<KeyCount>1</KeyCount>' if 'prefix=bash-only/demo/logs/a/' in url else b'<KeyCount>0</KeyCount>'
             if url.endswith('/all_preds.jsonl'):
                 raise HTTPError(url, 404, 'missing', {}, None)
             if url.endswith('/metadata.yaml'):
-                return b'assets:\n  logs: s3://swe-bench-submissions/bash-only/Other-Run/logs\n'
+                return b'assets:\n  logs: s3://swe-bench-submissions/bash-only/demo\n'
             if url.endswith('/per_instance_details.json'):
                 return b'{"a": {"resolved": true}}'
             if url == 'https://swe-bench-submissions.s3.amazonaws.com/bash-only/demo/logs/a/patch.diff':
@@ -136,6 +136,8 @@ class ArtifactsTests(unittest.TestCase):
                 raise HTTPError(url, 404, 'missing', {}, None)
             if url.endswith('/metadata.yaml'):
                 return b'assets:\n  logs: s3://swe-bench-submissions/bash-only/Other-Run/logs\n'
+            if url.endswith('/per_instance_details.json'):
+                return b'{"a": {"resolved": true}}'
             raise AssertionError('unexpected download: ' + url)
         with patch('parsimony.artifacts._bytes', side_effect=fetch):
             with self.assertRaisesRegex(ValueError, 'no standard logs folder'):
