@@ -53,9 +53,10 @@ class StabilityTests(unittest.TestCase):
         self.assertAlmostEqual(task_value(records[0], deduped['tasks']['t1'], 1.0, 25)[0], 1 + 99 * 0.75)
 
     def test_paired_difference_ci(self):
-        values = {'good': {f't{i}': (60 + i % 3, 0, 0) for i in range(30)},
-                  'bad': {f't{i}': (20 + i % 5, 0, 0) for i in range(30)},
-                  'twin': {f't{i}': (60 + i % 3, 0, 0) for i in range(30)}}
+        point = lambda v: (v, v, v)
+        values = {'good': {f't{i}': point(60 + i % 3) for i in range(30)},
+                  'bad': {f't{i}': point(20 + i % 5) for i in range(30)},
+                  'twin': {f't{i}': point(60 + i % 3) for i in range(30)}}
         tasks = sorted(values['good'])
         result = bootstrap(values, tasks, draws=200, seed=3)
         self.assertEqual(result, bootstrap(values, tasks, draws=200, seed=3))
@@ -66,6 +67,21 @@ class StabilityTests(unittest.TestCase):
         self.assertEqual(result['pairs']['good|twin']['ci_95'], [0, 0])
         self.assertEqual(result['models']['bad']['rank_counts'], [0, 0, 200])
         self.assertEqual(sum(result['models']['good']['rank_counts']), 200)
+
+    def test_unscored_tasks_widen_differences_conservatively(self):
+        point = lambda v: (v, v, v)
+        close = {'a': {f't{i}': point(52) for i in range(40)}, 'b': {f't{i}': point(48) for i in range(40)}}
+        tasks = sorted(close['a'])
+        self.assertGreater(bootstrap(close, tasks, draws=200, seed=1)['pairs']['a|b']['ci_95'][0], 0)
+        # Ten of a's tasks unscored successes (1 to 100): a may still be ahead, but not in the worst case.
+        for i in range(10):
+            close['a'][f't{i}'] = (None, 1, 100)
+        result = bootstrap(close, tasks, draws=200, seed=1)
+        self.assertLess(result['pairs']['a|b']['ci_95'][0], 0)
+        self.assertGreater(result['pairs']['a|b']['ci_95'][1], 0)
+        low, high = result['models']['a']['score_ci_95']
+        self.assertLess(low, 48)
+        self.assertGreater(high, 52)
 
     def test_unscored_tasks_give_bounds_not_points(self):
         records = cohort()
@@ -82,7 +98,8 @@ class StabilityTests(unittest.TestCase):
         d = summary['models']['d']
         self.assertIsNone(d['full_score'])
         self.assertEqual(summary['common_tasks'], 2)
-        self.assertAlmostEqual(d['score'], (values['d']['t1'][0] + values['d']['t3'][0]) / 2)
+        # Ranked by the midpoint of the bounds over all tasks, not by the fully scored tasks alone.
+        self.assertAlmostEqual(d['score'], (d['lower'] + d['upper']) / 2)
         self.assertLess(d['lower'], d['upper'])
         self.assertAlmostEqual(d['upper'] - d['lower'], (25 + 125) / 4)
         self.assertIsNotNone(summary['models']['a']['full_score'])

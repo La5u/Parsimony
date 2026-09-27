@@ -29,7 +29,9 @@ NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude
          'gemini-3-pro-preview-20251118': 'Gemini 3 Pro (preview)', 'gpt-5.1-2025-11-13': 'GPT-5.1',
          'gpt-5.1-codex': 'GPT-5.1 Codex', 'minimax-m2': 'MiniMax M2', 'glm-4.6': 'GLM-4.6',
          'devstral-2512': 'Devstral 2512', 'devstral-small-2512': 'Devstral Small 2512',
-         'kimi-k2-thinking': 'Kimi K2 Thinking', 'gpt-5.2-2025-12-11': 'GPT-5.2'}
+         'kimi-k2-thinking': 'Kimi K2 Thinking', 'gpt-5.2-2025-12-11': 'GPT-5.2',
+         'o4-mini-2025-04-16': 'o4-mini', 'qwen3-coder-480b-a35b-instruct': 'Qwen3-Coder 480B',
+         'qwen2-5-coder-32b-instruct': 'Qwen2.5-Coder 32B', 'kimi-k2-instruct': 'Kimi K2 Instruct'}
 WEIGHTS = (0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
 CAPS = (0, 10, 25, 50)
 
@@ -95,21 +97,24 @@ def common_tasks(values, tasks=None):
 
 
 def summarize(values, tasks=None):
-    """Point score on common tasks, bounds over all given tasks, and the resulting ranking."""
+    """Bounds over all given tasks and their midpoint, which orders the ranking.
+
+    Unscored tasks enter at their best and worst case, so no model loses tasks from the
+    comparison. The midpoint equals the point score when every task has one.
+    """
     agents = list(values)
     tasks = list(values[agents[0]]) if tasks is None else list(tasks)
-    common = common_tasks(values, tasks)
-    require(bool(common), 'no task has a point score for every model')
+    require(bool(tasks), 'no tasks to summarize')
     out = {}
     for a in agents:
         cells = [values[a][t] for t in tasks]
-        out[a] = dict(score=statistics.fmean(values[a][t][0] for t in common),
+        out[a] = dict(score=statistics.fmean((c[1] + c[2]) / 2 for c in cells),
                       lower=statistics.fmean(c[1] for c in cells),
                       upper=statistics.fmean(c[2] for c in cells),
                       full_score=(statistics.fmean(c[0] for c in cells)
                                   if all(c[0] is not None for c in cells) else None))
     ranking = sorted(agents, key=lambda a: (-out[a]['score'], a))
-    return dict(task_count=len(tasks), common_tasks=len(common), ranking=ranking, models=out)
+    return dict(task_count=len(tasks), common_tasks=len(common_tasks(values, tasks)), ranking=ranking, models=out)
 
 
 def drop_agent(panel, agent):
@@ -145,29 +150,41 @@ def quantile(values, p):
 
 
 def bootstrap(values, tasks, draws=2000, seed=42):
-    """Paired task bootstrap: rank distribution and paired CIs on every pairwise score difference."""
+    """Paired task bootstrap over all tasks: rank distribution and paired CIs on every difference.
+
+    Each resample averages every model's lower and upper task values. Ranks follow the midpoint.
+    A score CI runs from the 2.5% quantile of the lower mean to the 97.5% quantile of the upper
+    mean. A difference CI is conservative: its low end takes a's lower and b's upper values (every
+    unscored task resolved against a), its high end the reverse. With point scores only, both are
+    the ordinary percentile bootstrap.
+    """
     require(type(draws) is int and draws > 0, 'positive integer draws required')
+    require(bool(tasks), 'no tasks to resample')
     agents = sorted(values)
     rng = random.Random(seed)
-    means = {a: [] for a in agents}
+    lows, highs = {a: [] for a in agents}, {a: [] for a in agents}
     ranks = {a: [0] * len(agents) for a in agents}
     for _ in range(draws):
         drawn = rng.choices(tasks, k=len(tasks))
-        scores = {a: statistics.fmean(values[a][t][0] for t in drawn) for a in agents}
-        for position, a in enumerate(sorted(agents, key=lambda a: (-scores[a], a))):
+        low = {a: statistics.fmean(values[a][t][1] for t in drawn) for a in agents}
+        high = {a: statistics.fmean(values[a][t][2] for t in drawn) for a in agents}
+        for position, a in enumerate(sorted(agents, key=lambda a: (-(low[a] + high[a]), a))):
             ranks[a][position] += 1
         for a in agents:
-            means[a].append(scores[a])
+            lows[a].append(low[a])
+            highs[a].append(high[a])
     pairs = {}
     for a, b in itertools.permutations(agents, 2):
-        diffs = [x - y for x, y in zip(means[a], means[b])]
-        point = statistics.fmean(values[a][t][0] - values[b][t][0] for t in tasks)
-        pairs[f'{a}|{b}'] = dict(difference=point, ci_95=[quantile(diffs, 0.025), quantile(diffs, 0.975)],
-                                 p_greater=sum(d > 0 for d in diffs) / draws)
+        worst = [x - y for x, y in zip(lows[a], highs[b])]
+        best = [x - y for x, y in zip(highs[a], lows[b])]
+        point = statistics.fmean((values[a][t][1] + values[a][t][2] - values[b][t][1] - values[b][t][2]) / 2
+                                 for t in tasks)
+        pairs[f'{a}|{b}'] = dict(difference=point, ci_95=[quantile(worst, 0.025), quantile(best, 0.975)],
+                                 p_greater=sum(d > 0 for d in worst) / draws)
     models = {}
     for a in agents:
         expanded = [position + 1 for position, n in enumerate(ranks[a]) for _ in range(n)]
-        models[a] = dict(score_ci_95=[quantile(means[a], 0.025), quantile(means[a], 0.975)],
+        models[a] = dict(score_ci_95=[quantile(lows[a], 0.025), quantile(highs[a], 0.975)],
                          rank_counts=ranks[a], rank_ci_95=[quantile(expanded, 0.025), quantile(expanded, 0.975)],
                          top_frequency=ranks[a][0] / draws)
     return dict(draws=draws, seed=seed, task_count=len(tasks), models=models, pairs=pairs)
@@ -180,7 +197,8 @@ def outcome(record):
 
 
 def pair_outcomes(values, groups, tasks, a, b, top=5):
-    """Decompose mean(a) - mean(b) by outcome pair and list the tasks that contribute most."""
+    """Decompose mean(a) - mean(b) over the tasks where both have a point score."""
+    tasks = [t for t in tasks if values[a][t][0] is not None and values[b][t][0] is not None]
     n = len(tasks)
     by_kind, rows = {}, []
     for t in tasks:
@@ -238,16 +256,16 @@ def analyze(panel, records, draws=2000, seed=42):
         repos.setdefault(repo_of(refs), []).append(task)
     for repo, tasks in sorted(repos.items()):
         rest = [t for t in panel['tasks'] if t not in set(tasks)]
-        if common_tasks(base_values, rest):
+        if rest:
             scenarios[f'without_repo={repo}'] = dict(family='task_mix', **summarize(base_values, rest))
 
     everyone = [t for t in panel['tasks'] if all(groups[a].get(t, {}).get('resolved') is True for a in groups)]
     rest = [t for t in panel['tasks'] if t not in set(everyone)]
     strata = {k: summarize(base_values, ts) for k, ts in (('solved_by_all', everyone), ('solved_by_fewer', rest))
-              if common_tasks(base_values, ts)}
+              if ts}
 
     common = common_tasks(base_values)
-    boot = bootstrap(base_values, common, draws, seed)
+    boot = bootstrap(base_values, list(panel['tasks']), draws, seed)
 
     def position(ranking, agent):
         return ranking.index(agent) + 1
@@ -263,7 +281,7 @@ def analyze(panel, records, draws=2000, seed=42):
                           flips_in_strata=[k for k, s in strata.items()
                                            if s['models'][a]['score'] <= s['models'][b]['score']],
                           bounds_separate=base['models'][a]['lower'] > base['models'][b]['upper'],
-                          outcomes=pair_outcomes(base_values, groups, common, a, b)))
+                          outcomes=pair_outcomes(base_values, groups, list(panel['tasks']), a, b)))
     return dict(status='analysis-not-a-score-release', score_version=panel['score_version'], panel=panel['name'],
                 baseline=dict(net_weight=weight, churn_weight=panel['churn_weight'], failure_cap=cap),
                 task_count=len(panel['tasks']), common_tasks=len(common),
@@ -290,7 +308,7 @@ def verdict(result):
     blocks.append(current)
     firm = [p for p in pairs if p['distinguishable'] and not p['flips_in']]
     tied = [p for p in pairs if not p['distinguishable']]
-    lines = ['**Verdict.** Read the ranking as tiers, not positions: '
+    lines = ['**Verdict.** Read the ranking with its uncertainty, not as exact positions: '
              + ' > '.join(' ≈ '.join(label(a) for a in b) for b in blocks)
              + ' (≈ marks an adjacent pair that is statistically tied or reversed by some variation).', '']
     scenarios = result['scenarios']
@@ -337,14 +355,15 @@ def render(result, command):
     out = [f'# Score sensitivity: {len(order)} models × 500 tasks', '',
            f"Analysis, not a score release. Baseline `{result['score_version']}` "
            f"(net {b['net_weight']:g} / churn {b['churn_weight']:g}, failure cap {b['failure_cap']:g}), "
-           f"panel `{result['panel']}`: {result['task_count']} tasks, point estimates on the "
-           f"{result['common_tasks']} tasks where every model has a point score.", '']
+           f"panel `{result['panel']}`: {result['task_count']} tasks. Scores average all tasks; an unscored "
+           "task counts at the middle of its range, and comparisons also check its best and worst case "
+           f"({result['common_tasks']} tasks have a point score for every model).", '']
     out += verdict(result)
     out += ['', '## Ranking', '',
             'Rank range is the best and worst rank across all weight, cap, panel and repository variations. '
-            'Bootstrap is a paired task bootstrap on the common tasks '
-            f"({boot['draws']} draws, seed {boot['seed']}). Bounds are over all {result['task_count']} tasks, "
-            'treating unscored tasks at their best and worst case.', '',
+            f"Bootstrap is a paired task bootstrap over all {result['task_count']} tasks "
+            f"({boot['draws']} draws, seed {boot['seed']}); its 95% CI spans the resampled lower and upper "
+            'bounds. Bounds treat unscored tasks at their best and worst case.', '',
             '| Rank | Model | Score | 95% CI | Bounds (all tasks) | Rank range | Bootstrap rank 95% | P(top) |',
             '|---:|---|---:|---|---|---|---|---:|']
     for i, a in enumerate(order, 1):

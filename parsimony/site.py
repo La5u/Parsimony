@@ -27,7 +27,9 @@ NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude
          'glm-4.6': 'GLM-4.6', 'devstral-2512': 'Devstral 2512', 'devstral-small-2512': 'Devstral Small 2512',
          'kimi-k2-thinking': 'Kimi K2 Thinking', 'gpt-5.2-2025-12-11': 'GPT-5.2',
          'gpt-5.2-2025-12-11-high': 'GPT-5.2 (high)', 'sonnet-4-5-20250929': 'Claude Sonnet 4.5',
-         'claude-opus-4-5-20251101': 'Claude Opus 4.5', 'deepseek-v3.2-reasoner': 'DeepSeek V3.2 (reasoner)'}
+         'claude-opus-4-5-20251101': 'Claude Opus 4.5', 'deepseek-v3.2-reasoner': 'DeepSeek V3.2 (reasoner)',
+         'o4-mini-2025-04-16': 'o4-mini', 'qwen3-coder-480b-a35b-instruct': 'Qwen3-Coder 480B',
+         'qwen2-5-coder-32b-instruct': 'Qwen2.5-Coder 32B', 'kimi-k2-instruct': 'Kimi K2 Instruct'}
 
 
 def label(agent):
@@ -41,24 +43,33 @@ def median(values):
 
 
 def bootstrap(board, draws, seed):
-    """Paired task bootstrap over tasks where every entry has a point score."""
-    tasks = [t for t in board[0]['tasks'] if all(e['tasks'][t]['score'] is not None for e in board)]
+    """Paired task bootstrap over all tasks; unscored tasks enter at their lower and upper bounds.
+
+    The CI runs from the 2.5% quantile of the resampled lower mean to the 97.5% quantile of the
+    upper mean; the top share follows the midpoint. With point scores only this is the ordinary
+    percentile bootstrap.
+    """
+    tasks = list(board[0]['tasks'])
     rng = random.Random(seed)
-    samples = {e['agent']: [] for e in board}
-    top = dict.fromkeys(samples, 0.0)
+    lows = {e['agent']: [] for e in board}
+    highs = {e['agent']: [] for e in board}
+    top = dict.fromkeys(lows, 0.0)
     for _ in range(draws):
         drawn = rng.choices(tasks, k=len(tasks))
-        means = {e['agent']: statistics.fmean(e['tasks'][t]['score'] for t in drawn) for e in board}
-        best = max(means.values())
-        winners = [a for a, v in means.items() if abs(v - best) < 1e-12]
-        for agent, value in means.items():
-            samples[agent].append(value)
+        low = {e['agent']: statistics.fmean(e['tasks'][t]['lower'] for t in drawn) for e in board}
+        high = {e['agent']: statistics.fmean(e['tasks'][t]['upper'] for t in drawn) for e in board}
+        mid = {a: low[a] + high[a] for a in low}
+        best = max(mid.values())
+        winners = [a for a, v in mid.items() if abs(v - best) < 1e-12]
+        for agent in low:
+            lows[agent].append(low[agent])
+            highs[agent].append(high[agent])
             top[agent] += (agent in winners) / len(winners)
     def quantile(values, p):
         ordered = sorted(values)
         return ordered[int(p * (len(ordered) - 1))]
-    return len(tasks), {a: dict(ci=[quantile(v, 0.025), quantile(v, 0.975)], top=top[a] / draws)
-                        for a, v in samples.items()}
+    return len(tasks), {a: dict(ci=[quantile(lows[a], 0.025), quantile(highs[a], 0.975)], top=top[a] / draws)
+                        for a in lows}
 
 
 def build(panel, records, draws=2000, seed=42):
@@ -115,23 +126,12 @@ def build(panel, records, draws=2000, seed=42):
                 bootstrap_tasks=common, draws=draws, models=models, tasks=tasks)
 
 
-def tiers(sensitivity):
-    """Tier per agent: a new tier starts after each adjacent pair that is distinguishable and never flips."""
-    pairs = sensitivity['adjacent_pairs']
-    tier = 1
-    result = {pairs[0]['a']: tier} if pairs else {a: 1 for a in sensitivity.get('ranking', [])}
-    for pair in pairs:
-        if pair['distinguishable'] and not pair['flips_in']:
-            tier += 1
-        result[pair['b']] = tier
-    return result
-
-
-def add_tiers(models, sensitivity):
-    """Set each model's tier; a model missing from the sensitivity analysis gets None (shown empty)."""
-    tier = tiers(sensitivity)
+def add_rank_ranges(models, sensitivity):
+    """Set each model's 95% bootstrap rank range from the stability analysis; None when it is missing."""
+    boot = sensitivity['bootstrap']['models']
     for model in models:
-        model['tier'] = tier.get(model['agent'])
+        entry = boot.get(model['agent'])
+        model['rank_range'] = list(entry['rank_ci_95']) if entry else None
 
 
 def render(data, standalone=True):
@@ -151,7 +151,7 @@ def main():
     parser.add_argument('records', nargs='+')
     parser.add_argument('--output', default='site/index.html')
     parser.add_argument('--data', help='also write the page data as JSON here')
-    parser.add_argument('--sensitivity', help='sensitivity.json from parsimony.stability; adds tiers')
+    parser.add_argument('--sensitivity', help='sensitivity.json from parsimony.stability; adds rank ranges')
     parser.add_argument('--fragment', action='store_true', help='omit the <html>/<head> wrapper')
     args = parser.parse_args()
     try:
@@ -159,7 +159,7 @@ def main():
         data = build(json.loads(raw), [r for path in args.records for r in read_jsonl(path)])
         data['panel_sha256'] = hashlib.sha256(raw).hexdigest()
         if args.sensitivity:
-            add_tiers(data['models'], json.loads(Path(args.sensitivity).read_text()))
+            add_rank_ranges(data['models'], json.loads(Path(args.sensitivity).read_text()))
             report = Path(args.sensitivity).with_suffix('.md').as_posix()
             data['sensitivity_url'] = f'https://github.com/La5u/Parsimony/blob/main/{report}'
         Path(args.output).write_text(render(data, not args.fragment))

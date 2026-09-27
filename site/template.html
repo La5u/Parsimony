@@ -37,7 +37,6 @@ table { border-collapse: collapse; width: 100%; font-size: 0.93rem; font-variant
 th, td { padding: 7px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--rule); }
 th { font-weight: 600; color: var(--muted); font-size: 0.8rem; }
 th:first-child, td:first-child, .left { text-align: left; }
-tr.tier-break td { border-top: 2px solid var(--muted); }
 .range { color: var(--muted); font-size: 0.8rem; }
 .r { color: var(--good); }
 .f { color: var(--bad); }
@@ -64,7 +63,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     <table id="board">
       <thead>
         <tr>
-          <th id="tier-head" hidden>Tier</th>
+          <th id="rank-head" hidden>Rank</th>
           <th class="left">Model</th>
           <th>Score</th>
           <th>95% CI</th>
@@ -76,7 +75,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       <tbody></tbody>
     </table>
   </div>
-  <p class="small muted" id="tier-note" style="margin-top:8px" hidden>Models in the same tier are not statistically distinguishable (<a id="tier-link" href="https://github.com/La5u/Parsimony">sensitivity report</a>).</p>
+  <p class="small muted" id="rank-note" style="margin-top:8px" hidden>Rank: the range covering 95% of each model's ranks when the tasks are resampled 2,000 times; overlapping ranges mean the order is uncertain (<a id="rank-link" href="https://github.com/La5u/Parsimony">sensitivity report</a>).</p>
   <p class="small muted" style="margin-top:8px">Score: mean over all tasks, from −25 to 100. Per solve: mean score over the tasks the model solved, where 50.5 is average. Median churn: units added plus removed per solved task.</p>
 
   <h2 id="method">Method</h2>
@@ -135,16 +134,15 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   } else if (versions.length === 1) {
     $('harness-limit').textContent = `Scores are relative to the reference models, which all use the same agent harness (mini-SWE-agent ${versions[0]}).`;
   }
-  if (data.sensitivity_url) $('tier-link').href = data.sensitivity_url;
-  const tiered = data.models.some((m) => m.tier != null);
-  $('tier-head').hidden = $('tier-note').hidden = !tiered;
-  document.querySelector('#board tbody').innerHTML = data.models.map((m, i) => {
+  if (data.sensitivity_url) $('rank-link').href = data.sensitivity_url;
+  const ranked = data.models.some((m) => m.rank_range != null);
+  $('rank-head').hidden = $('rank-note').hidden = !ranked;
+  const rank = (r) => r == null ? '' : r[0] === r[1] ? `${r[0]}` : `${r[0]}–${r[1]}`;
+  document.querySelector('#board tbody').innerHTML = data.models.map((m) => {
     const score = m.score !== null ? fmt(m.score)
       : fmt(m.lower) === fmt(m.upper) ? '≈' + fmt(m.lower) : `${fmt(m.lower)}–${fmt(m.upper)}`;
-    const prev = data.models[i - 1];
-    const brk = i > 0 && m.tier != null && prev.tier != null && m.tier !== prev.tier;
-    return `<tr${brk ? ' class="tier-break"' : ''}>
-      ${tiered ? `<td>${m.tier ?? ''}</td>` : ''}
+    return `<tr>
+      ${ranked ? `<td>${rank(m.rank_range)}</td>` : ''}
       <td class="left">${esc(m.name)}</td>
       <td>${score}</td>
       <td class="range">${fmt(m.ci[0])}–${fmt(m.ci[1])}</td>
