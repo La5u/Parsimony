@@ -26,6 +26,7 @@ class SiteTests(unittest.TestCase):
         self.assertEqual((opus['solved'], opus['failed']), (1, 1))
         self.assertLessEqual(opus['ci'][0], opus['score'])
         self.assertEqual([t[0] for t in data['tasks']], ['t1', 't2'])
+        self.assertEqual((data['references'], data['harness']), (2, ['v2.0.0']))
         self.assertEqual([cell[0] for cell in data['tasks'][1][2]], ['r', 'f'])
         page = render(data)
         self.assertTrue(page.startswith('<!doctype html>'))
@@ -37,6 +38,7 @@ class SiteTests(unittest.TestCase):
 
     def test_label_falls_back_to_identifier(self):
         self.assertEqual(label('20260217_mini-v2.0.0_new-model'), 'new-model')
+        self.assertEqual(label('20250720_mini-v0.0.0-Llama-4-Maverick-17B-Instruct'), 'Llama 4 Maverick')
 
 
 def pair(a, b, distinguishable, flips_in=()):

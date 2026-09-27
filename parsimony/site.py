@@ -11,13 +11,23 @@ from .benchmark import read_jsonl
 from .scoring import VERSION, score_records
 
 TEMPLATE = Path(__file__).resolve().parent.parent / 'site' / 'template.html'
-PREFIX = re.compile(r'^\d{8}_mini-v[\d.]+_')
+PREFIX = re.compile(r'^\d{8}_mini-v[\d.]+[_-]')
+VERSION_OF = re.compile(r'^\d{8}_mini-(v[\d.]+)[_-]')
 NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude Sonnet 4.5 (high)',
          'claude-4-5-haiku-high': 'Claude Haiku 4.5 (high)', 'deepseek-3-2-high': 'DeepSeek V3.2 (high)',
          'gemini-3-flash-high': 'Gemini 3 Flash (high)', 'glm-5-high': 'GLM-5 (high)',
          'gpt-5-2-high': 'GPT-5.2 (high)', 'gpt-5-mini': 'GPT-5 mini', 'kimi-k2-5-high': 'Kimi K2.5 (high)',
          'minimax-2-5-high': 'MiniMax M2.5 (high)', 'claude-4-5-opus-high': 'Claude Opus 4.5 (high)',
-         'gpt-5-2-codex': 'GPT-5.2 Codex', 'gemini-3-pro-high': 'Gemini 3 Pro (high)'}
+         'gpt-5-2-codex': 'GPT-5.2 Codex', 'gemini-3-pro-high': 'Gemini 3 Pro (high)',
+         'Llama-4-Maverick-17B-Instruct': 'Llama 4 Maverick', 'claude-3-7-sonnet-20250219': 'Claude 3.7 Sonnet',
+         'claude-sonnet-4-20250514': 'Claude Sonnet 4', 'gemini-2.5-pro': 'Gemini 2.5 Pro', 'o3-2025-04-16': 'o3',
+         'claude-4-opus-20250514': 'Claude Opus 4', 'gpt-5-nano': 'GPT-5 nano', 'gpt-5': 'GPT-5',
+         'gpt-oss-120b': 'gpt-oss-120b', 'glm-4.5': 'GLM-4.5', 'gemini-3-pro-preview-20251118': 'Gemini 3 Pro (preview)',
+         'gpt-5.1-2025-11-13': 'GPT-5.1', 'gpt-5.1-codex': 'GPT-5.1 Codex', 'minimax-m2': 'MiniMax M2',
+         'glm-4.6': 'GLM-4.6', 'devstral-2512': 'Devstral 2512', 'devstral-small-2512': 'Devstral Small 2512',
+         'kimi-k2-thinking': 'Kimi K2 Thinking', 'gpt-5.2-2025-12-11': 'GPT-5.2',
+         'gpt-5.2-2025-12-11-high': 'GPT-5.2 (high)', 'sonnet-4-5-20250929': 'Claude Sonnet 4.5',
+         'claude-opus-4-5-20251101': 'Claude Opus 4.5', 'deepseek-v3.2-reasoner': 'DeepSeek V3.2 (reasoner)'}
 
 
 def label(agent):
@@ -97,7 +107,10 @@ def build(panel, records, draws=2000, seed=42):
             cells.append([scored['status'][0], m.get('net_units'), m.get('churn'),
                           None if scored['score'] is None else round(scored['score'], 1)])
         tasks.append([task, human, cells])
-    return dict(score_version=VERSION, panel=panel['name'], analyzer_version=panel['analyzer_version'],
+    references = {r['agent'] for refs in panel['tasks'].values() for r in refs}
+    versions = sorted({m.group(1) for a in order if (m := VERSION_OF.match(a))},
+                      key=lambda v: tuple(int(x) for x in v[1:].split('.')))
+    return dict(score_version=VERSION, panel=panel['name'], references=len(references), harness=versions, analyzer_version=panel['analyzer_version'],
                 python_version=panel['python_version'], task_count=len(panel['tasks']),
                 bootstrap_tasks=common, draws=draws, models=models, tasks=tasks)
 
@@ -147,6 +160,8 @@ def main():
         data['panel_sha256'] = hashlib.sha256(raw).hexdigest()
         if args.sensitivity:
             add_tiers(data['models'], json.loads(Path(args.sensitivity).read_text()))
+            report = Path(args.sensitivity).with_suffix('.md').as_posix()
+            data['sensitivity_url'] = f'https://github.com/La5u/Parsimony/blob/main/{report}'
         Path(args.output).write_text(render(data, not args.fragment))
         if args.data:
             Path(args.data).write_text(json.dumps(data, indent=1) + '\n')
