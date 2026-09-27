@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest import mock
 
 from parsimony.scoring import freeze
-from parsimony.site import add_tiers, build, label, main, render, tiers
+from parsimony.site import add_rank_ranges, build, label, main, render
 from tests.test_scoring import record
 
 
@@ -41,26 +41,20 @@ class SiteTests(unittest.TestCase):
         self.assertEqual(label('20250720_mini-v0.0.0-Llama-4-Maverick-17B-Instruct'), 'Llama 4 Maverick')
 
 
-def pair(a, b, distinguishable, flips_in=()):
-    return dict(a=a, b=b, distinguishable=distinguishable, flips_in=list(flips_in))
+def sensitivity(ranges):
+    return dict(bootstrap=dict(models={a: dict(rank_ci_95=r) for a, r in ranges.items()}))
 
 
-class TierTests(unittest.TestCase):
-    def test_firm_boundary_tie_and_flipped_pair(self):
-        sensitivity = dict(ranking=list('abcde'), adjacent_pairs=[
-            pair('a', 'b', True),                           # firm boundary
-            pair('b', 'c', False),                          # tie
-            pair('c', 'd', True, ['without_repo=x/y']),     # distinguishable but flips
-            pair('d', 'e', True)])                          # firm boundary
-        self.assertEqual(tiers(sensitivity), dict(a=1, b=2, c=2, d=2, e=3))
+class RankRangeTests(unittest.TestCase):
+    def test_rank_ranges_from_bootstrap(self):
+        models = [dict(agent='a'), dict(agent='b')]
+        add_rank_ranges(models, sensitivity(dict(a=[1, 1], b=[2, 3])))
+        self.assertEqual([m['rank_range'] for m in models], [[1, 1], [2, 3]])
 
-    def test_model_missing_from_sensitivity_gets_no_tier(self):
-        models = [dict(agent='a'), dict(agent='new'), dict(agent='b')]
-        add_tiers(models, dict(ranking=['a', 'b'], adjacent_pairs=[pair('a', 'b', True)]))
-        self.assertEqual([m['tier'] for m in models], [1, None, 2])
-
-    def test_single_model(self):
-        self.assertEqual(tiers(dict(ranking=['a'], adjacent_pairs=[])), dict(a=1))
+    def test_model_missing_from_sensitivity_gets_no_range(self):
+        models = [dict(agent='a'), dict(agent='new')]
+        add_rank_ranges(models, sensitivity(dict(a=[1, 2])))
+        self.assertEqual([m['rank_range'] for m in models], [[1, 2], None])
 
 
 class MainTests(unittest.TestCase):
@@ -73,16 +67,15 @@ class MainTests(unittest.TestCase):
             argv = ['site', str(tmp / 'panel.json'), str(tmp / 'r.jsonl'), '--output', str(tmp / 'index.html'),
                     '--data', str(tmp / 'data.json'), *[a.replace('TMP', str(tmp)) for a in extra]]
             if extra:
-                (tmp / 'sensitivity.json').write_text(json.dumps(dict(
-                    ranking=['agent-a', 'agent-b'], adjacent_pairs=[pair('agent-a', 'agent-b', True)])))
+                (tmp / 'sensitivity.json').write_text(json.dumps(sensitivity({'agent-a': [1, 1], 'agent-b': [1, 2]})))
             with mock.patch.object(sys, 'argv', argv), redirect_stdout(StringIO()):
                 main()
             self.assertTrue((tmp / 'index.html').read_text().startswith('<!doctype html>'))
             return json.loads((tmp / 'data.json').read_text())['models']
 
     def test_build_without_sensitivity(self):
-        self.assertTrue(all('tier' not in m for m in self.run_main()))
+        self.assertTrue(all('rank_range' not in m for m in self.run_main()))
 
     def test_build_with_sensitivity(self):
         models = self.run_main('--sensitivity', 'TMP/sensitivity.json')
-        self.assertEqual({m['agent']: m['tier'] for m in models}, {'agent-a': 1, 'agent-b': 2})
+        self.assertEqual({m['agent']: m['rank_range'] for m in models}, {'agent-a': [1, 1], 'agent-b': [1, 2]})
