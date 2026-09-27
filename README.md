@@ -110,7 +110,7 @@ python -m parsimony.snapshot restore cache-v4.tar.gz --cache .parsimony-cache  #
 
 ## Website
 
-`python -m parsimony.site PANEL RECORDS... --output site/index.html` renders a single self-contained page from a frozen panel and measured JSONL, offline: leaderboard with 95% intervals, a short method, per-task results and limits. [`site/index.html`](site/index.html) is built from the [ten-model × 500-task results](examples/ten-model-500/README.md) and can be served as is (for example with GitHub Pages from `/site`). Edit `site/template.html` for layout and copy. `--sensitivity examples/ten-model-500/sensitivity.json` groups the leaderboard into tiers, starting a new tier only after an adjacent pair that is distinguishable and never flips.
+`python -m parsimony.site PANEL RECORDS... --output site/index.html` renders a single self-contained page from a frozen panel and measured JSONL, offline: leaderboard with 95% intervals, a short method, per-task results and limits. [`site/index.html`](site/index.html) is built from the [33-model × 500-task results](examples/mini-swe-agent-500/README.md) and is served at [parsimony.lasu.dev](https://parsimony.lasu.dev) (Cloudflare Pages, output directory `site`). Edit `site/template.html` for layout and copy. `--sensitivity examples/mini-swe-agent-500/sensitivity.json` adds each model's 95% bootstrap rank range from the stability analysis.
 
 ## Contributing
 
@@ -120,7 +120,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). `python -m parsimony.contribute export` 
 
 | Example | Analyzer | What it shows |
 |---|---|---|
-| [ten-model-500](examples/ten-model-500/README.md) | 0.5.0-beta | Ten models × all 500 tasks with failures; frozen panel, scores and intervals (the website's data) |
+| [mini-swe-agent-500](examples/mini-swe-agent-500/README.md) | 0.5.2-beta | 33 models × all 500 tasks with failures, mini-SWE-agent v0.0.0–v2.0.0; frozen panel, scores, rank ranges and an agent-version check (the website's data) |
+| [ten-model-500](examples/ten-model-500/README.md) | 0.5.0-beta | Ten models (plus Claude Opus 4.5) × all 500 tasks, mini-SWE-agent v2.0.0 only; superseded as the website's data |
 | [beta-500-v5](examples/beta-500-v5/README.md) | 0.5.0-beta | Two complete 500-task cohorts in coding units; units vs tokens, coverage audit, fresh-artifact recheck |
 | [beta-500-v4](examples/beta-500-v4/README.md) | 0.4.0-beta | Two complete 500-task cohorts in tokens (superseded by v5) |
 | [beta-500-v3](examples/beta-500-v3/README.md) | 0.3.1-beta | Two complete 500-task cohorts; coverage audit (superseded by v4) |
@@ -142,6 +143,6 @@ Scope is Python and unified text diffs only: binary/rename-only diffs and quoted
 1. Freeze the full task population and independently reproduce public patch/result artifacts. Publish coverage and missingness before rankings. The [v5 audit](examples/beta-500-v5/README.md) does this for two submissions with a fresh-artifact recheck; more harnesses and independent review remain.
 2. Validate footprint against adversarial patches. [Done for 0.5.1](docs/adversarial-validation.md): formatting, renames, excluded files, generated headers and deletions are tested; unrelated deletion, moved code and hardcoded test inputs remain known limitations.
 3. Evaluate score sensitivity to panel composition, weights, failure cap and task mix, with paired uncertainty and per-task outcomes.
-   [Stability report for ten models × 500 tasks](examples/ten-model-500/sensitivity.md) (`python -m parsimony.stability`): weights and cap never change a rank; six of nine adjacent pairs are statistically tied.
+   [Stability report for 33 models × 500 tasks](examples/mini-swe-agent-500/sensitivity.md) (`python -m parsimony.stability`): weights and cap never change a rank; most neighbouring models are statistically tied, and the agent version alone moves a model by up to 5.6 points.
 4. Validate units against blind human preferences on patch pairs, and add readability diagnostics (test-input hardcoding, nesting depth, reuse of existing helpers).
 5. Expand to more models and harnesses on the **same frozen tasks**. Add other languages only as separate versioned tracks.

@@ -2,6 +2,12 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Results: 33 models × 500 tasks — 2026-09-27
+
+[examples/mini-swe-agent-500](examples/mini-swe-agent-500/README.md) replaces the ten-model results as the site's data: 33 models run by SWE-bench with mini-SWE-agent v0.0.0–v2.0.0, measured with analyzer 0.5.2 and scored against a new panel frozen from all 33 (`mini-swe-agent-33-448-solved-80-20-v0.5`). Five models run under two agent versions show that the version alone moves a score by up to 5.6 points.
+
+The stability analysis and the site now compare models over all tasks (an unscored task counts at the middle of its bounds; intervals and distinguishability use its best and worst case) instead of only the tasks where every model has a point score, which fell to 70 of 448 with 33 models. The site shows each model's 95% bootstrap rank range instead of tiers. Scoring is unchanged.
+
 ## 0.5.2-beta — 2026-09-27
 
 Two fixes for older published mini-SWE-agent runs (July–August 2025):
