@@ -30,6 +30,29 @@ RELEASE = 'v1.1'
 ATTEMPTS = 4
 
 
+EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max', 'default')
+VENDORS = {'claude': 'Claude', 'gpt': 'GPT', 'gemini': 'Gemini', 'glm': 'GLM', 'kimi': 'Kimi', 'grok': 'Grok',
+           'deepseek': 'DeepSeek', 'qwen3': 'Qwen3', 'muse': 'Muse'}
+
+
+def display_name(agent):
+    """'deepswe-v1.1_mini_swe_agent_gpt_5_6_sol_max' -> 'GPT-5.6 Sol (max)'."""
+    tokens = re.sub(r'^deepswe-v[\d.]+_mini_swe_agent_', '', agent).split('_')
+    effort = tokens.pop() if tokens[-1] in EFFORTS else None
+    words = []
+    for token in tokens:
+        if words and token.isdigit() and words[-1][-1].isdigit():
+            words[-1] += '.' + token  # 5_6 -> 5.6, k2_7 -> K2.7, qwen3_8 -> Qwen3.8
+        elif not words:
+            words.append(VENDORS.get(token, token.capitalize()))
+        else:
+            words.append(token.upper() if re.fullmatch(r'[a-z]\d+', token) else token.capitalize())
+    name = words[0] + ('-' + words[1] if words[0] in ('GPT', 'GLM') and len(words) > 1 else '')
+    rest = words[2:] if words[0] in ('GPT', 'GLM') else words[1:]
+    name = ' '.join([name, *rest])
+    return f'{name} ({effort})' if effort and effort != 'default' else name
+
+
 def cluster(item):
     """The task an item belongs to: attempts of one task are resampled together."""
     return item.split('#', 1)[0]
@@ -83,8 +106,11 @@ def dataset_rows(tasks, attempts=ATTEMPTS):
             for t in tasks for k in range(1, attempts + 1)]
 
 
-def choose_configs(leaderboard, trials):
-    """Each model's best-scoring configuration among those with a patch for at least 95% of runs."""
+def choose_configs(leaderboard, trials, available=lambda config: True):
+    """Each model's best-scoring configuration among those with a patch for at least 95% of runs.
+
+    ``available(config)`` checks that the configuration's patches can actually be downloaded.
+    """
     runs, patched = defaultdict(int), defaultdict(int)
     for r in trials:
         runs[r['config']] += 1
@@ -94,7 +120,8 @@ def choose_configs(leaderboard, trials):
         config = row['config']
         if runs[config] and patched[config] >= 0.95 * runs[config]:
             if row['model'] not in best or row['pass_rate'] > best[row['model']]['pass_rate']:
-                best[row['model']] = row
+                if available(config):
+                    best[row['model']] = row
     return sorted((dict(model=r['model'], reasoning_effort=r['reasoning_effort'], config=r['config'],
                         pass_rate=r['pass_rate']) for r in best.values()), key=lambda r: -r['pass_rate'])
 
@@ -135,13 +162,11 @@ def load_submission(config, trials, release, cache, task_names):
         if not run['has_model_patch']:
             missing.append(item)
             continue
-        try:
-            predictions[item] = cache.get(location).decode('utf-8')
-        except HTTPError as exc:
-            if exc.code != 404:
-                raise
-            exc.close()
+        patch = fetch_patch(cache, location)
+        if patch is None:
             missing.append(item)
+        else:
+            predictions[item] = patch
     first = next(iter(runs.values()), {})
     return dict(agent=f'deepswe-{release["release_id"]}_{config}', submission_url=f'{SITE}/{release["release_id"]}',
                 predictions=predictions, prediction_locations=locations, resolved=resolved,
@@ -153,6 +178,25 @@ def load_submission(config, trials, release, cache, task_names):
                                 harness=first.get('harness'), prediction_sha256=None, reported_model=first.get('model', ''),
                                 trials_sha256=release.get('trials_sha256'), submission_url=f'{SITE}/{release["release_id"]}',
                                 ref=release['release_id']))
+
+
+def fetch_patch(cache, url, tries=4):
+    """Patch text, or None when the file is not published (the CDN answers 403 or 404).
+
+    Network errors are retried; persistent ones propagate so a run never silently loses patches.
+    """
+    for attempt in range(tries):
+        try:
+            return cache.get(url).decode('utf-8')
+        except HTTPError as exc:
+            exc.close()
+            if exc.code in (403, 404):
+                return None
+            if attempt == tries - 1:
+                raise
+        except (OSError, http.client.HTTPException):
+            if attempt == tries - 1:
+                raise
 
 
 def pooled_panel(records, name):
@@ -217,7 +261,14 @@ def main():
         elif args.command == 'configs':
             trials, _ = fetch_json(cache, f'{SITE}/{args.release}/trials.json')
             board, _ = fetch_json(cache, f'{SITE}/{args.release}/leaderboard-live.json')
-            chosen = choose_configs(board['rows'], trials['rows'])
+            release, _ = fetch_json(cache, f'{SITE}/{args.release}/release.json')
+            base = release['artifact_base_url'].rstrip('/')
+            pattern = release['artifact_patterns']['model_patch']
+            def available(config):  # probe the first published patch of the configuration
+                run = next((r for r in trials['rows'] if r['config'] == config and r['has_model_patch']), None)
+                return run is not None and fetch_patch(
+                    cache, f"{base}/{pattern.replace('{trial_name}', run['trial_name'])}") is not None
+            chosen = choose_configs(board['rows'], trials['rows'], available)
             Path(args.output).write_text(json.dumps(chosen, indent=1) + '\n')
             print(f'Wrote {len(chosen)} configurations to {args.output}')
         elif args.command == 'analyze':
@@ -228,6 +279,13 @@ def main():
             submission = load_submission(args.config, trials['rows'], release, cache,
                                          {cluster(r['instance_id']) for r in dataset})
             records = list(analyze_submission(submission, cache, dataset, include_failed=True))
+            for _ in range(3):  # base files that failed to download: retry those items only
+                retry = {r['task_id'] for r in records if r['analysis_status'] == 'fetch_error'}
+                if not retry:
+                    break
+                redone = {r['task_id']: r for r in analyze_submission(submission, cache, dataset, task_ids=retry,
+                                                                        include_failed=True) if r['task_id'] in retry}
+                records = [redone.get(r['task_id'], r) for r in records]
             Path(args.output).write_text(''.join(json.dumps(r, sort_keys=True) + '\n' for r in records))
             print(f'Wrote {len(records)} records to {args.output}')
         else:
