@@ -14,6 +14,17 @@ def diff(before, after, path='pkg/core.py', old=None, new=None):
 
 
 class AnalysisTests(unittest.TestCase):
+    def test_new_root_level_file_is_a_scratch_script(self):
+        patch = ('--- /dev/null\n+++ b/reproduce_issue.py\n@@ -0,0 +1,2 @@\n+import pkg\n+print(pkg.f())\n'
+                 '--- a/pkg/mod.py\n+++ b/pkg/mod.py\n@@ -1 +1 @@\n-x = 1\n+x = 2\n')
+        result = measure(patch, lambda path: 'x = 1\n')
+        self.assertEqual(result['excluded_files'], ['reproduce_issue.py'])
+        self.assertEqual(result['files_changed'], 1)
+        # An existing root-level file is still measured.
+        edited = measure('--- a/setup_helpers.py\n+++ b/setup_helpers.py\n@@ -1 +1 @@\n-x = 1\n+x = 2\n',
+                         lambda path: 'x = 1\n')
+        self.assertEqual(edited['excluded_files'], [])
+
     def test_patch_missing_final_newline_is_restored(self):
         # A stored patch whose final newline was stripped: its last context line
         # (a blank line) must still match the base file.
