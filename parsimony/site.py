@@ -90,7 +90,9 @@ def bootstrap(board, draws, seed):
 
 
 def build(panel, records, draws=2000, seed=42):
-    board = score_records(panel, records)
+    # Rank by score, or by the midpoint of the possible range when some tasks are unscored.
+    board = sorted(score_records(panel, records),
+                   key=lambda e: -(e['score'] if e['score'] is not None else (e['lower'] + e['upper']) / 2))
     groups = {}
     for r in records:
         groups.setdefault(r['agent'], {})[r['task_id']] = r
@@ -98,7 +100,8 @@ def build(panel, records, draws=2000, seed=42):
     models = []
     for entry in board:
         group = groups[entry['agent']]
-        ok = [group[t] for t, result in entry['tasks'].items() if result['status'] == 'resolved']
+        ok = [r for r in group.values() if r['resolved'] and r['analysis_status'] == 'ok'
+              and r['metrics']['churn'] is not None]
         statuses = [t['status'] for t in entry['tasks'].values()]
         solved_scores = [t['score'] for t in entry['tasks'].values() if t['status'] == 'resolved']
         # Failure penalty from the failures that could be measured; complete only when nothing is unscored.
@@ -113,15 +116,11 @@ def build(panel, records, draws=2000, seed=42):
             solved_mean=statistics.fmean(solved_scores) if solved_scores else None,
             resolve_rate=entry['published_resolve_rate'],
             solved=statuses.count('resolved'), failed=statuses.count('failed'),
-            published_solved=sum(r['resolved'] is True for t, r in group.items() if t in entry['tasks']),
             unscored=sum(t['score'] is None for t in entry['tasks'].values()),
             net_units=median(r['metrics']['net_units'] for r in ok),
             churn=median(r['metrics']['churn'] for r in ok),
             token_churn=median(r['metrics'].get('token_churn') for r in ok),
             human_ratio=median(r.get('model_human_ratio') for r in ok)))
-    # Footprint is conditional on measured successes, not a reward for resolve rate.
-    # Models without measured successes remain visible but sort last; ties use the ID.
-    models.sort(key=lambda m: (m['solved_mean'] is None, -(m['solved_mean'] or 0), m['agent']))
     order = [m['agent'] for m in models]
     tasks = []
     for task in panel['tasks']:
