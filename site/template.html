@@ -47,7 +47,11 @@ input {
   width: 100%; max-width: 360px; box-sizing: border-box; font: inherit; padding: 6px 8px;
   color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px;
 }
-input:focus-visible, a:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+th button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+th[aria-sort="ascending"] button::after { content: ' ↑'; }
+th[aria-sort="descending"] button::after { content: ' ↓'; }
+th[aria-sort="none"] button::after { content: ' ↕'; }
+input:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule); }
 </style>
 
@@ -66,18 +70,21 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         <tr>
           <th id="rank-head" hidden>Rank</th>
           <th class="left">Model</th>
-          <th>Score</th>
-          <th>95% CI</th>
-          <th>Solved</th>
-          <th>Per solve</th>
-          <th>Median churn</th>
+          <th aria-sort="descending"><button type="button" data-sort="score">Score</button></th>
+          <th aria-sort="none"><button type="button" data-sort="ci" title="Sort by the lower confidence bound">95% CI</button></th>
+          <th aria-sort="none"><button type="button" data-sort="resolve_rate">Solved</button></th>
+          <th aria-sort="none"><button type="button" data-sort="solved_mean">Per solve</button></th>
+          <th aria-sort="none"><button type="button" data-sort="churn">Median churn</button></th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
   </div>
-  <p class="small muted" id="rank-note" style="margin-top:8px" hidden>Rank: the range covering 95% of each model's ranks when the tasks are resampled 2,000 times; overlapping ranges mean the order is uncertain (<a id="rank-link" href="https://github.com/La5u/Parsimony">sensitivity report</a>).</p>
+  <p class="small muted" id="rank-note" style="margin-top:8px" hidden>All-task score rank (unchanged when sorting other columns): the range covering 95% of each model's ranks when the tasks are resampled 2,000 times; overlapping ranges mean the order is uncertain (<a id="rank-link" href="https://github.com/La5u/Parsimony">sensitivity report</a>).</p>
   <p class="small muted" style="margin-top:8px">Score: mean over all tasks, from −25 to 100. Per solve: mean score over the tasks the model solved, where 50.5 is average. Median churn: units added plus removed per solved task.</p>
+
+  <p class="small muted">Click a column heading to sort; click again to reverse. Score uses the midpoint when shown as bounds; 95% CI sorts by its lower bound. Missing values stay last. Per solve and median churn describe successful patches only; sorting them does not change the all-task score.</p>
+  <p class="small muted">95% CI shows score uncertainty from resampling tasks, widened for missing measurements. It helps avoid overinterpreting small score gaps; it is not a measure of code complexity and does not cover every source of bias.</p>
 
   <h2 id="method">Method</h2>
   <ul>
@@ -154,7 +161,20 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const ranked = data.models.some((m) => m.rank_range != null);
   $('rank-head').hidden = $('rank-note').hidden = !ranked;
   const rank = (r) => r == null ? '' : r[0] === r[1] ? `${r[0]}` : `${r[0]}–${r[1]}`;
-  document.querySelector('#board tbody').innerHTML = data.models.map((m) => {
+  const sortButtons = [...document.querySelectorAll('#board button[data-sort]')];
+  let sortKey = 'score', ascending = false;
+  const sortValue = (m, key) => key === 'score' ? (m.score ?? (m.lower + m.upper) / 2)
+    : key === 'ci' ? m.ci?.[0] : m[key];
+  function renderBoard() {
+    // Never reorder data.models: task cells are indexed by its original order.
+    const models = [...data.models].sort((a, b) => {
+      const x = sortValue(a, sortKey), y = sortValue(b, sortKey);
+      if (x == null || y == null) return (x == null) - (y == null);
+      return ascending ? x - y : y - x;
+    });
+    sortButtons.forEach((button) => button.parentElement.setAttribute('aria-sort',
+      button.dataset.sort === sortKey ? (ascending ? 'ascending' : 'descending') : 'none'));
+    document.querySelector('#board tbody').innerHTML = models.map((m) => {
     const score = m.score !== null ? fmt(m.score)
       : fmt(m.lower) === fmt(m.upper) ? '≈' + fmt(m.lower) : `${fmt(m.lower)}–${fmt(m.upper)}`;
     return `<tr>
@@ -166,7 +186,15 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       <td>${fmt(m.solved_mean)}</td>
       <td>${m.churn ?? '—'}</td>
     </tr>`;
-  }).join('');
+    }).join('');
+  }
+  sortButtons.forEach((button) => button.addEventListener('click', () => {
+    const key = button.dataset.sort;
+    ascending = key === sortKey ? !ascending : key === 'churn';
+    sortKey = key;
+    renderBoard();
+  }));
+  renderBoard();
 
   const LABELS = {r: 'solved', f: 'failed', u: 'unknown', m: 'not measured', n: 'no attempt', o: 'out of scope'};
   const tasks = new Map(data.tasks.map((t) => [t[0], t]));

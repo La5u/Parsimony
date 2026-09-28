@@ -7,7 +7,7 @@ State of Parsimony after the cloud sessions of 2026-09-26/27, for continuing loc
 - **Site** (Cloudflare Pages, output directory `site`, served at https://parsimony.lasu.dev; every push to `main` redeploys):
   - `site/index.html` is the main board: [DeepSWE](examples/deepswe-python/README.md), 26 current models × 34 Python tasks × 4 attempts.
   - `site/verified.html` is the second board: [SWE-bench Verified](examples/mini-swe-agent-500/README.md), 33 mini-SWE-agent models × 500 tasks.
-  - The leaderboard shows a 95% bootstrap **rank range** per model (no tiers).
+  - The leaderboard shows a 95% bootstrap **rank range** per model (no tiers). Score, 95% CI, Solved, Per solve and Median churn headers now toggle numeric sorting; default is all-task score descending. CI sorts by its lower bound; churn starts ascending; missing values stay last. Rank ranges always refer to the all-task score, regardless of the selected sort. A Node.js interaction test runs through unittest when Node is available.
 - **Analyzer 0.5.2-beta** (see [CHANGELOG](CHANGELOG.md)): repairs patch files missing their final newline, falls back to the standard S3 logs folder when `metadata.yaml` names a wrong one, and excludes new root-level files (agent scratch scripts).
 - **Statistics** (`parsimony/stability.py`, `parsimony/site.py`): everything uses all tasks. An unscored task counts at the middle of its bounds for scores and ranking, at its worst and best case for intervals; a difference is "distinguishable" only in the worst case. Items `task#attempt` of one task are resampled together; with one item per task this is identical to a plain task bootstrap.
 - Older result sets (`examples/ten-model-500`, `beta-500-*`) are history and use older analyzers.
