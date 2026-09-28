@@ -1,6 +1,6 @@
 # 33 models × 500 Verified tasks (analyzer 0.5.2)
 
-**Beta research preview, not an official ranking.** Every SWE-bench Verified task for 33 models run by SWE-bench with mini-SWE-agent (versions v0.0.0 to v2.0.0, July 2025 to February 2026), measured in coding units, including explicitly failed patches. This is the [site's Verified board](../../site/verified.html) and replaces the [ten-model results](../ten-model-500/README.md) there.
+**Beta research preview, not an official ranking.** Every SWE-bench Verified task for 33 models run by SWE-bench with mini-SWE-agent (versions v0.0.0 to v2.0.0, July 2025 to February 2026), measured in coding units, including explicitly failed patches. This is the [site](../../site/index.html)'s data and replaces the [ten-model results](../ten-model-500/README.md) there.
 
 ## Pinned inputs
 
@@ -75,8 +75,6 @@ All 48 mini-SWE-agent runs on Verified at the pinned revision were checked; 38 a
 **Newline restored:** runs up to v1.7.0 stored patch files without their final newline; 0.5.2 restores it. Without this, most of those runs' solved patches could not be measured (for example 244 of o3's 292). **Scratch files excluded:** patches, mostly from runs before v2.0.0, that added scripts such as `reproduce_issue.py` at the repository root; those files are not counted. 46 solved and 591 failed patches could not be measured (Errors and Missing patch); their tasks get a score range instead of a point.
 
 ## Results
-
-This table retains the original all-task score ordering and uncertainty. The website now leads with **Per solve** (footprint credit), with these all-task statistics in separate diagnostics; their intervals and ranks do not apply to the footprint ordering.
 
 | Rank (95%) | Model | Agent | Score | 95% interval | Resolved | Per solve | Median net units | Median churn |
 |---:|---|---|---:|---|---:|---:|---:|---:|

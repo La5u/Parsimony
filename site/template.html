@@ -56,7 +56,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="muted">How much code do coding agents write to fix real issues? Research preview.</p>
   <p class="small" id="nav" hidden></p>
 
-  <p>Parsimony measures published <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a> patches in <b>coding units</b>: each statement, call, comparison, name and literal counts as one unit. Formatting, comments and punctuation are not counted. Among patches that pass the tests, smaller footprints earn higher credit. Resolve rate is reported separately.</p>
+  <p>Parsimony measures published <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a> patches in <b>coding units</b>: each statement, call, comparison, name and literal counts as one unit. Formatting, comments and punctuation are not counted. Patches that pass the tests score higher when they are smaller. Failed patches score zero or below.</p>
 
   <h2 id="leaderboard">Leaderboard</h2>
   <p class="small muted" id="board-intro"></p>
@@ -64,28 +64,20 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     <table id="board">
       <thead>
         <tr>
+          <th id="rank-head" hidden>Rank</th>
           <th class="left">Model</th>
-          <th>Footprint credit ↑</th>
-          <th>Resolve rate</th>
-          <th>Measured solves</th>
+          <th>Score</th>
+          <th>95% CI</th>
+          <th>Solved</th>
+          <th>Per solve</th>
           <th>Median churn</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
   </div>
-  <p class="small muted" style="margin-top:8px">Footprint credit: mean per-task credit over measured, in-scope passing patches (1–100, higher means smaller relative to the reference panel; 50.5 is the panel midpoint). Measured solves: scored / published passing attempts in this panel. Median churn: units added plus removed per measured solve.</p>
-  <p class="small muted">Models solve different task subsets: this ordering is descriptive, not a same-task comparison or an overall capability ranking. Missing and out-of-scope passing patches are excluded, not assigned zero. No footprint confidence intervals or rank ranges are shown.</p>
-
-  <details style="margin-top:16px">
-    <summary>All-task score diagnostics (includes failures)</summary>
-    <p class="small muted">The original score averages all tasks, from −25 to 100. Its intervals and rank ranges describe that score, not footprint credit. Unscored tasks contribute bounds; ranks use their midpoint. Attempts of the same task are resampled together.</p>
-    <div class="scroll"><table id="score-board">
-      <thead><tr><th class="left">Model</th><th>All-task score</th><th>95% CI</th><th id="rank-head" hidden>95% rank range</th></tr></thead>
-      <tbody></tbody>
-    </table></div>
-    <p class="small muted" id="rank-note" hidden>All-task rank ranges from the <a id="rank-link" href="https://github.com/La5u/Parsimony">sensitivity report</a>; these do not apply to the footprint ordering above.</p>
-  </details>
+  <p class="small muted" id="rank-note" style="margin-top:8px" hidden>Rank: the range covering 95% of each model's ranks when the tasks are resampled 2,000 times; overlapping ranges mean the order is uncertain (<a id="rank-link" href="https://github.com/La5u/Parsimony">sensitivity report</a>).</p>
+  <p class="small muted" style="margin-top:8px">Score: mean over all tasks, from −25 to 100. Per solve: mean score over the tasks the model solved, where 50.5 is average. Median churn: units added plus removed per solved task.</p>
 
   <h2 id="method">Method</h2>
   <ul>
@@ -162,23 +154,17 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const ranked = data.models.some((m) => m.rank_range != null);
   $('rank-head').hidden = $('rank-note').hidden = !ranked;
   const rank = (r) => r == null ? '' : r[0] === r[1] ? `${r[0]}` : `${r[0]}–${r[1]}`;
-  document.querySelector('#board tbody').innerHTML = data.models.map((m) => `<tr>
-    <td class="left">${esc(m.name)}</td>
-    <td>${fmt(m.solved_mean)}</td>
-    <td>${fmt(m.resolve_rate * 100)}%</td>
-    <td>${m.solved} / ${m.published_solved}</td>
-    <td>${m.churn ?? '—'}</td>
-  </tr>`).join('');
-  const scoreOrder = [...data.models].sort((a, b) =>
-    (b.score ?? (b.lower + b.upper) / 2) - (a.score ?? (a.lower + a.upper) / 2));
-  document.querySelector('#score-board tbody').innerHTML = scoreOrder.map((m) => {
+  document.querySelector('#board tbody').innerHTML = data.models.map((m) => {
     const score = m.score !== null ? fmt(m.score)
       : fmt(m.lower) === fmt(m.upper) ? '≈' + fmt(m.lower) : `${fmt(m.lower)}–${fmt(m.upper)}`;
     return `<tr>
+      ${ranked ? `<td>${rank(m.rank_range)}</td>` : ''}
       <td class="left">${esc(m.name)}</td>
       <td>${score}</td>
       <td class="range">${fmt(m.ci[0])}–${fmt(m.ci[1])}</td>
-      ${ranked ? `<td>${rank(m.rank_range)}</td>` : ''}
+      <td>${fmt(m.resolve_rate * 100)}%</td>
+      <td>${fmt(m.solved_mean)}</td>
+      <td>${m.churn ?? '—'}</td>
     </tr>`;
   }).join('');
 

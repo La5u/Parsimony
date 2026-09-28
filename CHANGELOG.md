@@ -2,10 +2,6 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
-## Website: footprint-first boards — 2026-09-27
-
-The main tables now order models by mean footprint credit on measured, in-scope passing patches, with resolve rate and measured/published solve counts separate. Task-mix and missingness caveats are explicit. All-task scores, confidence intervals and rank ranges remain in a separate diagnostics section and are not presented as footprint uncertainty. Median footprint metrics use the same scored passing subset. Existing records, panels and scoring are unchanged; both pages are rebuilt offline.
-
 ## Results: DeepSWE, 26 current models — 2026-09-27
 
 New importer `python -m parsimony.deepswe` for [DeepSWE](https://deepswe.datacurve.ai), a 2026 benchmark that runs every model with mini-SWE-agent four times per task and publishes each run's patch and pass/fail. [examples/deepswe-python](examples/deepswe-python/README.md) measures its 34 Python tasks for 26 current models (Claude Opus 5, Fable 5, GPT-5.6, Kimi K3, GLM-5.3, DeepSeek V4, Grok 4.6, …) and is now the site's main board; the SWE-bench Verified board moves to `site/verified.html`.
