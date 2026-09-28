@@ -8,7 +8,7 @@ Parsimony imports public **SWE-bench Verified** predictions and published evalua
 
 ## Quick start
 
-Python 3.12+, **no runtime dependencies**. Run from this checkout (`pip install -e .` is optional). Measurements depend on the interpreter's tokenizer, so use one pinned Python version for anything you compare.
+Python 3.12+, **no runtime dependencies for Python analysis**. Optional JavaScript/TypeScript and Go tracks use `pip install '.[languages]'`; see [language tracks](docs/language-tracks.md) for pinned parsers, scope and reproducible commands. Run from this checkout (`pip install -e .` is optional). Measurements depend on the interpreter's tokenizer, so use one pinned Python version for anything you compare.
 
 ```sh
 # Metadata, base commits and human patches for all 500 Verified tasks.
@@ -137,7 +137,7 @@ The smoke and ten-model samples were regenerated with 0.5.0 (`python -m examples
 
 **Code footprint is not technical debt.** Small code can be cryptic, incorrect beyond the benchmark tests, insecure or hard to maintain. Larger changes may add valuable validation. Human patches are a baseline, not an optimum. Net-weighted scores reward deletion, and SWE-bench tests do not protect untested code, so check the `net_floor` sensitivity variant.
 
-Scope is Python and unified text diffs only: binary/rename-only diffs and quoted paths are unsupported. There is no call-graph, runtime, maintainability or behavioral-equivalence modeling. Path and generated-file filters are heuristic. Interpreter tokenizer/AST changes (notably f-strings) change results. Coding units measure size and nesting, not readability: a test-specific hardcoded branch can cost fewer units than a general fix.
+The existing Python boards measure Python only. Analyzer 0.6.0 adds optional [JavaScript/TypeScript and Go tracks](docs/language-tracks.md), kept separate from Python and each other; raw counts are not cross-language comparable. Scope is unified text diffs only: binary/rename-only diffs and quoted paths are unsupported. There is no call-graph, runtime, maintainability or behavioral-equivalence modeling. Path and generated-file filters are heuristic. Interpreter tokenizer/AST changes (notably f-strings) change results. Coding units measure size and nesting, not readability: a test-specific hardcoded branch can cost fewer units than a general fix.
 
 ## Roadmap (priority order)
 
@@ -146,4 +146,4 @@ Scope is Python and unified text diffs only: binary/rename-only diffs and quoted
 3. Evaluate score sensitivity to panel composition, weights, failure cap and task mix, with paired uncertainty and per-task outcomes.
    [Stability report for 33 models × 500 tasks](examples/mini-swe-agent-500/sensitivity.md) (`python -m parsimony.stability`): weights and cap never change a rank; most neighbouring models are statistically tied, and the agent version alone moves a model by up to 5.6 points.
 4. Validate units against blind human preferences on patch pairs, and add readability diagnostics (test-input hardcoding, nesting depth, reuse of existing helpers).
-5. Expand to more models and harnesses on the **same frozen tasks**. Add other languages only as separate versioned tracks.
+5. Expand to more models and harnesses on the **same frozen tasks**. Optional JS/TS and Go language tracks are implemented in 0.6.0; publish only after artifact and coverage checks. [SWE-Atlas investigation](docs/swe-atlas-investigation.md): newer-model aggregate scores exist, but public per-attempt model patches/results were not found.

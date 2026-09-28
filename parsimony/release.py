@@ -24,13 +24,19 @@ def freeze_dataset(path, name, analyzer_commit=None):
     ids = [r['instance_id'] for r in rows]
     if not rows or len(ids) != len(set(ids)) or any(not r.get('repo') or not r.get('base_commit') for r in rows):
         raise ValueError('dataset must have unique task IDs, repository and base commits')
+    from .languages import track
+    languages = {r.get('language', 'python') for r in rows}
+    if len(languages) != 1:
+        raise ValueError('freeze one language track at a time')
+    measurement_track = track(next(iter(languages)))
     if not analyzer_commit:
         analyzer_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
         if subprocess.check_output(['git', 'status', '--porcelain'], text=True).strip():
             raise ValueError('dirty checkout: specify an immutable analyzer commit after committing changes')
     if not re.fullmatch(r'[0-9a-fA-F]{40}', analyzer_commit):
         raise ValueError('analyzer commit must be a full 40-character Git SHA')
-    return dict(format='parsimony-beta-population-v1', name=name, dataset_sha256=sha(path),
+    return dict(**({'measurement_track': measurement_track} if measurement_track else {}),
+                format='parsimony-beta-population-v1', name=name, dataset_sha256=sha(path),
                 analyzer_commit=analyzer_commit, python_version=platform.python_version(),
                 task_count=len(ids), tasks={r['instance_id']: {'repo': r['repo'], 'base_commit': r['base_commit']}
                                             for r in sorted(rows, key=lambda r: r['instance_id'])})
@@ -53,6 +59,8 @@ def audit(panel, records, dataset_path=None):
         if task in group:
             raise ValueError(f'duplicate agent/task: {agent} / {task}')
         group[task] = r
+        if r.get('measurement_track') != panel.get('measurement_track'):
+            raise ValueError(f'measurement track differs from frozen population: {agent} / {task}')
         if r['python_version'] != panel['python_version']:
             raise ValueError(f'incompatible Python version: {agent} / {task}')
         # Records from 0.4.0 carry the analyzer commit; older ones are counted as unverified below.

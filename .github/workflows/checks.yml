@@ -26,6 +26,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Standard-library unit tests
         run: python -m unittest discover -s tests -q
+      - name: Install pinned optional language parsers
+        run: python -m pip install '.[languages]'
+      - name: Unit tests including JavaScript, TypeScript and Go
+        run: python -m unittest discover -s tests -q
       - name: Validate contributed result bundles (no downloads or analysis)
         run: python -m parsimony.contribute validate submissions
       - name: Reproduce cached experimental scores (arithmetic only)

@@ -47,6 +47,8 @@ def unique(records):
 def freeze(records, name):
     unique(records)
     require(bool(records), 'empty reference records')
+    tracks = [r.get('measurement_track') for r in records]
+    require(all(track == tracks[0] for track in tracks), 'mixed measurement tracks')
     versions = {(r['analyzer_version'], r['python_version']) for r in records}
     require(len(versions) == 1, 'mixed analyzer/Python versions')
     tasks = {r['task_id']: [] for r in records}
@@ -61,10 +63,13 @@ def freeze(records, name):
         bases = {(r['provenance']['repo'], r['provenance']['base_commit']) for r in refs}
         require(len(bases) == 1, f'mixed base repositories/commits: {task}')
     analyzer, python = next(iter(versions))
-    return dict(score_version=VERSION, name=name, scope='fixed-cohort-sample',
-                analyzer_version=analyzer, python_version=python,
-                net_weight=0.8, churn_weight=0.2, failure_cap=25,
-                tasks={task: sorted(refs, key=lambda r: r['agent']) for task, refs in sorted(tasks.items())})
+    panel = dict(score_version=VERSION, name=name, scope='fixed-cohort-sample',
+                 analyzer_version=analyzer, python_version=python,
+                 net_weight=0.8, churn_weight=0.2, failure_cap=25,
+                 tasks={task: sorted(refs, key=lambda r: r['agent']) for task, refs in sorted(tasks.items())})
+    if tracks[0] is not None:
+        panel['measurement_track'] = tracks[0]
+    return panel
 
 
 def percentile(value, references):
@@ -113,6 +118,11 @@ def task_score(record, refs):
     return dict(status='resolved' if resolved else 'failed', score=score, lower=score, upper=score, **details)
 
 
+def require_measurement_track(panel, record):
+    require(record.get('measurement_track') == panel.get('measurement_track'),
+            'incompatible measurement track')
+
+
 def score_records(panel, records):
     require(panel['score_version'] == VERSION, 'unsupported score version')
     require((panel['net_weight'], panel['churn_weight'], panel['failure_cap']) == (0.8, 0.2, 25),
@@ -126,6 +136,7 @@ def score_records(panel, records):
     unique(records)
     groups = {}
     for r in records:
+        require_measurement_track(panel, r)
         require((r['analyzer_version'], r['python_version']) ==
                 (panel['analyzer_version'], panel['python_version']), 'incompatible analyzer/Python version')
         groups.setdefault(r['agent'], {})[r['task_id']] = r

@@ -91,7 +91,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     <li>Each patch is applied to the task's base commit and both versions of each changed file are parsed. Nothing is executed.</li>
     <li>On each task, a passing patch is ranked against all passing patches from the reference models: 80% on net units added, 20% on units changed.</li>
     <li>A failed patch scores from −25 to 0, depending on how much code it added.</li>
-    <li>Test, docs and generated files are excluded. Only Python is measured.</li>
+    <li id="language-scope">Test, docs and generated files are excluded. Only Python is measured.</li>
   </ul>
 
   <h2 id="tasks">Tasks</h2>
@@ -151,6 +151,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   $('board-intro').textContent = refs === n
     ? `${n} models on the ${items} that at least one of them solved.`
     : `${n} models on the ${items} that at least one of the ${refs} reference models solved.`;
+  if (data.measurement_track) {
+    const language = {javascript: 'JavaScript / JSX and TypeScript', typescript: 'TypeScript / TSX and JavaScript', go: 'Go'}[data.measurement_track.language];
+    $('language-scope').textContent = `Test, docs and generated files are excluded. This track measures ${language} with pinned Tree-sitter grammars. Units are syntax elements, not semantic complexity; raw counts are not comparable across language tracks.`;
+  }
   const versions = data.harness || [];
   if (versions.length > 1) {
     $('harness-limit').textContent = `Scores are relative to the reference models. All use the mini-SWE-agent harness, but versions ${versions[0]} to ${versions[versions.length - 1]}, so part of a gap between models can come from the harness version.`;
@@ -225,6 +229,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   $('task-search').addEventListener('input', (e) => showTask(e.target.value.trim()));
   showTask([...data.tasks].sort((a, b) => spread(b) - spread(a))[0][0]);
 
-  $('provenance').textContent = `Analyzer ${data.analyzer_version}, score ${data.score_version}, panel ${data.panel}.`;
+  $('provenance').textContent = `Analyzer ${data.analyzer_version}, score ${data.score_version}, panel ${data.panel}.${data.measurement_track ? ' Units: ' + data.measurement_track.unit_version + '.' : ''}`;
 })();
 </script>

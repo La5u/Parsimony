@@ -24,6 +24,7 @@ from urllib.error import HTTPError
 from .artifacts import Cache
 from .benchmark import analyze_submission, read_jsonl
 from .scoring import freeze, measured, metrics, out_of_scope
+from .languages import SUPPORTED
 
 SITE = 'https://deepswe.datacurve.ai/artifacts'
 RELEASE = 'v1.1'
@@ -60,6 +61,8 @@ def cluster(item):
 
 def read_tasks(checkout, language='python'):
     """Tasks of one language from a DeepSWE checkout: repository, base commit, reference solution."""
+    if language not in SUPPORTED:
+        raise ValueError(f'unsupported language: {language}')
     out = []
     for toml in sorted(Path(checkout, 'tasks').glob('*/task.toml')):
         meta = tomllib.loads(toml.read_text())['metadata']
@@ -237,7 +240,8 @@ def main():
     commands = parser.add_subparsers(dest='command', required=True)
     data = commands.add_parser('dataset', help='item metadata from a DeepSWE checkout')
     data.add_argument('checkout')
-    data.add_argument('--language', default='python')
+    data.add_argument('--language', choices=SUPPORTED, default='python',
+                      help='one language track per dataset; non-Python requires the languages extra')
     data.add_argument('--output', required=True)
     conf = commands.add_parser('configs', help="each model's best configuration with published patches")
     conf.add_argument('--output', required=True)

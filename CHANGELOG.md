@@ -2,6 +2,14 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## 0.6.0-beta — 2026-09-28
+
+Optional JavaScript/JSX, TypeScript/TSX and Go analysis uses pinned Tree-sitter grammars, syntax-unit traversal and the existing unit-diff machinery. Python measurements keep their AST implementation. Non-Python datasets require full-file analysis and carry a language/unit/parser-version track; panel creation, scoring, sensitivity and coverage reject mixed tracks. Failed attempts are still measured and penalized. No target code is executed. See [language tracks](docs/language-tracks.md).
+
+Fresh DeepSWE v1.1 discovery found the same 26 usable configurations and identical run-index checksum. Gemini 3.8 patch probes still return 403; GPT-6 Astra runs declare no patches. No invented or relabeled results were added. [Refresh evidence](examples/deepswe-python/refresh-2026-09-28.json).
+
+[SWE-Atlas Refactoring investigation](docs/swe-atlas-investigation.md) found newer-model aggregate scores and public reference patches, but no public per-attempt model patch/result archive; importing its model runs is blocked on artifact access.
+
 ## Results: DeepSWE, 26 current models — 2026-09-27
 
 New importer `python -m parsimony.deepswe` for [DeepSWE](https://deepswe.datacurve.ai), a 2026 benchmark that runs every model with mini-SWE-agent four times per task and publishes each run's patch and pass/fail. [examples/deepswe-python](examples/deepswe-python/README.md) measures its 34 Python tasks for 26 current models (Claude Opus 5, Fable 5, GPT-5.6, Kimi K3, GLM-5.3, DeepSeek V4, Grok 4.6, …) and is now the site's main board; the SWE-bench Verified board moves to `site/verified.html`.

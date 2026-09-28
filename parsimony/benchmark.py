@@ -13,7 +13,7 @@ from urllib.parse import quote
 
 from .analysis import measure
 
-ANALYZER_VERSION = '0.5.2-beta'
+ANALYZER_VERSION = '0.6.0-beta'
 FAILED_CATEGORIES = {'unresolved', 'failed', 'not_resolved'}
 
 
@@ -89,7 +89,15 @@ def read_jsonl(path):
 
 def analyze_submission(submission, cache, dataset=None, limit=None, patch_only=False, task_ids=None,
                        include_failed=False):
+    from .languages import SUPPORTED, track
     metadata = {row['instance_id']: row for row in (dataset or [])}
+    languages = {row.get('language', 'python') for row in metadata.values()} or {'python'}
+    if len(languages) != 1 or not languages <= set(SUPPORTED):
+        raise ValueError('dataset must use one supported language track; analyze languages separately')
+    language = next(iter(languages))
+    measurement_track = track(language)
+    if patch_only and measurement_track:
+        raise ValueError('Tree-sitter tracks require full-file analysis')
     tasks = sorted(set(metadata) or (set(submission['predictions']) | submission['resolved'] |
                                     (submission['evaluated'] or set())))
     # The public Verified benchmark has a fixed 500-task denominator, even when
@@ -122,6 +130,8 @@ def analyze_submission(submission, cache, dataset=None, limit=None, patch_only=F
                                   'patch_final_newline_restored': bool(patch) and not patch.endswith('\n')},
                       metrics=None, human_metrics=None, model_human_ratio=None,
                       analysis_status='not_resolved')
+        if measurement_track:
+            record['measurement_track'] = measurement_track
         if meta:
             record['provenance'].update(repo=meta['repo'], base_commit=meta['base_commit'],
                                         reference_patch_sha256=hashlib.sha256(meta.get('patch', '').encode()).hexdigest())
@@ -150,14 +160,14 @@ def analyze_submission(submission, cache, dataset=None, limit=None, patch_only=F
             continue
         source = None if patch_only else base_source(cache, meta)
         try:
-            record['metrics'] = measure(patch, source)
+            record['metrics'] = measure(patch, source, language=language)
             record['analysis_status'] = 'ok'
             if meta and meta.get('patch'):
                 # The human patch is identical for every agent: measure it once per task.
-                key = (meta['repo'], meta['base_commit'], meta['patch'], patch_only)
+                key = (meta['repo'], meta['base_commit'], meta['patch'], patch_only, language)
                 if key not in human_cache:
                     try:
-                        human_cache[key] = (measure(meta['patch'], source), None)
+                        human_cache[key] = (measure(meta['patch'], source, language=language), None)
                     except FetchError:
                         raise
                     except Exception as exc:
@@ -180,6 +190,9 @@ def analyze_submission(submission, cache, dataset=None, limit=None, patch_only=F
 
 
 def leaderboard(records, shared=False, agents=None, mode='full_file'):
+    tracks = {json.dumps(r.get('measurement_track'), sort_keys=True) for r in records}
+    if len(tracks) > 1:
+        raise ValueError('mixed measurement tracks')
     selected = set(agents or [r['agent'] for r in records])
     by_agent = {a: {} for a in sorted(selected)}
     for r in records:

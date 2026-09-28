@@ -32,6 +32,7 @@ def check_records(records, agent):
         require(r['agent'] == agent and task not in ids, 'mixed agents or duplicate task IDs')
         ids.add(task)
         require(type(r['resolved']) is bool, 'resolved must be boolean')
+        require(r.get('measurement_track') is None, 'Verified contribution bundles require the Python track')
         require(r['benchmark_tasks'] == 500, 'contributed Verified results require the 500-task denominator')
         count = r['published_resolved_count']
         require(type(count) is int and 0 <= count <= 500, 'invalid published resolved count')
@@ -147,7 +148,10 @@ def verify(records, dataset, cache, sample=None, seed=0):
                 require((meta['repo'], meta['base_commit']) ==
                         (r['provenance']['repo'], r['provenance']['base_commit']), 'base commit differs from dataset')
                 source = base_source(cache, meta) if r['metrics']['mode'] == 'full_file' else None
-                row['metrics_match'] = measure(patch, source) == r['metrics']
+                from .languages import track
+                language = meta.get('language', 'python')
+                require(track(language) == r.get('measurement_track'), 'measurement track differs from dataset')
+                row['metrics_match'] = measure(patch, source, language=language) == r['metrics']
         except Exception as exc:  # report every record rather than stopping at the first failure
             row['error'] = f'{type(exc).__name__}: {exc}'
         results.append(row)
