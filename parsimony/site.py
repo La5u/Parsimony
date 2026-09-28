@@ -100,10 +100,10 @@ def build(panel, records, draws=2000, seed=42):
     models = []
     for entry in board:
         group = groups[entry['agent']]
-        ok = [r for r in group.values() if r['resolved'] and r['analysis_status'] == 'ok'
-              and r['metrics']['churn'] is not None]
+        ok = [group[t] for t, value in entry['tasks'].items() if value['status'] == 'resolved']
         statuses = [t['status'] for t in entry['tasks'].values()]
         solved_scores = [t['score'] for t in entry['tasks'].values() if t['status'] == 'resolved']
+        solved_metrics = [r['metrics'] for r in ok]
         # Failure penalty from the failures that could be measured; complete only when nothing is unscored.
         known_penalty = -sum(t['score'] for t in entry['tasks'].values()
                              if t['status'] == 'failed' and t['score'] is not None) / len(entry['tasks'])
@@ -114,6 +114,8 @@ def build(panel, records, draws=2000, seed=42):
             success_credit=entry['success_credit'], failure_penalty=entry['failure_penalty'],
             known_failure_penalty=known_penalty,
             solved_mean=statistics.fmean(solved_scores) if solved_scores else None,
+            solved_net_mean=statistics.fmean(m['net_units'] for m in solved_metrics) if solved_metrics else None,
+            solved_churn_mean=statistics.fmean(m['churn'] for m in solved_metrics) if solved_metrics else None,
             resolve_rate=entry['published_resolve_rate'],
             solved=statuses.count('resolved'), failed=statuses.count('failed'),
             unscored=sum(t['score'] is None for t in entry['tasks'].values()),
@@ -133,7 +135,8 @@ def build(panel, records, draws=2000, seed=42):
             if r and r.get('human_metrics'):
                 human = r['human_metrics']['churn']
             cells.append([scored['status'][0], m.get('net_units'), m.get('churn'),
-                          None if scored['score'] is None else round(scored['score'], 1)])
+                          None if scored['score'] is None else round(scored['score'], 1),
+                          scored['lower'], scored['upper']])
         tasks.append([task, human, cells])
     # Pooled panels label references agent#attempt; count models, not attempts.
     references = {r['agent'].split('#', 1)[0] for refs in panel['tasks'].values() for r in refs}
@@ -142,6 +145,9 @@ def build(panel, records, draws=2000, seed=42):
     return dict(measurement_track=panel.get('measurement_track'),
                 score_version=VERSION, panel=panel['name'], references=len(references), harness=versions, analyzer_version=panel['analyzer_version'],
                 python_version=panel['python_version'], task_count=len(panel['tasks']),
+                population_count=max((r.get('benchmark_tasks', len(panel['tasks'])) for r in records),
+                                     default=len(panel['tasks'])),
+                excluded_tasks=sorted({r['task_id'] for r in records} - panel['tasks'].keys()),
                 bootstrap_tasks=common, draws=draws, models=models, tasks=tasks)
 
 
