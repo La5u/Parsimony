@@ -52,6 +52,11 @@ def main():
             if args.limit is not None and args.limit < 1:
                 parser.error('--limit must be positive')
             metadata = read_jsonl(args.dataset) if args.dataset else None
+            from .languages import track
+            languages = {m.get('language', 'python') for m in (metadata or [])} or {'python'}
+            if len(languages) != 1:
+                raise ValueError('dataset must use one language track')
+            measurement_track = track(next(iter(languages)))
             prior = []
             if args.resume:
                 if len(args.submissions) != 1 or args.manifest or args.limit or args.task or not metadata:
@@ -65,6 +70,8 @@ def main():
                     if key in seen or r['task_id'] not in dataset_ids:
                         raise ValueError('resume file has duplicates or out-of-population records')
                     seen.add(key)
+                    if r.get('measurement_track') != measurement_track:
+                        raise ValueError('resume file uses a different measurement track')
                     if r['analyzer_version'] != ANALYZER_VERSION or r['python_version'] != platform.python_version():
                         raise ValueError('resume file uses incompatible analyzer/Python version')
                     if 'analyzer_source_sha256' in r and \

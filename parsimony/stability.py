@@ -14,7 +14,8 @@ import statistics
 from pathlib import Path
 
 from .benchmark import read_jsonl
-from .scoring import metrics, percentile, require, score_records, task_score, unique
+from .scoring import (metrics, percentile, require, require_measurement_track, score_records,
+                      task_score, unique)
 from .deepswe import display_name
 
 PREFIX = re.compile(r'^\d{8}_mini-v[\d.]+[_-]')
@@ -86,6 +87,7 @@ def matrix(panel, groups, net_weight, failure_cap, net_floor=None):
     require(bool(groups) and bool(panel.get('tasks')), 'nonempty candidate and task sets required')
     for g in groups.values():
         for r in g.values():
+            require_measurement_track(panel, r)
             require((r['analyzer_version'], r['python_version']) ==
                     (panel['analyzer_version'], panel['python_version']), 'incompatible analyzer/Python version')
     return {agent: {task: task_value(g.get(task), refs, net_weight, failure_cap, net_floor)

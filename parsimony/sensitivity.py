@@ -6,7 +6,8 @@ import statistics
 from pathlib import Path
 
 from .benchmark import read_jsonl
-from .scoring import measured, metrics, out_of_scope, percentile, require, unique
+from .scoring import (measured, metrics, out_of_scope, percentile, require,
+                      require_measurement_track, unique)
 
 
 def contributions(panel, records, net_weight=0.8, failure_cap=25, net_floor=None):
@@ -25,6 +26,7 @@ def contributions(panel, records, net_weight=0.8, failure_cap=25, net_floor=None
         for task, refs in panel['tasks'].items():
             r = group.get(task)
             require(r is not None, f'{agent}: missing task {task}')
+            require_measurement_track(panel, r)
             require((r['analyzer_version'], r['python_version']) ==
                     (panel['analyzer_version'], panel['python_version']), 'incompatible analyzer/Python version')
             require(measured(r),

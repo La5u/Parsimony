@@ -139,7 +139,8 @@ def build(panel, records, draws=2000, seed=42):
     references = {r['agent'].split('#', 1)[0] for refs in panel['tasks'].values() for r in refs}
     versions = sorted({m.group(1) for a in order if (m := VERSION_OF.match(a))},
                       key=lambda v: tuple(int(x) for x in v[1:].split('.')))
-    return dict(score_version=VERSION, panel=panel['name'], references=len(references), harness=versions, analyzer_version=panel['analyzer_version'],
+    return dict(measurement_track=panel.get('measurement_track'),
+                score_version=VERSION, panel=panel['name'], references=len(references), harness=versions, analyzer_version=panel['analyzer_version'],
                 python_version=panel['python_version'], task_count=len(panel['tasks']),
                 bootstrap_tasks=common, draws=draws, models=models, tasks=tasks)
 

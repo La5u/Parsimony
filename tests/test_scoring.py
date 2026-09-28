@@ -13,6 +13,11 @@ def record(agent='a', task='task', net=10, churn=10, resolved=True):
                              units_added=(churn + net) // 2, units_deleted=(churn - net) // 2))
 
 
+def track(language='go', parser='parser-1'):
+    return dict(language=language, unit_version='tree-sitter-units-v1',
+                versions={'parser': parser})
+
+
 class ScoringTests(unittest.TestCase):
     def setUp(self):
         self.panel = freeze([record('a', net=5, churn=9), record('b'),
@@ -96,6 +101,39 @@ class ScoringTests(unittest.TestCase):
             score_records(self.panel, [r])
         r['published_result_categories'] = ['unresolved']
         self.assertIsNone(score_records(self.panel, [r])[0]['score'])
+
+    def test_measurement_tracks_are_frozen_and_must_match(self):
+        records = [record('a'), record('b')]
+        for r in records:
+            r['measurement_track'] = track()
+        panel = freeze(records, 'tracked')
+        self.assertEqual(panel['measurement_track'], track())
+        matching = record('candidate')
+        matching['measurement_track'] = track()
+        self.assertEqual(len(score_records(panel, [matching])), 1)
+
+        mismatches = [track('typescript'), track(parser='parser-2'), None]
+        for other in mismatches:
+            mixed = [copy.deepcopy(records[0]), copy.deepcopy(records[1])]
+            if other is None:
+                mixed[1].pop('measurement_track')
+            else:
+                mixed[1]['measurement_track'] = other
+            with self.subTest(other=other), self.assertRaisesRegex(ValueError, 'mixed measurement tracks'):
+                freeze(mixed, 'mixed')
+
+        wrong_candidate = record('candidate')
+        wrong_candidate['measurement_track'] = track('javascript')
+        with self.assertRaisesRegex(ValueError, 'incompatible measurement track'):
+            score_records(panel, [wrong_candidate])
+
+    def test_legacy_panel_does_not_gain_track_and_rejects_tracked_candidate(self):
+        panel = freeze([record()], 'legacy')
+        self.assertNotIn('measurement_track', panel)
+        tracked = record('candidate')
+        tracked['measurement_track'] = track()
+        with self.assertRaisesRegex(ValueError, 'incompatible measurement track'):
+            score_records(panel, [tracked])
 
     def test_freeze_does_not_change_when_scoring_and_rejects_duplicates(self):
         before = copy.deepcopy(self.panel)
