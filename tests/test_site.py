@@ -26,6 +26,7 @@ class SiteTests(unittest.TestCase):
         self.assertEqual([m['name'] for m in data['models']], ['other-agent', 'Claude Opus 4.6'])
         opus = data['models'][1]
         self.assertEqual((opus['solved'], opus['failed']), (1, 1))
+        self.assertEqual((opus['solved_net_mean'], opus['solved_churn_mean']), (5, 9))
         self.assertLessEqual(opus['ci'][0], opus['score'])
         self.assertEqual([t[0] for t in data['tasks']], ['t1', 't2'])
         self.assertEqual((data['references'], data['harness']), (2, ['v2.0.0']))
@@ -37,6 +38,30 @@ class SiteTests(unittest.TestCase):
         self.assertFalse(render(data, standalone=False).startswith('<!doctype'))
         hostile = render({**data, 'panel': '</script><script>alert(1)</script>'})
         self.assertEqual(hostile.count('</script>'), page.count('</script>'))
+
+    def test_plot_means_use_scored_successes_only(self):
+        records = [record('a', 't1', net=2, churn=4), record('a', 't2', net=6, churn=8),
+                   record('a', 't3', net=100, churn=100, resolved=False),
+                   record('b', 't3', net=1, churn=1)]
+        panel = freeze(records, 'plot-test')
+        records += [record('a', 'outside', net=999, churn=999)]
+        data = build(panel, records, draws=20)
+        a = next(m for m in data['models'] if m['agent'] == 'a')
+        self.assertEqual((a['solved_net_mean'], a['solved_churn_mean']), (4, 6))
+        self.assertEqual((a['net_units'], a['churn']), (4, 6))
+        self.assertEqual(data['excluded_tasks'], ['outside'])
+        for r in records:
+            if r['agent'] == 'a' and r['task_id'] in ('t1', 't2'):
+                r['analysis_status'] = 'fetch_error'
+                r['metrics'] = None
+        data = build(panel, records, draws=20)
+        a = next(m for m in data['models'] if m['agent'] == 'a')
+        self.assertIsNone(a['solved_net_mean'])
+        self.assertIsNone(a['solved_churn_mean'])
+        self.assertIsNone(a['churn'])
+        i = next(i for i, m in enumerate(data['models']) if m['agent'] == 'a')
+        t1 = next(t for t in data['tasks'] if t[0] == 't1')
+        self.assertEqual(t1[2][i][3:], [None, 1, 100])
 
     @unittest.skipUnless(shutil.which('node'), 'JavaScript interaction test requires Node.js')
     def test_column_sorting(self):

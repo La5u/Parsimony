@@ -2,6 +2,11 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Website and results — 2026-09-28
+
+- One sortable board defaults to all score-panel tasks; the task-ID selector changes that same board instead of opening a second table. A responsive scatterplot shows mean net coding units added against mean churn per measured solve, or individual measured passing/failed attempts for the selected task. Conditional means are diagnostics; default ranking remains the all-task score. Coverage exclusions and the resolve-rate denominator are disclosed.
+- Added separate 26-model DeepSWE JavaScript, TypeScript and Go boards: 7,696 attempt records over 74 additional task definitions, measured from clean commit `7705e8d`. All 5 JS and 34 Go tasks calibrate; 31 of 35 TS tasks calibrate. Known TypeScript grammar gaps and two upstream task-language mismatches remain explicit missingness, not zeros or model failures. Records and audits retain all attempts.
+
 ## 0.6.0-beta — 2026-09-28
 
 Optional JavaScript/JSX, TypeScript/TSX and Go analysis uses pinned Tree-sitter grammars, syntax-unit traversal and the existing unit-diff machinery. Python measurements keep their AST implementation. Non-Python datasets require full-file analysis and carry a language/unit/parser-version track; panel creation, scoring, sensitivity and coverage reject mixed tracks. Failed attempts are still measured and penalized. No target code is executed. See [language tracks](docs/language-tracks.md).

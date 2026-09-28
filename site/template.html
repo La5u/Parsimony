@@ -25,7 +25,7 @@ body {
   font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
   padding-inline: 16px;
 }
-main { max-width: 760px; margin: 0 auto; padding-block: 40px 56px; }
+main { max-width: 960px; margin: 0 auto; padding-block: 40px 56px; }
 h1 { font-size: 1.6rem; margin: 0 0 6px; }
 h2 { font-size: 1.1rem; margin: 40px 0 10px; }
 p { margin: 0 0 10px; }
@@ -48,6 +48,14 @@ input {
   color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px;
 }
 th button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+button { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 5px 9px; cursor: pointer; }
+#graph svg { display: block; width: 100%; height: auto; }
+#graph .axis { stroke: var(--muted); }
+#graph .tick { fill: var(--muted); font: 12px system-ui, sans-serif; }
+#graph .all-point { fill: var(--link); }
+#graph .resolved-point { fill: var(--good); }
+#graph .failed-point { fill: var(--bad); stroke: var(--ink); stroke-width: 1.5; }
+#graph circle:focus { outline: none; stroke: var(--ink); stroke-width: 3; }
 th[aria-sort="ascending"] button::after { content: ' ↑'; }
 th[aria-sort="descending"] button::after { content: ' ↓'; }
 th[aria-sort="none"] button::after { content: ' ↕'; }
@@ -64,6 +72,15 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
 
   <h2 id="leaderboard">Leaderboard</h2>
   <p class="small muted" id="board-intro"></p>
+  <details class="small muted" id="coverage-note" hidden>
+    <summary id="coverage-summary">Population coverage</summary>
+    <p id="coverage-tasks"></p>
+  </details>
+  <label for="task-search" class="small muted">Task</label><br>
+  <input id="task-search" list="task-ids" autocomplete="off" spellcheck="false" placeholder="All tasks" aria-describedby="task-status">
+  <button type="button" id="task-reset">All tasks</button>
+  <datalist id="task-ids"></datalist>
+  <p class="small muted" id="task-status" role="status" aria-live="polite"></p>
   <div class="scroll">
     <table id="board">
       <thead>
@@ -81,10 +98,17 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     </table>
   </div>
   <p class="small muted" id="rank-note" style="margin-top:8px" hidden>All-task score rank (unchanged when sorting other columns): the range covering 95% of each model's ranks when the tasks are resampled 2,000 times; overlapping ranges mean the order is uncertain (<a id="rank-link" href="https://github.com/La5u/Parsimony">sensitivity report</a>).</p>
-  <p class="small muted" style="margin-top:8px">Score: mean over all tasks, from −25 to 100. Per solve: mean score over the tasks the model solved, where 50.5 is average. Median churn: units added plus removed per solved task.</p>
+  <p class="small" id="task-footer" hidden><a id="task-link" href="#">Maintainers' pull request</a></p>
+  <p class="small muted" id="score-help" style="margin-top:8px">Score: mean over all tasks, from −25 to 100. Per solve: mean score over the tasks the model solved, where 50.5 is average. Median churn: units added plus removed per solved task.</p>
 
   <p class="small muted">Click a column heading to sort; click again to reverse. Score uses the midpoint when shown as bounds; 95% CI sorts by its lower bound. Missing values stay last. Per solve and median churn describe successful patches only; sorting them does not change the all-task score.</p>
-  <p class="small muted">95% CI shows score uncertainty from resampling tasks, widened for missing measurements. It helps avoid overinterpreting small score gaps; it is not a measure of code complexity and does not cover every source of bias.</p>
+  <p class="small muted" id="ci-help">95% CI shows score uncertainty from resampling tasks, widened for missing measurements. It helps avoid overinterpreting small score gaps; it is not a measure of code complexity and does not cover every source of bias.</p>
+
+  <h2 id="complexity">Churn and complexity added</h2>
+  <p class="small muted">Here “complexity added” means net coding units added (code footprint), not semantic complexity. All-task points show mean footprint per measured, in-scope solve, excluding failures; the default leaderboard score still includes all tasks. Selecting a task replaces the points with its measured attempts, including failures. Missing measurements have no point. Hover over a point for its model and values.</p>
+  <p class="small muted" id="graph-legend"></p>
+  <div id="graph" aria-label="Scatterplot of churn versus complexity added"></div>
+  <p class="small muted" id="attempts-note" hidden>Each task was run four times; each attempt is scored against every passing patch of the task.</p>
 
   <h2 id="method">Method</h2>
   <ul>
@@ -93,22 +117,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     <li>A failed patch scores from −25 to 0, depending on how much code it added.</li>
     <li id="language-scope">Test, docs and generated files are excluded. Only Python is measured.</li>
   </ul>
-
-  <h2 id="tasks">Tasks</h2>
-  <p class="small muted">Enter a task ID. The page opens on the task where solutions differ most in size.</p>
-  <label for="task-search" class="small muted">Task ID</label><br>
-  <input id="task-search" list="task-ids" autocomplete="off" spellcheck="false">
-  <datalist id="task-ids"></datalist>
-  <p class="small" style="margin-top:10px"><a id="task-link" href="#">Maintainers' pull request</a></p>
-  <p class="small muted" id="attempts-note" hidden>Each task was run four times; each attempt is scored against every passing patch of the task.</p>
-  <div class="scroll">
-    <table id="task-table">
-      <thead>
-        <tr><th>Model</th><th class="left">Result</th><th>Net units</th><th>Churn</th><th>Task score</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
 
   <h2 id="limits">Limits</h2>
   <ul>
@@ -137,6 +145,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const bench = data.benchmark || {name: 'SWE-bench Verified', url: 'https://www.swebench.com', reference: "Maintainers' fix",
     task_url: 'https://github.com/{owner}/{repo}/pull/{number}', task_link: "Maintainers' pull request",
     results: "SWE-bench's published results", attempts: 1};
+  const trackName = {python: 'Python', javascript: 'JavaScript', typescript: 'TypeScript', go: 'Go'}[data.measurement_track?.language || 'python'];
+  $('leaderboard').textContent = `${bench.name} — ${trackName}`;
   $('bench-link').textContent = bench.name;
   $('bench-link').href = bench.url;
   $('results-limit').textContent = `Pass/fail comes from ${bench.results}; tests are not rerun.`;
@@ -149,8 +159,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const taskCount = new Set(data.tasks.map((t) => t[0].split('#')[0])).size;
   const items = bench.attempts > 1 ? `${taskCount} ${bench.name} tasks (${data.task_count} runs per model)` : `${data.task_count} ${bench.name} tasks`;
   $('board-intro').textContent = refs === n
-    ? `${n} models on the ${items} that at least one of them solved.`
-    : `${n} models on the ${items} that at least one of the ${refs} reference models solved.`;
+    ? `${n} models on ${items} with at least one measured, in-scope passing reference.`
+    : `${n} models on ${items} with a measured, in-scope passing patch from at least one of ${refs} reference models.`;
+  if (data.excluded_tasks?.length) {
+    const omitted = [...new Set(data.excluded_tasks.map(t => t.split('#')[0]))];
+    $('coverage-note').hidden = false;
+    $('coverage-summary').textContent = `${data.excluded_tasks.length} population items outside the score panel (${omitted.length} task IDs).`;
+    $('coverage-tasks').textContent = `These tasks have no usable passing reference and cannot be scored. “All tasks” means all score-panel tasks; resolve rate still uses all ${data.population_count} published attempts. Unscored task IDs: ${omitted.join(', ')}.`;
+  }
   if (data.measurement_track) {
     const language = {javascript: 'JavaScript / JSX and TypeScript', typescript: 'TypeScript / TSX and JavaScript', go: 'Go'}[data.measurement_track.language];
     $('language-scope').textContent = `Test, docs and generated files are excluded. This track measures ${language} with pinned Tree-sitter grammars. Units are syntax elements, not semantic complexity; raw counts are not comparable across language tracks.`;
@@ -165,69 +181,80 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const ranked = data.models.some((m) => m.rank_range != null);
   $('rank-head').hidden = $('rank-note').hidden = !ranked;
   const rank = (r) => r == null ? '' : r[0] === r[1] ? `${r[0]}` : `${r[0]}–${r[1]}`;
-  const sortButtons = [...document.querySelectorAll('#board button[data-sort]')];
-  let sortKey = 'score', ascending = false;
-  const sortValue = (m, key) => key === 'score' ? (m.score ?? (m.lower + m.upper) / 2)
-    : key === 'ci' ? m.ci?.[0] : m[key];
+  const tasks = new Map(data.tasks.map((t) => [t[0], t]));
+  const labels = {r: 'solved', f: 'failed', u: 'unknown', m: 'not measured', n: 'no attempt', o: 'out of scope'};
+  let selected = null, sortKey = 'score', ascending = false;
+  $('task-ids').innerHTML = data.tasks.map((t) => `<option value="${esc(t[0])}">`).join('');
+  function sortValue(model, index) {
+    if (!selected) return sortKey === 'score' ? (model.score ?? (model.lower + model.upper) / 2)
+      : sortKey === 'ci' ? model.ci?.[0] : model[sortKey];
+    const cell = selected[2][index];
+    return ({task_score: cell[3] ?? (cell[4] != null && cell[5] != null ? (cell[4] + cell[5]) / 2 : null), net: cell[1], churn: cell[2]})[sortKey];
+  }
   function renderBoard() {
-    // Never reorder data.models: task cells are indexed by its original order.
-    const models = [...data.models].sort((a, b) => {
-      const x = sortValue(a, sortKey), y = sortValue(b, sortKey);
-      if (x == null || y == null) return (x == null) - (y == null);
+    const headers = selected
+      ? [['Model', null], ['Result', null], ['Task score', 'task_score'], ['Net units added', 'net'], ['Churn', 'churn']]
+      : [...(ranked ? [['Rank', null]] : []), ['Model', null], ['Score', 'score'], ['95% CI', 'ci'], ['Solved', 'resolve_rate'], ['Per solve', 'solved_mean'], ['Median churn', 'churn']];
+    document.querySelector('#board thead').innerHTML = '<tr>' + headers.map(([name, key]) => `<th${key ? ` aria-sort="${key === sortKey ? ascending ? 'ascending' : 'descending' : 'none'}"` : ''}${name === 'Model' ? ' class="left"' : ''}>${key ? `<button type="button" data-sort="${key}"${key === 'ci' ? ' title="Sort by the lower confidence bound"' : ''}>${name}</button>` : name}</th>`).join('') + '</tr>';
+    const buttons = [...document.querySelectorAll('#board button[data-sort]')];
+    buttons.forEach((button) => button.addEventListener('click', () => {
+      const key = button.dataset.sort;
+      ascending = key === sortKey ? !ascending : ['churn', 'net'].includes(key);
+      sortKey = key;
+      renderBoard();
+    }));
+    const models = data.models.map((m, i) => ({m, i})).sort((a, b) => {
+      const x = sortValue(a.m, a.i), y = sortValue(b.m, b.i);
+      if (x == null || y == null || Number.isNaN(Number(x)) || Number.isNaN(Number(y))) return (x == null || Number.isNaN(Number(x))) - (y == null || Number.isNaN(Number(y)));
       return ascending ? x - y : y - x;
     });
-    sortButtons.forEach((button) => button.parentElement.setAttribute('aria-sort',
-      button.dataset.sort === sortKey ? (ascending ? 'ascending' : 'descending') : 'none'));
-    document.querySelector('#board tbody').innerHTML = models.map((m) => {
-    const score = m.score !== null ? fmt(m.score)
-      : fmt(m.lower) === fmt(m.upper) ? '≈' + fmt(m.lower) : `${fmt(m.lower)}–${fmt(m.upper)}`;
-    return `<tr>
-      ${ranked ? `<td>${rank(m.rank_range)}</td>` : ''}
-      <td class="left">${esc(m.name)}</td>
-      <td>${score}</td>
-      <td class="range">${fmt(m.ci[0])}–${fmt(m.ci[1])}</td>
-      <td>${fmt(m.resolve_rate * 100)}%</td>
-      <td>${fmt(m.solved_mean)}</td>
-      <td>${m.churn ?? '—'}</td>
-    </tr>`;
+    document.querySelector('#board tbody').innerHTML = models.map(({m, i}) => {
+      if (selected) {
+        const c = selected[2][i];
+        const taskScore = c[3] != null ? fmt(c[3]) : c[4] != null && c[5] != null
+          ? (fmt(c[4]) === fmt(c[5]) ? '≈' + fmt(c[4]) : `${fmt(c[4])}–${fmt(c[5])}`) : '—';
+        return `<tr><td class="left">${esc(m.name)}</td><td class="left ${esc(c[0])}">${esc(labels[c[0]] || c[0])}</td><td>${taskScore}</td><td>${signed(c[1])}</td><td>${fmt(c[2])}</td></tr>`;
+      }
+      const score = m.score != null ? fmt(m.score) : fmt(m.lower) === fmt(m.upper) ? '≈' + fmt(m.lower) : `${fmt(m.lower)}–${fmt(m.upper)}`;
+      return `<tr>${ranked ? `<td>${rank(m.rank_range)}</td>` : ''}<td class="left">${esc(m.name)}</td><td>${score}</td><td class="range">${fmt(m.ci?.[0])}–${fmt(m.ci?.[1])}</td><td>${fmt(m.resolve_rate * 100)}%</td><td>${fmt(m.solved_mean)}</td><td>${m.churn ?? '—'}</td></tr>`;
     }).join('');
   }
-  sortButtons.forEach((button) => button.addEventListener('click', () => {
-    const key = button.dataset.sort;
-    ascending = key === sortKey ? !ascending : key === 'churn';
-    sortKey = key;
-    renderBoard();
-  }));
-  renderBoard();
-
-  const LABELS = {r: 'solved', f: 'failed', u: 'unknown', m: 'not measured', n: 'no attempt', o: 'out of scope'};
-  const tasks = new Map(data.tasks.map((t) => [t[0], t]));
-  $('task-ids').innerHTML = data.tasks.map((t) => `<option value="${esc(t[0])}">`).join('');
-  function spread(t) {
-    const c = t[2].filter((cell) => cell[0] === 'r').map((cell) => cell[2]);
-    return c.length > 1 ? Math.max(...c) - Math.min(...c) : -1;
-  }
   function showTask(id) {
-    const t = tasks.get(id);
-    if (!t) return;
-    const [task, human, cells] = t;
-    $('task-search').value = task;
-    const m = task.match(/^(.+?)__(.+)-(\d+)$/);
-    $('task-link').href = bench.task_url.includes('{task}') ? bench.task_url.replace('{task}', task.split('#')[0])
-      : m ? bench.task_url.replace('{owner}', m[1]).replace('{repo}', m[2]).replace('{number}', m[3]) : '#';
-    document.querySelector('#task-table tbody').innerHTML = data.models.map((mod, i) => {
-      const c = cells[i];
-      return `<tr>
-        <td>${esc(mod.name)}</td>
-        <td class="left ${c[0]}">${LABELS[c[0]] || c[0]}</td>
-        <td>${signed(c[1])}</td>
-        <td>${c[2] ?? '—'}</td>
-        <td>${fmt(c[3])}</td>
-      </tr>`;
-    }).join('') + `<tr class="muted"><td>${esc(bench.reference)}</td><td class="left">reference</td><td>—</td><td>${human ?? '—'}</td><td>—</td></tr>`;
+    if (id && !tasks.has(id)) { $('task-status').textContent = `No task matches “${id}”. Still showing ${selected ? selected[0] : 'all tasks'}.`; return; }
+    if (!!selected !== !!id) { sortKey = id ? 'task_score' : 'score'; ascending = false; }
+    selected = id ? tasks.get(id) : null;
+    $('task-status').textContent = selected ? `Selected task: ${selected[0]}` : 'Showing all tasks.';
+    $('task-search').value = selected ? selected[0] : '';
+    $('task-footer').hidden = !selected;
+    $('rank-note').hidden = !!selected || !ranked;
+    $('score-help').hidden = $('ci-help').hidden = !!selected;
+    if (selected) {
+      const task = selected[0], m = task.match(/^(.+?)__(.+)-(\d+)$/);
+      $('task-link').textContent = `${bench.task_link} (reference churn: ${fmt(selected[1], 0)})`;
+      $('task-link').href = bench.task_url.includes('{task}') ? bench.task_url.replace('{task}', task.split('#')[0]) : m ? bench.task_url.replace('{owner}', m[1]).replace('{repo}', m[2]).replace('{number}', m[3]) : '#';
+    }
+    renderBoard(); renderGraph();
   }
-  $('task-search').addEventListener('input', (e) => showTask(e.target.value.trim()));
-  showTask([...data.tasks].sort((a, b) => spread(b) - spread(a))[0][0]);
+  function renderGraph() {
+    const all = data.models.map((m, i) => ({x: m.solved_net_mean, y: m.solved_churn_mean, name: m.name, kind: 'all', i}));
+    const chosen = selected ? data.models.map((m, i) => { const c = selected[2][i]; return {x: c[1], y: c[2], name: m.name, kind: c[0] === 'r' ? 'resolved' : 'failed', include: c[0] === 'r' || c[0] === 'f', i}; }).filter(p => p.include) : [];
+    const points = (selected ? chosen : all).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
+    $('graph-legend').textContent = points.length
+      ? (selected ? 'Green: solved. Red with outline: failed.' : 'Blue: each model’s measured passing attempts; models may solve different task subsets.')
+      : 'No measured points available for this view.';
+    const xLabel = selected ? 'Net coding units added' : 'Mean net coding units added per solve';
+    const yLabel = selected ? 'Churn' : 'Mean churn per solve';
+    const W = 720, H = 330, L = 66, R = 20, T = 18, B = 52;
+    let xmin = Math.min(0, ...points.map(p => p.x)), xmax = Math.max(1, ...points.map(p => p.x)), ymin = Math.min(0, ...points.map(p => p.y)), ymax = Math.max(1, ...points.map(p => p.y));
+    if (xmin === xmax) xmax = xmin + 1; if (ymin === ymax) ymax = ymin + 1;
+    const sx = x => L + (x - xmin) / (xmax - xmin) * (W - L - R), sy = y => H - B - (y - ymin) / (ymax - ymin) * (H - T - B);
+    const ticks = (lo, hi, axis) => Array.from({length: 5}, (_, i) => { const v = lo + (hi - lo) * i / 4; return axis === 'x' ? `<line class="axis" x1="${sx(v)}" y1="${H-B}" x2="${sx(v)}" y2="${H-B+4}"/><text class="tick" text-anchor="middle" x="${sx(v)}" y="${H-B+19}">${fmt(v)}</text>` : `<line class="axis" x1="${L-4}" y1="${sy(v)}" x2="${L}" y2="${sy(v)}"/><text class="tick" text-anchor="end" x="${L-8}" y="${sy(v)+4}">${fmt(v)}</text>`; }).join('');
+    const circles = points.map(p => `<circle class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}" cx="${sx(p.x)}" cy="${sy(p.y)}" r="${p.kind === 'all' ? 5 : 7}" tabindex="0" aria-label="${esc(p.name)}: net units ${fmt(p.x)}, churn ${fmt(p.y)}"><title>${esc(p.name)}: ${p.kind === 'all' ? 'all-task measured solves' : p.kind + ' task attempt'}; net units ${fmt(p.x)}, churn ${fmt(p.y)}</title></circle>`).join('');
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="plot-title plot-desc"><title id="plot-title">Churn versus complexity added</title><desc id="plot-desc">Scatterplot of mean net coding units added against mean churn. Blue circles are all-task successful measured solves; in selected-task view resolved attempts are green circles and failures are red outlined circles. Each point can receive keyboard focus for its label.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>`;
+  }
+  $('task-search').addEventListener('input', e => showTask(e.target.value.trim()));
+  $('task-reset').addEventListener('click', () => showTask(''));
+  showTask('');
 
   $('provenance').textContent = `Analyzer ${data.analyzer_version}, score ${data.score_version}, panel ${data.panel}.${data.measurement_track ? ' Units: ' + data.measurement_track.unit_version + '.' : ''}`;
 })();
