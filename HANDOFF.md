@@ -61,7 +61,7 @@ The Verified dataset is `python -m parsimony dataset --output verified.jsonl` (S
 
 ## Open ideas, roughly in priority order
 
-1. **Make footprint the headline.** The score is mostly resolve rate on Verified; *Per solve* is Parsimony's own signal. Consider sorting by a footprint score on solved tasks with resolve rate as its own column.
+1. **Keep footprint scoring over all tasks (owner clarification, 2026-09-28).** Never rank only by solved-task footprint: failed attempts and their added/changed code must count too. The solved-only headline change was reverted. Keep the all-task score and uncertainty as the headline; per-solve footprint is a diagnostic only. Missing measurements remain bounds, not dropped observations. The current metric measures code footprint, not design complexity directly.
 2. **More DeepSWE tasks:** measuring TypeScript and Go (likely via tree-sitter as an optional dependency, a separate versioned track) would take DeepSWE from 34 to 103 tasks.
 3. **Keep DeepSWE current:** re-run `configs` and `analyze` when new models appear (the live leaderboard updates).
 4. **Report broken SWE-bench submissions upstream** (`SWE-bench/experiments`): Gemini 3 Pro (high) `per_instance_details.json` marks all 500 tasks unresolved; GPT-5.2 Codex has no results file; Claude 3.7 Sonnet has 402 patches missing on S3; four runs' `metadata.yaml` name wrong S3 folders.
