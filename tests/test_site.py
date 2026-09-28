@@ -1,4 +1,6 @@
 import json
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -35,6 +37,17 @@ class SiteTests(unittest.TestCase):
         self.assertFalse(render(data, standalone=False).startswith('<!doctype'))
         hostile = render({**data, 'panel': '</script><script>alert(1)</script>'})
         self.assertEqual(hostile.count('</script>'), page.count('</script>'))
+
+    @unittest.skipUnless(shutil.which('node'), 'JavaScript interaction test requires Node.js')
+    def test_column_sorting(self):
+        records = [record()]
+        page = render(build(freeze(records, 'sorting-test'), records, draws=10))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'index.html'
+            path.write_text(page)
+            result = subprocess.run(['node', str(Path(__file__).with_name('site_sorting.cjs')), str(path)],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_label_falls_back_to_identifier(self):
         self.assertEqual(label('20260217_mini-v2.0.0_new-model'), 'new-model')
