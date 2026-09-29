@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "audited_at_utc": "2026-09-29T20:00:18Z",
+  "scope": {
+    "projects": ["SWE-bench Pro V2", "SWE-Atlas Refactoring"],
+    "allowed_sources": ["pinned public GitHub sources", "anonymous public S3 HTTP endpoints"],
+    "credentials_used": false,
+    "model_apis_or_evaluations_used": false,
+    "upstream_contacts_made": false
+  },
+  "swe_bench_pro": {
+    "pinned_repository": {
+      "url": "https://github.com/scaleapi/SWE-bench_Pro-os",
+      "commit": "66f92766bba642462d4bbe5479e83f91f9211862",
+      "v2_readme_url": "https://raw.githubusercontent.com/scaleapi/SWE-bench_Pro-os/66f92766bba642462d4bbe5479e83f91f9211862/v2/README.md",
+      "v2_readme_http_status": 200,
+      "v2_readme_bytes": 6858,
+      "v2_readme_sha256": "dde4168fed17ca1ea00b26a93aca78dad43c7b3f981b93a2872428259428231f"
+    },
+    "version_distinction": {
+      "v2": "642 task Harbor split; public repository contains reference/gold patches and verifier assets; README describes how to generate new model.patch artifacts by running agents and re-grade them.",
+      "v1": "Original 731-task release, separately identified by README as HF config v1 / tag v1.0 and the legacy pipeline. Do not transfer v1 attempts/outcomes to V2.",
+      "legacy_s3_namespace_versioned": false
+    },
+    "anonymous_s3": {
+      "endpoint": "https://scaleapi-results.s3.amazonaws.com/",
+      "request_url": "https://scaleapi-results.s3.amazonaws.com/?prefix=swe-bench-pro%2F&delimiter=%2F",
+      "http_status": 200,
+      "response_bytes": 1988,
+      "response_sha256": "a7debe7b00e996b8502b61fdd4bec00da9ee23f1d59b840eec826fbf85e93670",
+      "result_prefixes": [
+        "claude-45haiku-10222025", "claude-45sonnet-10132025", "claude-4sonnet-10132025", "claude-opus-4-1-paper", "claude-sonnet-4-paper", "gemini-2-5-pro-preview-250-turns-debug-nov17", "gemini-2-5-pro-preview-250-turns-debug-oct22", "gemini-2-5-pro-preview-paper", "glm-4p5-10222025", "gpt-4o-paper", "gpt-5-250-turns-10132025", "gpt-5-codex-debug-oct22", "gpt-5-high-paper", "gptoss-paper", "kimi-paper"
+      ],
+      "listing_truncated": false,
+      "v2_specific_run_prefix_found": false,
+      "interpretation": "Anonymous access succeeds for historical run material, but bucket listing exposes no V2-designated export. The root README labels the available v1 pipeline separately; S3 keys themselves do not prove dataset version. No V2 attempts may be inferred from this listing."
+    },
+    "positive_legacy_artifact_example_not_for_v2": {
+      "run": "claude-45sonnet-10132025",
+      "instance_id": "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
+      "patch_url": "https://scaleapi-results.s3.amazonaws.com/swe-bench-pro/claude-45sonnet-10132025/eval/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan/_patch.diff",
+      "patch_http_status": 200,
+      "patch_bytes": 77642,
+      "patch_sha256": "11eb99ed2d27ec103e42e6e2b8e7d40d5f56728df0919bd83cf9f19c5591500c",
+      "outcome_url": "https://scaleapi-results.s3.amazonaws.com/swe-bench-pro/claude-45sonnet-10132025/eval/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan/_output.json",
+      "outcome_http_status": 200,
+      "outcome_bytes": 81,
+      "outcome_sha256": "2f6451a37971058b4275f2c9e53e28a27cf31bcbe9b27da250bfeebc68d65ed9",
+      "outcome": "Verifier output reports a FAILED before-all test hook. This is explicit failed verifier evidence for this legacy attempt, not V2 evidence or proof of authoritative V2 re-grading.",
+      "last_modified": "2025-10-13T23:15:31Z"
+    },
+    "closure": "V2 task/gold assets are public, but no V2 model patch plus explicit task outcome export was located in pinned GitHub or the anonymous S3 listing. V1/legacy patch and failure artifacts are accessible, but version mismatch prohibits reuse as V2. No importer should be implemented from this evidence."
+  },
+  "swe_atlas_refactoring": {
+    "pinned_repository": {
+      "url": "https://github.com/scaleapi/SWE-Atlas",
+      "commit": "49e4af3b6c803dd54a1cd60ead703aac25de4e21",
+      "tree_url": "https://api.github.com/repos/scaleapi/SWE-Atlas/git/trees/49e4af3b6c803dd54a1cd60ead703aac25de4e21?recursive=1",
+      "tree_http_status": 200,
+      "tree_entries": 5670,
+      "tree_truncated": false,
+      "rf_task_directories": 70,
+      "tw_task_directories": 91,
+      "model_result_or_patch_paths_found": false,
+      "readme_url": "https://raw.githubusercontent.com/scaleapi/SWE-Atlas/49e4af3b6c803dd54a1cd60ead703aac25de4e21/README.md",
+      "readme_http_status": 200,
+      "readme_bytes": 3668,
+      "readme_sha256": "0017ddabae87cddc1f45d3a1bc2e07e3a858576ea912c52f85378888889caee3"
+    },
+    "gold_patch_example": {
+      "task_id": "69391d8d1ce51c407be1e531",
+      "config_url": "https://raw.githubusercontent.com/scaleapi/SWE-Atlas/49e4af3b6c803dd54a1cd60ead703aac25de4e21/data/rf/task-69391d8d1ce51c407be1e531/tests/config.json",
+      "config_http_status": 200,
+      "config_sha256": "18bc7d8783de36c2bd211e230b9641504d0d6e1979b91c3e755c6715ad73c69e",
+      "repo": "trufflesecurity_trufflehog",
+      "base_commit": "5568b2e0a686cc4d838bddc095b831379143e61b",
+      "language": "Go",
+      "gold_patch_url": "https://raw.githubusercontent.com/scaleapi/SWE-Atlas/49e4af3b6c803dd54a1cd60ead703aac25de4e21/data/rf/task-69391d8d1ce51c407be1e531/solution/gold.patch",
+      "gold_patch_http_status": 200,
+      "gold_patch_bytes": 29560,
+      "gold_patch_sha256": "056ad7b55002b2c86a459d9668b6817ceb1f74413bf5da2e41df7b6ccdc51588",
+      "classification": "Gold/reference patch only; not a model attempt."
+    },
+    "license_and_reuse": {
+      "benchmark_repository_license": "Apache-2.0 (LICENSE present at pinned commit)",
+      "third_party_base_repository_rights": "Not cleared by the benchmark license; evaluate relevant source-project license separately.",
+      "model_patch_and_attempt_rights": "No model artifacts were found; redistribution rights for hypothetical outputs are unverified.",
+      "leaderboard_aggregates": "Not per-task attempt artifacts; cannot reconstruct model patches or failures."
+    },
+    "anonymous_s3": {
+      "result": "No SWE-Atlas Refactoring anonymous S3 artifact endpoint was identified in the pinned public repository sources."
+    },
+    "closure": "Public RF task configs and gold patches are available; public model final patches and explicit per-task model outcomes/failures are not present in the inspected pinned GitHub tree. No historical run can be imported. Keep RF gold patches distinct from model outputs."
+  },
+  "limitations": [
+    "Absence from the inspected public GitHub tree and anonymous S3 prefix listing does not prove that private or separately hosted exports do not exist.",
+    "No source-project/license audit was performed for all 11 Pro repositories or all 70 Atlas RF projects.",
+    "No patches were applied, target code was executed, or benchmark tests/evaluators were run."
+  ]
+}

@@ -1,6 +1,19 @@
 # Session handoff — 2026-09-29
 
-## Latest continuation — 2026-09-29
+## Benchmark-expansion continuation — 2026-09-29
+
+Owner said “ok do all” for the four recommended benchmark workstreams. Implemented `parsimony/live.py` + `tests/test_live.py` for immutable multi-file/Parquet inventories and reviewed offline analysis, and extended Verified artifact imports for public submitter-hosted GitHub repositories. Both preserve explicit failures, unknowns, missing/empty artifacts and predefined language scope. Parquet is an optional lazy `pyarrow` dependency.
+
+Fresh discovery evidence:
+
+- `examples/deepswe-python/refresh-2026-09-29.json`: 26 usable configurations, all three metadata hashes unchanged; no new DeepSWE inputs warrant remeasurement.
+- `examples/benchmark-discovery/verified-*.json` and `docs/verified-refresh-investigation.md`: experiments revision unchanged; 48 actual mini runs. Excluded Gemini 3.5 has 441 outcome rows and accessible representative patches but incomplete population coverage; GPT-5.2 Codex result files remain unavailable; Claude 3.7 representative patches remain missing. Do not equate missing artifacts with failure or pool newly measured records into the 0.5.2 board.
+- `docs/pro-atlas-artifact-audit.md`: Pro anonymous S3 listing is accessible (correcting the prior untested access caveat), but the located patches/results are legacy, not verified V2. Atlas remains gold-only in inspected sources. No identified public V2/Atlas model-run export, no upstream contact or paid workaround.
+- `docs/live-provenance-audit.md` and `examples/benchmark-discovery/live-immutable-audit.json`: **direct immutable Parquet** reads found all 230 Live submitted IDs and corroborated four Go/JS bases against raw trajectories. Dataset-server `revision` query links are navigation only, not pinned evidence. The candidate HF upload is August, later than May–June trajectories, and is not proven to be the run input. Artifact redistribution terms are also unverified. No board/public scores are warranted yet.
+
+Verification before the tooling commit: 164 tests passed with pinned parsers + optional pyarrow; stdlib-only passed with 16 skips; zero submission bundles; all five Node page checks passed; `git diff --check` passed. Published analyzer pins/rules, measurements, panels, scores and pages were not changed. `.claude/` remains unrelated and untouched. Next: clean-checkout four-task static Live pilot with per-task base-confirmation evidence; then full-cohort provenance/rights review before any new board.
+
+## Earlier continuation — 2026-09-29
 
 Owner authorized continuing from this handoff and asked which benchmarks would add model coverage. Pi's global default is now `openai-codex/gpt-6.1-sol`; thinking remains medium. This is a local Pi setting, not project data.
 
