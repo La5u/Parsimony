@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Website: model and company comparison
+
+The scatterplot now explicitly compares models, using consistent developer-company colors and a legend across all boards. Points average measured, in-scope passing **and failed** attempts, rather than only solves. Hover/focus/tap labels expose model, company and measurement coverage. The all-task scoring formula and rankings are unchanged.
+
 ## Website and results — 2026-09-28
 
 - One sortable board defaults to all score-panel tasks; the task-ID selector changes that same board instead of opening a second table. A responsive scatterplot shows mean net coding units added against mean churn per measured solve, or individual measured passing/failed attempts for the selected task. Conditional means are diagnostics; default ranking remains the all-task score. Coverage exclusions and the resolve-rate denominator are disclosed.

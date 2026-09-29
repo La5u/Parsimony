@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest import mock
 
 from parsimony.scoring import freeze
-from parsimony.site import add_rank_ranges, build, label, main, render
+from parsimony.site import add_rank_ranges, build, company, label, main, render
 from tests.test_scoring import record
 
 
@@ -27,6 +27,9 @@ class SiteTests(unittest.TestCase):
         opus = data['models'][1]
         self.assertEqual((opus['solved'], opus['failed']), (1, 1))
         self.assertEqual((opus['solved_net_mean'], opus['solved_churn_mean']), (5, 9))
+        self.assertEqual((opus['measured_net_mean'], opus['measured_churn_mean']), (2.5, 4.5))
+        self.assertEqual(opus['measured_attempts'], 2)
+        self.assertEqual(opus['company'], 'Anthropic')
         self.assertLessEqual(opus['ci'][0], opus['score'])
         self.assertEqual([t[0] for t in data['tasks']], ['t1', 't2'])
         self.assertEqual((data['references'], data['harness']), (2, ['v2.0.0']))
@@ -50,6 +53,9 @@ class SiteTests(unittest.TestCase):
         self.assertEqual((a['solved_net_mean'], a['solved_churn_mean']), (4, 6))
         self.assertEqual((a['net_units'], a['churn']), (4, 6))
         self.assertEqual(data['excluded_tasks'], ['outside'])
+        self.assertEqual(a['measured_net_mean'], 36)
+        self.assertAlmostEqual(a['measured_churn_mean'], 112 / 3)
+        self.assertEqual(a['measured_attempts'], 3)
         for r in records:
             if r['agent'] == 'a' and r['task_id'] in ('t1', 't2'):
                 r['analysis_status'] = 'fetch_error'
@@ -59,6 +65,9 @@ class SiteTests(unittest.TestCase):
         self.assertIsNone(a['solved_net_mean'])
         self.assertIsNone(a['solved_churn_mean'])
         self.assertIsNone(a['churn'])
+        # Failed attempts remain in the model point; missing measurements do not become zeros.
+        self.assertEqual((a['measured_net_mean'], a['measured_churn_mean']), (100, 100))
+        self.assertEqual(a['measured_attempts'], 1)
         i = next(i for i, m in enumerate(data['models']) if m['agent'] == 'a')
         t1 = next(t for t in data['tasks'] if t[0] == 't1')
         self.assertEqual(t1[2][i][3:], [None, 1, 100])
@@ -73,6 +82,33 @@ class SiteTests(unittest.TestCase):
             result = subprocess.run(['node', str(Path(__file__).with_name('site_sorting.cjs')), str(path)],
                                     capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_company_is_model_developer(self):
+        for agent, expected in {
+            'deepswe-v1.1_mini_swe_agent_claude_opus_5_max': 'Anthropic',
+            'deepswe-v1.1_mini_swe_agent_gpt_5_6_sol_max': 'OpenAI',
+            'deepswe-v1.1_mini_swe_agent_gemini_3_7_flash_medium': 'Google',
+            'deepswe-v1.1_mini_swe_agent_muse_spark_1_2_xhigh': 'Meta',
+            'deepswe-v1.1_mini_swe_agent_glm_5_3_max': 'Z.ai',
+            'deepswe-v1.1_mini_swe_agent_qwen3_8_max_xhigh': 'Alibaba',
+            'deepswe-v1.1_mini_swe_agent_kimi_k3_max': 'Moonshot AI',
+            'deepswe-v1.1_mini_swe_agent_grok_4_6_medium': 'xAI',
+            'deepswe-v1.1_mini_swe_agent_deepseek_v4_pro_max': 'DeepSeek',
+            '20250720_mini-v0.0.0-Llama-4-Maverick-17B-Instruct': 'Meta',
+            '20260217_mini-v2.0.0_minimax-2-5-high': 'MiniMax',
+            'devstral-2512': 'Mistral AI', 'o3-2025-04-16': 'OpenAI',
+            'other-model': 'Other',
+        }.items():
+            self.assertEqual(company(agent), expected, agent)
+
+    def test_model_plot_no_measurements_is_missing_not_zero(self):
+        panel = freeze([record('ref')], 'empty-plot')
+        missing = record('candidate')
+        missing.update(metrics=None, analysis_status='fetch_error')
+        model, = build(panel, [missing], draws=10)['models']
+        self.assertIsNone(model['measured_net_mean'])
+        self.assertIsNone(model['measured_churn_mean'])
+        self.assertEqual(model['measured_attempts'], 0)
 
     def test_label_falls_back_to_identifier(self):
         self.assertEqual(label('20260217_mini-v2.0.0_new-model'), 'new-model')

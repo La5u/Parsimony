@@ -50,6 +50,21 @@ def label(agent):
     return NAMES.get(short, short)
 
 
+def company(agent):
+    """Model developer, not the agent harness or hosting provider."""
+    name = label(agent).lower()
+    for prefixes, owner in (
+        (('claude',), 'Anthropic'), (('gpt', 'o3', 'o4', 'o1'), 'OpenAI'),
+        (('gemini',), 'Google'), (('deepseek',), 'DeepSeek'),
+        (('qwen',), 'Alibaba'), (('grok',), 'xAI'), (('glm',), 'Z.ai'),
+        (('kimi',), 'Moonshot AI'), (('minimax',), 'MiniMax'),
+        (('llama', 'muse'), 'Meta'), (('devstral', 'mistral', 'codestral'), 'Mistral AI'),
+    ):
+        if name.startswith(prefixes):
+            return owner
+    return 'Other'
+
+
 def median(values):
     values = [v for v in values if v is not None]
     return statistics.median(values) if values else None
@@ -104,11 +119,16 @@ def build(panel, records, draws=2000, seed=42):
         statuses = [t['status'] for t in entry['tasks'].values()]
         solved_scores = [t['score'] for t in entry['tasks'].values() if t['status'] == 'resolved']
         solved_metrics = [r['metrics'] for r in ok]
+        measured_metrics = [group[t]['metrics'] for t, value in entry['tasks'].items()
+                            if value['status'] in ('resolved', 'failed')]
         # Failure penalty from the failures that could be measured; complete only when nothing is unscored.
         known_penalty = -sum(t['score'] for t in entry['tasks'].values()
                              if t['status'] == 'failed' and t['score'] is not None) / len(entry['tasks'])
         models.append(dict(
-            agent=entry['agent'], name=label(entry['agent']), score=entry['score'],
+            agent=entry['agent'], name=label(entry['agent']), company=company(entry['agent']), score=entry['score'],
+            measured_attempts=len(measured_metrics),
+            measured_net_mean=statistics.fmean(m['net_units'] for m in measured_metrics) if measured_metrics else None,
+            measured_churn_mean=statistics.fmean(m['churn'] for m in measured_metrics) if measured_metrics else None,
             lower=entry['lower'], upper=entry['upper'], ci=intervals[entry['agent']]['ci'],
             top=intervals[entry['agent']]['top'],
             success_credit=entry['success_credit'], failure_penalty=entry['failure_penalty'],
