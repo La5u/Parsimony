@@ -93,13 +93,12 @@ function task(id) {
   element('task-search').listeners.input({target: {value: id}});
 }
 assert.deepEqual(names(), ['Beta', 'Alpha', 'Gamma']);
-assert.doesNotMatch(element('#board thead').innerHTML, /Per solve|churn/i);
+assert.doesNotMatch(element('#board thead').innerHTML, /Per solve|churn|95% CI|data-sort="ci"/i);
+assert(rows().every(row => [...row.matchAll(/<td\b/g)].length === 5));
 assert.doesNotMatch(html.split('<script id="parsimony-data"')[0], /Per solve|churn/i);
 assert.match(element('#board tbody').innerHTML, /−2.0/);
 click('score', ['Gamma', 'Alpha', 'Beta'], 'ascending');
 click('score', ['Beta', 'Alpha', 'Gamma'], 'descending');
-click('ci', ['Gamma', 'Beta', 'Alpha'], 'descending');
-click('ci', ['Alpha', 'Beta', 'Gamma'], 'ascending');
 click('resolve_rate', ['Alpha', 'Gamma', 'Beta'], 'descending');
 click('resolve_rate', ['Beta', 'Gamma', 'Alpha'], 'ascending');
 click('net', ['Alpha', 'Beta', 'Gamma'], 'ascending');
@@ -138,7 +137,7 @@ for (const event of ['scroll', 'resize']) {
   browser.listeners[event]();
   assert.equal(tooltip.hidden, true);
 }
-// Every numeric table value is selectable; ranges expose explicit endpoints.
+// Numeric metrics remain selectable, including CI endpoints without a table column.
 const keys = ['score', 'ci', 'ci_high', 'resolve_rate', 'net', 'rank_low', 'rank_high'];
 for (const key of keys) assert(element('graph-x').innerHTML.includes(`value="${key}"`));
 assert.doesNotMatch(element('graph-x').innerHTML, /churn|solved_mean/i);
@@ -197,5 +196,6 @@ assert.equal(element('graph-y').value, 'resolve_rate');
 assert.equal(element('task-footer').hidden, true);
 assert.equal(element('ci-help').hidden, false);
 assert.deepEqual(names(), ['Beta', 'Alpha', 'Gamma']);
-assert.doesNotMatch(element('#board thead').innerHTML, /churn|Per solve/i);
+assert.doesNotMatch(element('#board thead').innerHTML, /churn|Per solve|95% CI|data-sort="ci"/i);
+assert(rows().every(row => [...row.matchAll(/<td\b/g)].length === 5));
 console.log('Light mode, instant name tooltips, sorting, axes and task switching passed');

@@ -1,5 +1,9 @@
 # Session handoff — 2026-09-29
 
+## Latest UI change — 2026-09-29
+
+Owner approved removing the dedicated **95% CI table column**. Removed it from the shared template and rebuilt all five boards. CI calculations/data, CI graph-axis endpoints and rank ranges remain; scoring and embedded page data are unchanged (full embedded JSON hashes compared before/after). Removed the obsolete CI-column sorting instructions and protected column count/alignment with Node regression assertions. No remeasurement.
+
 ## Benchmark-expansion continuation — 2026-09-29
 
 Owner said “ok do all” for the four recommended benchmark workstreams. Implemented `parsimony/live.py` + `tests/test_live.py` for immutable multi-file/Parquet inventories and reviewed offline analysis, and extended Verified artifact imports for public submitter-hosted GitHub repositories. Both preserve explicit failures, unknowns, missing/empty artifacts and predefined language scope. Parquet is an optional lazy `pyarrow` dependency.
@@ -45,7 +49,7 @@ For the next session:
 
 - **Default ranking must consider passing AND failed attempts**, including their footprint. We briefly ranked by solved-only footprint; the owner rejected it and it was reverted. Do not reintroduce solved-only rankings.
 - **Churn and Per solve are removed from the website**, not from stored measurements or the scoring formula. The owner has **not approved changing the score to net-only**. Keep that distinction explicit.
-- Current visible all-task columns: **Rank range, Model, Score, 95% CI, Solved, Net units added**. Numeric headers sort on click and reverse on another click; missing values stay last. Score is the default descending sort; net units start ascending. CI sorts by its lower bound.
+- Current visible all-task columns: **Rank range, Model, Score, Solved, Net units added**. The dedicated 95% CI column was removed with approval; CI data/calculations and graph-axis endpoints remain. Numeric headers sort on click and reverse on another click; missing values stay last. Score is the default descending sort; net units start ascending.
 - **One shared table**, defaulting to all score-panel tasks. A task-ID text/datalist input selects a task/attempt and replaces that same table; no separate task table. An All tasks button resets it.
 - **Graph: one point per model, company colors**, selectable X/Y metrics from the visible table. Default X = mean net units added, Y = solved percentage. Interval/rank endpoints are explicit options. Selecting an already-used axis metric swaps axes. Task view offers only task score/net units; returning to all tasks restores the previous all-task axes.
 - **Numeric graph axes fit visible points**, with 5% padding rather than forcing zero. Solved stays at 0–100%. Constant/single values use ±5% of magnitude (minimum 1 unit); empty numeric views use 0–1. Negative values are supported. On the current main board, the default net-unit axis is about **1,091–2,528.5**.
