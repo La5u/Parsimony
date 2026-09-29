@@ -1,5 +1,18 @@
 # Session handoff — 2026-09-29
 
+## Latest expanded-source research — 2026-09-29
+
+Owner challenged whether more/newer models or other languages were truly unavailable. **Earlier no-new-cohort conclusion was too narrow:** it applied to the chosen DeepSWE/Verified refresh, not all public inputs. Broader public census now finds:
+
+- **DeepSeek V4.1 Flash / TianxiCode Live Lite:** 300 Python predictions and 204 success / 96 explicit failure results; submitter README expressly identifies V4.1 Flash. Operational bases/terms/layout adapter still need review before publication.
+- **GPT-5.2 Codex / SWE-bench Multilingual:** 300 explicit outcome rows and accessible representative successful/failed Go/JS/Rust patches, despite its separate Verified result absence. TS failed sample is HTTP 403. Other Multilingual runs add data for existing models.
+- **GPT-5.6 Sol / Live Slingshot v3.4.0:** 300 Python + 108 JS + 111 TS results/predictions (new config/source, not new model identity).
+- **SWE-PolyBench Verified:** actual recent GPT-5.4/Opus 4.8 model patch exports; 113 Python/100 JS/100 TS/69 Java task candidate. **SWE-rebench:** Qwen3-Coder OpenHands patches+outcomes exist; July frontier export explicitly omits patches.
+- **Full SWE-agent GPT-5.5 base audit materially improves Live feasibility:** all 224 present task trajectories have exact reset-base matches; all 79 nonempty Go/JS/TS patches are covered, retaining 80 submitted records including empty TS. Missing historical HF revision need not block a bounded static import where every relevant base is independently confirmed. Do not infer full 230-task availability or scoring readiness.
+- **Java/Rust expansion:** candidate task pools exist across Live/Multilingual/PolyBench; Rust adds five DeepSWE tasks. Current analyzer supports neither. Use separate, versioned tracks; do not sum pools as unique tasks or pool raw units.
+
+Read `docs/language-expansion-opportunities.md`, `docs/expanded-live-census.md`, `docs/expanded-artifact-search.md` and companion discovery JSON. Broad counts include repeated configs/attempts and some partial/retry/success-only packages; not all are valid all-attempt panels. No importer/analyzer changes, new measurements or published scores were made in this research. Next highest-novelty task: add explicitly validated plural `results.json` + keyed `preds.json` Live adapters and a clean DeepSeek V4.1 Flash Python pilot; choose language expansion only after supported-track opportunities.
+
 ## Latest UI change — 2026-09-29
 
 Owner approved removing the dedicated **95% CI table column**. Removed it from the shared template and rebuilt all five boards. CI calculations/data, CI graph-axis endpoints and rank ranges remain; scoring and embedded page data are unchanged (full embedded JSON hashes compared before/after). Removed the obsolete CI-column sorting instructions and protected column count/alignment with Node regression assertions. No remeasurement.
