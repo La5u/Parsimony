@@ -12,7 +12,7 @@
 
 ## Coverage before rankings
 
-The frozen population has **20 attempts per model**. The score panel can calibrate **5 of 5 tasks** (20 items): it needs at least one measured, in-scope passing reference per task. Scores, CIs, task selection and the plot's measured-success means use this score panel; published resolve rate retains the entire population denominator. Attempts from uncalibrated tasks remain in the raw records and coverage report.
+The frozen population has **20 attempts per model**. The score panel can calibrate **5 of 5 tasks** (20 items): it needs at least one measured, in-scope passing reference per task. Scores, CIs, task selection and the plot's measured-attempt means (including failures) use this score panel; published resolve rate retains the entire population denominator. Attempts from uncalibrated tasks remain in the raw records and coverage report.
 
 Status totals: `error` 1, `ok` 519. A parser/analysis error means **unmeasured**, not benchmark failure or zero footprint. Missing measurements within the panel contribute score bounds. Upstream unknown outcomes remain unknown.
 

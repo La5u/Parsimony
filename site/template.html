@@ -52,9 +52,11 @@ button { font: inherit; color: var(--ink); background: var(--bg); border: 1px so
 #graph svg { display: block; width: 100%; height: auto; }
 #graph .axis { stroke: var(--muted); }
 #graph .tick { fill: var(--muted); font: 12px system-ui, sans-serif; }
-#graph .all-point { fill: var(--link); }
-#graph .resolved-point { fill: var(--good); }
-#graph .failed-point { fill: var(--bad); stroke: var(--ink); stroke-width: 1.5; }
+#graph circle { stroke: var(--bg); stroke-width: 1; cursor: pointer; }
+#graph .failed-point { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 2 1; }
+#company-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.company-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+#graph-detail { min-height: 3em; }
 #graph circle:focus { outline: none; stroke: var(--ink); stroke-width: 3; }
 th[aria-sort="ascending"] button::after { content: ' ↑'; }
 th[aria-sort="descending"] button::after { content: ' ↓'; }
@@ -104,10 +106,12 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="small muted">Click a column heading to sort; click again to reverse. Score uses the midpoint when shown as bounds; 95% CI sorts by its lower bound. Missing values stay last. Per solve and median churn describe successful patches only; sorting them does not change the all-task score.</p>
   <p class="small muted" id="ci-help">95% CI shows score uncertainty from resampling tasks, widened for missing measurements. It helps avoid overinterpreting small score gaps; it is not a measure of code complexity and does not cover every source of bias.</p>
 
-  <h2 id="complexity">Churn and complexity added</h2>
-  <p class="small muted">Here “complexity added” means net coding units added (code footprint), not semantic complexity. All-task points show mean footprint per measured, in-scope solve, excluding failures; the default leaderboard score still includes all tasks. Selecting a task replaces the points with its measured attempts, including failures. Missing measurements have no point. Hover over a point for its model and values.</p>
+  <h2 id="complexity">Churn and complexity added per model</h2>
+  <p class="small muted">One point per model, colored by company. “Complexity added” means net coding units added (code footprint), not semantic complexity. All-task values are means across measured, in-scope attempts, including failures—not just solves. Missing measurements are excluded from these means, never assigned zero; coverage is shown in each point’s label. Selecting a task shows each model’s measured attempt instead. The leaderboard score is unchanged.</p>
   <p class="small muted" id="graph-legend"></p>
-  <div id="graph" aria-label="Scatterplot of churn versus complexity added"></div>
+  <div class="small" id="company-legend" aria-label="Model companies"></div>
+  <div id="graph" aria-label="Scatterplot of churn versus complexity added per model"></div>
+  <p class="small muted" id="graph-detail" role="status" aria-live="polite"></p>
   <p class="small muted" id="attempts-note" hidden>Each task was run four times; each attempt is scored against every passing patch of the task.</p>
 
   <h2 id="method">Method</h2>
@@ -235,22 +239,37 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     }
     renderBoard(); renderGraph();
   }
+  const companyColors = {
+    'Anthropic': '#d97757', 'OpenAI': '#00a37a', 'Google': '#4285f4', 'DeepSeek': '#2756bd',
+    'Alibaba': '#e59215', 'xAI': '#777777', 'Z.ai': '#c94eaf', 'Moonshot AI': '#00a6b2',
+    'MiniMax': '#dc5263', 'Meta': '#8b5cf6', 'Mistral AI': '#b18a00', 'Other': '#64748b'
+  };
+  const companyColor = company => companyColors[company] || companyColors.Other;
   function renderGraph() {
-    const all = data.models.map((m, i) => ({x: m.solved_net_mean, y: m.solved_churn_mean, name: m.name, kind: 'all', i}));
-    const chosen = selected ? data.models.map((m, i) => { const c = selected[2][i]; return {x: c[1], y: c[2], name: m.name, kind: c[0] === 'r' ? 'resolved' : 'failed', include: c[0] === 'r' || c[0] === 'f', i}; }).filter(p => p.include) : [];
+    const all = data.models.map((m, i) => ({x: m.measured_net_mean, y: m.measured_churn_mean,
+      name: m.name, company: m.company || 'Other', count: m.measured_attempts, kind: 'all', i}));
+    const chosen = selected ? data.models.map((m, i) => { const c = selected[2][i]; return {x: c[1], y: c[2], name: m.name, company: m.company || 'Other', kind: c[0] === 'r' ? 'resolved' : 'failed', include: c[0] === 'r' || c[0] === 'f', i}; }).filter(p => p.include) : [];
     const points = (selected ? chosen : all).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
     $('graph-legend').textContent = points.length
-      ? (selected ? 'Green: solved. Red with outline: failed.' : 'Blue: each model’s measured passing attempts; models may solve different task subsets.')
+      ? (selected ? 'Color indicates company. Dashed outline: failed attempt.' : 'Color indicates company. Means include measured passing and failed attempts; measurement coverage can differ.')
       : 'No measured points available for this view.';
-    const xLabel = selected ? 'Net coding units added' : 'Mean net coding units added per solve';
-    const yLabel = selected ? 'Churn' : 'Mean churn per solve';
+    $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort().map(company =>
+      `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
+    $('graph-detail').textContent = points.length ? 'Hover, focus or tap a point to see its model, company, values and coverage.' : '';
+    const xLabel = selected ? 'Net coding units added' : 'Mean net coding units added per attempt';
+    const yLabel = selected ? 'Churn' : 'Mean churn per attempt';
     const W = 720, H = 330, L = 66, R = 20, T = 18, B = 52;
     let xmin = Math.min(0, ...points.map(p => p.x)), xmax = Math.max(1, ...points.map(p => p.x)), ymin = Math.min(0, ...points.map(p => p.y)), ymax = Math.max(1, ...points.map(p => p.y));
     if (xmin === xmax) xmax = xmin + 1; if (ymin === ymax) ymax = ymin + 1;
     const sx = x => L + (x - xmin) / (xmax - xmin) * (W - L - R), sy = y => H - B - (y - ymin) / (ymax - ymin) * (H - T - B);
     const ticks = (lo, hi, axis) => Array.from({length: 5}, (_, i) => { const v = lo + (hi - lo) * i / 4; return axis === 'x' ? `<line class="axis" x1="${sx(v)}" y1="${H-B}" x2="${sx(v)}" y2="${H-B+4}"/><text class="tick" text-anchor="middle" x="${sx(v)}" y="${H-B+19}">${fmt(v)}</text>` : `<line class="axis" x1="${L-4}" y1="${sy(v)}" x2="${L}" y2="${sy(v)}"/><text class="tick" text-anchor="end" x="${L-8}" y="${sy(v)+4}">${fmt(v)}</text>`; }).join('');
-    const circles = points.map(p => `<circle class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}" cx="${sx(p.x)}" cy="${sy(p.y)}" r="${p.kind === 'all' ? 5 : 7}" tabindex="0" aria-label="${esc(p.name)}: net units ${fmt(p.x)}, churn ${fmt(p.y)}"><title>${esc(p.name)}: ${p.kind === 'all' ? 'all-task measured solves' : p.kind + ' task attempt'}; net units ${fmt(p.x)}, churn ${fmt(p.y)}</title></circle>`).join('');
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="plot-title plot-desc"><title id="plot-title">Churn versus complexity added</title><desc id="plot-desc">Scatterplot of mean net coding units added against mean churn. Blue circles are all-task successful measured solves; in selected-task view resolved attempts are green circles and failures are red outlined circles. Each point can receive keyboard focus for its label.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>`;
+    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all measured attempts' : p.kind + ' task attempt'}; net units ${fmt(p.x)}, churn ${fmt(p.y)}${p.kind === 'all' ? '; measured ' + p.count + '/' + data.task_count + ' score-panel attempts' : ''}`;
+    const circles = points.map((p, i) => `<circle data-point="${i}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}" fill="${companyColor(p.company)}" cx="${sx(p.x)}" cy="${sy(p.y)}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}"><title>${esc(pointLabel(p))}</title></circle>`).join('');
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="plot-title plot-desc"><title id="plot-title">Churn versus complexity added per model</title><desc id="plot-desc">One point per model, colored by its company. All-task means include measured passing and failed attempts. In selected-task view, failed attempts have dashed outlines. Focus or tap a point to read the model, values and measurement coverage below the chart.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>`;
+    document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
+      const show = () => { $('graph-detail').textContent = pointLabel(points[Number(circle.dataset.point)]); };
+      ['mouseenter', 'focus', 'click'].forEach(event => circle.addEventListener(event, show));
+    });
   }
   $('task-search').addEventListener('input', e => showTask(e.target.value.trim()));
   $('task-reset').addEventListener('click', () => showTask(''));
