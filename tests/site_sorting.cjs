@@ -24,6 +24,7 @@ function element(id) {
   if (id === '#graph') id = 'graph';
   if (!elements.has(id)) elements.set(id, {
     innerHTML: '', textContent: '', value: '', hidden: false, listeners: {}, attributes: {},
+    style: {}, offsetWidth: 160, offsetHeight: 24,
     addEventListener(event, fn) { this.listeners[event] = fn; },
     setAttribute(name, value) { this.attributes[name] = value; },
   });
@@ -40,7 +41,8 @@ const doc = {
       if (lastCircles && lastGraph === graph) return lastCircles;
       lastGraph = graph;
       lastCircles = [...graph.matchAll(/<circle data-point="(\d+)"/g)].map(match => ({
-        dataset: {point: match[1]}, listeners: {}, addEventListener(event, fn) { this.listeners[event] = fn; }
+        dataset: {point: match[1]}, listeners: {}, addEventListener(event, fn) { this.listeners[event] = fn; },
+        getBoundingClientRect() { return {left: 100, width: 12, bottom: 200}; }
       }));
       return lastCircles;
     }
@@ -56,7 +58,11 @@ const doc = {
     return lastButtons;
   },
 };
-vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc});
+const browser = {innerWidth: 800, innerHeight: 600, listeners: {},
+  addEventListener(event, fn) { this.listeners[event] = fn; }};
+vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc, window: browser});
+assert.match(html, /color-scheme: light/);
+assert.doesNotMatch(html, /prefers-color-scheme|color-scheme: dark/);
 const rows = () => [...element('#board tbody').innerHTML.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(m => m[1]);
 const names = () => rows().map(row => row.match(/<td class="left">(.*?)<\/td>/)?.[1]);
 const graph = () => element('graph').innerHTML;
@@ -93,15 +99,32 @@ assert.equal(element('graph-x').value, 'net');
 assert.equal(element('graph-y').value, 'resolve_rate');
 assert.match(graph(), /Alpha \(Anthropic\).*Net units added \(mean per attempt\): −2.0, Solved \(%\): 80.0%/);
 assert.doesNotMatch(graph(), /Gamma \(Anthropic\)/);
-assert.match(graph(), /aria-labelledby="plot-title plot-desc"/);
+assert.match(graph(), /aria-describedby="plot-desc"/);
+assert.doesNotMatch(graph(), /<title\b/); // Native SVG titles would create a second, delayed tooltip.
 assert.match(graph(), /tabindex="0"/);
 assert.match(element('company-legend').innerHTML, /Anthropic/);
 assert.match(element('company-legend').innerHTML, /OpenAI/);
 const initialColors = colors();
 assert.notEqual(initialColors[0], initialColors[1]);
-for (const event of ['mouseenter', 'focus', 'click']) {
-  doc.querySelectorAll('#graph circle[data-point]')[0].listeners[event]();
-  assert.match(element('graph-detail').textContent, /Alpha \(Anthropic\).*measured 4\/4/);
+const tooltip = element('graph-tooltip');
+assert.equal(tooltip.hidden, true);
+const firstCircle = doc.querySelectorAll('#graph circle[data-point]')[0];
+for (const event of ['mouseenter', 'mousemove', 'focus', 'click']) {
+  firstCircle.listeners[event]();
+  assert.equal(tooltip.textContent, 'Alpha'); // Immediate, model name only; no metrics/company.
+  assert.equal(tooltip.hidden, false);
+  firstCircle.listeners.mouseleave();
+  assert.equal(tooltip.hidden, true);
+}
+firstCircle.listeners.mouseenter({clientX: 799, clientY: 599});
+assert.equal(tooltip.style.left, '632px');
+assert.equal(tooltip.style.top, '563px');
+firstCircle.listeners.blur();
+assert.equal(tooltip.hidden, true);
+for (const event of ['scroll', 'resize']) {
+  firstCircle.listeners.focus();
+  browser.listeners[event]();
+  assert.equal(tooltip.hidden, true);
 }
 // Every numeric table value is selectable; ranges expose explicit endpoints.
 const keys = ['score', 'ci', 'ci_high', 'resolve_rate', 'net', 'rank_low', 'rank_high'];
@@ -148,4 +171,4 @@ assert.equal(element('task-footer').hidden, true);
 assert.equal(element('ci-help').hidden, false);
 assert.deepEqual(names(), ['Beta', 'Alpha', 'Gamma']);
 assert.doesNotMatch(element('#board thead').innerHTML, /churn|Per solve/i);
-console.log('Column sorting, selectable axes, company colors, bounds and task switching passed');
+console.log('Light mode, instant name tooltips, sorting, axes and task switching passed');

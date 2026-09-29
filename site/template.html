@@ -2,6 +2,7 @@
 <meta name="description" content="How much code do coding agents write to solve real software engineering tasks?">
 <style>
 :root {
+  color-scheme: light;
   --bg: #ffffff;
   --ink: #1d2125;
   --muted: #646b72;
@@ -9,16 +10,6 @@
   --link: #2f55c4;
   --good: #2c7a4b;
   --bad: #b2433a;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --bg: #15181b; --ink: #e4e7ea; --muted: #99a1a9; --rule: #2d3237; --link: #8ea6f0; --good: #66c28f; --bad: #e5877c;
-  }
-}
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --bg: #15181b; --ink: #e4e7ea; --muted: #99a1a9; --rule: #2d3237; --link: #8ea6f0; --good: #66c28f; --bad: #e5877c;
 }
 body {
   margin: 0; background: var(--bg); color: var(--ink);
@@ -56,7 +47,12 @@ button { font: inherit; color: var(--ink); background: var(--bg); border: 1px so
 #graph .failed-point { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 2 1; }
 #company-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .company-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
-#graph-detail { min-height: 3em; }
+#graph-tooltip {
+  position: fixed; z-index: 1000; pointer-events: none;
+  max-width: calc(100vw - 16px); box-sizing: border-box;
+  padding: 5px 9px; border: 1px solid var(--rule); border-radius: 4px;
+  background: var(--bg); color: var(--ink); box-shadow: 0 2px 8px #0002;
+}
 #graph circle:focus { outline: none; stroke: var(--ink); stroke-width: 3; }
 th[aria-sort="ascending"] button::after { content: ' ↑'; }
 th[aria-sort="descending"] button::after { content: ' ↓'; }
@@ -100,19 +96,19 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   </div>
   <p class="small muted" id="rank-note" style="margin-top:8px" hidden>All-task score rank (unchanged when sorting other columns): the range covering 95% of each model's ranks when the tasks are resampled 2,000 times; overlapping ranges mean the order is uncertain (<a id="rank-link" href="https://github.com/La5u/Parsimony">sensitivity report</a>).</p>
   <p class="small" id="task-footer" hidden><a id="task-link" href="#">Maintainers' pull request</a></p>
-  <p class="small muted" id="score-help" style="margin-top:8px">Score: mean over all score-panel attempts, from −25 to 100; higher is better. Passing patches earn 1–100 credit relative to reference patches (80% net units added, 20% units changed). Failed patches receive a footprint penalty from −25 to 0. Missing measurements contribute bounds, not zero. This combines correctness and footprint; it is not a raw complexity count.</p>
+  <p class="small muted" id="score-help" style="margin-top:8px">Score: mean over all score-panel attempts, from −25 to 100; higher is better. Passing patches earn 1–100 credit relative to reference patches (80% net units added, 20% units changed). Failed patches receive a footprint penalty from −25 to 0. Missing measurements contribute bounds, not zero. This combines correctness and footprint; it is not a raw complexity count. The 95% CI is computed separately and never changes Score.</p>
 
   <p class="small muted">Net units added: coding units added minus removed—our proxy for net added complexity, not semantic complexity. In the all-task view this is the mean across measured, in-scope passing and failed attempts; missing measurements are excluded, never treated as zero. For a selected task it is that attempt’s net change. Click headings to sort; click again to reverse. Score bounds sort by midpoint; 95% CI sorts by its lower bound. Missing values stay last.</p>
-  <p class="small muted" id="ci-help">95% CI shows score uncertainty from resampling tasks, widened for missing measurements. It helps avoid overinterpreting small score gaps; it is not a measure of code complexity and does not cover every source of bias.</p>
+  <p class="small muted" id="ci-help">95% CI is an uncertainty display, not an input to Score. It comes from resampling tasks, widened for missing measurements. It helps avoid overinterpreting small score gaps; it is not a measure of code complexity and does not cover every source of bias.</p>
 
   <h2 id="complexity">Compare models</h2>
-  <p class="small muted">Choose any two numeric table values. One point per model, colored by company. Score uses the midpoint when bounded; interval and rank endpoints are labeled explicitly. Models missing either selected value have no point. Hover, focus or tap a point for its values and measurement coverage. Choosing the other axis’s value swaps the axes.</p>
+  <p class="small muted">Choose any two numeric table values. One point per model, colored by company. Score uses the midpoint when bounded; interval and rank endpoints are labeled explicitly. Models missing either selected value have no point. Hover, focus or tap a point to see its model name instantly. Choosing the other axis’s value swaps the axes.</p>
   <p><label for="graph-x">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
      <label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></p>
   <p class="small muted" id="graph-legend"></p>
   <div class="small" id="company-legend" aria-label="Model companies"></div>
   <div id="graph" aria-label="Comparison of selected table values per model"></div>
-  <p class="small muted" id="graph-detail" role="status" aria-live="polite"></p>
+  <div class="small" id="graph-tooltip" role="tooltip" hidden></div>
   <p class="small muted" id="attempts-note" hidden>Each task was run four times; each attempt is scored against every passing patch of the task.</p>
 
   <h2 id="method">Method</h2>
@@ -272,7 +268,12 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     axes[axis] = key;
     renderAxisControls(); renderGraph();
   });
+  const tooltip = $('graph-tooltip');
+  function hideTooltip() { tooltip.hidden = true; tooltip.textContent = ''; }
+  window.addEventListener('scroll', hideTooltip, true);
+  window.addEventListener('resize', hideTooltip);
   function renderGraph() {
+    hideTooltip();
     const axes = currentAxes(), options = axisOptions();
     const xLabel = options.find(o => o.key === axes.x).label, yLabel = options.find(o => o.key === axes.y).label;
     const axisFormat = (value, key) => fmt(value) + (key === 'resolve_rate' ? '%' : '');
@@ -285,7 +286,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       : 'No measured points available for this view.';
     $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort().map(company =>
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
-    $('graph-detail').textContent = points.length ? 'Hover, focus or tap a point to see its model, company, values and coverage.' : '';
 
     const W = 720, H = 330, L = 66, R = 20, T = 18, B = 52;
     let xmin = Math.min(0, ...points.map(p => p.x)), xmax = Math.max(1, ...points.map(p => p.x)), ymin = Math.min(0, ...points.map(p => p.y)), ymax = Math.max(1, ...points.map(p => p.y));
@@ -295,11 +295,21 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const sx = x => L + (x - xmin) / (xmax - xmin) * (W - L - R), sy = y => H - B - (y - ymin) / (ymax - ymin) * (H - T - B);
     const ticks = (lo, hi, axis) => Array.from({length: 5}, (_, i) => { const v = lo + (hi - lo) * i / 4; return axis === 'x' ? `<line class="axis" x1="${sx(v)}" y1="${H-B}" x2="${sx(v)}" y2="${H-B+4}"/><text class="tick" text-anchor="middle" x="${sx(v)}" y="${H-B+19}">${axisFormat(v, axes.x)}</text>` : `<line class="axis" x1="${L-4}" y1="${sy(v)}" x2="${L}" y2="${sy(v)}"/><text class="tick" text-anchor="end" x="${L-8}" y="${sy(v)+4}">${axisFormat(v, axes.y)}</text>`; }).join('');
     const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.kind === 'all' ? '; measured ' + p.count + '/' + data.task_count + ' score-panel attempts' : ''}`;
-    const circles = points.map((p, i) => `<circle data-point="${i}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}" fill="${companyColor(p.company)}" cx="${sx(p.x)}" cy="${sy(p.y)}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}"><title>${esc(pointLabel(p))}</title></circle>`).join('');
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="plot-title plot-desc"><title id="plot-title">${esc(yLabel)} versus ${esc(xLabel)}</title><desc id="plot-desc">One point per model, colored by its company. Axes use the selected numeric table values. In selected-task view, failed attempts have dashed outlines. Focus or tap a point to read the model, values and measurement coverage below the chart.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>`;
+    const circles = points.map((p, i) => `<circle data-point="${i}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}" fill="${companyColor(p.company)}" cx="${sx(p.x)}" cy="${sy(p.y)}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip"></circle>`).join('');
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. Axes use the selected numeric table values. In selected-task view, failed attempts have dashed outlines. Hover, focus or tap a point for an immediate model-name tooltip.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>`;
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
-      const show = () => { $('graph-detail').textContent = pointLabel(points[Number(circle.dataset.point)]); };
-      ['mouseenter', 'focus', 'click'].forEach(event => circle.addEventListener(event, show));
+      const show = event => {
+        tooltip.textContent = points[Number(circle.dataset.point)].name;
+        tooltip.hidden = false;
+        const rect = circle.getBoundingClientRect();
+        const x = Number.isFinite(event?.clientX) ? event.clientX : rect.left + rect.width / 2;
+        const y = Number.isFinite(event?.clientY) ? event.clientY : rect.bottom;
+        const top = y + 14 + tooltip.offsetHeight > window.innerHeight - 8 ? y - tooltip.offsetHeight - 12 : y + 14;
+        tooltip.style.left = `${Math.max(8, Math.min(x + 12, window.innerWidth - tooltip.offsetWidth - 8))}px`;
+        tooltip.style.top = `${Math.max(8, Math.min(top, window.innerHeight - tooltip.offsetHeight - 8))}px`;
+      };
+      ['mouseenter', 'mousemove', 'focus', 'click'].forEach(event => circle.addEventListener(event, show));
+      ['mouseleave', 'blur'].forEach(event => circle.addEventListener(event, hideTooltip));
     });
   }
   $('task-search').addEventListener('input', e => showTask(e.target.value.trim()));
