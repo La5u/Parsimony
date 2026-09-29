@@ -33,6 +33,64 @@ class ArtifactsTests(unittest.TestCase):
             _result_sets({'success': True})
         self.assertEqual(_result_sets({'resolved': []}), (set(), None))
 
+    def test_submitter_github_assets_use_declared_path_and_pin(self):
+        submission = 'https://github.com/SWE-bench/experiments/tree/main/evaluation/verified/demo'
+        requested = []
+        def fetch(url, _cache):
+            requested.append(url)
+            if url.endswith('/all_preds.jsonl'):
+                raise HTTPError(url, 404, 'missing', {}, None)
+            if url.endswith('/metadata.yaml'):
+                return (b'assets:\n  repo: https://github.com/submitter/run-artifacts\n'
+                        b'  ref: refs/tags/run-v1\n  logs: https://github.com/submitter/run-artifacts/tree/main/artifacts/logs\n')
+            if url.endswith('/per_instance_details.json'):
+                return (b'{"pass":{"resolved":true},"fail":{"resolved":false},'
+                        b'"absent":{"resolved":false,"status":"no_logs"},'
+                        b'"mystery":{"resolved":false,"status":"unknown"}}')
+            if url.endswith('/pass/patch.diff'):
+                return b'passing patch'
+            if url.endswith('/fail/patch.diff'):
+                return b'failed patch'
+            if url.endswith('/pass/report.json'):
+                return b'{"pass":{"resolved":true}}'
+            raise HTTPError(url, 404, 'missing', {}, None)
+        with patch('parsimony.artifacts._bytes', side_effect=fetch):
+            loaded = load_submission(submission, Cache(tempfile.mkdtemp()), include_failed=True)
+        prefix = 'https://raw.githubusercontent.com/submitter/run-artifacts/refs/tags/run-v1/artifacts/logs'
+        self.assertEqual(loaded['predictions'], {'pass': 'passing patch', 'fail': 'failed patch'})
+        self.assertEqual(loaded['result_details']['no_logs'], ['absent'])
+        self.assertEqual(loaded['result_details']['unknown'], ['mystery'])
+        self.assertEqual(loaded['result_details']['missing_patch'], [])
+        self.assertEqual(loaded['prediction_locations']['pass'], prefix + '/pass/patch.diff')
+        self.assertEqual(loaded['provenance']['ref'], 'refs/tags/run-v1')
+        self.assertEqual(loaded['provenance']['layout'], 'submitter-github-per-instance-v1')
+        self.assertFalse(any('s3.amazonaws.com' in url for url in requested))
+
+    def test_submitter_assets_default_to_logs_and_missing_is_not_failure(self):
+        submission = 'https://github.com/SWE-bench/experiments/tree/main/evaluation/verified/demo'
+        def fetch(url, _cache):
+            if url.endswith('/all_preds.jsonl'):
+                raise HTTPError(url, 404, 'missing', {}, None)
+            if url.endswith('/metadata.yaml'):
+                return b'assets:\n  repo: https://github.com/submitter/repo\n  logs: null\n'
+            if url.endswith('/per_instance_details.json'):
+                return b'{"gone":{"resolved":true},"no-log":{"resolved":false,"status":"no_logs"}}'
+            if url.endswith('/gone/patch.diff'):
+                raise HTTPError(url, 404, 'missing', {}, None)
+            raise AssertionError('unexpected request: ' + url)
+        with patch('parsimony.artifacts._bytes', side_effect=fetch):
+            loaded = load_submission(submission, Cache(tempfile.mkdtemp()))
+        self.assertEqual(loaded['result_details']['missing_patch'], ['gone'])
+        self.assertEqual(loaded['result_details']['no_logs'], ['no-log'])
+        self.assertNotIn('no-log', loaded['predictions'])
+        self.assertEqual(loaded['prediction_locations']['gone'],
+                         'https://raw.githubusercontent.com/submitter/repo/main/logs/gone/patch.diff')
+
+    def test_unsupported_assets_yaml_fails_clearly(self):
+        from parsimony.artifacts import _metadata_scalars
+        with self.assertRaisesRegex(ValueError, 'unsupported assets YAML'):
+            _metadata_scalars(b'assets:\n  repo: [not, a, scalar]\n')
+
     def test_current_layout_selection_and_missing_patch(self):
         submission = 'https://github.com/SWE-bench/experiments/tree/main/evaluation/verified/demo'
         metadata = b'assets:\n  logs: s3://swe-bench-submissions/bash-only/demo/logs\n'
@@ -176,7 +234,8 @@ class ArtifactsTests(unittest.TestCase):
                 return preds
             if url.endswith('/results/results.json'):
                 return b'{"resolved": ["ok"], "no_generation": ["nogen"], "no_logs": []}'
-            requested.append(url)
+            if url.endswith('/report.json'):
+                requested.append(url)
             task = url.split('/')[-2]
             if task == 'noreport':
                 raise HTTPError(url, 404, 'missing', {}, None)
@@ -194,6 +253,42 @@ class ArtifactsTests(unittest.TestCase):
             requested.clear()
             load_submission('demo', None, task_ids=['failed'], include_failed=True)
             self.assertEqual(requested, [f'{s3}/logs/failed/report.json'])
+
+    def test_official_monolithic_assets_and_independent_refs(self):
+        submission = 'https://github.com/SWE-bench/experiments/tree/abc123/evaluation/verified/demo'
+        requested = []
+        def fetch(url, _cache):
+            requested.append(url)
+            if url.endswith('/metadata.yaml'):
+                return b'assets:\n  repo: https://github.com/submitter/artifacts\n'
+            if url.endswith('/all_preds.jsonl'):
+                return b'{"instance_id":"ok","patch":"p"}\n{"instance_id":"bad","patch":"q"}\n'
+            if url.endswith('/results/results.json'):
+                return b'{"resolved":["ok"]}'
+            if url.endswith('/bad/report.json'):
+                return b'{"bad":{"resolved":false,"patch_exists":true,"patch_successfully_applied":true}}'
+            raise AssertionError(url)
+        with patch('parsimony.artifacts._bytes', side_effect=fetch):
+            loaded = load_submission(submission, Cache(tempfile.mkdtemp()), include_failed=True)
+        self.assertEqual(loaded['predictions'], {'ok': 'p', 'bad': 'q'})
+        self.assertEqual(loaded['result_details']['unresolved'], ['bad'])
+        self.assertEqual(loaded['provenance']['metadata_ref'], 'abc123')
+        self.assertEqual(loaded['provenance']['artifact_ref'], 'main')
+        self.assertIn('https://raw.githubusercontent.com/submitter/artifacts/main/all_preds.jsonl', requested)
+        self.assertIn('https://raw.githubusercontent.com/SWE-bench/experiments/abc123/evaluation/verified/demo/results/results.json', requested)
+
+    def test_github_logs_must_match_declared_repo(self):
+        from parsimony.artifacts import _github_asset
+        with self.assertRaisesRegex(ValueError, 'must use the assets.repo'):
+            _github_asset('https://github.com/other/repo/tree/main/logs',
+                          'https://github.com/submitter/repo', 'main')
+
+    def test_metadata_top_level_scalar_ends_assets_section(self):
+        from parsimony.artifacts import _metadata_scalars
+        self.assertEqual(_metadata_scalars(b'assets:\n  repo: https://github.com/a/b\nname: later\n  logs: ignored\n'),
+                         {'repo': 'https://github.com/a/b'})
+        with self.assertRaisesRegex(ValueError, 'duplicate assets'):
+            _metadata_scalars(b'assets:\n  repo: https://github.com/a/b\n  repo: https://github.com/c/d\n')
 
     def test_cache(self):
         import io

@@ -1,0 +1,122 @@
+{
+  "audit_date": "2026-09-29",
+  "scope": "Bounded provenance reconnaissance only; no patches, models, target repositories, or tests executed.",
+  "submission": {
+    "repository": "SWE-bench-Live/submission",
+    "revision": "cba8a6d3197cd53da09f8527cccbc689782302a6",
+    "revision_url": "https://github.com/SWE-bench-Live/submission/tree/cba8a6d3197cd53da09f8527cccbc689782302a6",
+    "configuration": "submissions/multilang/all_languages/sweagent/gpt-5.5-medium",
+    "result_url": "https://github.com/SWE-bench-Live/submission/blob/cba8a6d3197cd53da09f8527cccbc689782302a6/submissions/multilang/all_languages/sweagent/gpt-5.5-medium/result.json",
+    "declared_counts": {
+      "submitted": 230,
+      "success": 105,
+      "failure": 120,
+      "empty_patch": 5,
+      "error": 0,
+      "incomplete": 0
+    }
+  },
+  "dataset_api_ids": {
+    "multilang": {
+      "id": "SWE-bench-Live/MultiLang",
+      "api_url": "https://huggingface.co/api/datasets/SWE-bench-Live/MultiLang",
+      "role": "Multilingual dataset; distinct per-language splits."
+    },
+    "original": {
+      "id": "SWE-bench-Live/SWE-bench-Live",
+      "api_url": "https://huggingface.co/api/datasets/SWE-bench-Live/SWE-bench-Live",
+      "role": "Separate original dataset with test/lite/verified/full; not the candidate source for this MultiLang run."
+    }
+  },
+  "candidate_historical_dataset": {
+    "dataset": "SWE-bench-Live/MultiLang",
+    "revision": "62dc0745c40f067fc366ae3eb1a26136e5928f85",
+    "revision_url": "https://huggingface.co/datasets/SWE-bench-Live/MultiLang/tree/62dc0745c40f067fc366ae3eb1a26136e5928f85",
+    "commit_title": "Upload dataset",
+    "commit_date": "2026-08-20T06:42:12Z",
+    "format": "parquet",
+    "config": "default",
+    "language_splits": ["c", "cpp", "go", "js", "rust", "java", "ts", "cs"],
+    "parquet_files": [
+      "data/c-00000-of-00001.parquet",
+      "data/cpp-00000-of-00001.parquet",
+      "data/go-00000-of-00001.parquet",
+      "data/js-00000-of-00001.parquet",
+      "data/rust-00000-of-00001.parquet",
+      "data/java-00000-of-00001.parquet",
+      "data/ts-00000-of-00001.parquet",
+      "data/cs-00000-of-00001.parquet"
+    ],
+    "metadata_fields_relevant_to_audit": ["instance_id", "repo", "base_commit", "patch", "test_patch", "commit_url", "commit_urls"],
+    "membership_check": {
+      "method": "Queried HF datasets-server rows at revision 62dc… across all eight language splits and compared instance_id with the pinned result.json submitted_ids.",
+      "submitted_ids_found": 230,
+      "submitted_ids_total": 230,
+      "missing_ids": [],
+      "limits": "Complete ID membership is verified for this candidate snapshot. A complete base_commit-versus-trajectory comparison for all 230 tasks was not performed."
+    },
+    "historical_binding": {
+      "status": "unknown_not_explicitly_declared",
+      "finding": "The pinned submission README/configuration does not declare an HF dataset revision or parquet path. The Aug-20 snapshot predates trajectories and submission; all 230 IDs are present and four sampled base commits match trajectory reset lines. This makes it a well-supported candidate, but does not prove which dataset revision the run actually loaded.",
+      "do_not_substitute": "Do not infer historical use from current main SHA or from the separate SWE-bench-Live/SWE-bench-Live repository."
+    }
+  },
+  "supported_language_examples": [
+    {
+      "language": "go",
+      "instance_id": "twpayne__chezmoi-5016",
+      "reported_outcome": "success",
+      "repo": "twpayne/chezmoi",
+      "base_commit": "5ffd82cb395bc0c33ad885234a72bef108f8243c",
+      "dataset_file": "data/go-00000-of-00001.parquet",
+      "dataset_row_api_url": "https://datasets-server.huggingface.co/rows?dataset=SWE-bench-Live%2FMultiLang&config=default&split=go&offset=70&length=1&revision=62dc0745c40f067fc366ae3eb1a26136e5928f85",
+      "patch_url": "https://github.com/SWE-bench-Live/submission/blob/cba8a6d3197cd53da09f8527cccbc689782302a6/submissions/multilang/all_languages/sweagent/gpt-5.5-medium/twpayne__chezmoi-5016/patch.diff",
+      "trajectory_url": "https://github.com/SWE-bench-Live/submission/blob/cba8a6d3197cd53da09f8527cccbc689782302a6/submissions/multilang/all_languages/sweagent/gpt-5.5-medium/twpayne__chezmoi-5016/trajectory.txt",
+      "base_commit_corroboration": "HF row base_commit exactly equals trajectory line 'Resetting repository testbed to commit 5ffd82cb395bc0c33ad885234a72bef108f8243c'."
+    },
+    {
+      "language": "go",
+      "instance_id": "kubernetes-sigs__controller-runtime-3494",
+      "reported_outcome": "failure",
+      "repo": "kubernetes-sigs/controller-runtime",
+      "base_commit": "885e77d7d9fc1a010362c5fae19cda13e64f3ae8",
+      "dataset_file": "data/go-00000-of-00001.parquet",
+      "dataset_row_api_url": "https://datasets-server.huggingface.co/rows?dataset=SWE-bench-Live%2FMultiLang&config=default&split=go&offset=69&length=1&revision=62dc0745c40f067fc366ae3eb1a26136e5928f85",
+      "patch_url": "https://github.com/SWE-bench-Live/submission/blob/cba8a6d3197cd53da09f8527cccbc689782302a6/submissions/multilang/all_languages/sweagent/gpt-5.5-medium/kubernetes-sigs__controller-runtime-3494/patch.diff",
+      "trajectory_url": "https://github.com/SWE-bench-Live/submission/blob/cba8a6d3197cd53da09f8527cccbc689782302a6/submissions/multilang/all_languages/sweagent/gpt-5.5-medium/kubernetes-sigs__controller-runtime-3494/trajectory.txt",
+      "base_commit_corroboration": "HF row base_commit exactly equals trajectory line 'Resetting repository testbed to commit 885e77d7d9fc1a010362c5fae19cda13e64f3ae8'."
+    },
+    {
+      "language": "js",
+      "instance_id": "codeceptjs__CodeceptJS-5106",
+      "reported_outcome": "success",
+      "repo": "codeceptjs/CodeceptJS",
+      "base_commit": "5535d166535183c9766319081237342a140998d9",
+      "dataset_file": "data/js-00000-of-00001.parquet",
+      "dataset_row_api_url": "https://datasets-server.huggingface.co/rows?dataset=SWE-bench-Live%2FMultiLang&config=default&split=js&offset=11&length=1&revision=62dc0745c40f067fc366ae3eb1a26136e5928f85",
+      "patch_url": "https://github.com/SWE-bench-Live/submission/blob/cba8a6d3197cd53da09f8527cccbc689782302a6/submissions/multilang/all_languages/sweagent/gpt-5.5-medium/codeceptjs__CodeceptJS-5106/patch.diff",
+      "trajectory_url": "https://github.com/SWE-bench-Live/submission/blob/cba8a6d3197cd53da09f8527cccbc689782302a6/submissions/multilang/all_languages/sweagent/gpt-5.5-medium/codeceptjs__CodeceptJS-5106/trajectory.txt",
+      "base_commit_corroboration": "HF row base_commit exactly equals trajectory line 'Resetting repository testbed to commit 5535d166535183c9766319081237342a140998d9'."
+    },
+    {
+      "language": "js",
+      "instance_id": "sveltejs__svelte-16666",
+      "reported_outcome": "failure",
+      "repo": "sveltejs/svelte",
+      "base_commit": "e883cd086bd5f93b086220c7f2e2304bcb958eb8",
+      "dataset_file": "data/js-00000-of-00001.parquet",
+      "dataset_row_api_url": "https://datasets-server.huggingface.co/rows?dataset=SWE-bench-Live%2FMultiLang&config=default&split=js&offset=2&length=1&revision=62dc0745c40f067fc366ae3eb1a26136e5928f85",
+      "patch_url": "https://github.com/SWE-bench-Live/submission/blob/cba8a6d3197cd53da09f8527cccbc689782302a6/submissions/multilang/all_languages/sweagent/gpt-5.5-medium/sveltejs__svelte-16666/patch.diff",
+      "trajectory_url": "https://github.com/SWE-bench-Live/submission/blob/cba8a6d3197cd53da09f8527cccbc689782302a6/submissions/multilang/all_languages/sweagent/gpt-5.5-medium/sveltejs__svelte-16666/trajectory.txt",
+      "base_commit_corroboration": "HF row base_commit exactly equals trajectory line 'Resetting repository testbed to commit e883cd086bd5f93b086220c7f2e2304bcb958eb8'."
+    }
+  ],
+  "rights_review": {
+    "multilang_readme_license": "MIT declared in README front matter and HF API metadata.",
+    "multilang_license_file": "No separate LICENSE file found at candidate revision (resolve URL returned 404).",
+    "submission_readme": "Describes hosted result/trajectory artifacts and protocol-verification purpose; no artifact reuse/redistribution license located.",
+    "submission_license_file": "No root LICENSE file found at pinned commit (raw URL returned 404).",
+    "disposition": "MIT metadata is not proof that all embedded third-party code, issue text, patches, trajectories, or model outputs may be redistributed under MIT. Review source-project licenses and obtain/confirm artifact-specific rights before retention/publication. Public availability alone is not permission."
+  },
+  "reuse_gate": "No scoring or redistribution authorized. Preserve outcome distinctions and source checksums; resolve explicit historical dataset binding and rights before use."
+}

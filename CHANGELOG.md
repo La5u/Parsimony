@@ -2,6 +2,12 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Import/discovery tooling — 2026-09-29
+
+- Added `python -m parsimony.live` for immutable SWE-bench Live run inventories, explicitly mapped multi-file datasets (optional lazy Parquet support), checksums, complete submitted-record retention and evidence-gated offline analysis. Error, missing, empty-only and explicitly failed outcomes stay distinct. This is not a new published board.
+- Verified imports can follow submitter-hosted GitHub `assets.repo` predictions/logs and declared refs, retaining official S3 support. Missing reports remain unknown; explicit applied-patch failure reports are imported separately.
+- Fresh DeepSWE discovery still has 26 usable configurations and unchanged metadata checksums. Verified/Live/Pro V2/Atlas discovery evidence and publication blockers are documented under `docs/` and `examples/benchmark-discovery/`. Published parser pins, measurements, scoring and pages are unchanged.
+
 ## Website: data-fitted scatterplot axes
 
 Numeric axes now use the visible points' minimum and maximum with 5% padding, rather than forcing zero. Solved percentage retains its 0–100% scale. Single/equal values and empty views have safe nonzero ranges; regression checks cover positive, negative, zero and missing values. Scores and measurements are unchanged.

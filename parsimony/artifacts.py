@@ -19,7 +19,7 @@ import re
 import tempfile
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote, urlparse
+from urllib.parse import quote, unquote, urlparse
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -163,29 +163,117 @@ def _s3_prefix_exists(url: str, cache: Cache) -> bool:
     return bool(match and int(match.group(1)))
 
 
+def _metadata_scalars(data: bytes) -> dict[str, str | None]:
+    """Read the documented top-level/assets scalar subset of submission YAML."""
+    try:
+        text = data.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise ValueError("metadata.yaml is not UTF-8") from exc
+    values: dict[str, str | None] = {}
+    section: str | None = None
+    for line_no, line in enumerate(text.splitlines(), 1):
+        if not line.strip() or line.lstrip().startswith(("#", "---")):
+            continue
+        indent = len(line) - len(line.lstrip())
+        content = line.strip()
+        if indent == 0 and content.startswith("assets:"):
+            if content != "assets:":
+                raise ValueError(f"unsupported assets YAML form on line {line_no}")
+            section = "assets"
+            continue
+        if indent == 0:
+            section = content[:-1] if content.endswith(":") else None
+            continue
+        if section != "assets":
+            continue
+        if indent < 2 or ":" not in content:
+            raise ValueError(f"unsupported assets YAML form on line {line_no}")
+        key, value = content.split(":", 1)
+        key = key.strip()
+        value = value.strip()
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_-]*", key):
+            raise ValueError(f"unsupported assets YAML key on line {line_no}")
+        if value in {"", "null", "~"}:
+            parsed = None
+        elif value.startswith(('"', "'")):
+            quote_char = value[0]
+            if len(value) < 2 or value[-1] != quote_char:
+                raise ValueError(f"unsupported quoted scalar on line {line_no}")
+            parsed = value[1:-1]
+        else:
+            parsed = value.split(" #", 1)[0].strip()
+            if any(ch in parsed for ch in "{}[],&*!|>"):
+                raise ValueError(f"unsupported assets YAML scalar on line {line_no}")
+        if key in values:
+            raise ValueError(f"duplicate assets YAML key on line {line_no}")
+        values[key] = parsed
+    return values
+
+
+def _github_asset(value: str, repo_url: str, ref: str) -> tuple[str, str]:
+    """Resolve an asset directory to (pinned ref, repository-relative path)."""
+    parsed = urlparse(value)
+    bits = parsed.path.strip("/").split("/") if parsed.netloc in {"github.com", "www.github.com"} else []
+    repo_bits = urlparse(repo_url).path.strip("/").removesuffix(".git").split("/")
+    declared_repo = "/".join(repo_bits[:2])
+    if bits and len(bits) >= 4 and bits[2] in {"tree", "blob"}:
+        if "/".join(bits[:2]).lower() != declared_repo.lower():
+            raise ValueError("assets.logs URL must use the assets.repo repository")
+        path = "/".join(bits[4:])
+        asset_ref = bits[3]
+    elif parsed.scheme or parsed.netloc:
+        raise ValueError(f"unsupported public asset URL: {value}")
+    else:
+        path, asset_ref = value, ref
+    path = unquote(path).strip("/")
+    if not path or any(part in {".", ".."} for part in path.split("/")) or "\\" in path:
+        raise ValueError(f"unsafe GitHub asset path: {value}")
+    return asset_ref, path
+
+
 def _new_submission(agent: str, submission_url: str, base: str, ref: str,
                     cache: Cache, task_ids: list[str] | None,
-                    limit: int | None, include_failed: bool = False) -> dict[str, Any]:
-    """Read the per-instance layout used by recent mini-SWE-agent runs."""
-    metadata_url = base + "/metadata.yaml"
+                    limit: int | None, include_failed: bool = False,
+                    metadata_bytes: bytes | None = None,
+                    metadata_url: str | None = None) -> dict[str, Any]:
+    """Import per-instance artifacts from legacy S3 or a submitter GitHub repo."""
+    metadata_url = metadata_url or base + "/metadata.yaml"
     result_url = base + "/per_instance_details.json"
-    metadata_bytes = _bytes(metadata_url, cache)
-    # Deliberately do not add a YAML dependency: this is the one scalar asset
-    # needed from the public metadata file.
-    match = re.search(rb"(?m)^\s*logs:\s*(s3://[^\s#]+)\s*$", metadata_bytes)
-    if match:
-        logs_uri = match.group(1).decode('utf-8')
+    metadata_bytes = metadata_bytes if metadata_bytes is not None else _bytes(metadata_url, cache)
+    assets = _metadata_scalars(metadata_bytes)
+    logs_uri = assets.get("logs")
+    artifact_kind = "s3"
+    logs_source = "metadata"
+    if assets.get("repo"):
+        repo_url = str(assets["repo"])
+        repo = _github_parts(repo_url)
+        parsed_repo = urlparse(repo_url)
+        if repo is None:
+            bits = parsed_repo.path.strip("/").removesuffix(".git").split("/")
+            if parsed_repo.netloc not in {"github.com", "www.github.com"} or len(bits) != 2:
+                raise ValueError("assets.repo must be a public GitHub repository URL")
+            repo = ("/".join(bits), ref, "")
+        repo_name, repo_ref, repo_path = repo
+        pinned_ref = str(assets.get("commit") or assets.get("ref") or "main")
+        logs_value = str(logs_uri) if logs_uri else "logs"
+        asset_ref, asset_path = _github_asset(logs_value, repo_url, pinned_ref)
+        if assets.get("commit") or assets.get("ref"):
+            asset_ref = pinned_ref
+        logs_url = f"https://raw.githubusercontent.com/{repo_name}/{asset_ref}/{asset_path}".rstrip("/")
+        artifact_kind = "github"
+        ref = asset_ref
+        logs_source = "assets.repo"
     else:
-        # Some current submissions publish logs: null even though per-task
-        # patches/reports exist beside the documented trajs prefix in S3.
-        match = re.search(rb'(?m)^\s*trajs:\s*(s3://[^\s#]+/trajs)/?\s*$', metadata_bytes)
-        if not match:
-            raise ValueError('metadata.yaml lacks supported assets.logs/trajs entries')
-        logs_uri = match.group(1).decode('utf-8').removesuffix('/trajs') + '/logs'
-    parsed = urlparse(logs_uri)
-    if parsed.scheme != "s3" or parsed.netloc != "swe-bench-submissions" or not parsed.path.strip("/"):
-        raise ValueError("metadata assets.logs is not an official SWE-bench S3 location")
-    logs_url = "https://swe-bench-submissions.s3.amazonaws.com/" + parsed.path.lstrip("/").rstrip("/")
+        if not logs_uri:
+            trajs_uri = assets.get("trajs")
+            if trajs_uri and str(trajs_uri).startswith("s3://"):
+                logs_uri = str(trajs_uri).removesuffix("/trajs") + "/logs"
+            else:
+                raise ValueError("metadata.yaml lacks supported assets.repo/logs/trajs entries")
+        parsed = urlparse(str(logs_uri))
+        if parsed.scheme != "s3" or parsed.netloc != "swe-bench-submissions" or not parsed.path.strip("/"):
+            raise ValueError("metadata assets.logs is not an official SWE-bench S3 location")
+        logs_url = "https://swe-bench-submissions.s3.amazonaws.com/" + parsed.path.lstrip("/").rstrip("/")
 
     result_bytes = _bytes(result_url, cache)
     raw_details = json.loads(result_bytes.decode("utf-8"))
@@ -195,6 +283,7 @@ def _new_submission(agent: str, submission_url: str, base: str, ref: str,
     unresolved: set[str] = set()
     no_logs: set[str] = set()
     no_generation: set[str] = set()
+    unknown: set[str] = set()
     for task, detail in raw_details.items():
         if not isinstance(detail, dict) or type(detail.get("resolved")) is not bool:
             raise ValueError(f"invalid resolved boolean for {task}")
@@ -207,14 +296,16 @@ def _new_submission(agent: str, submission_url: str, base: str, ref: str,
             no_logs.add(task)
         elif categories & {'no_generation', 'no_submission'}:
             no_generation.add(task)
+        elif "unknown" in categories:
+            # Preserve a source-declared unknown rather than converting it to failure.
+            unknown.add(task)
         else:
             # A per-instance record with resolved=false is an explicit failure.
             unresolved.add(task)
 
-    evaluated = resolved | unresolved | no_logs | no_generation
-    logs_source = "metadata"
-    probe = min(evaluated, default=None)
-    if probe is not None and not _s3_prefix_exists(logs_url + "/" + probe, cache):
+    evaluated = resolved | unresolved | no_logs | no_generation | unknown
+    probe = min(resolved | unresolved, default=None)
+    if artifact_kind == "s3" and probe is not None and not _s3_prefix_exists(logs_url + "/" + probe, cache):
         # A few metadata files name the wrong folder (another run's name,
         # different letter case, or no /logs suffix); their per-task folders
         # are in the bucket's standard bash-only/<submission>/logs folder.
@@ -246,6 +337,7 @@ def _new_submission(agent: str, submission_url: str, base: str, ref: str,
 
     normalized = {"resolved": sorted(resolved), "unresolved": sorted(unresolved),
                   "no_logs": sorted(no_logs), "no_generation": sorted(no_generation),
+                  "unknown": sorted(unknown),
                   "missing_patch": sorted(missing)}
     return {"agent": agent or "unknown", "submission_url": submission_url,
             "predictions": predictions, "prediction_locations": locations,
@@ -256,7 +348,10 @@ def _new_submission(agent: str, submission_url: str, base: str, ref: str,
                            "results_sha256": hashlib.sha256(result_bytes).hexdigest(),
                            "metadata_sha256": hashlib.sha256(metadata_bytes).hexdigest(),
                            "reported_model": "", "submission_url": submission_url,
-                           "ref": ref, "layout": "mini-swe-agent-per-instance-v1",
+                           "ref": ref, "metadata_ref": _github_parts(submission_url)[1] if _github_parts(submission_url) else ref,
+                           "artifact_ref": ref,
+                           "failure_logs_url": logs_url,
+                           "layout": "submitter-github-per-instance-v1" if artifact_kind == "github" else "mini-swe-agent-per-instance-v1",
                            "logs_source": logs_source}}
 
 
@@ -272,9 +367,11 @@ def _legacy_failures(submission: dict[str, Any], cache: Cache, task_ids: list[st
     if any(isinstance(details.get(key), list) for key in ("unresolved", "failed", "not_resolved")):
         return submission
     prediction_url = submission["provenance"]["prediction_url"]
-    if not prediction_url.startswith("https://swe-bench-submissions.s3.amazonaws.com/"):
-        return submission
-    logs = prediction_url.rsplit("/", 1)[0] + "/logs"
+    logs = submission["provenance"].get("failure_logs_url")
+    if logs is None:
+        if not prediction_url.startswith("https://swe-bench-submissions.s3.amazonaws.com/"):
+            return submission
+        logs = prediction_url.rsplit("/", 1)[0] + "/logs"
     listed = set(submission["resolved"])
     for key in ("no_generation", "no_logs"):
         listed.update(str(x) for x in details.get(key) or [])
@@ -295,7 +392,7 @@ def _legacy_failures(submission: dict[str, Any], cache: Cache, task_ids: list[st
             raise ValueError(f"invalid evaluation report for {task}")
         if report["resolved"]:
             raise ValueError(f"report marks {task} resolved but results.json does not")
-        if report.get("patch_exists", True) and report.get("patch_successfully_applied", True):
+        if report.get("patch_exists") is True and report.get("patch_successfully_applied") is True:
             unresolved.append(task)
         else:
             unreported.append(task)
@@ -310,6 +407,72 @@ def load_submission(submission: str, cache: Cache, ref: str = "main",
                     limit: int | None = None, include_failed: bool = False) -> dict[str, Any]:
     """Load a submission, supporting both monolithic and current layouts."""
     agent, prediction, results, origin, resolved_ref = _urls(submission, ref)
+    gh = _github_parts(origin)
+    if gh and gh[0].lower() == "swe-bench/experiments":
+        repo, metadata_ref, path = gh
+        base = f"https://raw.githubusercontent.com/{repo}/{metadata_ref}/{path}".rstrip("/")
+        metadata_url = base + "/metadata.yaml"
+        try:
+            metadata_bytes = _bytes(metadata_url, cache)
+        except HTTPError as exc:
+            if exc.code != 404:
+                raise
+            exc.close()
+        else:
+            assets = _metadata_scalars(metadata_bytes)
+            if assets.get("repo"):
+                repo_url = str(assets["repo"])
+                repo = _github_parts(repo_url)
+                if repo is None:
+                    parsed_repo = urlparse(repo_url)
+                    bits = parsed_repo.path.strip("/").removesuffix(".git").split("/")
+                    if parsed_repo.netloc not in {"github.com", "www.github.com"} or len(bits) < 2:
+                        raise ValueError("assets.repo must be a public GitHub repository URL")
+                    repo_name, repo_ref, repo_path = "/".join(bits[:2]), "main", "/".join(bits[2:])
+                else:
+                    repo_name, repo_ref, repo_path = repo
+                artifact_ref = str(assets.get("commit") or assets.get("ref") or "main")
+                if repo_ref and repo_path and not (assets.get("commit") or assets.get("ref")):
+                    artifact_ref = repo_ref
+                artifact_path = unquote(repo_path).strip("/")
+                if any(part in {".", ".."} for part in artifact_path.split("/")) or "\\" in artifact_path:
+                    raise ValueError("unsafe assets.repo path")
+                asset_base = f"https://raw.githubusercontent.com/{repo_name}/{artifact_ref}/{artifact_path}".rstrip("/")
+                asset_prediction = asset_base + "/all_preds.jsonl"
+                try:
+                    _bytes(asset_prediction, cache)
+                except HTTPError as exc:
+                    if exc.code != 404:
+                        raise
+                    exc.close()
+                    details_url = base + "/per_instance_details.json"
+                    try:
+                        _bytes(details_url, cache)
+                    except HTTPError as details_exc:
+                        if details_exc.code != 404:
+                            raise
+                        details_exc.close()
+                        raise exc
+                    loaded = _new_submission(agent, origin, base, resolved_ref, cache, task_ids,
+                                             limit, include_failed=include_failed,
+                                             metadata_bytes=metadata_bytes, metadata_url=metadata_url)
+                    if include_failed:
+                        return _legacy_failures(loaded, cache, task_ids)
+                    return loaded
+                loaded = _load(agent, origin, asset_prediction, base + "/results/results.json",
+                               cache, artifact_ref)
+                logs_value = str(assets.get("logs") or "logs")
+                logs_ref, logs_path = _github_asset(logs_value, repo_url, artifact_ref)
+                if assets.get("commit") or assets.get("ref"):
+                    logs_ref = artifact_ref
+                logs_url = f"https://raw.githubusercontent.com/{repo_name}/{logs_ref}/{logs_path}".rstrip("/")
+                provenance = dict(loaded["provenance"], metadata_url=metadata_url,
+                                  metadata_ref=resolved_ref, artifact_ref=artifact_ref,
+                                  ref=artifact_ref, failure_logs_url=logs_url,
+                                  layout="submitter-github-monolithic-v1",
+                                  metadata_sha256=hashlib.sha256(metadata_bytes).hexdigest())
+                loaded["provenance"] = provenance
+                return _legacy_failures(loaded, cache, task_ids) if include_failed else loaded
     try:
         # The monolithic layout downloads every prediction at once; selection
         # only limits which failure reports are fetched (with include_failed).
@@ -323,8 +486,11 @@ def load_submission(submission: str, cache: Cache, ref: str = "main",
             raise
         repo, actual_ref, path = gh
         base = f"https://raw.githubusercontent.com/{repo}/{actual_ref}/{path}".rstrip("/")
+        metadata_url = base + "/metadata.yaml"
+        metadata_bytes = _bytes(metadata_url, cache)
         return _new_submission(agent, origin, base, actual_ref, cache, task_ids, limit,
-                               include_failed=include_failed)
+                               include_failed=include_failed, metadata_bytes=metadata_bytes,
+                               metadata_url=metadata_url)
     return _legacy_failures(loaded, cache, task_ids) if include_failed else loaded
 
 
