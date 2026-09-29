@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Website: remove dedicated 95% CI column
+
+Removed the confidence-interval column from all five boards. CI calculations, graph-axis endpoints and rank ranges remain; embedded data, measurements and scores are unchanged. The remaining numeric columns retain click-to-sort behavior.
+
 ## Import/discovery tooling — 2026-09-29
 
 - Added `python -m parsimony.live` for immutable SWE-bench Live run inventories, explicitly mapped multi-file datasets (optional lazy Parquet support), checksums, complete submitted-record retention and evidence-gated offline analysis. Error, missing, empty-only and explicitly failed outcomes stay distinct. This is not a new published board.

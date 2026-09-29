@@ -93,7 +93,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
           <th id="rank-head" hidden>Rank</th>
           <th class="left">Model</th>
           <th aria-sort="descending"><button type="button" data-sort="score">Score</button></th>
-          <th aria-sort="none"><button type="button" data-sort="ci" title="Sort by the lower confidence bound">95% CI</button></th>
           <th aria-sort="none"><button type="button" data-sort="resolve_rate">Solved</button></th>
           <th aria-sort="none"><button type="button" data-sort="net">Net units added</button></th>
         </tr>
@@ -105,16 +104,16 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="small" id="task-footer" hidden><a id="task-link" href="#">Maintainers' pull request</a></p>
   <p class="small muted" id="score-help" style="margin-top:8px">Score: mean over all score-panel attempts, from −25 to 100; higher is better. Passing patches earn 1–100 credit relative to reference patches (80% net units added, 20% units changed). Failed patches receive a footprint penalty from −25 to 0. Missing measurements contribute bounds, not zero. This combines correctness and footprint; it is not a raw complexity count. The 95% CI is computed separately and never changes Score.</p>
 
-  <p class="small muted">Net units added: coding units added minus removed—our proxy for net added complexity, not semantic complexity. In the all-task view this is the mean across measured, in-scope passing and failed attempts; missing measurements are excluded, never treated as zero. For a selected task it is that attempt’s net change. Click headings to sort; click again to reverse. Score bounds sort by midpoint; 95% CI sorts by its lower bound. Missing values stay last.</p>
+  <p class="small muted">Net units added: coding units added minus removed—our proxy for net added complexity, not semantic complexity. In the all-task view this is the mean across measured, in-scope passing and failed attempts; missing measurements are excluded, never treated as zero. For a selected task it is that attempt’s net change. Click headings to sort; click again to reverse. Score bounds sort by midpoint. Missing values stay last.</p>
   <p class="small muted" id="ci-help">95% CI is an uncertainty display, not an input to Score. It comes from resampling tasks, widened for missing measurements. It helps avoid overinterpreting small score gaps; it is not a measure of code complexity and does not cover every source of bias.</p>
 
   <h2 id="complexity">Compare models</h2>
-  <p class="small muted">Choose any two numeric table values. One point per model, colored by company. Score uses the midpoint when bounded; interval and rank endpoints are labeled explicitly. Models missing either selected value have no point. Hover, focus or tap a point to see its model name instantly. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; Solved stays at 0–100%.</p>
+  <p class="small muted">Choose any two numeric metrics, including uncertainty endpoints. One point per model, colored by company. Score uses the midpoint when bounded; interval and rank endpoints are labeled explicitly. Models missing either selected value have no point. Hover, focus or tap a point to see its model name instantly. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; Solved stays at 0–100%.</p>
   <p><label for="graph-x">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
      <label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></p>
   <p class="small muted" id="graph-legend"></p>
   <div class="small" id="company-legend" aria-label="Model companies"></div>
-  <div id="graph" aria-label="Comparison of selected table values per model"></div>
+  <div id="graph" aria-label="Comparison of selected metrics per model"></div>
   <div class="small" id="graph-tooltip" role="tooltip" hidden></div>
   <p class="small muted" id="attempts-note" hidden>Each task was run four times; each attempt is scored against every passing patch of the task.</p>
 
@@ -206,8 +205,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   function renderBoard() {
     const headers = selected
       ? [['Model', null], ['Result', null], ['Task score', 'score'], ['Net units added', 'net']]
-      : [...(ranked ? [['Rank', null]] : []), ['Model', null], ['Score', 'score'], ['95% CI', 'ci'], ['Solved', 'resolve_rate'], ['Net units added', 'net']];
-    document.querySelector('#board thead').innerHTML = '<tr>' + headers.map(([name, key]) => `<th${key ? ` aria-sort="${key === sortKey ? ascending ? 'ascending' : 'descending' : 'none'}"` : ''}${name === 'Model' ? ' class="left"' : ''}>${key ? `<button type="button" data-sort="${key}"${key === 'ci' ? ' title="Sort by the lower confidence bound"' : ''}>${name}</button>` : name}</th>`).join('') + '</tr>';
+      : [...(ranked ? [['Rank', null]] : []), ['Model', null], ['Score', 'score'], ['Solved', 'resolve_rate'], ['Net units added', 'net']];
+    document.querySelector('#board thead').innerHTML = '<tr>' + headers.map(([name, key]) => `<th${key ? ` aria-sort="${key === sortKey ? ascending ? 'ascending' : 'descending' : 'none'}"` : ''}${name === 'Model' ? ' class="left"' : ''}>${key ? `<button type="button" data-sort="${key}">${name}</button>` : name}</th>`).join('') + '</tr>';
     const buttons = [...document.querySelectorAll('#board button[data-sort]')];
     buttons.forEach((button) => button.addEventListener('click', () => {
       const key = button.dataset.sort;
@@ -228,7 +227,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         return `<tr><td class="left">${esc(m.name)}</td><td class="left ${esc(c[0])}">${esc(labels[c[0]] || c[0])}</td><td>${taskScore}</td><td>${signed(metricValue(m, i, 'net'))}</td></tr>`;
       }
       const score = m.score != null ? fmt(m.score) : fmt(m.lower) === fmt(m.upper) ? '≈' + fmt(m.lower) : `${fmt(m.lower)}–${fmt(m.upper)}`;
-      return `<tr>${ranked ? `<td>${rank(m.rank_range)}</td>` : ''}<td class="left">${esc(m.name)}</td><td>${score}</td><td class="range">${fmt(m.ci?.[0])}–${fmt(m.ci?.[1])}</td><td>${fmt(m.resolve_rate * 100)}%</td><td>${fmt(m.measured_net_mean)}</td></tr>`;
+      return `<tr>${ranked ? `<td>${rank(m.rank_range)}</td>` : ''}<td class="left">${esc(m.name)}</td><td>${score}</td><td>${fmt(m.resolve_rate * 100)}%</td><td>${fmt(m.measured_net_mean)}</td></tr>`;
     }).join('');
   }
   function showTask(id) {
