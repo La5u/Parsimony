@@ -122,6 +122,25 @@ class TreeSitterLanguageTests(unittest.TestCase):
             with self.subTest(path=path), self.assertRaises(ValueError):
                 parse(source, path)
 
+    def test_pinned_typescript_grammar_rejects_published_base_constructs(self):
+        # Vitest base: 647e6ade3b99523e3a0387a65fccfe918c331236,
+        # packages/vitest/src/public/node.ts:209 (in scope); also
+        # packages/vitest/optional-types.d.ts:4,7 (excluded corroboration).
+        # Effect base: 9245bc59ebfa688e8c92dd691296ee69d0815e59,
+        # packages/platform/src/HttpApiBuilder.ts (lines 910-937).
+        fixtures = (
+            'export type * as jsdomTypes from "jsdom";\n',
+            "export const middleware: {\n"
+            "  <E = never>(middleware: E): E\n"
+            "  <R, E = never>(middleware: E, options: { withContext: true }): R\n"
+            "} = (...args: any[]) => args[0];\n",
+        )
+        for source in fixtures:
+            with self.subTest(source=source[:40]), self.assertRaisesRegex(
+                ValueError, "invalid or recovered typescript syntax"
+            ):
+                parse(source, "fixture.ts")
+
     def test_never_executes_source(self):
         with tempfile.TemporaryDirectory() as tmp:
             marker = Path(tmp) / 'must-not-exist'
