@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Website: selectable comparison axes
+
+Removed Per solve and Median churn from the website, including selected-task views. Net units added is the sole raw footprint column (mean over measured passing/failed attempts in the all-task view). Users can choose any two numeric table values for the company-colored scatterplot; CI/rank endpoints are labeled explicitly. Default: net units versus solved percentage. The page explains the existing 80/20 all-task score, which remains unchanged.
+
 ## Website: model and company comparison
 
 The scatterplot now explicitly compares models, using consistent developer-company colors and a legend across all boards. Points average measured, in-scope passing **and failed** attempts, rather than only solves. Hover/focus/tap labels expose model, company and measurement coverage. The all-task scoring formula and rankings are unchanged.
