@@ -109,7 +109,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="small muted" id="ci-help">95% CI is an uncertainty display, not an input to Score. It comes from resampling tasks, widened for missing measurements. It helps avoid overinterpreting small score gaps; it is not a measure of code complexity and does not cover every source of bias.</p>
 
   <h2 id="complexity">Compare models</h2>
-  <p class="small muted">Choose any two numeric table values. One point per model, colored by company. Score uses the midpoint when bounded; interval and rank endpoints are labeled explicitly. Models missing either selected value have no point. Hover, focus or tap a point to see its model name instantly. Choosing the other axis’s value swaps the axes.</p>
+  <p class="small muted">Choose any two numeric table values. One point per model, colored by company. Score uses the midpoint when bounded; interval and rank endpoints are labeled explicitly. Models missing either selected value have no point. Hover, focus or tap a point to see its model name instantly. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; Solved stays at 0–100%.</p>
   <p><label for="graph-x">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
      <label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></p>
   <p class="small muted" id="graph-legend"></p>
@@ -295,10 +295,15 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
 
     const W = 720, H = 330, L = 66, R = 20, T = 18, B = 52;
-    let xmin = Math.min(0, ...points.map(p => p.x)), xmax = Math.max(1, ...points.map(p => p.x)), ymin = Math.min(0, ...points.map(p => p.y)), ymax = Math.max(1, ...points.map(p => p.y));
-    if (axes.x === 'resolve_rate') { xmin = 0; xmax = 100; }
-    if (axes.y === 'resolve_rate') { ymin = 0; ymax = 100; }
-    if (xmin === xmax) xmax = xmin + 1; if (ymin === ymax) ymax = ymin + 1;
+    function extent(axis, key) {
+      if (key === 'resolve_rate') return [0, 100];
+      if (!points.length) return [0, 1];
+      const values = points.map(p => p[axis]);
+      const low = Math.min(...values), high = Math.max(...values);
+      const padding = high > low ? (high - low) * 0.05 : Math.max(Math.abs(low) * 0.05, 1);
+      return [low - padding, high + padding];
+    }
+    const [xmin, xmax] = extent('x', axes.x), [ymin, ymax] = extent('y', axes.y);
     const sx = x => L + (x - xmin) / (xmax - xmin) * (W - L - R), sy = y => H - B - (y - ymin) / (ymax - ymin) * (H - T - B);
     const ticks = (lo, hi, axis) => Array.from({length: 5}, (_, i) => { const v = lo + (hi - lo) * i / 4; return axis === 'x' ? `<line class="axis" x1="${sx(v)}" y1="${H-B}" x2="${sx(v)}" y2="${H-B+4}"/><text class="tick" text-anchor="middle" x="${sx(v)}" y="${H-B+19}">${axisFormat(v, axes.x)}</text>` : `<line class="axis" x1="${L-4}" y1="${sy(v)}" x2="${L}" y2="${sy(v)}"/><text class="tick" text-anchor="end" x="${L-8}" y="${sy(v)+4}">${axisFormat(v, axes.y)}</text>`; }).join('');
     const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.kind === 'all' ? '; measured ' + p.count + '/' + data.task_count + ' score-panel attempts' : ''}`;

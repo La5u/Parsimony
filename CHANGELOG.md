@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Website: data-fitted scatterplot axes
+
+Numeric axes now use the visible points' minimum and maximum with 5% padding, rather than forcing zero. Solved percentage retains its 0–100% scale. Single/equal values and empty views have safe nonzero ranges; regression checks cover positive, negative, zero and missing values. Scores and measurements are unchanged.
+
 ## Website: light mode and immediate model tooltips
 
 All boards now stay in light mode regardless of system theme. Model points show only the model name in an immediate custom hover/focus/tap tooltip, without the delayed native SVG tooltip. CI independence is explicit in the UI and tested: changing bootstrap confidence intervals cannot change Score or its default ordering. No scores or measurements changed.

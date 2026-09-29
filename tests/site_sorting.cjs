@@ -18,6 +18,10 @@ data.tasks = [
   ['org__repo-1', 99, [['r', 111, 112, 10], ['r', 221, 222, 20], ['f', 331, 332, 5]]],
   ['org__repo-2', 55, [['f', -11, 12, null, -25, 0], ['r', 21, 22, 30], ['r', 31, 32, 40]]],
   ['org__repo-3', null, [['m', null, null, null], ['o', 0, 0, null, 1, 100], ['m', null, null, null]]],
+  ['constant', null, [['r', 1200, 1200, 10], ['r', 1200, 1200, 10], ['r', 1200, 1200, 10]]],
+  ['single', null, [['r', 1000, 1000, 10], ['m', null, null, null], ['m', null, null, null]]],
+  ['negative', null, [['r', -1200, 1200, 10], ['r', -1600, 1600, 20], ['r', -2000, 2000, 30]]],
+  ['zero', null, [['r', 0, 0, 0], ['r', 0, 0, 0], ['r', 0, 0, 0]]],
 ];
 const elements = new Map();
 function element(id) {
@@ -66,6 +70,11 @@ assert.doesNotMatch(html, /prefers-color-scheme|color-scheme: dark/);
 const rows = () => [...element('#board tbody').innerHTML.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(m => m[1]);
 const names = () => rows().map(row => row.match(/<td class="left">(.*?)<\/td>/)?.[1]);
 const graph = () => element('graph').innerHTML;
+function tickValues(axis) {
+  const anchor = axis === 'x' ? 'middle' : 'end';
+  const pattern = new RegExp(`<text class="tick" text-anchor="${anchor}"[^>]*>([−\\d.]+%?)<\\/text>`, 'g');
+  return [...graph().matchAll(pattern)].map(m => Number.parseFloat(m[1].replace('−', '-')));
+}
 const colors = () => [...graph().matchAll(/<circle[^>]*fill="([^"]+)"/g)].map(m => m[1]);
 function click(key, expected, direction) {
   const button = doc.querySelectorAll('#board button[data-sort]').find(b => b.dataset.sort === key);
@@ -97,6 +106,9 @@ click('net', ['Alpha', 'Beta', 'Gamma'], 'ascending');
 click('net', ['Beta', 'Alpha', 'Gamma'], 'descending');
 assert.equal(element('graph-x').value, 'net');
 assert.equal(element('graph-y').value, 'resolve_rate');
+assert.equal(tickValues('x')[0], -2.1);
+assert.equal(tickValues('x').at(-1), .1);
+assert.deepEqual(tickValues('y'), [0, 25, 50, 75, 100]);
 assert.match(graph(), /Alpha \(Anthropic\).*Net units added \(mean per attempt\): −2.0, Solved \(%\): 80.0%/);
 assert.doesNotMatch(graph(), /Gamma \(Anthropic\)/);
 assert.match(graph(), /aria-describedby="plot-desc"/);
@@ -135,6 +147,8 @@ for (const x of keys) for (const y of keys.filter(k => k !== x)) {
   assert.equal(element('graph-x').value, x);
   assert.equal(element('graph-y').value, y);
   assert.doesNotMatch(graph(), /NaN|Infinity/);
+  if (x === 'resolve_rate') assert.deepEqual(tickValues('x'), [0, 25, 50, 75, 100]);
+  if (y === 'resolve_rate') assert.deepEqual(tickValues('y'), [0, 25, 50, 75, 100]);
 }
 axis('x', 'net'); axis('y', 'score');
 assert.match(graph(), /Beta \(OpenAI\).*Score \(midpoint if bounded\): 20.0/);
@@ -144,6 +158,8 @@ axis('y', 'resolve_rate');
 task('org__repo-1');
 assert.equal(element('graph-x').value, 'net');
 assert.equal(element('graph-y').value, 'score');
+assert.equal(tickValues('x')[0], 100); // 111..331 with 5% padding, not anchored at zero.
+assert.equal(tickValues('x').at(-1), 342);
 assert.doesNotMatch(element('graph-x').innerHTML, /ci|resolve_rate|rank_low/);
 assert.match(element('#board tbody').innerHTML, /<td class="left">Alpha<\/td><td class="left r">solved<\/td><td>10\.0<\/td><td>\+111<\/td><\/tr>/);
 assert.match(graph(), /Gamma \(Anthropic\): failed task attempt/);
@@ -164,6 +180,17 @@ assert.match(element('task-status').textContent, /Still showing org__repo-2/);
 task('org__repo-3');
 assert.match(element('graph-legend').textContent, /No measured points/);
 assert.doesNotMatch(graph(), /<circle|NaN|Infinity/);
+assert.deepEqual(tickValues('x'), [0, .3, .5, .8, 1]);
+assert.deepEqual(tickValues('y'), [0, .3, .5, .8, 1]);
+axis('x', 'net');
+for (const [id, low, high] of [['constant', 1140, 1260], ['single', 950, 1050],
+                              ['negative', -2040, -1160], ['zero', -1, 1]]) {
+  task(id);
+  assert.equal(tickValues('x')[0], low);
+  assert.equal(tickValues('x').at(-1), high);
+  assert.equal(tickValues('x').length, 5);
+  assert.doesNotMatch(graph(), /NaN|Infinity/);
+}
 element('task-reset').listeners.click();
 assert.equal(element('graph-x').value, 'score'); // All-task axis choices survive task browsing.
 assert.equal(element('graph-y').value, 'resolve_rate');
