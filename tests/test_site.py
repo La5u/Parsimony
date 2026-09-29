@@ -42,6 +42,22 @@ class SiteTests(unittest.TestCase):
         hostile = render({**data, 'panel': '</script><script>alert(1)</script>'})
         self.assertEqual(hostile.count('</script>'), page.count('</script>'))
 
+    def test_confidence_intervals_do_not_affect_scores_or_order(self):
+        records = [record('a', 't1', net=1, churn=1), record('a', 't2', net=2, churn=2),
+                   record('b', 't1', net=9, churn=9), record('b', 't2', resolved=False)]
+        panel = freeze(records, 'ci-independent')
+        missing = record('c', 't1')
+        missing.update(metrics=None, analysis_status='fetch_error')
+        records.append(missing)
+        before = build(panel, records, draws=20)
+        intervals = {a: dict(ci=[-9999, 9999], top=0) for a in ('a', 'b', 'c')}
+        with mock.patch('parsimony.site.bootstrap', return_value=(2, intervals)):
+            after = build(panel, records, draws=20)
+        for first, second in zip(before['models'], after['models']):
+            for key in ('agent', 'score', 'lower', 'upper'):
+                self.assertEqual(first[key], second[key], key)
+            self.assertNotEqual(first['ci'], second['ci'])
+
     def test_plot_means_use_scored_successes_only(self):
         records = [record('a', 't1', net=2, churn=4), record('a', 't2', net=6, churn=8),
                    record('a', 't3', net=100, churn=100, resolved=False),

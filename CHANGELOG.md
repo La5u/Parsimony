@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Website: light mode and immediate model tooltips
+
+All boards now stay in light mode regardless of system theme. Model points show only the model name in an immediate custom hover/focus/tap tooltip, without the delayed native SVG tooltip. CI independence is explicit in the UI and tested: changing bootstrap confidence intervals cannot change Score or its default ordering. No scores or measurements changed.
+
 ## Website: selectable comparison axes
 
 Removed Per solve and Median churn from the website, including selected-task views. Net units added is the sole raw footprint column (mean over measured passing/failed attempts in the all-task view). Users can choose any two numeric table values for the company-colored scatterplot; CI/rank endpoints are labeled explicitly. Default: net units versus solved percentage. The page explains the existing 80/20 all-task score, which remains unchanged.
