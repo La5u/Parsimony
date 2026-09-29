@@ -1,6 +1,19 @@
 # Session handoff — 2026-09-29
 
-## Start here
+## Latest continuation — 2026-09-29
+
+Owner authorized continuing from this handoff and asked which benchmarks would add model coverage. Pi's global default is now `openai-codex/gpt-6.1-sol`; thinking remains medium. This is a local Pi setting, not project data.
+
+Completed the first bounded parser-investigation step, without changing analyzer rules, pins, published measurements, scoring or pages:
+
+- Added a regression test for pinned-parser rejection of minimal Vitest type-only namespace exports and Effect-style generic overload signatures in `tests/test_languages.py`.
+- Added `docs/typescript-parser-investigation.md` with exact base-source links, task-level error counts, limitations and a versioned repair proposal. Generic published errors do not identify file/phase, so do not attribute every task error to these fixtures. The Vitest `.d.ts` example is excluded corroboration; `src/public/node.ts` contains the in-scope construct.
+- Added `docs/benchmark-expansion.md`: recommend SWE-bench Live as the first new-benchmark pilot, refresh existing inputs for current-board entrants, then investigate SWE-bench Pro V2 artifacts. Direct GitHub inspection confirmed Live patches and explicit success/failure IDs; full revision/base matching, failed-patch coverage and rights are still unaudited. No importer, model measurement, paid evaluation or upstream contact was performed.
+- Verification: 141 tests passed with all pinned parsers; stdlib-only run passed with 16 skips; zero submission bundles validated; all five Node page checks and `git diff --check` passed. External environment: `/tmp/parsimony-ts-investigation` (do not assume it survives reboot).
+
+**Next concrete task:** classify Kea's 96 error attempts and remaining after-only errors with minimal source fixtures; evaluate candidate grammar versions offline, preserving strict error rejection. Discuss the versioned parser proposal before a full remeasurement. For benchmark expansion, first audit one passing and one failed supported-language SWE-bench Live attempt against the exact historical dataset/base revision and redistribution terms; do not assume the README's sample filenames match actual layouts.
+
+## Prior handoff / published state
 
 Owner asked for a session refresh and recommendations, **not implementation of the next roadmap items yet**. All requested analysis/import/UI work is complete and pushed to `main`. Latest implementation commit: **`28913ad`** (data-fitted graph axes). This handoff is a subsequent docs-only update.
 
@@ -59,7 +72,7 @@ Older `ten-model-500` and `beta-500-*` results are historical, not additional cu
 
 ### 1. Fix TypeScript coverage before expanding the benchmark
 
-**First concrete next-session task:** build small regression fixtures from known failing base-file constructs, classify the failures, and document a proposed parser/scope fix. Work offline where possible; do not run submitted code or target-repository tests.
+**Initial fixture/proposal step is now complete; see the latest continuation above.** Continue classifying remaining failures and evaluating candidate parser fixes. Work offline where possible; do not run submitted code or target-repository tests.
 
 Known issues:
 
