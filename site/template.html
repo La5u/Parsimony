@@ -43,7 +43,7 @@ th:first-child, td:first-child, .left { text-align: left; }
 .u, .m, .n, .o { color: var(--muted); }
 ul { margin: 0; padding-left: 20px; }
 li { margin-bottom: 6px; }
-input {
+input, select {
   width: 100%; max-width: 360px; box-sizing: border-box; font: inherit; padding: 6px 8px;
   color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px;
 }
@@ -61,7 +61,7 @@ button { font: inherit; color: var(--ink); background: var(--bg); border: 1px so
 th[aria-sort="ascending"] button::after { content: ' ↑'; }
 th[aria-sort="descending"] button::after { content: ' ↓'; }
 th[aria-sort="none"] button::after { content: ' ↕'; }
-input:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+input:focus-visible, select:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule); }
 </style>
 
@@ -92,8 +92,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
           <th aria-sort="descending"><button type="button" data-sort="score">Score</button></th>
           <th aria-sort="none"><button type="button" data-sort="ci" title="Sort by the lower confidence bound">95% CI</button></th>
           <th aria-sort="none"><button type="button" data-sort="resolve_rate">Solved</button></th>
-          <th aria-sort="none"><button type="button" data-sort="solved_mean">Per solve</button></th>
-          <th aria-sort="none"><button type="button" data-sort="churn">Median churn</button></th>
+          <th aria-sort="none"><button type="button" data-sort="net">Net units added</button></th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -101,16 +100,18 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   </div>
   <p class="small muted" id="rank-note" style="margin-top:8px" hidden>All-task score rank (unchanged when sorting other columns): the range covering 95% of each model's ranks when the tasks are resampled 2,000 times; overlapping ranges mean the order is uncertain (<a id="rank-link" href="https://github.com/La5u/Parsimony">sensitivity report</a>).</p>
   <p class="small" id="task-footer" hidden><a id="task-link" href="#">Maintainers' pull request</a></p>
-  <p class="small muted" id="score-help" style="margin-top:8px">Score: mean over all tasks, from −25 to 100. Per solve: mean score over the tasks the model solved, where 50.5 is average. Median churn: units added plus removed per solved task.</p>
+  <p class="small muted" id="score-help" style="margin-top:8px">Score: mean over all score-panel attempts, from −25 to 100; higher is better. Passing patches earn 1–100 credit relative to reference patches (80% net units added, 20% units changed). Failed patches receive a footprint penalty from −25 to 0. Missing measurements contribute bounds, not zero. This combines correctness and footprint; it is not a raw complexity count.</p>
 
-  <p class="small muted">Click a column heading to sort; click again to reverse. Score uses the midpoint when shown as bounds; 95% CI sorts by its lower bound. Missing values stay last. Per solve and median churn describe successful patches only; sorting them does not change the all-task score.</p>
+  <p class="small muted">Net units added: coding units added minus removed—our proxy for net added complexity, not semantic complexity. In the all-task view this is the mean across measured, in-scope passing and failed attempts; missing measurements are excluded, never treated as zero. For a selected task it is that attempt’s net change. Click headings to sort; click again to reverse. Score bounds sort by midpoint; 95% CI sorts by its lower bound. Missing values stay last.</p>
   <p class="small muted" id="ci-help">95% CI shows score uncertainty from resampling tasks, widened for missing measurements. It helps avoid overinterpreting small score gaps; it is not a measure of code complexity and does not cover every source of bias.</p>
 
-  <h2 id="complexity">Churn and complexity added per model</h2>
-  <p class="small muted">One point per model, colored by company. “Complexity added” means net coding units added (code footprint), not semantic complexity. All-task values are means across measured, in-scope attempts, including failures—not just solves. Missing measurements are excluded from these means, never assigned zero; coverage is shown in each point’s label. Selecting a task shows each model’s measured attempt instead. The leaderboard score is unchanged.</p>
+  <h2 id="complexity">Compare models</h2>
+  <p class="small muted">Choose any two numeric table values. One point per model, colored by company. Score uses the midpoint when bounded; interval and rank endpoints are labeled explicitly. Models missing either selected value have no point. Hover, focus or tap a point for its values and measurement coverage. Choosing the other axis’s value swaps the axes.</p>
+  <p><label for="graph-x">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
+     <label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></p>
   <p class="small muted" id="graph-legend"></p>
   <div class="small" id="company-legend" aria-label="Model companies"></div>
-  <div id="graph" aria-label="Scatterplot of churn versus complexity added per model"></div>
+  <div id="graph" aria-label="Comparison of selected table values per model"></div>
   <p class="small muted" id="graph-detail" role="status" aria-live="polite"></p>
   <p class="small muted" id="attempts-note" hidden>Each task was run four times; each attempt is scored against every passing patch of the task.</p>
 
@@ -118,7 +119,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <ul>
     <li>Each patch is applied to the task's base commit and both versions of each changed file are parsed. Nothing is executed.</li>
     <li>On each task, a passing patch is ranked against all passing patches from the reference models: 80% on net units added, 20% on units changed.</li>
-    <li>A failed patch scores from −25 to 0, depending on how much code it added.</li>
+    <li>A failed patch receives a footprint penalty from −25 to 0. The scoring formula is unchanged by which columns or graph axes are displayed.</li>
     <li id="language-scope">Test, docs and generated files are excluded. Only Python is measured.</li>
   </ul>
 
@@ -189,26 +190,30 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const labels = {r: 'solved', f: 'failed', u: 'unknown', m: 'not measured', n: 'no attempt', o: 'out of scope'};
   let selected = null, sortKey = 'score', ascending = false;
   $('task-ids').innerHTML = data.tasks.map((t) => `<option value="${esc(t[0])}">`).join('');
-  function sortValue(model, index) {
-    if (!selected) return sortKey === 'score' ? (model.score ?? (model.lower + model.upper) / 2)
-      : sortKey === 'ci' ? model.ci?.[0] : model[sortKey];
+  const midpoint = (value, low, high) => value ?? (low != null && high != null ? (low + high) / 2 : null);
+  function metricValue(model, index, key) {
+    if (!selected) {
+      return {score: midpoint(model.score, model.lower, model.upper), ci: model.ci?.[0],
+        ci_high: model.ci?.[1], resolve_rate: model.resolve_rate == null ? null : model.resolve_rate * 100,
+        net: model.measured_net_mean, rank_low: model.rank_range?.[0], rank_high: model.rank_range?.[1]}[key];
+    }
     const cell = selected[2][index];
-    return ({task_score: cell[3] ?? (cell[4] != null && cell[5] != null ? (cell[4] + cell[5]) / 2 : null), net: cell[1], churn: cell[2]})[sortKey];
+    return {score: midpoint(cell[3], cell[4], cell[5]), net: ['r', 'f'].includes(cell[0]) ? cell[1] : null}[key];
   }
   function renderBoard() {
     const headers = selected
-      ? [['Model', null], ['Result', null], ['Task score', 'task_score'], ['Net units added', 'net'], ['Churn', 'churn']]
-      : [...(ranked ? [['Rank', null]] : []), ['Model', null], ['Score', 'score'], ['95% CI', 'ci'], ['Solved', 'resolve_rate'], ['Per solve', 'solved_mean'], ['Median churn', 'churn']];
+      ? [['Model', null], ['Result', null], ['Task score', 'score'], ['Net units added', 'net']]
+      : [...(ranked ? [['Rank', null]] : []), ['Model', null], ['Score', 'score'], ['95% CI', 'ci'], ['Solved', 'resolve_rate'], ['Net units added', 'net']];
     document.querySelector('#board thead').innerHTML = '<tr>' + headers.map(([name, key]) => `<th${key ? ` aria-sort="${key === sortKey ? ascending ? 'ascending' : 'descending' : 'none'}"` : ''}${name === 'Model' ? ' class="left"' : ''}>${key ? `<button type="button" data-sort="${key}"${key === 'ci' ? ' title="Sort by the lower confidence bound"' : ''}>${name}</button>` : name}</th>`).join('') + '</tr>';
     const buttons = [...document.querySelectorAll('#board button[data-sort]')];
     buttons.forEach((button) => button.addEventListener('click', () => {
       const key = button.dataset.sort;
-      ascending = key === sortKey ? !ascending : ['churn', 'net'].includes(key);
+      ascending = key === sortKey ? !ascending : key === 'net';
       sortKey = key;
       renderBoard();
     }));
     const models = data.models.map((m, i) => ({m, i})).sort((a, b) => {
-      const x = sortValue(a.m, a.i), y = sortValue(b.m, b.i);
+      const x = metricValue(a.m, a.i, sortKey), y = metricValue(b.m, b.i, sortKey);
       if (x == null || y == null || Number.isNaN(Number(x)) || Number.isNaN(Number(y))) return (x == null || Number.isNaN(Number(x))) - (y == null || Number.isNaN(Number(y)));
       return ascending ? x - y : y - x;
     });
@@ -217,15 +222,15 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         const c = selected[2][i];
         const taskScore = c[3] != null ? fmt(c[3]) : c[4] != null && c[5] != null
           ? (fmt(c[4]) === fmt(c[5]) ? '≈' + fmt(c[4]) : `${fmt(c[4])}–${fmt(c[5])}`) : '—';
-        return `<tr><td class="left">${esc(m.name)}</td><td class="left ${esc(c[0])}">${esc(labels[c[0]] || c[0])}</td><td>${taskScore}</td><td>${signed(c[1])}</td><td>${fmt(c[2])}</td></tr>`;
+        return `<tr><td class="left">${esc(m.name)}</td><td class="left ${esc(c[0])}">${esc(labels[c[0]] || c[0])}</td><td>${taskScore}</td><td>${signed(metricValue(m, i, 'net'))}</td></tr>`;
       }
       const score = m.score != null ? fmt(m.score) : fmt(m.lower) === fmt(m.upper) ? '≈' + fmt(m.lower) : `${fmt(m.lower)}–${fmt(m.upper)}`;
-      return `<tr>${ranked ? `<td>${rank(m.rank_range)}</td>` : ''}<td class="left">${esc(m.name)}</td><td>${score}</td><td class="range">${fmt(m.ci?.[0])}–${fmt(m.ci?.[1])}</td><td>${fmt(m.resolve_rate * 100)}%</td><td>${fmt(m.solved_mean)}</td><td>${m.churn ?? '—'}</td></tr>`;
+      return `<tr>${ranked ? `<td>${rank(m.rank_range)}</td>` : ''}<td class="left">${esc(m.name)}</td><td>${score}</td><td class="range">${fmt(m.ci?.[0])}–${fmt(m.ci?.[1])}</td><td>${fmt(m.resolve_rate * 100)}%</td><td>${fmt(m.measured_net_mean)}</td></tr>`;
     }).join('');
   }
   function showTask(id) {
     if (id && !tasks.has(id)) { $('task-status').textContent = `No task matches “${id}”. Still showing ${selected ? selected[0] : 'all tasks'}.`; return; }
-    if (!!selected !== !!id) { sortKey = id ? 'task_score' : 'score'; ascending = false; }
+    if (!!selected !== !!id) { sortKey = 'score'; ascending = false; }
     selected = id ? tasks.get(id) : null;
     $('task-status').textContent = selected ? `Selected task: ${selected[0]}` : 'Showing all tasks.';
     $('task-search').value = selected ? selected[0] : '';
@@ -234,10 +239,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     $('score-help').hidden = $('ci-help').hidden = !!selected;
     if (selected) {
       const task = selected[0], m = task.match(/^(.+?)__(.+)-(\d+)$/);
-      $('task-link').textContent = `${bench.task_link} (reference churn: ${fmt(selected[1], 0)})`;
+      $('task-link').textContent = bench.task_link;
       $('task-link').href = bench.task_url.includes('{task}') ? bench.task_url.replace('{task}', task.split('#')[0]) : m ? bench.task_url.replace('{owner}', m[1]).replace('{repo}', m[2]).replace('{number}', m[3]) : '#';
     }
-    renderBoard(); renderGraph();
+    renderBoard(); renderAxisControls(); renderGraph();
   }
   const companyColors = {
     'Anthropic': '#d97757', 'OpenAI': '#00a37a', 'Google': '#4285f4', 'DeepSeek': '#2756bd',
@@ -245,27 +250,53 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     'MiniMax': '#dc5263', 'Meta': '#8b5cf6', 'Mistral AI': '#b18a00', 'Other': '#64748b'
   };
   const companyColor = company => companyColors[company] || companyColors.Other;
+  const graphAxes = {all: {x: 'net', y: 'resolve_rate'}, task: {x: 'net', y: 'score'}};
+  const currentAxes = () => graphAxes[selected ? 'task' : 'all'];
+  function axisOptions() {
+    if (selected) return [{key: 'score', label: 'Task score (midpoint if bounded)'}, {key: 'net', label: 'Net units added'}];
+    return [{key: 'score', label: 'Score (midpoint if bounded)'},
+      {key: 'ci', label: '95% CI: lower bound'}, {key: 'ci_high', label: '95% CI: upper bound'},
+      {key: 'resolve_rate', label: 'Solved (%)'}, {key: 'net', label: 'Net units added (mean per attempt)'},
+      ...(ranked ? [{key: 'rank_low', label: 'Rank range: lower bound'}, {key: 'rank_high', label: 'Rank range: upper bound'}] : [])];
+  }
+  function renderAxisControls() {
+    for (const axis of ['x', 'y']) {
+      $('graph-' + axis).innerHTML = axisOptions().map(o => `<option value="${o.key}">${esc(o.label)}</option>`).join('');
+      $('graph-' + axis).value = currentAxes()[axis];
+    }
+  }
+  for (const axis of ['x', 'y']) $('graph-' + axis).addEventListener('change', e => {
+    const key = e.target.value, axes = currentAxes(), other = axis === 'x' ? 'y' : 'x';
+    if (!axisOptions().some(o => o.key === key)) return;
+    if (axes[other] === key) axes[other] = axes[axis];
+    axes[axis] = key;
+    renderAxisControls(); renderGraph();
+  });
   function renderGraph() {
-    const all = data.models.map((m, i) => ({x: m.measured_net_mean, y: m.measured_churn_mean,
-      name: m.name, company: m.company || 'Other', count: m.measured_attempts, kind: 'all', i}));
-    const chosen = selected ? data.models.map((m, i) => { const c = selected[2][i]; return {x: c[1], y: c[2], name: m.name, company: m.company || 'Other', kind: c[0] === 'r' ? 'resolved' : 'failed', include: c[0] === 'r' || c[0] === 'f', i}; }).filter(p => p.include) : [];
-    const points = (selected ? chosen : all).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
+    const axes = currentAxes(), options = axisOptions();
+    const xLabel = options.find(o => o.key === axes.x).label, yLabel = options.find(o => o.key === axes.y).label;
+    const axisFormat = (value, key) => fmt(value) + (key === 'resolve_rate' ? '%' : '');
+    const points = data.models.map((m, i) => ({x: metricValue(m, i, axes.x), y: metricValue(m, i, axes.y),
+      name: m.name, company: m.company || 'Other', count: m.measured_attempts,
+      kind: selected ? (selected[2][i][0] === 'f' ? 'failed' : 'resolved') : 'all', i}))
+      .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
     $('graph-legend').textContent = points.length
-      ? (selected ? 'Color indicates company. Dashed outline: failed attempt.' : 'Color indicates company. Means include measured passing and failed attempts; measurement coverage can differ.')
+      ? (selected ? 'Color indicates company. Dashed outline: failed attempt.' : 'Color indicates company. Net means include measured passing and failed attempts; measurement coverage can differ.')
       : 'No measured points available for this view.';
     $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort().map(company =>
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
     $('graph-detail').textContent = points.length ? 'Hover, focus or tap a point to see its model, company, values and coverage.' : '';
-    const xLabel = selected ? 'Net coding units added' : 'Mean net coding units added per attempt';
-    const yLabel = selected ? 'Churn' : 'Mean churn per attempt';
+
     const W = 720, H = 330, L = 66, R = 20, T = 18, B = 52;
     let xmin = Math.min(0, ...points.map(p => p.x)), xmax = Math.max(1, ...points.map(p => p.x)), ymin = Math.min(0, ...points.map(p => p.y)), ymax = Math.max(1, ...points.map(p => p.y));
+    if (axes.x === 'resolve_rate') { xmin = 0; xmax = 100; }
+    if (axes.y === 'resolve_rate') { ymin = 0; ymax = 100; }
     if (xmin === xmax) xmax = xmin + 1; if (ymin === ymax) ymax = ymin + 1;
     const sx = x => L + (x - xmin) / (xmax - xmin) * (W - L - R), sy = y => H - B - (y - ymin) / (ymax - ymin) * (H - T - B);
-    const ticks = (lo, hi, axis) => Array.from({length: 5}, (_, i) => { const v = lo + (hi - lo) * i / 4; return axis === 'x' ? `<line class="axis" x1="${sx(v)}" y1="${H-B}" x2="${sx(v)}" y2="${H-B+4}"/><text class="tick" text-anchor="middle" x="${sx(v)}" y="${H-B+19}">${fmt(v)}</text>` : `<line class="axis" x1="${L-4}" y1="${sy(v)}" x2="${L}" y2="${sy(v)}"/><text class="tick" text-anchor="end" x="${L-8}" y="${sy(v)+4}">${fmt(v)}</text>`; }).join('');
-    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all measured attempts' : p.kind + ' task attempt'}; net units ${fmt(p.x)}, churn ${fmt(p.y)}${p.kind === 'all' ? '; measured ' + p.count + '/' + data.task_count + ' score-panel attempts' : ''}`;
+    const ticks = (lo, hi, axis) => Array.from({length: 5}, (_, i) => { const v = lo + (hi - lo) * i / 4; return axis === 'x' ? `<line class="axis" x1="${sx(v)}" y1="${H-B}" x2="${sx(v)}" y2="${H-B+4}"/><text class="tick" text-anchor="middle" x="${sx(v)}" y="${H-B+19}">${axisFormat(v, axes.x)}</text>` : `<line class="axis" x1="${L-4}" y1="${sy(v)}" x2="${L}" y2="${sy(v)}"/><text class="tick" text-anchor="end" x="${L-8}" y="${sy(v)+4}">${axisFormat(v, axes.y)}</text>`; }).join('');
+    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.kind === 'all' ? '; measured ' + p.count + '/' + data.task_count + ' score-panel attempts' : ''}`;
     const circles = points.map((p, i) => `<circle data-point="${i}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}" fill="${companyColor(p.company)}" cx="${sx(p.x)}" cy="${sy(p.y)}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}"><title>${esc(pointLabel(p))}</title></circle>`).join('');
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="plot-title plot-desc"><title id="plot-title">Churn versus complexity added per model</title><desc id="plot-desc">One point per model, colored by its company. All-task means include measured passing and failed attempts. In selected-task view, failed attempts have dashed outlines. Focus or tap a point to read the model, values and measurement coverage below the chart.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>`;
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="plot-title plot-desc"><title id="plot-title">${esc(yLabel)} versus ${esc(xLabel)}</title><desc id="plot-desc">One point per model, colored by its company. Axes use the selected numeric table values. In selected-task view, failed attempts have dashed outlines. Focus or tap a point to read the model, values and measurement coverage below the chart.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>`;
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
       const show = () => { $('graph-detail').textContent = pointLabel(points[Number(circle.dataset.point)]); };
       ['mouseenter', 'focus', 'click'].forEach(event => circle.addEventListener(event, show));

@@ -6,15 +6,18 @@ const html = fs.readFileSync(process.argv[2], 'utf8');
 const data = JSON.parse(html.match(/type="application\/json">([\s\S]*?)<\/script>/)[1]);
 const base = data.models[0];
 data.models = [
-  {...base, name: 'Alpha', score: 10, lower: 4, upper: 16, ci: [1, 90], resolve_rate: .8, solved_mean: 70, churn: 30, company: 'Anthropic', measured_net_mean: -2, measured_churn_mean: 12, measured_attempts: 4},
-  {...base, name: 'Beta', score: null, lower: 10, upper: 30, ci: [2, 40], resolve_rate: .3, solved_mean: 80, churn: 10, company: 'OpenAI', measured_net_mean: 0, measured_churn_mean: 6, measured_attempts: 3},
-  {...base, name: 'Gamma', score: 5, lower: 5, upper: 5, ci: [3, 20], resolve_rate: .5, solved_mean: null, churn: null, company: 'Anthropic', measured_net_mean: null, measured_churn_mean: null, measured_attempts: 0},
+  {...base, name: 'Alpha', score: 10, lower: 4, upper: 16, ci: [1, 90], resolve_rate: .8,
+    company: 'Anthropic', measured_net_mean: -2, measured_attempts: 4, rank_range: [1, 2]},
+  {...base, name: 'Beta', score: null, lower: 10, upper: 30, ci: [2, 40], resolve_rate: .3,
+    company: 'OpenAI', measured_net_mean: 0, measured_attempts: 3, rank_range: [2, 3]},
+  {...base, name: 'Gamma', score: 5, lower: 5, upper: 5, ci: [3, 20], resolve_rate: .5,
+    company: 'Anthropic', measured_net_mean: null, measured_attempts: 0, rank_range: null},
 ];
 data.task_count = 4;
 data.tasks = [
   ['org__repo-1', 99, [['r', 111, 112, 10], ['r', 221, 222, 20], ['f', 331, 332, 5]]],
-  ['org__repo-2', 55, [['f', -11, 12, null, 2, 8], ['r', 21, 22, 30], ['r', 31, 32, 40]]],
-  ['org__repo-3', null, [['m', null, null, null], ['m', null, null, null], ['m', null, null, null]]],
+  ['org__repo-2', 55, [['f', -11, 12, null, -25, 0], ['r', 21, 22, 30], ['r', 31, 32, 40]]],
+  ['org__repo-3', null, [['m', null, null, null], ['o', 0, 0, null, 1, 100], ['m', null, null, null]]],
 ];
 const elements = new Map();
 function element(id) {
@@ -27,10 +30,10 @@ function element(id) {
   return elements.get(id);
 }
 element('parsimony-data').textContent = JSON.stringify(data);
-let lastButtons = null, lastHeader = null, lastCircles = null, lastGraph = null;
+let lastButtons, lastHeader, lastCircles, lastGraph;
 const doc = {
   getElementById: element,
-  querySelector: selector => selector === '#graph' ? element('graph') : element(selector),
+  querySelector: element,
   querySelectorAll(selector) {
     if (selector === '#graph circle[data-point]') {
       const graph = element('graph').innerHTML;
@@ -47,8 +50,7 @@ const doc = {
     lastHeader = head;
     lastButtons = [...head.matchAll(/<th([^>]*)><button type="button" data-sort="([^"]+)"[^>]*>/g)].map(match => {
       const th = element('header-' + match[2]);
-      const sort = match[1].match(/aria-sort="([^"]+)"/);
-      th.attributes['aria-sort'] = sort?.[1];
+      th.attributes['aria-sort'] = match[1].match(/aria-sort="([^"]+)"/)?.[1];
       return {dataset: {sort: match[2]}, parentElement: th, listeners: {}, addEventListener(event, fn) { this.listeners[event] = fn; }};
     });
     return lastButtons;
@@ -57,73 +59,93 @@ const doc = {
 vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc});
 const rows = () => [...element('#board tbody').innerHTML.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(m => m[1]);
 const names = () => rows().map(row => row.match(/<td class="left">(.*?)<\/td>/)?.[1]);
+const graph = () => element('graph').innerHTML;
+const colors = () => [...graph().matchAll(/<circle[^>]*fill="([^"]+)"/g)].map(m => m[1]);
 function click(key, expected, direction) {
   const button = doc.querySelectorAll('#board button[data-sort]').find(b => b.dataset.sort === key);
   assert(button, `missing sort button ${key}`);
   button.listeners.click();
   assert.deepEqual(names(), expected);
   assert.equal(button.parentElement.attributes['aria-sort'], direction);
-  for (const other of doc.querySelectorAll('#board button[data-sort]').filter(b => b.dataset.sort !== key)) assert.equal(other.parentElement.attributes['aria-sort'], 'none');
+  for (const other of doc.querySelectorAll('#board button[data-sort]').filter(b => b.dataset.sort !== key)) {
+    assert.equal(other.parentElement.attributes['aria-sort'], 'none');
+  }
+}
+function axis(which, key) {
+  element('graph-' + which).listeners.change({target: {value: key}});
+}
+function task(id) {
+  element('task-search').listeners.input({target: {value: id}});
 }
 assert.deepEqual(names(), ['Beta', 'Alpha', 'Gamma']);
-let activeSort = 'score', isAscending = false;
-for (const [key, ascOrder, descOrder] of [
-  ['score', ['Gamma', 'Alpha', 'Beta'], ['Beta', 'Alpha', 'Gamma']],
-  ['ci', ['Alpha', 'Beta', 'Gamma'], ['Gamma', 'Beta', 'Alpha']],
-  ['resolve_rate', ['Beta', 'Gamma', 'Alpha'], ['Alpha', 'Gamma', 'Beta']],
-  ['solved_mean', ['Alpha', 'Beta', 'Gamma'], ['Beta', 'Alpha', 'Gamma']],
-  ['churn', ['Beta', 'Alpha', 'Gamma'], ['Alpha', 'Beta', 'Gamma']],
-]) {
-  isAscending = key === activeSort ? !isAscending : ['churn', 'net'].includes(key);
-  click(key, isAscending ? ascOrder : descOrder, isAscending ? 'ascending' : 'descending');
-  activeSort = key;
-  isAscending = !isAscending;
-  click(key, isAscending ? ascOrder : descOrder, isAscending ? 'ascending' : 'descending');
-}
-assert.match(element('#graph').innerHTML, /aria-labelledby="plot-title plot-desc"/);
-assert.match(element('#graph').innerHTML, /Alpha \(Anthropic\): all measured attempts; net units −2.0, churn 12.0; measured 4\/4/);
-assert.doesNotMatch(element('#graph').innerHTML, /Gamma \(Anthropic\): all measured/);
-assert.match(element('#graph').innerHTML, /<title id="plot-title">/);
-assert.match(element('#graph').innerHTML, /tabindex="0"/);
+assert.doesNotMatch(element('#board thead').innerHTML, /Per solve|churn/i);
+assert.doesNotMatch(html.split('<script id="parsimony-data"')[0], /Per solve|churn/i);
+assert.match(element('#board tbody').innerHTML, /−2.0/);
+click('score', ['Gamma', 'Alpha', 'Beta'], 'ascending');
+click('score', ['Beta', 'Alpha', 'Gamma'], 'descending');
+click('ci', ['Gamma', 'Beta', 'Alpha'], 'descending');
+click('ci', ['Alpha', 'Beta', 'Gamma'], 'ascending');
+click('resolve_rate', ['Alpha', 'Gamma', 'Beta'], 'descending');
+click('resolve_rate', ['Beta', 'Gamma', 'Alpha'], 'ascending');
+click('net', ['Alpha', 'Beta', 'Gamma'], 'ascending');
+click('net', ['Beta', 'Alpha', 'Gamma'], 'descending');
+assert.equal(element('graph-x').value, 'net');
+assert.equal(element('graph-y').value, 'resolve_rate');
+assert.match(graph(), /Alpha \(Anthropic\).*Net units added \(mean per attempt\): −2.0, Solved \(%\): 80.0%/);
+assert.doesNotMatch(graph(), /Gamma \(Anthropic\)/);
+assert.match(graph(), /aria-labelledby="plot-title plot-desc"/);
+assert.match(graph(), /tabindex="0"/);
 assert.match(element('company-legend').innerHTML, /Anthropic/);
 assert.match(element('company-legend').innerHTML, /OpenAI/);
-const colors = () => [...element('graph').innerHTML.matchAll(/<circle[^>]*fill="([^"]+)"/g)].map(m => m[1]);
 const initialColors = colors();
-assert.equal(initialColors.length, 2);
 assert.notEqual(initialColors[0], initialColors[1]);
 for (const event of ['mouseenter', 'focus', 'click']) {
   doc.querySelectorAll('#graph circle[data-point]')[0].listeners[event]();
   assert.match(element('graph-detail').textContent, /Alpha \(Anthropic\).*measured 4\/4/);
 }
-element('task-search').listeners.input({target: {value: 'org__repo-1'}});
-assert.match(element('#board thead').innerHTML, /Net units added/);
-assert.match(element('#board tbody').innerHTML, /<td class="left">Alpha<\/td><td class="left r">solved<\/td><td>10\.0<\/td><td>\+111<\/td><td>112\.0/);
-assert.match(element('#board tbody').innerHTML, /<td class="left">Beta<\/td><td class="left r">solved<\/td><td>20\.0<\/td><td>\+221<\/td><td>222\.0/);
-assert.match(element('#graph').innerHTML, /Alpha \(Anthropic\): resolved task attempt; net units 111.0, churn 112.0/);
-assert.match(element('#graph').innerHTML, /Gamma \(Anthropic\): failed task attempt; net units 331.0, churn 332.0/);
-assert.doesNotMatch(element('#graph').innerHTML, /all measured attempts;/);
-assert.doesNotMatch(element('#graph').innerHTML, /Mean churn per attempt<\/text>/);
+// Every numeric table value is selectable; ranges expose explicit endpoints.
+const keys = ['score', 'ci', 'ci_high', 'resolve_rate', 'net', 'rank_low', 'rank_high'];
+for (const key of keys) assert(element('graph-x').innerHTML.includes(`value="${key}"`));
+assert.doesNotMatch(element('graph-x').innerHTML, /churn|solved_mean/i);
+for (const x of keys) for (const y of keys.filter(k => k !== x)) {
+  axis('x', x); axis('y', y);
+  assert.equal(element('graph-x').value, x);
+  assert.equal(element('graph-y').value, y);
+  assert.doesNotMatch(graph(), /NaN|Infinity/);
+}
+axis('x', 'net'); axis('y', 'score');
+assert.match(graph(), /Beta \(OpenAI\).*Score \(midpoint if bounded\): 20.0/);
+axis('x', 'score'); // Selecting the other axis's metric swaps, rather than duplicating, it.
+assert.equal(element('graph-y').value, 'net');
+axis('y', 'resolve_rate');
+task('org__repo-1');
+assert.equal(element('graph-x').value, 'net');
+assert.equal(element('graph-y').value, 'score');
+assert.doesNotMatch(element('graph-x').innerHTML, /ci|resolve_rate|rank_low/);
+assert.match(element('#board tbody').innerHTML, /<td class="left">Alpha<\/td><td class="left r">solved<\/td><td>10\.0<\/td><td>\+111<\/td><\/tr>/);
+assert.match(graph(), /Gamma \(Anthropic\): failed task attempt/);
 assert.deepEqual(colors(), [initialColors[0], initialColors[1], initialColors[0]]);
-assert.match(element('graph-legend').textContent, /Dashed outline: failed/);
 assert.equal(element('ci-help').hidden, true);
 assert.equal(element('rank-note').hidden, true);
-click('task_score', ['Gamma', 'Alpha', 'Beta'], 'ascending');
-click('task_score', ['Beta', 'Alpha', 'Gamma'], 'descending');
+click('score', ['Gamma', 'Alpha', 'Beta'], 'ascending');
+click('score', ['Beta', 'Alpha', 'Gamma'], 'descending');
 click('net', ['Alpha', 'Beta', 'Gamma'], 'ascending');
 click('net', ['Gamma', 'Beta', 'Alpha'], 'descending');
-click('churn', ['Alpha', 'Beta', 'Gamma'], 'ascending');
-click('churn', ['Gamma', 'Beta', 'Alpha'], 'descending');
-element('task-search').listeners.input({target: {value: 'org__repo-2'}});
-assert.match(element('#board tbody').innerHTML, /<td class="left">Alpha<\/td><td class="left f">failed<\/td><td>2\.0–8\.0<\/td>/);
-element('task-search').listeners.input({target: {value: 'not-a-task'}});
-assert.match(element('task-status').textContent, /No task matches/);
-assert.match(element('#board tbody').innerHTML, /Alpha/);
-element('task-search').listeners.input({target: {value: 'org__repo-3'}});
+axis('x', 'score');
+assert.equal(element('graph-y').value, 'net');
+task('org__repo-2');
+assert.match(element('#board tbody').innerHTML, /−25.0–0.0/);
+assert.match(graph(), /Task score \(midpoint if bounded\): −12.5/);
+task('not-a-task');
+assert.match(element('task-status').textContent, /Still showing org__repo-2/);
+task('org__repo-3');
 assert.match(element('graph-legend').textContent, /No measured points/);
-assert.doesNotMatch(element('#graph').innerHTML, /<circle|NaN|Infinity/);
+assert.doesNotMatch(graph(), /<circle|NaN|Infinity/);
 element('task-reset').listeners.click();
-assert.match(element('#board thead').innerHTML, /95% CI/);
+assert.equal(element('graph-x').value, 'score'); // All-task axis choices survive task browsing.
+assert.equal(element('graph-y').value, 'resolve_rate');
 assert.equal(element('task-footer').hidden, true);
 assert.equal(element('ci-help').hidden, false);
 assert.deepEqual(names(), ['Beta', 'Alpha', 'Gamma']);
-console.log('All-task and task sorting, cell alignment, and plot checks passed');
+assert.doesNotMatch(element('#board thead').innerHTML, /churn|Per solve/i);
+console.log('Column sorting, selectable axes, company colors, bounds and task switching passed');
