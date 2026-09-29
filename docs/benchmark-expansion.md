@@ -2,6 +2,10 @@
 
 Investigation date: 2026-09-29. **Recommendation, not an import or new published board.** Parsimony needs existing model patches, exact repository/base revisions and explicit per-attempt outcomes (including failures). Aggregate leaderboard rows, gold patches and transcripts alone do not meet this requirement. Keep benchmarks, languages, harness/configuration and attempts separately identified; do not merge their scores into the current boards.
 
+## Execution update
+
+All four recommended workstreams were investigated on 2026-09-29. Live now has [import tooling and a clean four-task static pilot](swe-bench-live-investigation.md); its full-cohort historical provenance/rights still block a board. [Fresh DeepSWE evidence](../examples/deepswe-python/refresh-2026-09-29.json) has unchanged metadata hashes and 26 usable configurations. [Verified audit](verified-refresh-investigation.md) confirms unchanged experiments revision and rechecks exclusions, including partial Gemini 3.5 coverage. [Pro/Atlas audit](pro-atlas-artifact-audit.md) found anonymously readable legacy Pro S3 artifacts but no identified V2 or Atlas model-attempt export. No new published models/scores are claimed on the strength of this tooling/pilot.
+
 ## Priority
 
 1. **SWE-bench Live — first new-benchmark pilot.** The [submission repository](https://github.com/SWE-bench-Live/submission) actually exposes final patches and outcome categories, rather than merely a task corpus. Start with a frozen Python Lite cohort or a predefined Go / JS+TS slice of MultiLang, using supported analyzers. This is a promising source of additional model configurations; it does not guarantee unique model names beyond the existing boards.
@@ -30,7 +34,7 @@ Inspected submission revision: `cba8a6d3197cd53da09f8527cccbc689782302a6`.
 Inspected repository revision: `66f92766bba642462d4bbe5479e83f91f9211862`.
 
 - [V2 README](https://github.com/scaleapi/SWE-bench_Pro-os/blob/66f92766bba642462d4bbe5479e83f91f9211862/v2/README.md): 642 tasks / 11 repositories, reference solutions, checksums and locked-protocol tooling. The README describes model-patch capture and pristine-sandbox regrading, but these are run instructions, not a historical model export.
-- [Trajectory README](https://github.com/scaleapi/SWE-bench_Pro-os/blob/66f92766bba642462d4bbe5479e83f91f9211862/traj/README.md) points to `s3://scaleapi-results/swe-bench-pro/`, says AWS credentials are required to download, and says newer results live on S3 rather than GitHub. Anonymous access was not tested; credentials were not used.
+- [Trajectory README](https://github.com/scaleapi/SWE-bench_Pro-os/blob/66f92766bba642462d4bbe5479e83f91f9211862/traj/README.md) points to `s3://scaleapi-results/swe-bench-pro/`, says AWS credentials are required to download, and says newer results live on S3 rather than GitHub. Anonymous access was not tested in this initial inspection; credentials were not used. The subsequent [artifact audit](pro-atlas-artifact-audit.md) did confirm anonymous listing/legacy patch access, but not identifiable V2 attempts.
 - The inspected legacy `traj/claude-45sonnet-10132025/` contains `eval_results.json`; its task map includes explicit `true` and `false` outcomes. Model patches were not found in that directory listing. Those legacy runs are not evidence of V2 attempt availability or V2 correctness.
 - V2's HARD-51 subset was selected using failures of named model families. Prefer the full independently defined V2 population for a general board; disclose selection bias if a hard-subset panel is used.
 

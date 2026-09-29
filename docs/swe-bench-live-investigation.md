@@ -31,6 +31,19 @@ The candidate dataset revision in this example is **not proven to be the histori
 
 `analyze_run()` uses the standard benchmark record schema and a single supported language track. It requires an evidence-bound reviewed manifest (URL, digest, matching dataset/result checksums and submission revision), plus either verified historical dataset matching or independent base-commit confirmation for every potentially measured task. This gate records a review, not a cryptographic proof of its truth. Do not set it merely because a supplied SHA exists. Analyze from a clean committed analyzer checkout; no paid model calls or target-code execution are needed.
 
+## Clean-checkout pilot
+
+Four patches were statically measured from clean commit `9b287263b3d167eecc546e2072e749dd23da53f6`, Python 3.14.7 and the published pinned Tree-sitter dependencies. All four strictly applied and parsed (`analysis_status=ok`):
+
+| Track | Task | Source outcome | Net units | Changed units |
+|---|---|---|---:|---:|
+| Go | `twpayne__chezmoi-5016` | success | 37 | 53 |
+| Go | `kubernetes-sigs__controller-runtime-3494` | failure | 205 | 217 |
+| JavaScript | `codeceptjs__CodeceptJS-5106` | success | 90 | 100 |
+| JavaScript | `sveltejs__svelte-16666` | failure | 11 | 11 |
+
+This validates importer/analyzer mechanics for one success and one explicit failure per track, **not model rankings, full-cohort coverage or benchmark correctness**. The inventoried 230 records were retained; other patches were not measured. No target code or tests ran. Only [summary metrics/provenance](../examples/benchmark-discovery/live-pilot-summary.json) are committed, not raw model patches/trajectories. Do not splice these pilot records into existing language panels.
+
 ## Evidence and outstanding gates
 
 - Submission commit `cba8a6d3197cd53da09f8527cccbc689782302a6` exposes `result.json` and task-level `patch.diff` / `trajectory.txt`. GPT-5.5 medium declares 230 submitted IDs: 105 successes, 120 failures and five empty-only IDs; errors/incomplete counts are zero.
