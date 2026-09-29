@@ -1,75 +1,203 @@
-# Handoff (2026-09-28)
+# Session handoff — 2026-09-29
 
-State of Parsimony after the cloud sessions and local follow-up of 2026-09-28. Owner preference: commit and push directly to `main`; no branches or pull requests.
+## Start here
 
-## Where things stand
+Owner asked for a session refresh and recommendations, **not implementation of the next roadmap items yet**. All requested analysis/import/UI work is complete and pushed to `main`. Latest implementation commit: **`28913ad`** (data-fitted graph axes). This handoff is a subsequent docs-only update.
 
-- **Site** (Cloudflare Pages, output directory `site`, served at https://parsimony.lasu.dev; every push to `main` redeploys):
-  - `site/index.html` is the main board: [DeepSWE](examples/deepswe-python/README.md), 26 current models × 34 Python tasks × 4 attempts.
-  - `site/verified.html`: [SWE-bench Verified](examples/mini-swe-agent-500/README.md), 33 mini-SWE-agent models × 500 tasks.
-  - `site/javascript.html`, `site/typescript.html`, `site/go.html`: 26 models in each separate language track; frozen populations 5, 35 and 34 tasks respectively, four attempts each. Panels cover 5, 31 and 34 tasks. Full records, coverage, panels, scores and sensitivity live in `examples/deepswe-{javascript,typescript,go}/`.
-  - One shared table defaults to all score-panel tasks; the task-ID input replaces it with a selected attempt. The graph has one point per model, colored by developer company, with user-selectable X/Y metrics from the visible table. Default: mean net units added vs solved percentage. Numeric axes fit visible points with 5% padding; equal/single values use ±5% of magnitude (minimum 1 unit), empty axes use 0–1, and solved percentage always stays at 0–100%. Net units include measured passing AND failed attempts. Per solve and churn are removed from the UI, but the historical 80/20 scoring formula is unchanged. A selected task offers task score/net units only; all-task axes are restored on reset. Pages always use light mode. Hover/focus/tap immediately shows only the model name in a custom tooltip; native SVG hover titles are removed. Failed task attempts retain dashed outlines. CI is a separate uncertainty display, never an input to Score; a regression test enforces this.
-  - The leaderboard shows a 95% bootstrap **rank range** per model (no tiers). Score, 95% CI, Solved and Net units added headers toggle numeric sorting; default is all-task score descending. CI sorts by its lower bound; net units start ascending; missing values stay last. Rank ranges always refer to the all-task score, regardless of the selected sort. A Node.js interaction test runs through unittest when Node is available.
-- **Analyzer 0.6.0-beta** adds optional pinned Tree-sitter JS/TS/Go tracks; see [language tracks](docs/language-tracks.md). Existing published Python records remain 0.5.2-beta and must not be relabeled. New root-level files are excluded only for Python (normal Go/JS/TS entry points count).
-- **Statistics** (`parsimony/stability.py`, `parsimony/site.py`): everything uses all tasks. An unscored task counts at the middle of its bounds for scores and ranking, at its worst and best case for intervals; a difference is "distinguishable" only in the worst case. Items `task#attempt` of one task are resampled together; with one item per task this is identical to a plain task bootstrap.
-- Older result sets (`examples/ten-model-500`, `beta-500-*`) are history and use older analyzers.
+**My recommendation:** fix TypeScript measurement coverage next, then review scoring semantics before adding another benchmark. Start with small reproducible parser fixtures and an offline comparison of existing score variants; do not immediately launch another full measurement run or change published scores.
 
-## Environment
+Owner preference: commit and push directly to **`main`**, no branches/PRs. Preserve unrelated files. `git status --short` currently shows only the pre-existing untracked **`.claude/`**, containing other worktrees; do not add, delete or clean it. No measurement batch remains pending.
 
-- Python **3.14.7** exactly: panels and records are pinned to it, and scoring rejects other versions. `uv python install 3.14.7` (needs a recent uv).
-- Python analysis is standard-library only. Non-Python analysis requires the exact optional pins in `.[languages]`; see `docs/language-tracks.md`. All 7,696 new attempt records were measured in a clean detached checkout at `7705e8de13343bbafbfe5bccba665dd2bab8b24a`. Keep that revision for reproduction; do not measure with the later UI-only source hash.
-- Network: GitHub (raw and API), `swe-bench-submissions.s3.amazonaws.com`, `huggingface.co` / `datasets-server.huggingface.co` (Verified dataset), `deepswe.datacurve.ai` and `d3ujjcmjq6o8v6.cloudfront.net` (DeepSWE runs and patches).
-- Downloads are cached by URL under `.parsimony-cache/` (never refreshed; use `--cache` before the subcommand).
-- Checks before every push: `python -m unittest discover -s tests -q` and `python -m parsimony.contribute validate submissions`. Run the suite with `.[languages]` installed too. Latest verification: 140 tests passed with all parsers (15 optional tests skip without them), all five generated pages passed Node interaction checks, Chromium checked task switching/plot rendering, and all new coverage audits plus byte-identical score reproduction passed.
+For the next session:
 
-## Rules that bite
+1. `git pull --ff-only`; inspect status and read this file.
+2. Read `docs/language-tracks.md`, the relevant example README, and `docs/scoring.md` before measurement/scoring changes.
+3. Follow the prioritized plan below. Preserve the owner's UI and scoring requirements.
+4. Update this handoff after the next meaningful change.
 
-- **Measure only from a clean, committed checkout.** Records carry `analyzer_commit` and a hash of every file in `parsimony/`; a dirty tree gives `analyzer_commit: null`, and `release audit` requires the population's commit. Do not edit `parsimony/` while measurements run: runs that start later import the edited code.
-- `release freeze` refuses a dirty checkout; freeze the population after committing, at the commit you measure with.
-- Never pool records from different analyzer versions or Python versions (scoring enforces it).
-- Freezing a panel needs every task to have a measured, in-scope passing patch: for SWE-bench, filter the records to those tasks first (see `examples/mini-swe-agent-500/README.md`); `parsimony.deepswe panel` filters itself.
-- Before publishing numbers, spot-check error counts per run: every broken input so far (stripped newlines, wrong S3 folders, scratch scripts, a results file marking all tasks unresolved) first showed up as an odd count.
+## Owner requirements — do not regress these
 
-## Rebuilding the boards
+- **Default ranking must consider passing AND failed attempts**, including their footprint. We briefly ranked by solved-only footprint; the owner rejected it and it was reverted. Do not reintroduce solved-only rankings.
+- **Churn and Per solve are removed from the website**, not from stored measurements or the scoring formula. The owner has **not approved changing the score to net-only**. Keep that distinction explicit.
+- Current visible all-task columns: **Rank range, Model, Score, 95% CI, Solved, Net units added**. Numeric headers sort on click and reverse on another click; missing values stay last. Score is the default descending sort; net units start ascending. CI sorts by its lower bound.
+- **One shared table**, defaulting to all score-panel tasks. A task-ID text/datalist input selects a task/attempt and replaces that same table; no separate task table. An All tasks button resets it.
+- **Graph: one point per model, company colors**, selectable X/Y metrics from the visible table. Default X = mean net units added, Y = solved percentage. Interval/rank endpoints are explicit options. Selecting an already-used axis metric swaps axes. Task view offers only task score/net units; returning to all tasks restores the previous all-task axes.
+- **Numeric graph axes fit visible points**, with 5% padding rather than forcing zero. Solved stays at 0–100%. Constant/single values use ±5% of magnitude (minimum 1 unit); empty numeric views use 0–1. Negative values are supported. On the current main board, the default net-unit axis is about **1,091–2,528.5**.
+- **Light mode only**, even when the OS prefers dark.
+- **Immediate model-name-only hover/focus/tap tooltip**. Custom tooltip; no delayed native SVG `<title>` tooltip. Company colors/legend remain, but do not restore company/metric text in the visible hover label. Accessible point labels still carry metric details. Tooltips hide on pointer exit, blur, scrolling, resize and chart redraw.
+- **95% CI never contributes to Score.** It was already separate; this is now explained on the page and protected by a regression test. Do not claim we removed CI weighting or change the formula to address that misunderstanding.
+- “Complexity” here means **static coding-unit footprint**, not semantic complexity, readability, technical debt or runtime performance.
 
-DeepSWE (full commands in its README):
+## Published state
+
+Cloudflare Pages serves `site/` at <https://parsimony.lasu.dev>; a push to `main` triggers redeployment. A successful push is not itself verification that the hosted deployment has completed.
+
+| Board | Files/results | Models | Frozen tasks | Scored tasks | Attempts/task | Analyzer |
+|---|---|---:|---:|---:|---:|---|
+| DeepSWE Python (main) | `site/index.html`, `examples/deepswe-python/` | 26 | 34 | 33 | 4 | 0.5.2-beta |
+| DeepSWE JavaScript | `site/javascript.html`, `examples/deepswe-javascript/` | 26 | 5 | 5 | 4 | 0.6.0-beta |
+| DeepSWE TypeScript | `site/typescript.html`, `examples/deepswe-typescript/` | 26 | 35 | 31 | 4 | 0.6.0-beta |
+| DeepSWE Go | `site/go.html`, `examples/deepswe-go/` | 26 | 34 | 34 | 4 | 0.6.0-beta |
+| SWE-bench Verified | `site/verified.html`, `examples/mini-swe-agent-500/` | 33 | 500 | 448 | 1 | 0.5.2-beta |
+
+New language tracks contain **7,696 additional attempt records**, including failures and unavailable measurements. Across the four DeepSWE populations: **108 task definitions / 103 calibratable task clusters**, kept in separate panels. Rust's five tasks remain unsupported.
+
+Each example directory has measured JSONL, `population.json`, `coverage.json`, `score-panel.json`, `scores.json`, `sensitivity.json`, `sensitivity.md` and a README explaining exclusions. The large JSON artifacts can be tens of MB: inspect summaries with Python rather than dumping entire panels into agent context.
+
+Older `ten-model-500` and `beta-500-*` results are historical, not additional current boards. Do not mix them with the current cohorts.
+
+### Metric meanings and denominators
+
+- **Score:** current `parsimony-80-20-v0.5` formula. Each passing patch earns 1–100 credit relative to its frozen passing references: 80% net-unit percentile, 20% changed-unit percentile. Explicit failures receive a footprint penalty from −25 to 0. Aggregate over all **score-panel items**, not only successes.
+- **Unavailable measurements:** point Score may be null; the table shows possible score bounds. Default sorting/plotting uses their midpoint. These bounds are **not the bootstrap 95% CI**.
+- **95% CI / rank ranges:** bootstrap diagnostics computed separately; task attempts are clustered when resampling. An unscored item's best/worst possibilities widen the interval. They do not alter Score. Sorting another column does not redefine the displayed score rank range.
+- **Net units added:** added minus deleted coding units. The all-task column is the mean over **measured, in-scope passing and failed attempts in the score panel**; unknown/out-of-scope measurements are excluded, never zero-filled. It can be negative, and coverage can differ by model. It is not the Score.
+- **Solved:** resolved count over the entire frozen population, not just score-panel tasks. DeepSWE language-specific rates are not the public benchmark's all-language leaderboard rate.
+- **Population vs panel:** a task needs at least one measured, in-scope passing reference to calibrate footprint. Tasks with no usable reference remain in population records/audits but are absent from the score panel. The website's coverage details disclose this; “All tasks” in the selector means all score-panel tasks. Do not describe the score as covering the entire population when it does not.
+
+## What I would do next, in priority order
+
+### 1. Fix TypeScript coverage before expanding the benchmark
+
+**First concrete next-session task:** build small regression fixtures from known failing base-file constructs, classify the failures, and document a proposed parser/scope fix. Work offline where possible; do not run submitted code or target-repository tests.
+
+Known issues:
+
+- Only **31/35** TS-labelled tasks calibrate. `effect-sse-httpapi-streaming` and `kea-atomic-signal-selectors` have no usable passing references under the current parser.
+- Valid TypeScript constructs rejected by the pinned grammar include `export type * as` in a Vitest base file and existing Effect overload syntax. Parse failure on the base is **not evidence that the model wrote invalid code**. Other after-only errors have not all been classified.
+- Upstream TS metadata labels `httpx-deterministic-cookie-store` as TypeScript although patches are Python, and `prometheus-transactional-reload-status` although patches are Go. They currently remain excluded-only records, not silently reassigned to another frozen track.
+- JS-labelled KaTeX modifies TypeScript. JS and TS tracks therefore both measure JS/TS extensions, with grammar chosen by file extension. Do not restrict JS-labelled tasks to `.js` alone.
+- Final analysis errors: **323 TS records** (322 syntax errors + one unsupported implementation-only diff), **7 Go**, **1 JS**. No residual `fetch_error` records in the published new-language runs. See coverage files for outcomes and excluded-only successes; do not conflate analysis error with benchmark failure.
+
+Desired acceptance criteria:
+
+1. Distinguish base grammar limitations, after-only syntax problems, unsupported diffs and wrong-language scope using minimal fixtures with source URLs/base commits.
+2. Keep malformed/recovered trees explicitly unmeasured. Never suppress parser errors or assign zero to make coverage look better.
+3. Propose explicit, versioned dataset corrections for wrong-language metadata, independent of which model succeeded. Preserve existing populations as historical artifacts.
+4. If parser/counting rules or pins change, version the analyzer/track appropriately; commit, freeze new populations and remeasure affected cohorts from a clean checkout. Do not splice new records into old panels or hand-relabel records.
+5. Compare coverage and measurement deltas before publishing new scores, then rebuild panels, scores, bootstrap reports and pages together.
+
+### 2. Review whether Score should remain 80/20 — do not silently change it
+
+The user removed churn from the **UI**, but Score still includes it. Make any future scoring decision explicit.
+
+- Read existing sensitivity reports first; they already vary net weight and failure penalties.
+- Compare the published formula with a clearly labelled net-only candidate offline across the same frozen records. Inspect rank changes and deletion/rewrite-heavy patches, especially on Verified, rather than assuming DeepSWE's nearly linear net/churn graph proves churn useless everywhere.
+- A genuinely churn-free candidate needs an explicit failure rule too: the current failure penalty and its reference scale use changed units. Setting only the success blend's net weight to 1 is **not necessarily a fully churn-free score**.
+- Preserve correctness gating, failures and missingness bounds. Do not replace Score with mean raw net units or solved-only footprint.
+- Discuss the results with the owner before changing the published formula. A scoring change needs a new score version and regenerated panels/scores/uncertainty; do not reuse old CI/rank ranges for a new score.
+
+### 3. Refresh model coverage when artifacts actually become available
+
+A fresh-cache check on **2026-09-28** found the same **26 usable DeepSWE configurations**, with unchanged trials checksum. Evidence: `examples/deepswe-python/refresh-2026-09-28.json`.
+
+- GPT-6 Astra configurations declare no model patches in that snapshot.
+- First declared Gemini 3.8 Flash patches for high/medium returned HTTP 403. This is a probe result, not proof every possible patch URL is unavailable.
+- Repeat discovery using a **fresh cache**, compare checksums/configurations, then analyze only genuinely new or changed available inputs. Do not remeasure unchanged cohorts merely to call it a refresh.
+- Keep missing artifact / unknown outcome / explicit failure distinct. Never invent model patches or infer failure just because an artifact is absent.
+
+### 4. SWE-Atlas is blocked on artifacts, not on writing an importer
+
+Read `docs/swe-atlas-investigation.md`.
+
+- **QnA is not a good footprint benchmark**: its output is an answer, not a repository patch.
+- **Refactoring** is a better fit and has newer-model aggregate results, public tasks, exact base revisions and gold patches.
+- No public per-model/per-task attempt export with model patches and failure results was found in the inspected sources. Gold patches are not model outputs.
+- Next useful step: obtain an existing-run export from Scale/submitters containing model/agent/config, attempt, exact task/base revision, final patch and per-attempt evaluation outcomes, including failures; review redistribution terms.
+- Do not contact/publish upstream on the owner's behalf without approval, and do not launch paid model evaluations as a workaround.
+- Terminal-Bench 4.0 has not been proven importable for this purpose; terminal transcripts/aggregate scores alone are insufficient. Any coding subset would need a predefined scope and recoverable before/after code, kept separate from other panels.
+
+### 5. Practical follow-ups, lower priority
+
+- Add durable browser smoke checks (light mode under dark OS preference, instant name tooltip, axis changes, task/reset, mobile layout) if more UI changes are made. Current Node tests mock the DOM; Chromium was also checked manually, but the temporary CDP scripts are not committed.
+- Consider versioned release assets/compressed raw artifacts before another large refresh. Keep checksums and reproducible download commands; do not delete current artifacts or rewrite Git history without an agreed migration.
+- A blind reviewer preference study on passing patches could validate whether footprint is useful beyond being smaller. This is a research task, not evidence already established.
+- Upstream Verified issues to report with approval: Gemini 3 Pro (high) marks all tasks unresolved; GPT-5.2 Codex lacks results; Claude 3.7 Sonnet had many missing S3 patches; some `metadata.yaml` files point to wrong S3 folders. Existing analyzer fixes handle several artifact issues; see CHANGELOG/history before duplicating investigation.
+
+## Code and data map
+
+- `parsimony/analysis.py`: strict patch application, scope/generated-file rules, shared unit-diff engine, Python AST units, optional language dispatch.
+- `parsimony/languages.py`: pinned lazy Tree-sitter backend, syntax-unit rules, parser/track identity. **Do not reintroduce repeated native Point access**: it crashed on large trees with Python 3.14 / Tree-sitter 0.26.0. Use owned source bytes, byte offsets and computed line starts; large-tree regression test exists.
+- `parsimony/benchmark.py`: records, analyzer identity, published outcomes, failure handling, base files and reference measurements.
+- `parsimony/deepswe.py`: task dataset, config discovery, attempt import, pooled references.
+- `parsimony/scoring.py`: published formula / bounds / track compatibility. `stability.py` and `sensitivity.py`: diagnostic variants and bootstrap.
+- `parsimony/release.py`: frozen populations and coverage audits.
+- `parsimony/site.py`: offline page-data generation, model-company labels, mean net metrics and graph data. `site/template.html`: all interaction/CSS/graph rendering. Rebuild **all five** HTML pages after changing either.
+- `tests/test_site.py`, `tests/site_sorting.cjs`: generator and JS interaction checks, including CI independence, missing values, all axis pairs, company colors, task-cell alignment, light mode, tooltip behavior and axis extents.
+- `tests/test_languages.py`, `tests/test_multilanguage.py`: optional parsers, scope, value/formatting changes, invalid syntax and failed-patch measurement.
+- `docs/scoring.md`, `docs/language-tracks.md`, `docs/adversarial-validation.md`, example READMEs: methodology and limitations.
+
+## Environment, provenance and measurement rules
+
+- Published records use **Python 3.14.7**. Use it for comparable new measurements. Scoring rejects mixed recorded analyzer/Python versions; offline arithmetic/page generation does not itself execute target code.
+- Python analysis is standard-library only. Optional language pins: `tree-sitter==0.26.0`, `tree-sitter-javascript==0.25.0`, `tree-sitter-typescript==0.23.2`, `tree-sitter-go==0.25.0`. Install with `.[languages]`. Non-Python records/panels carry language, `tree-sitter-units-v1` and exact dependency versions; do not pool tracks or raw counts across languages.
+- All 7,696 new-language records were measured at clean commit **`7705e8de13343bbafbfe5bccba665dd2bab8b24a`**, analyzer 0.6.0-beta. Existing Python boards retain 0.5.2-beta records. Never relabel them as 0.6.0.
+- **Measure from a clean, committed checkout**, ideally a detached worktree with cache/output outside it. `analyzer_identity` hashes every `parsimony/*.py` file, including `site.py`; UI-generator changes can therefore change the source identity even if footprint rules are unchanged. Do not edit that source tree while jobs run.
+- `release freeze` refuses a dirty checkout; `.claude/` makes the main checkout dirty for that check. Do not remove it to work around the guard—use a clean measurement worktree. Freeze at the exact commit used for measurement; `release audit` checks the population commit.
+- Changes to grammar/counting rules require compatible new versioned records/panels. Missing/unparsed/excluded-only fixes must not masquerade as zero-size successes.
+- The cache is immutable **by URL**, never refreshed. Use a new cache for mutable upstream metadata; `--cache` is before the subcommand.
+- Network endpoints: GitHub raw/API, SWE-bench S3, Hugging Face dataset server, DeepSWE site and its CloudFront artifact base. No model API calls or target code execution are needed for import/measurement.
+- Temporary environments/caches/scripts from this session may have disappeared after reboot. At handoff, `/tmp/parsimony-refresh/analyzer` remains a **prunable Git worktree registration**, not a usable checkout. Existing `.claude/worktrees/*` are unrelated; leave them alone. Do not depend on old `/tmp` paths in a refreshed session.
+
+## Commands
+
+### Tests before every push
 
 ```sh
-git clone https://github.com/datacurve-ai/deep-swe && git -C deep-swe checkout 0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea
-python -m parsimony.deepswe dataset deep-swe --output deepswe-python.jsonl        # SHA256 41a44998…
-python -m parsimony.deepswe configs --output configs.json
-python -m parsimony.deepswe analyze CONFIG --dataset deepswe-python.jsonl --output CONFIG.jsonl
-python -m parsimony.deepswe panel examples/deepswe-python/*.jsonl --name NAME --output score-panel.json
+python -m unittest discover -s tests -q
+python -m parsimony.contribute validate submissions
+
+# Optional-parser coverage; use a fresh external environment if necessary.
+uv venv --python 3.14.7 /tmp/parsimony-checks
+uv pip install --python /tmp/parsimony-checks/bin/python '.[languages]'
+/tmp/parsimony-checks/bin/python -m unittest discover -s tests -q
+
+for page in index javascript typescript go verified; do
+  node tests/site_sorting.cjs "site/$page.html"
+done
+git diff --check
 ```
 
-Site pages:
+Last implementation verification: **140 tests passed with all parsers** (15 optional grammar tests skip in a stdlib-only environment); all five page interaction checks passed. Chromium confirmed the main graph's fitted net axis and unchanged 0–100% Solved axis. Before the latest pushes, embedded data were also compared against prior pages: scores, CIs, ranks and measurements were unchanged. New-language coverage audits and byte-identical score reproduction passed at publication. There are currently zero contributed submission bundles.
+
+### Rebuild all five pages (offline; no remeasurement)
 
 ```sh
 NAV=(--nav 'DeepSWE Python=index.html' --nav 'DeepSWE JS=javascript.html' --nav 'DeepSWE TS=typescript.html' --nav 'DeepSWE Go=go.html' --nav 'SWE-bench Verified=verified.html')
 for lang in python javascript typescript go; do
   E=examples/deepswe-$lang; PAGE=$lang; [ "$lang" = python ] && PAGE=index
-  python -m parsimony.site "$E/score-panel.json" "$E/"*.jsonl --sensitivity "$E/sensitivity.json" --benchmark deepswe "${NAV[@]}" --output "site/$PAGE.html"
+  python -m parsimony.site "$E/score-panel.json" "$E/"*.jsonl \
+    --sensitivity "$E/sensitivity.json" --benchmark deepswe "${NAV[@]}" --output "site/$PAGE.html"
 done
 V=examples/mini-swe-agent-500
-python -m parsimony.site "$V/score-panel.json" "$V/"*.jsonl --sensitivity "$V/sensitivity.json" --benchmark verified "${NAV[@]}" --output site/verified.html
+python -m parsimony.site "$V/score-panel.json" "$V/"*.jsonl \
+  --sensitivity "$V/sensitivity.json" --benchmark verified "${NAV[@]}" --output site/verified.html
 ```
 
-The Verified dataset is `python -m parsimony dataset --output verified.jsonl` (SHA256 `82029e78…`), experiments revision `40f164d5b8f1d249bf95a6df8b74b577fd8e519d`.
+### Discover fresh DeepSWE configurations
 
-## DeepSWE specifics
+```sh
+CACHE=$(mktemp -d /tmp/parsimony-discovery-XXXXXX)
+python -m parsimony.deepswe --cache "$CACHE" configs --output "$CACHE/configs.json"
+```
 
-- Run index: `https://deepswe.datacurve.ai/artifacts/v1.1/trials.json` (51 MB); patch URLs from `release.json` (`artifact_base_url` + `artifact_patterns.model_patch`). The CDN answers **403** for unpublished patches; the importer treats that as missing.
-- One configuration per model: the best `pass_rate` on `leaderboard-live.json` whose patches download. GPT-6 Astra and Gemini 3.8 Flash had none published on 2026-09-27; re-run `configs` to pick them up later.
-- Each attempt is an item `task#k` (k by start time). The pooled panel labels references `agent#k`; `stability.reference_agent` strips the attempt.
-- Most DeepSWE patches exceed the exact diff's 500-edit limit, so records use the flagged approximate alignment.
-- Only 34 of 113 tasks are Python; the rest are TypeScript (35), Go (34), JavaScript (5), Rust (5).
+Compare that output to `examples/deepswe-python/refresh-2026-09-28.json` before planning measurements. Current release: `v1.1`; run index `https://deepswe.datacurve.ai/artifacts/v1.1/trials.json` (about 51 MB). Last imported trials SHA256: `310cb428fe8914cff21b8edcb0b17256884efca55666bd6d6646d223c77d2ce6`. Patch URLs come from `release.json`; 403/404 are treated as missing, not empty patches.
 
-## Open ideas, roughly in priority order
+### Measurement/reproduction inputs
 
-1. **Keep footprint scoring over all tasks (owner clarification, 2026-09-28).** Never rank only by solved-task footprint: failed attempts and their added/changed code must count too. The solved-only headline change was reverted. Keep the all-task score and uncertainty as the headline; per-solve footprint is a diagnostic only. Missing measurements remain bounds, not dropped observations. The current metric measures code footprint, not design complexity directly.
-2. **More DeepSWE tasks:** JS/TS/Go tracks are published: 70 of 74 additional task definitions calibrate (108 definitions / 103 scored task clusters including Python). Next priority: TypeScript grammar coverage. `effect-sse-httpapi-streaming` and `kea-atomic-signal-selectors` lack usable passing references; pinned grammars also reject some valid constructs in other tasks. Upstream TS metadata incorrectly labels `httpx-deterministic-cookie-store` (Python) and `prometheus-transactional-reload-status` (Go); these remain recorded as out of scope, not reassigned silently. See each new example README for counts. Rust remains unsupported.
-3. **Keep DeepSWE current:** fresh-cache check on 2026-09-28 found the same 26 configurations and identical trials hash. Gemini 3.8 patch probes remain 403; GPT-6 Astra declares no patches. Evidence: `examples/deepswe-python/refresh-2026-09-28.json`. SWE-Atlas investigation in `docs/swe-atlas-investigation.md`: blocked on unavailable public model patch/per-attempt result exports, not task definitions.
-4. **Report broken SWE-bench submissions upstream** (`SWE-bench/experiments`): Gemini 3 Pro (high) `per_instance_details.json` marks all 500 tasks unresolved; GPT-5.2 Codex has no results file; Claude 3.7 Sonnet has 402 patches missing on S3; four runs' `metadata.yaml` name wrong S3 folders.
-5. **Blind preference check** (roadmap item 4): side-by-side passing patches, which one would a reviewer merge.
-6. **Repository size:** result sets add tens of MB per refresh (panels are 19–25 MB); consider GitHub release assets for raw JSONL.
-7. Other sources checked on 2026-09-27: SWE-bench-Live (fresh Python tasks, patches public, but each submission uses a different agent), SWE-bench Pro (public logs stop at late-2025 models), SWE-rebench (no patches published).
+- DeepSWE task snapshot: `datacurve-ai/deep-swe` at **`0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea`**.
+- Dataset: `python -m parsimony.deepswe dataset CHECKOUT --language LANGUAGE --output DATASET.jsonl` (one track at a time).
+- Analyze: `python -m parsimony.deepswe --cache CACHE analyze CONFIG --dataset DATASET.jsonl --output CONFIG.jsonl`, from the correctly pinned clean analyzer checkout. Includes explicit failures.
+- Freeze a population before measuring, audit it afterward, then `parsimony.deepswe panel` into a **new output path**. Follow the example README commands and inspect missingness before publishing.
+- Four DeepSWE attempts become `task#1`…`task#4` in start-time order. Passing references are pooled across attempts and labelled `agent#attempt`; bootstrap resamples the four items of each task together.
+- Most large DeepSWE patches exceed the 500-edit exact-diff threshold and use flagged approximate alignment. Keep those flags visible in audits.
+- Verified metadata: `python -m parsimony dataset --output verified.jsonl`, SHA256 prefix `82029e78…`; experiments revision **`40f164d5b8f1d249bf95a6df8b74b577fd8e519d`**.
+
+## Recent implementation history
+
+- `7705e8d`: optional JS/TS/Go analyzer and source investigations; **measurement revision**.
+- `24fbb41`: published language records/boards and unified task dashboard.
+- `8d00b48`: company-colored per-model comparison, including measured failures.
+- `26343c0`: removed churn/Per solve from UI; selectable axes and net-unit column.
+- `1a7a63b`: light mode, immediate model-only tooltips, explicit/tested CI independence.
+- `28913ad`: data-fitted numeric axes with padding; Solved remains 0–100%.
