@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Website: final Live Lite Python board — 2026-09-30
+
+Published one separate `site/live.html` board with DeepSeek V4.1 Flash / TianxiCode, GPT-5.6 Sol / Slingshot and Claude Opus 4.8 / AiWork. All 300 predefined tasks remain, including explicit failures and missing/out-of-scope data. An opt-in frozen-population calibration policy assigns conservative bounds when passing references are absent; unchanged 80/20 point formulas and no fabricated references/zero penalties. Rank intervals include missing-data envelopes within paired task bootstrap resamples. Known failed footprints remain in the net-unit mean even when uncalibrated. Original measurement JSONLs/identities are unchanged; numerical metadata only, no raw code/patches. Existing five boards' embedded measurements/scores are identical apart from navigation. Same clean layout and columns; no separate preview, no dedicated CI column. 218 tests pass with optional parsers, stdlib-only 16 skips; all six Node checks and both score reproductions pass.
+
 ## DeepSeek V4.1 targeted release review — 2026-09-30
 
 Freshly checked 900 pinned patch/metadata/grader files: all 300 DeepSeek tasks agree. Retrieved/read both official DeepSeek terms pages; numerical previews are distinct from uncleared raw artifact reuse. Corrected coverage reporting: 295 static analyses include eight fully out-of-scope patches, leaving 287 eligible footprints (202 successful, 85 failed). Existing scorer already excludes these; no measurements/formulas changed. Current Live Python reference pool covers 238/300 tasks, so no solved-subset default ranking or fabricated full-population score is published. Evidence and review are committed; existing pages remain unchanged.

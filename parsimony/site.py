@@ -9,7 +9,7 @@ from pathlib import Path
 
 from .benchmark import read_jsonl
 from .deepswe import display_name
-from .scoring import VERSION, score_records
+from .scoring import UNCALIBRATED, VERSION, measured, out_of_scope, score_records
 
 TEMPLATE = Path(__file__).resolve().parent.parent / 'site' / 'template.html'
 PREFIX = re.compile(r'^\d{8}_mini-v[\d.]+[_-]')
@@ -45,15 +45,14 @@ BENCHMARKS = {
     'deepswe': dict(name='DeepSWE', url='https://deepswe.datacurve.ai', reference='Reference solution',
                     task_url='https://github.com/datacurve-ai/deep-swe/tree/main/tasks/{task}', task_link='Task on GitHub',
                     results="DeepSWE's published results", attempts=4),
-    'live': dict(name='SWE-bench Live', url='https://swe-bench-live.github.io', reference='Reference solution',
+    'live': dict(name='SWE-bench Live Lite', url='https://swe-bench-live.github.io', reference='Reference solution',
                  task_url='https://github.com/{owner}/{repo}/pull/{number}', task_link="Maintainers' pull request",
                  results='public submitter evaluation reports', attempts=1,
                  harness_note='These are model + agent configurations, not a controlled model-only comparison. '
                               'Harnesses, prompts and execution protocols differ; see the cohort report.',
-                 notice='Research preview: historical dataset/evaluator inputs and protocol compliance are not '
-                        'independently certified. Measurements verify touched-file preimages where available; '
-                        'unverified preimages remain unmeasured, not zero. Model identities and pass/fail '
-                        'are source-reported. Scores cover only tasks with usable passing references.'),
+                 notice='Model identity and pass/fail are source-reported; historical evaluator inputs and protocol '
+                        'compliance are not independently certified. Every population task is retained. Missing '
+                        'footprints or passing references contribute score bounds, never invented zero scores.'),
     'polybench': dict(name='SWE-PolyBench Verified', url='https://amazon-science.github.io/SWE-PolyBench/',
                       reference="Maintainers' fix", task_url='https://github.com/{owner}/{repo}/pull/{number}',
                       task_link="Maintainers' pull request", results='public submitter evaluation reports', attempts=1,
@@ -129,6 +128,7 @@ def build(panel, records, draws=2000, seed=42):
     # Rank by score, or by the midpoint of the possible range when some tasks are unscored.
     board = sorted(score_records(panel, records),
                    key=lambda e: -(e['score'] if e['score'] is not None else (e['lower'] + e['upper']) / 2))
+    bounded = panel.get('calibration_policy') == UNCALIBRATED
     groups = {}
     for r in records:
         groups.setdefault(r['agent'], {})[r['task_id']] = r
@@ -140,8 +140,11 @@ def build(panel, records, draws=2000, seed=42):
         statuses = [t['status'] for t in entry['tasks'].values()]
         solved_scores = [t['score'] for t in entry['tasks'].values() if t['status'] == 'resolved']
         solved_metrics = [r['metrics'] for r in ok]
-        measured_metrics = [group[t]['metrics'] for t, value in entry['tasks'].items()
-                            if value['status'] in ('resolved', 'failed')]
+        measured_metrics = ([group[t]['metrics'] for t in entry['tasks']
+                             if t in group and measured(group[t]) and not out_of_scope(group[t]['metrics'])]
+                            if bounded else
+                            [group[t]['metrics'] for t, value in entry['tasks'].items()
+                             if value['status'] in ('resolved', 'failed')])
         # Failure penalty from the failures that could be measured; complete only when nothing is unscored.
         known_penalty = -sum(t['score'] for t in entry['tasks'].values()
                              if t['status'] == 'failed' and t['score'] is not None) / len(entry['tasks'])
@@ -175,15 +178,22 @@ def build(panel, records, draws=2000, seed=42):
             m = (r or {}).get('metrics') or {}
             if r and r.get('human_metrics'):
                 human = r['human_metrics']['churn']
-            cells.append([scored['status'][0], m.get('net_units'), m.get('churn'),
-                          None if scored['score'] is None else round(scored['score'], 1),
-                          scored['lower'], scored['upper']])
+            cell = [scored['status'][0] if scored['status'] != 'uncalibrated' else 'c',
+                    m.get('net_units'), m.get('churn'),
+                    None if scored['score'] is None else round(scored['score'], 1),
+                    scored['lower'], scored['upper']]
+            if bounded:
+                cell.append('r' if r and r['resolved'] else
+                            'f' if r and r.get('evaluation_result') == 'failed' else 'u')
+            cells.append(cell)
         tasks.append([task, human, cells])
     # Pooled panels label references agent#attempt; count models, not attempts.
     references = {r['agent'].split('#', 1)[0] for refs in panel['tasks'].values() for r in refs}
     versions = sorted({m.group(1) for a in order if (m := VERSION_OF.match(a))},
                       key=lambda v: tuple(int(x) for x in v[1:].split('.')))
-    return dict(measurement_track=panel.get('measurement_track'),
+    return dict(**(dict(calibration_policy=UNCALIBRATED,
+                        uncalibrated_tasks=[t for t, refs in panel['tasks'].items() if not refs]) if bounded else {}),
+                measurement_track=panel.get('measurement_track'),
                 score_version=VERSION, panel=panel['name'], references=len(references), harness=versions, analyzer_version=panel['analyzer_version'],
                 python_version=panel['python_version'], task_count=len(panel['tasks']),
                 population_count=max((r.get('benchmark_tasks', len(panel['tasks'])) for r in records),
@@ -229,7 +239,10 @@ def main():
         data['benchmark'] = BENCHMARKS[args.benchmark]
         data['nav'] = [dict(zip(('label', 'url'), item.split('=', 1))) for item in args.nav]
         if args.sensitivity:
-            add_rank_ranges(data['models'], json.loads(Path(args.sensitivity).read_text()))
+            sensitivity = json.loads(Path(args.sensitivity).read_text())
+            add_rank_ranges(data['models'], sensitivity)
+            if sensitivity['bootstrap'].get('rank_policy'):
+                data['rank_policy'] = sensitivity['bootstrap']['rank_policy']
             report = Path(args.sensitivity).with_suffix('.md').as_posix()
             data['sensitivity_url'] = f'https://github.com/La5u/Parsimony/blob/main/{report}'
         Path(args.output).write_text(render(data, not args.fragment))

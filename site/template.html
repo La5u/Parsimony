@@ -162,6 +162,15 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   $('board-intro').textContent = refs === n
     ? `${n} models on ${items} with at least one measured, in-scope passing reference.`
     : `${n} models on ${items} with a measured, in-scope passing patch from at least one of ${refs} reference models.`;
+  if (data.calibration_policy) {
+    const missing = data.uncalibrated_tasks || [];
+    $('board-intro').textContent = `${n} model + agent configurations on all ${data.task_count} predefined ${bench.name} tasks. ${data.task_count - missing.length} tasks have usable passing references.`;
+    if (missing.length) {
+      $('coverage-note').hidden = false;
+      $('coverage-summary').textContent = `${missing.length} tasks have no passing reference; all remain in the score denominator.`;
+      $('coverage-tasks').textContent = `Scores for uncalibrated tasks are bounded by their source-reported outcome, not set to zero. Missing-reference task IDs: ${missing.join(', ')}.`;
+    }
+  }
   if (data.excluded_tasks?.length) {
     const omitted = [...new Set(data.excluded_tasks.map(t => t.split('#')[0]))];
     $('coverage-note').hidden = false;
@@ -185,11 +194,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     $('harness-limit').textContent = `Scores are relative to the reference models, which all use the same agent harness (mini-SWE-agent ${versions[0]}).`;
   }
   if (data.sensitivity_url) $('rank-link').href = data.sensitivity_url;
+  if (data.rank_policy) {
+    $('rank-note').innerHTML = `All-task rank range includes score-bound uncertainty from missing measurements or references and 2,000 paired task resamples. Overlapping ranges mean the order is uncertain (<a id="rank-link" href="${esc(data.sensitivity_url || 'https://github.com/La5u/Parsimony')}">sensitivity report</a>).`;
+  }
   const ranked = data.models.some((m) => m.rank_range != null);
   $('rank-head').hidden = $('rank-note').hidden = !ranked;
   const rank = (r) => r == null ? '' : r[0] === r[1] ? `${r[0]}` : `${r[0]}–${r[1]}`;
   const tasks = new Map(data.tasks.map((t) => [t[0], t]));
-  const labels = {r: 'solved', f: 'failed', u: 'unknown', m: 'not measured', n: 'no attempt', o: 'out of scope'};
+  const labels = {r: 'solved', f: 'failed', u: 'unknown', m: 'not measured', n: 'no attempt', o: 'out of scope', c: 'no passing reference'};
   let selected = null, sortKey = 'score', ascending = false;
   $('task-ids').innerHTML = data.tasks.map((t) => `<option value="${esc(t[0])}">`).join('');
   const midpoint = (value, low, high) => value ?? (low != null && high != null ? (low + high) / 2 : null);
@@ -200,7 +212,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         net: model.measured_net_mean, rank_low: model.rank_range?.[0], rank_high: model.rank_range?.[1]}[key];
     }
     const cell = selected[2][index];
-    return {score: midpoint(cell[3], cell[4], cell[5]), net: ['r', 'f'].includes(cell[0]) ? cell[1] : null}[key];
+    return {score: midpoint(cell[3], cell[4], cell[5]), net: ['r', 'f', 'c'].includes(cell[0]) ? cell[1] : null}[key];
   }
   function renderBoard() {
     const headers = selected
@@ -224,7 +236,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         const c = selected[2][i];
         const taskScore = c[3] != null ? fmt(c[3]) : c[4] != null && c[5] != null
           ? (fmt(c[4]) === fmt(c[5]) ? '≈' + fmt(c[4]) : `${fmt(c[4])}–${fmt(c[5])}`) : '—';
-        return `<tr><td class="left">${esc(m.name)}</td><td class="left ${esc(c[0])}">${esc(labels[c[0]] || c[0])}</td><td>${taskScore}</td><td>${signed(metricValue(m, i, 'net'))}</td></tr>`;
+        const outcome = labels[c[6] || c[0]] || c[0];
+        const result = c[6] && labels[c[0]] !== outcome ? `${outcome} · ${labels[c[0]] || c[0]}` : outcome;
+        return `<tr><td class="left">${esc(m.name)}</td><td class="left ${esc(c[6] || c[0])}">${esc(result)}</td><td>${taskScore}</td><td>${signed(metricValue(m, i, 'net'))}</td></tr>`;
       }
       const score = m.score != null ? fmt(m.score) : fmt(m.lower) === fmt(m.upper) ? '≈' + fmt(m.lower) : `${fmt(m.lower)}–${fmt(m.upper)}`;
       return `<tr>${ranked ? `<td>${rank(m.rank_range)}</td>` : ''}<td class="left">${esc(m.name)}</td><td>${score}</td><td>${fmt(m.resolve_rate * 100)}%</td><td>${fmt(m.measured_net_mean)}</td></tr>`;
@@ -285,7 +299,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const axisFormat = (value, key) => fmt(value) + (key === 'resolve_rate' ? '%' : '');
     const points = data.models.map((m, i) => ({x: metricValue(m, i, axes.x), y: metricValue(m, i, axes.y),
       name: m.name, company: m.company || 'Other', count: m.measured_attempts,
-      kind: selected ? (selected[2][i][0] === 'f' ? 'failed' : 'resolved') : 'all', i}))
+      kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : 'resolved') : 'all', i}))
       .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
     $('graph-legend').textContent = points.length
       ? (selected ? 'Color indicates company. Dashed outline: failed attempt.' : 'Color indicates company. Net means include measured passing and failed attempts; measurement coverage can differ.')

@@ -175,7 +175,7 @@ class MainTests(unittest.TestCase):
     def test_live_discloses_mixed_harnesses_and_candidate_provenance(self):
         self.run_main('--benchmark', 'live')
         data = json.loads((self.last / 'data.json').read_text())
-        self.assertEqual(data['benchmark']['name'], 'SWE-bench Live')
+        self.assertEqual(data['benchmark']['name'], 'SWE-bench Live Lite')
         self.assertIn('not a controlled model-only comparison', data['benchmark']['harness_note'])
         self.assertIn('not independently certified', data['benchmark']['notice'])
         self.assertEqual(company('live-lite-gpt-5.6-sol-slingshot-3.4.0'), 'OpenAI')

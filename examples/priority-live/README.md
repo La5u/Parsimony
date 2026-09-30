@@ -48,7 +48,11 @@ See [the full audit](../../docs/priority-live-static-import.md) and
 
 ## Release status and next steps
 
-**No new ranking board or per-task footprint release yet.** The targeted
+**Publication follow-up:** the [final Live Python board](../live-python/README.md)
+now publishes the three Python configurations' numerical data on all 300 tasks,
+using explicit uncalibrated-reference bounds and widened rank uncertainty. No
+raw artifacts are released; JS/TS/PolyBench remain outside this website release.
+The targeted
 [DeepSeek release review](../../docs/deepseek-v4.1-live-release-review.md) recommends
 an attributed numerical preview, not raw artifact reuse or certified results.
 It freshly corroborates all 300 separate patches/metadata/grader reports and
@@ -61,9 +65,11 @@ are retained in external `/tmp/parsimony-priority-run/*.records.jsonl`; raw
 inventories/cache also remain external and are not authorized for redistribution
 by Parsimony. No blanket publication/output-reuse licence was established.
 
-A board still needs an intended-use rights decision, explicit mixed-harness and
-protocol disclosures, passing-reference/population review, and full-population
-uncertainty. Live imports intentionally do not publish gold reference code or
+The published Python board has a numerical-data-only reporting decision,
+explicit mixed-harness/protocol disclosures, independently frozen population,
+partial-reference bounds and full-population uncertainty. This does not clear
+raw reuse or certify original evaluator inputs. Other tracks still need their
+own release review. Live imports intentionally do not publish gold reference code or
 claim to verify historical evaluator inputs. AiWork has adaptive effort and
 submitted-patch transformations; Slingshot has concrete protocol concerns and
 sampled operational provenance. Current pages/rankings remain unchanged.
