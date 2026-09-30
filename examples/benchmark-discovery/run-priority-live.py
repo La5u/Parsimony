@@ -50,6 +50,7 @@ def review_manifest(run, audit, audit_path):
         if r['patch_sha256'] != checksum:
             raise ValueError('preimage audit patch does not bind this inventory')
     return dict(status='approved', scope=audit['scope'],
+                review_url='https://github.com/La5u/Parsimony/blob/main/examples/priority-live/' + audit_path.name,
                 dataset_checksum=audit['dataset_checksum'], result_sha256=audit['result_sha256'],
                 prediction_sha256=audit['prediction_sha256'], historical_dataset_match='unverified',
                 submission_revision=audit['submission_revision'],
