@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Recent-model clean static measurement audit — 2026-09-30
+
+Measured six supported cohorts from clean commit `de63300`, retaining complete populations and explicit failures: DeepSeek V4.1 Flash, GPT-5.6 Sol Python/JS/TS, Live Opus 4.8 and PolyBench Opus 4.8 Python. Published hash/coverage metadata only under `examples/priority-live/`; no new ranking/per-task footprint release pending rights/protocol/reference review. GPT-5.4 PolyBench has 112 generated patches with strict hunk compatibility but no old-blob identity; measurements remain gated. Existing boards and 80/20 scoring are unchanged.
+
 ## Recent-model static import tooling — 2026-09-30
 
 - Extended Live import to plural results/keyed predictions, complete predefined language populations, reviewed offline analysis and checksum-bound preimage exceptions. Unknown/error/empty/incomplete are not inferred failures.
