@@ -4,16 +4,19 @@ Clean measurement checkout: **`de633004011e1b6c8dda81d234baefc024a88b75`**,
 Python **3.14.7**, analyzer **0.6.0-beta**. Parser pins and 80/20 scoring rules
 were not changed. No target code/tests or new model evaluations were executed.
 
-| Configuration / track | Full population | Measured success | Measured failure | All measured |
+| Configuration / track | Full population | Eligible success | Eligible failure | Eligible / static analyses |
 |---|---:|---:|---:|---:|
-| DeepSeek V4.1 Flash / TianxiCode, Live Python | 300 | 204 | 91 | 295 |
-| GPT-5.6 Sol / Slingshot 3.4.0, Live Python | 300 | 208 | 88 | 296 |
-| Claude Opus 4.8 / AiWork.Code, Live Python | 300 | 102 | 189 | 291 |
-| GPT-5.6 Sol / Slingshot 3.4.0, Live JavaScript | 108 | 77 | 24 | 101 |
-| GPT-5.6 Sol / Slingshot 3.4.0, Live TypeScript | 111 | 65 | 34 | 99 |
-| Claude Opus 4.8 / MigBot, PolyBench Python | 113 | 69 | 42 | 111 |
+| DeepSeek V4.1 Flash / TianxiCode, Live Python | 300 | 202 | 85 | 287 / 295 |
+| GPT-5.6 Sol / Slingshot 3.4.0, Live Python | 300 | 205 | 83 | 288 / 296 |
+| Claude Opus 4.8 / AiWork.Code, Live Python | 300 | 102 | 174 | 276 / 291 |
+| GPT-5.6 Sol / Slingshot 3.4.0, Live JavaScript | 108 | 70 | 15 | 85 / 101 |
+| GPT-5.6 Sol / Slingshot 3.4.0, Live TypeScript | 111 | 64 | 34 | 98 / 99 |
+| Claude Opus 4.8 / MigBot, PolyBench Python | 113 | 69 | 42 | 111 / 111 |
 
-These are **configuration/task measurements, not unique-task or ranking counts**.
+These are **configuration/task analyses, not unique-task or ranking counts**.
+Completed static analyses include all-excluded patches: they are out of scope,
+not usable zero-footprint solutions. Eligibility applies the existing scorer's
+scope rule; no source measurements or formulas were changed.
 Every full population remains in its external JSONL, including unmeasured items.
 Missing measurement does not erase upstream correctness or become zero footprint.
 The JSON summary records complete status/outcome counts and hashes of the external
@@ -45,7 +48,15 @@ See [the full audit](../../docs/priority-live-static-import.md) and
 
 ## Release status and next steps
 
-**No new ranking board or per-task footprint release yet.** Static measurements
+**No new ranking board or per-task footprint release yet.** The targeted
+[DeepSeek release review](../../docs/deepseek-v4.1-live-release-review.md) recommends
+an attributed numerical preview, not raw artifact reuse or certified results.
+It freshly corroborates all 300 separate patches/metadata/grader reports and
+identifies a concrete scoring gap: only 238/300 tasks have usable passing
+references in the current three-configuration Python pool. Do not select that
+successful-reference subset as the default population.
+
+Static measurements
 are retained in external `/tmp/parsimony-priority-run/*.records.jsonl`; raw
 inventories/cache also remain external and are not authorized for redistribution
 by Parsimony. No blanket publication/output-reuse licence was established.
