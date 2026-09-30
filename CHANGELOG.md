@@ -2,6 +2,13 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Recent-model static import tooling — 2026-09-30
+
+- Extended Live import to plural results/keyed predictions, complete predefined language populations, reviewed offline analysis and checksum-bound preimage exceptions. Unknown/error/empty/incomplete are not inferred failures.
+- Added immutable SWE-PolyBench candidate imports, full placeholder/result inventory and cache-only analysis; historical grading/rights/model attestations remain unverified.
+- Added Git old-blob-prefix + strict-hunk auditing and a clean-checkout priority reproduction driver. Full five-cohort preimage audit corroborates 1,094 old-file patches plus two new-file-only patches; 11 exceptions remain unmeasured. No scoring formula/parser pins changed.
+- Added research-preview site metadata that discloses mixed harnesses and unresolved historical provenance; not a certification gate bypass.
+
 ## Website: remove dedicated 95% CI column
 
 Removed the confidence-interval column from all five boards. CI calculations, graph-axis endpoints and rank ranges remain; embedded data, measurements and scores are unchanged. The remaining numeric columns retain click-to-sort behavior.

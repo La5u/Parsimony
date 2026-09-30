@@ -172,6 +172,17 @@ class MainTests(unittest.TestCase):
         self.assertEqual(data['benchmark']['name'], 'DeepSWE')
         self.assertEqual(data['nav'], [dict(label='Other board', url='other.html')])
 
+    def test_live_discloses_mixed_harnesses_and_candidate_provenance(self):
+        self.run_main('--benchmark', 'live')
+        data = json.loads((self.last / 'data.json').read_text())
+        self.assertEqual(data['benchmark']['name'], 'SWE-bench Live')
+        self.assertIn('not a controlled model-only comparison', data['benchmark']['harness_note'])
+        self.assertIn('not independently certified', data['benchmark']['notice'])
+        self.assertEqual(company('live-lite-gpt-5.6-sol-slingshot-3.4.0'), 'OpenAI')
+        self.assertEqual(company('live-lite-deepseek-v4.1-flash-tianxicode-0.1.423'), 'DeepSeek')
+        self.assertEqual(company('live-lite-claude-opus-4.8-aiwork'), 'Anthropic')
+        self.assertIn('Slingshot 3.4.0', label('live-lite-gpt-5.6-sol-slingshot-3.4.0'))
+
     def test_build_without_sensitivity(self):
         self.assertTrue(all('rank_range' not in m for m in self.run_main()))
 

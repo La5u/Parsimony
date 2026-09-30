@@ -30,7 +30,12 @@ NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude
          'gpt-5.2-2025-12-11-high': 'GPT-5.2 (high)', 'sonnet-4-5-20250929': 'Claude Sonnet 4.5',
          'claude-opus-4-5-20251101': 'Claude Opus 4.5', 'deepseek-v3.2-reasoner': 'DeepSeek V3.2 (reasoner)',
          'o4-mini-2025-04-16': 'o4-mini', 'qwen3-coder-480b-a35b-instruct': 'Qwen3-Coder 480B',
-         'qwen2-5-coder-32b-instruct': 'Qwen2.5-Coder 32B', 'kimi-k2-instruct': 'Kimi K2 Instruct'}
+         'qwen2-5-coder-32b-instruct': 'Qwen2.5-Coder 32B', 'kimi-k2-instruct': 'Kimi K2 Instruct',
+         'live-lite-gpt-5.6-sol-slingshot-3.4.0': 'GPT-5.6 Sol · Slingshot 3.4.0',
+         'live-lite-deepseek-v4.1-flash-tianxicode-0.1.423': 'DeepSeek V4.1 Flash · TianxiCode 0.1.423',
+         'live-lite-claude-opus-4.8-aiwork': 'Claude Opus 4.8 · AiWork.Code',
+         'live-multilang-gpt-5.6-sol-slingshot-3.4.0': 'GPT-5.6 Sol · Slingshot 3.4.0',
+         'live-multilang-gpt-5.5-sweagent-medium': 'GPT-5.5 (medium) · SWE-agent'}
 
 
 BENCHMARKS = {
@@ -40,6 +45,22 @@ BENCHMARKS = {
     'deepswe': dict(name='DeepSWE', url='https://deepswe.datacurve.ai', reference='Reference solution',
                     task_url='https://github.com/datacurve-ai/deep-swe/tree/main/tasks/{task}', task_link='Task on GitHub',
                     results="DeepSWE's published results", attempts=4),
+    'live': dict(name='SWE-bench Live', url='https://swe-bench-live.github.io', reference='Reference solution',
+                 task_url='https://github.com/{owner}/{repo}/pull/{number}', task_link="Maintainers' pull request",
+                 results='public submitter evaluation reports', attempts=1,
+                 harness_note='These are model + agent configurations, not a controlled model-only comparison. '
+                              'Harnesses, prompts and execution protocols differ; see the cohort report.',
+                 notice='Research preview: historical dataset/evaluator inputs and protocol compliance are not '
+                        'independently certified. Measurements verify touched-file preimages where available; '
+                        'unverified preimages remain unmeasured, not zero. Model identities and pass/fail '
+                        'are source-reported. Scores cover only tasks with usable passing references.'),
+    'polybench': dict(name='SWE-PolyBench Verified', url='https://amazon-science.github.io/SWE-PolyBench/',
+                      reference="Maintainers' fix", task_url='https://github.com/{owner}/{repo}/pull/{number}',
+                      task_link="Maintainers' pull request", results='public submitter evaluation reports', attempts=1,
+                      harness_note='Configurations use different agent harnesses and may have different retry/selection '
+                                   'protocols. These are not controlled model-only comparisons.',
+                      notice='Declared-candidate research measurements: historical evaluator inputs, retries and '
+                             'temporal-isolation replacements are source-reported, not independently certified.'),
 }
 
 

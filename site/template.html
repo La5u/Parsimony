@@ -70,6 +70,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
 
   <h2 id="leaderboard">Leaderboard</h2>
   <p class="small muted" id="board-intro"></p>
+  <p class="small muted" id="benchmark-notice" hidden></p>
   <details class="small muted" id="coverage-note" hidden>
     <summary id="coverage-summary">Population coverage</summary>
     <p id="coverage-tasks"></p>
@@ -171,8 +172,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const language = {javascript: 'JavaScript / JSX and TypeScript', typescript: 'TypeScript / TSX and JavaScript', go: 'Go'}[data.measurement_track.language];
     $('language-scope').textContent = `Test, docs and generated files are excluded. This track measures ${language} with pinned Tree-sitter grammars. Units are syntax elements, not semantic complexity; raw counts are not comparable across language tracks.`;
   }
+  if (bench.notice) {
+    $('benchmark-notice').hidden = false;
+    $('benchmark-notice').textContent = bench.notice;
+  }
   const versions = data.harness || [];
-  if (versions.length > 1) {
+  if (bench.harness_note) {
+    $('harness-limit').textContent = bench.harness_note;
+  } else if (versions.length > 1) {
     $('harness-limit').textContent = `Scores are relative to the reference models. All use the mini-SWE-agent harness, but versions ${versions[0]} to ${versions[versions.length - 1]}, so part of a gap between models can come from the harness version.`;
   } else if (versions.length === 1) {
     $('harness-limit').textContent = `Scores are relative to the reference models, which all use the same agent harness (mini-SWE-agent ${versions[0]}).`;
