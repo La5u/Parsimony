@@ -6,11 +6,11 @@ const html = fs.readFileSync(process.argv[2], 'utf8');
 const data = JSON.parse(html.match(/type="application\/json">([\s\S]*?)<\/script>/)[1]);
 const base = data.models[0];
 data.models = [
-  {...base, name: 'Alpha', score: 10, lower: 4, upper: 16, ci: [1, 90], resolve_rate: .8,
+  {...base, agent: 'alpha', footprint_population_count: 4, measured_churn_mean: 4, name: 'Alpha', score: 10, lower: 4, upper: 16, ci: [1, 90], resolve_rate: .8,
     company: 'Anthropic', measured_net_mean: -2, measured_attempts: 4, rank_range: [1, 2]},
-  {...base, name: 'Beta', score: null, lower: 10, upper: 30, ci: [2, 40], resolve_rate: .3,
+  {...base, agent: 'beta', footprint_population_count: 4, measured_churn_mean: 6, name: 'Beta', score: null, lower: 10, upper: 30, ci: [2, 40], resolve_rate: .3,
     company: 'OpenAI', measured_net_mean: 0, measured_attempts: 3, rank_range: [2, 3]},
-  {...base, name: 'Gamma', score: 5, lower: 5, upper: 5, ci: [3, 20], resolve_rate: .5,
+  {...base, agent: 'gamma', footprint_population_count: 4, measured_churn_mean: null, name: 'Gamma', score: 5, lower: 5, upper: 5, ci: [3, 20], resolve_rate: .5,
     company: 'Anthropic', measured_net_mean: null, measured_attempts: 0, rank_range: null},
 ];
 data.task_count = 4;
@@ -25,6 +25,7 @@ data.tasks = [
   ['uncalibrated', null, [['c', 11, 12, null, -25, 0, 'f'],
                           ['r', 21, 22, 30, 30, 30, 'r'], ['o', 0, 0, null, 1, 100, 'r']]],
 ];
+data.footprint_tasks = data.tasks;
 const elements = new Map();
 function element(id) {
   if (id === '#graph') id = 'graph';
@@ -94,13 +95,16 @@ function axis(which, key) {
 function task(id) {
   element('task-search').listeners.input({target: {value: id}});
 }
-assert.deepEqual(names(), ['Beta', 'Alpha', 'Gamma']);
+assert.deepEqual(names(), ['Alpha', 'Beta', 'Gamma']);
 assert.doesNotMatch(element('#board thead').innerHTML, /Per solve|churn|95% CI|data-sort="ci"/i);
 assert(rows().every(row => [...row.matchAll(/<td\b/g)].length === 5));
-assert.doesNotMatch(html.split('<script id="parsimony-data"')[0], /Per solve|churn/i);
+assert.doesNotMatch(element('#board thead').innerHTML, /Score|churn|95% CI/i);
+assert.match(element('#board tbody').innerHTML, /4\/4/);
+assert.match(element('#board tbody').innerHTML, /3\/4/);
+assert.match(element('#board tbody').innerHTML, /0\/4/);
 assert.match(element('#board tbody').innerHTML, /−2.0/);
-click('score', ['Gamma', 'Alpha', 'Beta'], 'ascending');
-click('score', ['Beta', 'Alpha', 'Gamma'], 'descending');
+click('coverage', ['Alpha', 'Beta', 'Gamma'], 'descending');
+click('coverage', ['Gamma', 'Beta', 'Alpha'], 'ascending');
 click('resolve_rate', ['Alpha', 'Gamma', 'Beta'], 'descending');
 click('resolve_rate', ['Beta', 'Gamma', 'Alpha'], 'ascending');
 click('net', ['Alpha', 'Beta', 'Gamma'], 'ascending');
@@ -140,42 +144,40 @@ for (const event of ['scroll', 'resize']) {
   assert.equal(tooltip.hidden, true);
 }
 // Numeric metrics remain selectable, including CI endpoints without a table column.
-const keys = ['score', 'ci', 'ci_high', 'resolve_rate', 'net', 'rank_low', 'rank_high'];
+const keys = ['score', 'ci', 'ci_high', 'resolve_rate', 'net', 'rank_low', 'rank_high', 'coverage', 'churn'];
 for (const key of keys) assert(element('graph-x').innerHTML.includes(`value="${key}"`));
-assert.doesNotMatch(element('graph-x').innerHTML, /churn|solved_mean/i);
+assert.doesNotMatch(element('graph-x').innerHTML, /solved_mean/i);
 for (const x of keys) for (const y of keys.filter(k => k !== x)) {
   axis('x', x); axis('y', y);
   assert.equal(element('graph-x').value, x);
   assert.equal(element('graph-y').value, y);
   assert.doesNotMatch(graph(), /NaN|Infinity/);
-  if (x === 'resolve_rate') assert.deepEqual(tickValues('x'), [0, 25, 50, 75, 100]);
-  if (y === 'resolve_rate') assert.deepEqual(tickValues('y'), [0, 25, 50, 75, 100]);
+  if (['resolve_rate', 'coverage'].includes(x)) assert.deepEqual(tickValues('x'), [0, 25, 50, 75, 100]);
+  if (['resolve_rate', 'coverage'].includes(y)) assert.deepEqual(tickValues('y'), [0, 25, 50, 75, 100]);
 }
 axis('x', 'net'); axis('y', 'score');
-assert.match(graph(), /Beta \(OpenAI\).*Score \(midpoint if bounded\): 20.0/);
+assert.match(graph(), /Beta \(OpenAI\).*combined score \(midpoint if bounded\): 20.0/);
 axis('x', 'score'); // Selecting the other axis's metric swaps, rather than duplicating, it.
 assert.equal(element('graph-y').value, 'net');
 axis('y', 'resolve_rate');
 task('org__repo-1');
 assert.equal(element('graph-x').value, 'net');
-assert.equal(element('graph-y').value, 'score');
+assert.equal(element('graph-y').value, 'churn');
 assert.equal(tickValues('x')[0], 100); // 111..331 with 5% padding, not anchored at zero.
 assert.equal(tickValues('x').at(-1), 342);
 assert.doesNotMatch(element('graph-x').innerHTML, /ci|resolve_rate|rank_low/);
-assert.match(element('#board tbody').innerHTML, /<td class="left">Alpha<\/td><td class="left r">solved<\/td><td>10\.0<\/td><td>\+111<\/td><\/tr>/);
+assert.match(element('#board tbody').innerHTML, /<td class="left">Alpha<\/td><td class="left r">solved<\/td><td>\+111<\/td><\/tr>/);
 assert.match(graph(), /Gamma \(Anthropic\): failed task attempt/);
 assert.deepEqual(colors(), [initialColors[0], initialColors[1], initialColors[0]]);
 assert.equal(element('ci-help').hidden, true);
 assert.equal(element('rank-note').hidden, true);
-click('score', ['Gamma', 'Alpha', 'Beta'], 'ascending');
-click('score', ['Beta', 'Alpha', 'Gamma'], 'descending');
-click('net', ['Alpha', 'Beta', 'Gamma'], 'ascending');
 click('net', ['Gamma', 'Beta', 'Alpha'], 'descending');
+click('net', ['Alpha', 'Beta', 'Gamma'], 'ascending');
 axis('x', 'score');
-assert.equal(element('graph-y').value, 'net');
+assert.equal(element('graph-y').value, 'churn');
 task('org__repo-2');
-assert.match(element('#board tbody').innerHTML, /−25.0–0.0/);
-assert.match(graph(), /Task score \(midpoint if bounded\): −12.5/);
+assert.doesNotMatch(element('#board tbody').innerHTML, /−25.0–0.0/);
+assert.match(graph(), /combined task score \(midpoint if bounded\): −12.5/);
 task('not-a-task');
 assert.match(element('task-status').textContent, /Still showing org__repo-2/);
 task('org__repo-3');
@@ -185,8 +187,8 @@ assert.deepEqual(tickValues('x'), [0, .3, .5, .8, 1]);
 assert.deepEqual(tickValues('y'), [0, .3, .5, .8, 1]);
 axis('x', 'net');
 task('uncalibrated');
-assert.match(element('#board tbody').innerHTML, /failed · no passing reference/);
-assert.match(element('#board tbody').innerHTML, /solved · out of scope/);
+assert.match(element('#board tbody').innerHTML, /class="left f">failed/);
+assert.match(element('#board tbody').innerHTML, /solved · not measured/);
 assert.match(graph(), /Alpha \(Anthropic\): failed task attempt/);
 assert.equal(colors().length, 2); // Known failed footprint remains visible; excluded footprint does not.
 for (const [id, low, high] of [['constant', 1140, 1260], ['single', 950, 1050],
@@ -202,7 +204,16 @@ assert.equal(element('graph-x').value, 'score'); // All-task axis choices surviv
 assert.equal(element('graph-y').value, 'resolve_rate');
 assert.equal(element('task-footer').hidden, true);
 assert.equal(element('ci-help').hidden, false);
-assert.deepEqual(names(), ['Beta', 'Alpha', 'Gamma']);
-assert.doesNotMatch(element('#board thead').innerHTML, /churn|Per solve|95% CI|data-sort="ci"/i);
+assert.deepEqual(names(), ['Alpha', 'Beta', 'Gamma']);
+assert.doesNotMatch(element('#board thead').innerHTML, /Score|churn|Per solve|95% CI|data-sort="ci"/i);
 assert(rows().every(row => [...row.matchAll(/<td\b/g)].length === 5));
-console.log('Light mode, instant name tooltips, sorting, axes and task switching passed');
+const tied = structuredClone(data);
+tied.models[1].measured_net_mean = -2;
+tied.models[1].resolve_rate = 1; // Correctness must not break a footprint tie.
+element('parsimony-data').textContent = JSON.stringify(tied);
+vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc, window: browser});
+assert.deepEqual(names(), ['Alpha', 'Beta', 'Gamma']);
+assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Alpha/);
+assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Beta/);
+assert.match(element('#board tbody').innerHTML, /<td>—<\/td><td class="left">Gamma/);
+console.log('Light mode, footprint ranks/ties, coverage, sorting, axes and task switching passed');

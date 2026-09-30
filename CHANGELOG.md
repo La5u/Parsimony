@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Website: footprint-only default ranking — 2026-09-30
+
+At the owner's request, all six boards now rank by mean net coding units added, lowest first. Passing and failed measured attempts count, including population items outside the old passing-reference score panel. Upstream Solved % and explicit measured/population coverage are context only. Primary columns are Rank, Model, Net units added, Solved, Measured; missing means remain unranked and ties share rank. Task views use net footprint without correctness weighting. The 80/20 calculator, scores, CI and score-rank data remain unchanged as clearly labelled archived optional diagnostics, never footprint ranks. No raw measurement or outcome was changed; no target/model evaluation was performed.
+
 ## Website: final Live Lite Python board — 2026-09-30
 
 Published one separate `site/live.html` board with DeepSeek V4.1 Flash / TianxiCode, GPT-5.6 Sol / Slingshot and Claude Opus 4.8 / AiWork. All 300 predefined tasks remain, including explicit failures and missing/out-of-scope data. An opt-in frozen-population calibration policy assigns conservative bounds when passing references are absent; unchanged 80/20 point formulas and no fabricated references/zero penalties. Rank intervals include missing-data envelopes within paired task bootstrap resamples. Known failed footprints remain in the net-unit mean even when uncalibrated. Original measurement JSONLs/identities are unchanged; numerical metadata only, no raw code/patches. Existing five boards' embedded measurements/scores are identical apart from navigation. Same clean layout and columns; no separate preview, no dedicated CI column. 218 tests pass with optional parsers, stdlib-only 16 skips; all six Node checks and both score reproductions pass.

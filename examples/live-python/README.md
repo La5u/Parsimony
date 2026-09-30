@@ -25,7 +25,22 @@ The unchanged static measurements were made from clean analyzer commit
 The JSONLs are byte-for-byte copies of the archived external measurements. No
 record is relabelled to the newer scoring/site implementation commit.
 
-## All-task score bounds
+## Current website: net-unit footprint ranking
+
+The website now ranks by **mean net units added, ascending**, over all measured
+in-scope attempts, including 85 DeepSeek failures, 83 Slingshot failures and 174
+AiWork failures. Upstream Solved % is separate context. Measured/population
+coverage remains visible (287/300, 288/300 and 276/300). Missing footprints are
+never zero; missing means are unranked. Equal means tie. A failed no-op or large
+deletion can rank first: this is footprint comparison, not a coding-ability rank.
+
+Passing references and their absence do not restrict footprint data. Task views
+show all recorded tasks and their actual net changes when eligible. The 80/20
+score calculations and uncertainty below remain archived optional diagnostics,
+not the website's ranking inputs. Raw records and source-reported outcomes are
+unchanged.
+
+## Archived all-task combined-score bounds
 
 The frozen pool contains **509 passing reference measurements on 238 tasks**.
 The other **62 tasks remain in the denominator**, rather than becoming a

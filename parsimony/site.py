@@ -51,8 +51,8 @@ BENCHMARKS = {
                  harness_note='These are model + agent configurations, not a controlled model-only comparison. '
                               'Harnesses, prompts and execution protocols differ; see the cohort report.',
                  notice='Model identity and pass/fail are source-reported; historical evaluator inputs and protocol '
-                        'compliance are not independently certified. Every population task is retained. Missing '
-                        'footprints or passing references contribute score bounds, never invented zero scores.'),
+                        'compliance are not independently certified. Footprint rank uses all measured in-scope '
+                        'attempts, including failures; missing footprints are not zero. Passing references are not required.'),
     'polybench': dict(name='SWE-PolyBench Verified', url='https://amazon-science.github.io/SWE-PolyBench/',
                       reference="Maintainers' fix", task_url='https://github.com/{owner}/{repo}/pull/{number}',
                       task_link="Maintainers' pull request", results='public submitter evaluation reports', attempts=1,
@@ -133,6 +133,7 @@ def build(panel, records, draws=2000, seed=42):
     for r in records:
         groups.setdefault(r['agent'], {})[r['task_id']] = r
     common, intervals = bootstrap(board, draws, seed)
+    population_tasks = set(panel['tasks']) | {t for group in groups.values() for t in group}
     models = []
     for entry in board:
         group = groups[entry['agent']]
@@ -140,16 +141,18 @@ def build(panel, records, draws=2000, seed=42):
         statuses = [t['status'] for t in entry['tasks'].values()]
         solved_scores = [t['score'] for t in entry['tasks'].values() if t['status'] == 'resolved']
         solved_metrics = [r['metrics'] for r in ok]
-        measured_metrics = ([group[t]['metrics'] for t in entry['tasks']
-                             if t in group and measured(group[t]) and not out_of_scope(group[t]['metrics'])]
-                            if bounded else
-                            [group[t]['metrics'] for t, value in entry['tasks'].items()
-                             if value['status'] in ('resolved', 'failed')])
+        # Footprint ranking does not depend on correctness or reference coverage.
+        footprint_records = [r for r in group.values() if measured(r)
+                             and r['metrics'].get('mode') == 'full_file'
+                             and not out_of_scope(r['metrics'])]
+        measured_metrics = [r['metrics'] for r in footprint_records]
         # Failure penalty from the failures that could be measured; complete only when nothing is unscored.
         known_penalty = -sum(t['score'] for t in entry['tasks'].values()
                              if t['status'] == 'failed' and t['score'] is not None) / len(entry['tasks'])
         models.append(dict(
             agent=entry['agent'], name=label(entry['agent']), company=company(entry['agent']), score=entry['score'],
+            footprint_population_count=max(len(population_tasks), max((r.get('benchmark_tasks', len(population_tasks))
+                                                           for r in group.values()), default=len(population_tasks))),
             measured_attempts=len(measured_metrics),
             measured_net_mean=statistics.fmean(m['net_units'] for m in measured_metrics) if measured_metrics else None,
             measured_churn_mean=statistics.fmean(m['churn'] for m in measured_metrics) if measured_metrics else None,
@@ -167,6 +170,8 @@ def build(panel, records, draws=2000, seed=42):
             churn=median(r['metrics']['churn'] for r in ok),
             token_churn=median(r['metrics'].get('token_churn') for r in ok),
             human_ratio=median(r.get('model_human_ratio') for r in ok)))
+    models.sort(key=lambda m: (m['measured_net_mean'] is None,
+                               m['measured_net_mean'] if m['measured_net_mean'] is not None else 0, m['name']))
     order = [m['agent'] for m in models]
     tasks = []
     for task in panel['tasks']:
@@ -187,6 +192,26 @@ def build(panel, records, draws=2000, seed=42):
                             'f' if r and r.get('evaluation_result') == 'failed' else 'u')
             cells.append(cell)
         tasks.append([task, human, cells])
+    footprint_tasks = []
+    scored_tasks = {row[0]: row for row in tasks}
+    for task in sorted(population_tasks):
+        cells = []
+        for index, agent in enumerate(order):
+            r = groups[agent].get(task)
+            eligible = bool(r and measured(r) and r['metrics'].get('mode') == 'full_file'
+                            and not out_of_scope(r['metrics']))
+            cell = list(scored_tasks[task][2][index]) if task in scored_tasks else ['u', None, None, None, None, None]
+            while len(cell) < 7:
+                cell.append(None)
+            categories = set((r or {}).get('published_result_categories', []))
+            cell[6] = ('r' if r and r['resolved'] else 'f' if r and
+                       (r.get('evaluation_result') == 'failed' or
+                        (categories & {'unresolved', 'failed', 'not_resolved'} and 'no_logs' not in categories)) else 'u')
+            if eligible:
+                cell[1:3] = [r['metrics']['net_units'], r['metrics']['churn']]
+            cell.append(eligible)
+            cells.append(cell)
+        footprint_tasks.append([task, (scored_tasks.get(task) or [None, None])[1], cells])
     # Pooled panels label references agent#attempt; count models, not attempts.
     references = {r['agent'].split('#', 1)[0] for refs in panel['tasks'].values() for r in refs}
     versions = sorted({m.group(1) for a in order if (m := VERSION_OF.match(a))},
@@ -194,10 +219,11 @@ def build(panel, records, draws=2000, seed=42):
     return dict(**(dict(calibration_policy=UNCALIBRATED,
                         uncalibrated_tasks=[t for t, refs in panel['tasks'].items() if not refs]) if bounded else {}),
                 measurement_track=panel.get('measurement_track'),
+                ranking_metric='measured-net-mean-v1', footprint_tasks=footprint_tasks,
                 score_version=VERSION, panel=panel['name'], references=len(references), harness=versions, analyzer_version=panel['analyzer_version'],
                 python_version=panel['python_version'], task_count=len(panel['tasks']),
-                population_count=max((r.get('benchmark_tasks', len(panel['tasks'])) for r in records),
-                                     default=len(panel['tasks'])),
+                population_count=max(len(footprint_tasks), max((r.get('benchmark_tasks', len(footprint_tasks)) for r in records),
+                                     default=len(footprint_tasks))),
                 excluded_tasks=sorted({r['task_id'] for r in records} - panel['tasks'].keys()),
                 bootstrap_tasks=common, draws=draws, models=models, tasks=tasks)
 
