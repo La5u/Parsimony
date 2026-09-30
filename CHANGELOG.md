@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Website: trimmed-mean footprint ranking — 2026-10-01
+
+All six boards now rank by a **10% trimmed mean** of net coding units added (`measured-net-trimmed-mean-10-v1`): each model drops floor(n × 5%) measured attempts at each end, so the plain mean is used below 20 attempts. Passing and failed attempts still both count, there is still no correctness tie-break, and there is no coverage gate. Under the plain mean a few failed mass deletions decided rank; on Verified, Llama 4 Maverick ranked first at −244 against a median of +4. The plain mean stays in page data (`measured_net_mean`) and as a graph metric. No measurement, score, CI or task cell changed; only model order and the new field did. Verified and DeepSWE orders shift slightly. On Live, Claude Opus 4.8 · AiWork moves to first.
+
 ## Website: footprint-only default ranking — 2026-09-30
 
 At the owner's request, all six boards now rank by mean net coding units added, lowest first. Passing and failed measured attempts count, including population items outside the old passing-reference score panel. Upstream Solved % and explicit measured/population coverage are context only. Primary columns are Rank, Model, Net units added, Solved, Measured; missing means remain unranked and ties share rank. Task views use net footprint without correctness weighting. The 80/20 calculator, scores, CI and score-rank data remain unchanged as clearly labelled archived optional diagnostics, never footprint ranks. No raw measurement or outcome was changed; no target/model evaluation was performed.

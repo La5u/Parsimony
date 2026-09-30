@@ -94,7 +94,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       <tbody></tbody>
     </table>
   </div>
-  <p class="small muted" id="rank-note" style="margin-top:8px">Rank is by mean net units added, lowest first, across measured in-scope attempts—including failures. Equal means tie; missing means are unranked. Partial coverage can change the order. This is smallest measured footprint, not best coding ability.</p>
+  <p class="small muted" id="rank-note" style="margin-top:8px">Rank is by net units added, lowest first: a 10% trimmed mean over measured in-scope attempts—including failures—that drops the most extreme 5% at each end so a few mass deletions cannot decide rank alone. Equal values tie; models with no measurements are unranked. Partial coverage can change the order. This is smallest measured footprint, not best coding ability.</p>
   <p class="small" id="task-footer" hidden><a id="task-link" href="#">Maintainers' pull request</a></p>
   <details class="small muted"><summary>Archived combined-score diagnostics</summary>
   <p id="score-help">The previous combined score and its 95% CI remain available as optional graph diagnostics and in the data, but do not determine footprint rank. Its 80% net / 20% units-changed formula is unchanged.</p>
@@ -111,12 +111,12 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <div class="small" id="company-legend" aria-label="Model companies"></div>
   <div id="graph" aria-label="Comparison of selected metrics per model"></div>
   <div class="small" id="graph-tooltip" role="tooltip" hidden></div>
-  <p class="small muted" id="attempts-note" hidden>Each task was run four times; every measured attempt contributes to its model’s footprint mean.</p>
+  <p class="small muted" id="attempts-note" hidden>Each task was run four times; every measured attempt contributes to its model’s footprint.</p>
 
   <h2 id="method">Method</h2>
   <ul>
     <li>Each patch is applied to the task's base commit and both versions of each changed file are parsed. Nothing is executed.</li>
-    <li>Footprint rank uses the arithmetic mean of net coding units added across all measured, in-scope attempts. Successful and failed attempts both count; passing references are not required.</li>
+    <li>Footprint rank uses a 10% trimmed mean of net coding units added across all measured, in-scope attempts: the lowest and highest 5% of each model’s attempts are dropped (none when a model has fewer than 20). Successful and failed attempts both count; passing references are not required. The plain mean remains available as a graph metric.</li>
     <li>Correctness is reported separately by the upstream benchmark. Smaller failed or no-op attempts are not better solutions.</li>
     <li id="language-scope">Test, docs and generated files are excluded. Only Python is measured.</li>
   </ul>
@@ -184,8 +184,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const ranked = data.models.some((m) => m.rank_range != null);
   $('rank-head').hidden = false;
   const ranks = new Map(data.models.map(m => [m.agent || m.name,
-    Number.isFinite(m.measured_net_mean) ? 1 + data.models.filter(other =>
-      Number.isFinite(other.measured_net_mean) && other.measured_net_mean < m.measured_net_mean).length : null]));
+    Number.isFinite(m.measured_net_trimmed_mean) ? 1 + data.models.filter(other =>
+      Number.isFinite(other.measured_net_trimmed_mean) && other.measured_net_trimmed_mean < m.measured_net_trimmed_mean).length : null]));
   const tasks = new Map(displayedTasks.map((t) => [t[0], t]));
   const labels = {r: 'solved', f: 'failed', u: 'unknown', m: 'not measured', n: 'no attempt', o: 'out of scope', c: 'no passing reference'};
   let selected = null, sortKey = 'net', ascending = true;
@@ -197,7 +197,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         ci_high: model.ci?.[1], resolve_rate: model.resolve_rate == null ? null : model.resolve_rate * 100,
         coverage: model.measured_attempts / (model.footprint_population_count || data.population_count || data.task_count) * 100,
         churn: model.measured_churn_mean,
-        net: model.measured_net_mean, rank_low: model.rank_range?.[0], rank_high: model.rank_range?.[1]}[key];
+        net: model.measured_net_trimmed_mean, net_mean: model.measured_net_mean, rank_low: model.rank_range?.[0], rank_high: model.rank_range?.[1]}[key];
     }
     const cell = selected[2][index];
     const eligible = cell.length > 7 ? cell[7] : ['r', 'f', 'c'].includes(cell[0]);
@@ -229,7 +229,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         return `<tr><td class="left">${esc(m.name)}</td><td class="left ${esc(c[6] || c[0])}">${esc(result)}</td><td>${signed(metricValue(m, i, 'net'))}</td></tr>`;
       }
       const denominator = m.footprint_population_count || data.population_count || data.task_count;
-      return `<tr><td>${ranks.get(m.agent || m.name) ?? '—'}</td><td class="left">${esc(m.name)}</td><td>${fmt(m.measured_net_mean)}</td><td>${fmt(m.resolve_rate * 100)}%</td><td>${m.measured_attempts}/${denominator}</td></tr>`;
+      return `<tr><td>${ranks.get(m.agent || m.name) ?? '—'}</td><td class="left">${esc(m.name)}</td><td>${fmt(m.measured_net_trimmed_mean)}</td><td>${fmt(m.resolve_rate * 100)}%</td><td>${m.measured_attempts}/${denominator}</td></tr>`;
     }).join('');
   }
   function showTask(id) {
@@ -262,7 +262,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     return [{key: 'coverage', label: 'Measured coverage (%)'}, {key: 'churn', label: 'Units changed (mean per attempt)'},
       {key: 'score', label: 'Legacy combined score (midpoint if bounded)' },
       {key: 'ci', label: 'Combined score 95% CI: lower bound'}, {key: 'ci_high', label: 'Combined score 95% CI: upper bound'},
-      {key: 'resolve_rate', label: 'Solved (%)'}, {key: 'net', label: 'Net units added (mean per attempt)'},
+      {key: 'resolve_rate', label: 'Solved (%)'}, {key: 'net', label: 'Net units added (10% trimmed mean per attempt)'},
+      {key: 'net_mean', label: 'Net units added (plain mean per attempt)'},
       ...(ranked ? [{key: 'rank_low', label: 'Combined score rank: lower bound'}, {key: 'rank_high', label: 'Combined score rank: upper bound'}] : [])];
   }
   function renderAxisControls() {
@@ -331,6 +332,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   $('task-reset').addEventListener('click', () => showTask(''));
   showTask('');
 
-  $('provenance').textContent = `Analyzer ${data.analyzer_version}. Footprint ranking: mean net units added. Archived combined-score diagnostics: ${data.score_version}, panel ${data.panel}.${data.measurement_track ? ' Units: ' + data.measurement_track.unit_version + '.' : ''}`;
+  $('provenance').textContent = `Analyzer ${data.analyzer_version}. Footprint ranking: 10% trimmed mean of net units added. Archived combined-score diagnostics: ${data.score_version}, panel ${data.panel}.${data.measurement_track ? ' Units: ' + data.measurement_track.unit_version + '.' : ''}`;
 })();
 </script>
