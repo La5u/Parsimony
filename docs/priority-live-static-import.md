@@ -26,7 +26,9 @@ New-file-only patches have no old preimage to corroborate. Context-only matches
 are not promoted to blob-identity confirmation. Unsafe paths, unsupported diffs,
 missing source, malformed hunks and mismatches remain explicit exceptions.
 
-Five DeepSeek exceptions are malformed privacyIDEA hunks. GPT-5.6 Python has
+Five DeepSeek exceptions are strict patch-parser rejections in privacyIDEA
+patches containing SQLite test-data artifacts, not proof that the Python source
+edits themselves are malformed. GPT-5.6 Python has
 three unsupported implementation binary/rename/mode-only changes and a csvkit
 context mismatch. Opus has an unsupported smolagents diff. GPT-5.6 TS has an
 unsafe/unsupported TanStack router path. No raw artifact is edited to make it

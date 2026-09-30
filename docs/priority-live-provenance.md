@@ -2,6 +2,12 @@
 
 Audit: **2026-09-30 UTC**. Companion: [priority-live-provenance.json](../examples/benchmark-discovery/priority-live-provenance.json). This supersedes the priority-run *inspection depth*, not the published measurements or populations, of [expanded-live-census.md](expanded-live-census.md). Only these two new evidence/documentation files are added. No model calls, contact, paid access, target-code/test execution, patch application, measurements, scores or commits were made. Raw research downloads remain outside Parsimony.
 
+Later follow-up: [DeepSeek V4.1 targeted release review](deepseek-v4.1-live-release-review.md)
+freshly checks all 300 separate patches/metadata/grader reports, retrieves both
+DeepSeek terms pages successfully, and distinguishes completed static analyses
+from in-scope footprint eligibility. It does not retroactively certify this
+historical audit or clear other configurations.
+
 ## Decision
 
 **All five run/track exports have complete submitted-ID and prediction coverage in the pinned candidate task files. None has a full independently confirmed historical checkout/base dictionary for its entire measurement cohort.** Full declarations, actual operational observations, and before-file compatibility are kept separate in the JSON. Do not copy candidate or declared bases into `base_commit_confirmations` merely to pass a gate.

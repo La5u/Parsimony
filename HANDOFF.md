@@ -1,5 +1,9 @@
 # Session handoff — 2026-09-30
 
+## DeepSeek targeted release review — 2026-09-30
+
+See `docs/deepseek-v4.1-live-release-review.md`. Fresh 900-file checks corroborate all 300 patch/metadata/grader records. Both DeepSeek terms pages now accessible/read; numerical previews are a separate narrow use from raw redistribution, which remains uncleared. **Coverage correction:** 295 static analyses include eight fully excluded patches; DeepSeek has 287 footprint-eligible records (202 successful, 85 failed), without changing 204/300 upstream solves or the 300-task denominator. Other cohort eligibility summaries are likewise corrected. Existing scorer already handles out-of-scope correctly; no analyzer/score rule change. Current three-configuration Live Python pool has passing references for only 238/300 tasks. Next ranking step: add compatible passing references or explicitly review uncalibrated full-population bounds; never freeze a success-derived 238-task default subset. No website/point-score release in this review; numerical preview recommended with attribution and protocol/identity caveats. No raw/source output licence or legal clearance is asserted.
+
 ## Priority import implementation — 2026-09-30
 
 Added reviewed full-population Live import, candidate PolyBench import, and `parsimony.preimages` old-Git-blob-prefix + strict-hunk audits. See `docs/priority-live-static-import.md` for full five-cohort counts and reproduction. External raw inventories/cache are `/tmp/parsimony-priority-run`; never commit/redistribute them. Unsupported/mismatching preimages remain unmeasured with unchanged upstream outcomes and complete task denominators. These checks certify touched-file compatibility only, not historical full checkout/evaluator/rights. Model/harness configurations and effort-label conflicts remain explicit.

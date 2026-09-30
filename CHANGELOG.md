@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## DeepSeek V4.1 targeted release review — 2026-09-30
+
+Freshly checked 900 pinned patch/metadata/grader files: all 300 DeepSeek tasks agree. Retrieved/read both official DeepSeek terms pages; numerical previews are distinct from uncleared raw artifact reuse. Corrected coverage reporting: 295 static analyses include eight fully out-of-scope patches, leaving 287 eligible footprints (202 successful, 85 failed). Existing scorer already excludes these; no measurements/formulas changed. Current Live Python reference pool covers 238/300 tasks, so no solved-subset default ranking or fabricated full-population score is published. Evidence and review are committed; existing pages remain unchanged.
+
 ## Recent-model clean static measurement audit — 2026-09-30
 
 Measured six supported cohorts from clean commit `de63300`, retaining complete populations and explicit failures: DeepSeek V4.1 Flash, GPT-5.6 Sol Python/JS/TS, Live Opus 4.8 and PolyBench Opus 4.8 Python. Published hash/coverage metadata only under `examples/priority-live/`; no new ranking/per-task footprint release pending rights/protocol/reference review. GPT-5.4 PolyBench has 112 generated patches with strict hunk compatibility but no old-blob identity; measurements remain gated. Existing boards and 80/20 scoring are unchanged.
