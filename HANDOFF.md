@@ -1,4 +1,11 @@
-# Session handoff — 2026-09-29
+# Session handoff — 2026-09-30
+
+## Priority import implementation — 2026-09-30
+
+Added reviewed full-population Live import, candidate PolyBench import, and `parsimony.preimages` old-Git-blob-prefix + strict-hunk audits. See `docs/priority-live-static-import.md` for full five-cohort counts and reproduction. External raw inventories/cache are `/tmp/parsimony-priority-run`; never commit/redistribute them. Unsupported/mismatching preimages remain unmeasured with unchanged upstream outcomes and complete task denominators. These checks certify touched-file compatibility only, not historical full checkout/evaluator/rights. Model/harness configurations and effort-label conflicts remain explicit.
+
+Next: measure the supported recent-model cohorts from the clean tooling commit; build a clearly marked separate Live Python research preview only if coverage/reporting scope supports it. Java/Rust remain secondary, unsupported tracks. Preserve unrelated `.claude/`. No target code/tests or paid evaluations are allowed.
+
 
 ## Latest expanded-source research — 2026-09-29
 
