@@ -22,6 +22,8 @@ data.tasks = [
   ['single', null, [['r', 1000, 1000, 10], ['m', null, null, null], ['m', null, null, null]]],
   ['negative', null, [['r', -1200, 1200, 10], ['r', -1600, 1600, 20], ['r', -2000, 2000, 30]]],
   ['zero', null, [['r', 0, 0, 0], ['r', 0, 0, 0], ['r', 0, 0, 0]]],
+  ['uncalibrated', null, [['c', 11, 12, null, -25, 0, 'f'],
+                          ['r', 21, 22, 30, 30, 30, 'r'], ['o', 0, 0, null, 1, 100, 'r']]],
 ];
 const elements = new Map();
 function element(id) {
@@ -182,6 +184,11 @@ assert.doesNotMatch(graph(), /<circle|NaN|Infinity/);
 assert.deepEqual(tickValues('x'), [0, .3, .5, .8, 1]);
 assert.deepEqual(tickValues('y'), [0, .3, .5, .8, 1]);
 axis('x', 'net');
+task('uncalibrated');
+assert.match(element('#board tbody').innerHTML, /failed · no passing reference/);
+assert.match(element('#board tbody').innerHTML, /solved · out of scope/);
+assert.match(graph(), /Alpha \(Anthropic\): failed task attempt/);
+assert.equal(colors().length, 2); // Known failed footprint remains visible; excluded footprint does not.
 for (const [id, low, high] of [['constant', 1140, 1260], ['single', 950, 1050],
                               ['negative', -2040, -1160], ['zero', -1, 1]]) {
   task(id);

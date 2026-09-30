@@ -14,7 +14,7 @@ import statistics
 from pathlib import Path
 
 from .benchmark import read_jsonl
-from .scoring import (metrics, percentile, require, require_measurement_track, score_records,
+from .scoring import (UNCALIBRATED, metrics, percentile, require, require_measurement_track, score_records,
                       task_score, unique)
 from .deepswe import display_name
 
@@ -39,6 +39,9 @@ CAPS = (0, 10, 25, 50)
 
 
 def label(agent):
+    if agent.startswith('live-'):
+        from .site import label as site_label
+        return site_label(agent)
     if agent.startswith('deepswe-'):
         return display_name(agent)
     short = PREFIX.sub('', agent)
@@ -56,7 +59,7 @@ def task_value(record, refs, net_weight, failure_cap, net_floor=None):
         return None, -failure_cap, 100
     if status == 'no_attempt':
         return 0, 0, 0
-    if status in ('missing_metrics', 'out_of_scope'):
+    if status in ('missing_metrics', 'out_of_scope', 'uncalibrated'):
         return (None, 1, 100) if record['resolved'] else (None, -failure_cap, 0)
     m = metrics(record['metrics'])
     def net(x):
@@ -90,6 +93,8 @@ def matrix(panel, groups, net_weight, failure_cap, net_floor=None):
             require_measurement_track(panel, r)
             require((r['analyzer_version'], r['python_version']) ==
                     (panel['analyzer_version'], panel['python_version']), 'incompatible analyzer/Python version')
+    if panel.get('calibration_policy') == UNCALIBRATED:
+        score_records(panel, [r for g in groups.values() for r in g.values()])
     return {agent: {task: task_value(g.get(task), refs, net_weight, failure_cap, net_floor)
                     for task, refs in panel['tasks'].items()}
             for agent, g in groups.items()}
@@ -136,6 +141,8 @@ def drop_agent(panel, agent):
             tasks[task] = kept
         else:
             orphans.append(task)
+            if panel.get('calibration_policy') == UNCALIBRATED:
+                tasks[task] = []  # uncertainty grows; population does not shrink
     return dict(panel, name=f"{panel['name']}-without-{agent}", tasks=tasks), orphans
 
 
@@ -167,7 +174,7 @@ def clusters(tasks):
     return list(groups.values())
 
 
-def bootstrap(values, tasks, draws=2000, seed=42):
+def bootstrap(values, tasks, draws=2000, seed=42, *, bound_ranks=False):
     """Paired task bootstrap over all tasks: rank distribution and paired CIs on every difference.
 
     Each resample averages every model's lower and upper task values. Ranks follow the midpoint.
@@ -182,6 +189,7 @@ def bootstrap(values, tasks, draws=2000, seed=42):
     rng = random.Random(seed)
     lows, highs = {a: [] for a in agents}, {a: [] for a in agents}
     ranks = {a: [0] * len(agents) for a in agents}
+    best_ranks, worst_ranks = {a: [] for a in agents}, {a: [] for a in agents}
     groups = clusters(tasks)
     for _ in range(draws):
         drawn = [t for g in rng.choices(groups, k=len(groups)) for t in g]
@@ -192,6 +200,9 @@ def bootstrap(values, tasks, draws=2000, seed=42):
         for a in agents:
             lows[a].append(low[a])
             highs[a].append(high[a])
+            if bound_ranks:
+                best_ranks[a].append(1 + sum(low[b] > high[a] for b in agents if b != a))
+                worst_ranks[a].append(len(agents) - sum(high[b] < low[a] for b in agents if b != a))
     pairs = {}
     for a, b in itertools.permutations(agents, 2):
         worst = [x - y for x, y in zip(lows[a], highs[b])]
@@ -204,9 +215,12 @@ def bootstrap(values, tasks, draws=2000, seed=42):
     for a in agents:
         expanded = [position + 1 for position, n in enumerate(ranks[a]) for _ in range(n)]
         models[a] = dict(score_ci_95=[quantile(lows[a], 0.025), quantile(highs[a], 0.975)],
-                         rank_counts=ranks[a], rank_ci_95=[quantile(expanded, 0.025), quantile(expanded, 0.975)],
+                         rank_counts=ranks[a],
+                         rank_ci_95=([quantile(best_ranks[a], 0.025), quantile(worst_ranks[a], 0.975)]
+                                     if bound_ranks else [quantile(expanded, 0.025), quantile(expanded, 0.975)]),
                          top_frequency=ranks[a][0] / draws)
-    return dict(draws=draws, seed=seed, task_count=len(tasks), models=models, pairs=pairs)
+    return dict(**(dict(rank_policy='bootstrap-score-bound-envelopes-v1') if bound_ranks else {}),
+                draws=draws, seed=seed, task_count=len(tasks), models=models, pairs=pairs)
 
 
 def outcome(record):
@@ -272,7 +286,8 @@ def analyze(panel, records, draws=2000, seed=42):
 
     repos = {}
     for task, refs in panel['tasks'].items():
-        repos.setdefault(repo_of(refs), []).append(task)
+        repo = repo_of(refs) if refs else panel['task_bases'][task]['repo']
+        repos.setdefault(repo, []).append(task)
     for repo, tasks in sorted(repos.items()):
         rest = [t for t in panel['tasks'] if t not in set(tasks)]
         if rest:
@@ -284,7 +299,8 @@ def analyze(panel, records, draws=2000, seed=42):
               if ts}
 
     common = common_tasks(base_values)
-    boot = bootstrap(base_values, list(panel['tasks']), draws, seed)
+    boot = bootstrap(base_values, list(panel['tasks']), draws, seed,
+                     bound_ranks=panel.get('calibration_policy') == UNCALIBRATED)
 
     def position(ranking, agent):
         return ranking.index(agent) + 1
@@ -303,6 +319,7 @@ def analyze(panel, records, draws=2000, seed=42):
                           outcomes=pair_outcomes(base_values, groups, list(panel['tasks']), a, b)))
     return dict(status='analysis-not-a-score-release', score_version=panel['score_version'], panel=panel['name'],
                 baseline=dict(net_weight=weight, churn_weight=panel['churn_weight'], failure_cap=cap),
+                **(dict(calibration_policy=UNCALIBRATED) if panel.get('calibration_policy') == UNCALIBRATED else {}),
                 task_count=len(panel['tasks']), common_tasks=len(common),
                 panel_references=sum(len(r) for r in panel['tasks'].values()), dedup_references_removed=removed,
                 leave_one_out=leave_one_out, repositories={r: len(t) for r, t in sorted(repos.items())},
@@ -347,7 +364,7 @@ def verdict(result):
                      + '; '.join(f"{label(p['a'])} > {label(p['b'])} (reversed by "
                                  f"{', '.join(pretty(f) for f in p['flips_in'])})" for p in other) + '.')
     fixed = [a for a in order if result['rank_range'][a][0] == result['rank_range'][a][1]]
-    lines.append('- **Rank never changes under any variation**: '
+    lines.append('- **Midpoint rank never changes under any variation**: '
                  + (', '.join(f"{label(a)} ({result['rank_range'][a][0]})" for a in fixed) or 'none') + '.')
     strata = [f"{label(p['a'])} > {label(p['b'])} ({', '.join(k.replace('_', ' ') for k in p['flips_in_strata'])})"
               for p in pairs if p['flips_in_strata']]
@@ -366,7 +383,7 @@ def pretty(name):
     return name.replace('_', ' ')
 
 
-def render(result, command):
+def render(result, command, data_filename='sensitivity.json'):
     order = result['ranking']
     base = result['scenarios']['baseline']
     boot = result['bootstrap']
@@ -402,9 +419,12 @@ def render(result, command):
     out += ['', '## Weights and failure cap', '', 'Score on the common tasks; rank in parentheses.', '']
     names = [n for n, s in result['scenarios'].items() if s['family'] in ('baseline', 'weights', 'failure_cap')]
     out += scenario_table(result, names, order)
+    orphan_policy = ('tasks that lose their reference remain in the full population with bounds. '
+                     if result.get('calibration_policy') == UNCALIBRATED else
+                     'tasks whose only reference was that model\'s patch leave the panel. ')
     out += ['', '## Panel composition', '',
-            'Each panel model\'s references removed in turn (every model still scored); tasks whose only reference was '
-            'that model\'s patch leave the panel. The dedup panel counts byte-identical patches once per task '
+            'Each panel model\'s references removed in turn (every model still scored); ' + orphan_policy +
+            'The dedup panel counts byte-identical patches once per task '
             f"({result['dedup_references_removed']} of {result['panel_references']} references removed).", '',
             '| Panel without | References removed | Tasks orphaned | Ranking changes vs baseline |', '|---|---:|---:|---|']
     for a, info in result['leave_one_out'].items():
@@ -432,8 +452,8 @@ def render(result, command):
         cells = [f"{fmt(s['models'][a]['score'])} ({s['ranking'].index(a) + 1})" for _, s in columns]
         out.append(f"| {label(a)} | " + ' | '.join(cells) + ' |')
     out += ['', '## What drives each adjacent gap', '',
-            'Difference in mean score split by outcome (a/b), and the tasks that move it most. '
-            'Contributions are per-task differences divided by the task count, so they sum to the gap.', '']
+            'Diagnostic on tasks where both models have calibrated point scores, split by outcome (a/b). '
+            'Contributions sum to that common-point-task gap, not the full-population bound-midpoint difference.', '']
     for p in result['adjacent_pairs']:
         o = p['outcomes']
         parts = ', '.join(f"{k} {fmt(v['contribution'], 2)} ({v['tasks']})" for k, v in o['by_outcome'].items()
@@ -443,7 +463,7 @@ def render(result, command):
         out.append(f"- **{label(p['a'])} − {label(p['b'])} = {fmt(o['difference'], 2)}**: {parts}. "
                    f"For {label(p['a'])}: {top_a}. For {label(p['b'])}: {top_b}.")
     out += ['', '## Regenerate', '', '```sh', command, '```', '',
-            'All numbers are in [sensitivity.json](sensitivity.json). The analysis is conditional on this cohort '
+            f'All numbers are in [{data_filename}]({data_filename}). The analysis is conditional on this cohort '
             'and task population; the panel is built from the same models it ranks.', '']
     return '\n'.join(out)
 
@@ -492,7 +512,7 @@ def main():
                             *(['--draws', str(args.draws)] if args.draws != 2000 else []),
                             *(['--seed', str(args.seed)] if args.seed != 42 else []), '--output', args.output])
         report = Path(args.report) if args.report else output.with_suffix('.md')
-        report.write_text(render(result, command))
+        report.write_text(render(result, command, output.name))
         print(f'Wrote {output} and {report} (offline; no patch analysis)')
     except (OSError, ValueError, KeyError, TypeError) as exc:
         parser.exit(1, f'error: {exc}\n')

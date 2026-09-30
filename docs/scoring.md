@@ -116,6 +116,29 @@ Average bounds using the fixed task denominator. Any unknown contribution makes 
 
 Non-Python/excluded edits remain outside scope, not proven zero cost. A success that changes **only** excluded files is `out_of_scope`: bounds `[1, 100]`, never the best percentile, and never a reference. Preserve exclusions and audit suspicious scope shifts. Since analyzer 0.4.0, identifier/literal edits count toward primary churn.
 
+### Independently frozen populations with incomplete calibration
+
+The original `freeze` mode still requires a passing reference on every panel task.
+`freeze --population MANIFEST` additionally supports an independently predefined
+population with `calibration_policy=full-population-uncalibrated-bounds-v1`.
+Population membership, base repositories/commits, measurement track and analyzer
+commit are validated before selecting references. Successful reference availability
+never determines task inclusion.
+
+No reference is fabricated on an uncalibrated task. A complete, in-scope published
+success has conservative bounds `[1, 100]`; an explicit failure `[-25, 0]`.
+Unknown correctness, missing metrics and out-of-scope patches retain the existing
+bounds above. These enclose the **unchanged** 80/20 formulas over all admissible
+reference panels/failure scales. No point score is assigned. All predefined tasks
+enter the denominator, and known failed footprints remain visible even when their
+normalization scale is unavailable. Fully calibrated scores are identical to the
+original calculator.
+
+Bounded-population rank intervals additionally include the possible rank envelope
+from each paired bootstrap draw's lower/upper scores. Bounds can overlap despite
+stable midpoint ordering; that uncertainty must not be hidden by a precise rank.
+Existing panels and their arithmetic/rank-data snapshots are not rewritten.
+
 ## 7. Examples
 
 Reference `(net, churn)` pairs are `(5, 9)`, `(10, 10)`, `(10, 30)`.

@@ -24,6 +24,7 @@ def contributions(panel, records, net_weight=0.8, failure_cap=25, net_floor=None
     for agent, group in groups.items():
         values = {}
         for task, refs in panel['tasks'].items():
+            require(bool(refs), f'{agent}: uncalibrated task {task}; use bounded stability analysis')
             r = group.get(task)
             require(r is not None, f'{agent}: missing task {task}')
             require_measurement_track(panel, r)

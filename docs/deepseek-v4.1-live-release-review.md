@@ -3,6 +3,12 @@
 Review date: **2026-09-30**. Scope: public TianxiCode 0.1.423 / source-declared
 DeepSeek V4.1 Flash, SWE-bench Live Lite **Python, all 300 tasks**.
 
+Publication follow-up: [the final Live Python board](../examples/live-python/README.md)
+now retains all 300 tasks with explicit uncalibrated-task bounds and conservative
+rank uncertainty. It publishes numerical data only, not raw artifacts. The review
+below records the findings before that bounded-score implementation; missing
+references are **not** retroactively claimed to exist.
+
 ## Decision
 
 **Recommend a clearly labelled numerical research preview, not a certified or
