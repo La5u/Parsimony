@@ -6,6 +6,13 @@ v0.5 (`parsimony-80-20-v0.5`) changes only the weights, from 70% net / 30% churn
 
 v0.4 applied the v0.3 rule to coding units (`net_units`, unit `churn`, analyzer 0.5.0) instead of normalized tokens. A record whose units are unknown (a file does not parse) gets bounds, like any missing measurement. v0.3 differed from v0.2 only in the `out_of_scope` rule.
 
+**Website policy update:** the owner chose footprint-only ranking. The website
+now orders mean net coding units added across all measured in-scope attempts,
+including failures, with upstream Solved % and measurement coverage as context.
+The calculator described below is preserved as an archived combined-score
+analysis. Its scores/CI/rank endpoints are not footprint ranks or their uncertainty.
+No 80/20 formula or raw measurement has been changed.
+
 ## 1. Goals
 
 - Every task contributes equally, independent of repository or patch size.

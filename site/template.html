@@ -86,36 +86,38 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         <tr>
           <th id="rank-head" hidden>Rank</th>
           <th class="left">Model</th>
-          <th aria-sort="descending"><button type="button" data-sort="score">Score</button></th>
+          <th aria-sort="ascending"><button type="button" data-sort="net">Net units added</button></th>
           <th aria-sort="none"><button type="button" data-sort="resolve_rate">Solved</button></th>
-          <th aria-sort="none"><button type="button" data-sort="net">Net units added</button></th>
+          <th aria-sort="none"><button type="button" data-sort="coverage">Measured</button></th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
   </div>
-  <p class="small muted" id="rank-note" style="margin-top:8px" hidden>All-task score rank (unchanged when sorting other columns): the range covering 95% of each model's ranks when the tasks are resampled 2,000 times; overlapping ranges mean the order is uncertain (<a id="rank-link" href="https://github.com/La5u/Parsimony">sensitivity report</a>).</p>
+  <p class="small muted" id="rank-note" style="margin-top:8px">Rank is by mean net units added, lowest first, across measured in-scope attempts—including failures. Equal means tie; missing means are unranked. Partial coverage can change the order. This is smallest measured footprint, not best coding ability.</p>
   <p class="small" id="task-footer" hidden><a id="task-link" href="#">Maintainers' pull request</a></p>
-  <p class="small muted" id="score-help" style="margin-top:8px">Score: mean over all score-panel attempts, from −25 to 100; higher is better. Passing patches earn 1–100 credit relative to reference patches (80% net units added, 20% units changed). Failed patches receive a footprint penalty from −25 to 0. Missing measurements contribute bounds, not zero. This combines correctness and footprint; it is not a raw complexity count. The 95% CI is computed separately and never changes Score.</p>
+  <details class="small muted"><summary>Archived combined-score diagnostics</summary>
+  <p id="score-help">The previous combined score and its 95% CI remain available as optional graph diagnostics and in the data, but do not determine footprint rank. Its 80% net / 20% units-changed formula is unchanged.</p>
+  <p id="ci-help">Combined-score CI endpoints are not net-unit uncertainty or inputs to footprint rank.</p>
+  </details>
 
-  <p class="small muted">Net units added: coding units added minus removed—our proxy for net added complexity, not semantic complexity. In the all-task view this is the mean across measured, in-scope passing and failed attempts; missing measurements are excluded, never treated as zero. For a selected task it is that attempt’s net change. Click headings to sort; click again to reverse. Score bounds sort by midpoint. Missing values stay last.</p>
-  <p class="small muted" id="ci-help">95% CI is an uncertainty display, not an input to Score. It comes from resampling tasks, widened for missing measurements. It helps avoid overinterpreting small score gaps; it is not a measure of code complexity and does not cover every source of bias.</p>
+  <p class="small muted">Net units added means coding units added minus removed, not semantic complexity. Measured shows eligible footprints / published population. Missing or entirely excluded edits are not zero. Solved comes from the upstream benchmark and never affects footprint rank. A failed no-op or large deletion can rank first. Click headings to sort; missing values stay last.</p>
 
   <h2 id="complexity">Compare models</h2>
-  <p class="small muted">Choose any two numeric metrics, including uncertainty endpoints. One point per model, colored by company. Score uses the midpoint when bounded; interval and rank endpoints are labeled explicitly. Models missing either selected value have no point. Hover, focus or tap a point to see its model name instantly. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; Solved stays at 0–100%.</p>
+  <p class="small muted">Choose any two numeric metrics, including uncertainty endpoints. One point per model, colored by company. Archived combined-score diagnostics use the midpoint when bounded; their CI and rank endpoints are labelled explicitly and do not affect footprint ranking. Models missing either selected value have no point. Hover, focus or tap a point to see its model name instantly. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; Solved stays at 0–100%.</p>
   <p><label for="graph-x">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
      <label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></p>
   <p class="small muted" id="graph-legend"></p>
   <div class="small" id="company-legend" aria-label="Model companies"></div>
   <div id="graph" aria-label="Comparison of selected metrics per model"></div>
   <div class="small" id="graph-tooltip" role="tooltip" hidden></div>
-  <p class="small muted" id="attempts-note" hidden>Each task was run four times; each attempt is scored against every passing patch of the task.</p>
+  <p class="small muted" id="attempts-note" hidden>Each task was run four times; every measured attempt contributes to its model’s footprint mean.</p>
 
   <h2 id="method">Method</h2>
   <ul>
     <li>Each patch is applied to the task's base commit and both versions of each changed file are parsed. Nothing is executed.</li>
-    <li>On each task, a passing patch is ranked against all passing patches from the reference models: 80% on net units added, 20% on units changed.</li>
-    <li>A failed patch receives a footprint penalty from −25 to 0. The scoring formula is unchanged by which columns or graph axes are displayed.</li>
+    <li>Footprint rank uses the arithmetic mean of net coding units added across all measured, in-scope attempts. Successful and failed attempts both count; passing references are not required.</li>
+    <li>Correctness is reported separately by the upstream benchmark. Smaller failed or no-op attempts are not better solutions.</li>
     <li id="language-scope">Test, docs and generated files are excluded. Only Python is measured.</li>
   </ul>
 
@@ -142,7 +144,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 
   const n = data.models.length;
-  const refs = data.references ?? n;
   const bench = data.benchmark || {name: 'SWE-bench Verified', url: 'https://www.swebench.com', reference: "Maintainers' fix",
     task_url: 'https://github.com/{owner}/{repo}/pull/{number}', task_link: "Maintainers' pull request",
     results: "SWE-bench's published results", attempts: 1};
@@ -157,26 +158,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     $('nav').hidden = false;
     $('nav').innerHTML = 'Leaderboards: ' + data.nav.map((l) => `<a href="${esc(l.url)}">${esc(l.label)}</a>`).join(' · ');
   }
-  const taskCount = new Set(data.tasks.map((t) => t[0].split('#')[0])).size;
-  const items = bench.attempts > 1 ? `${taskCount} ${bench.name} tasks (${data.task_count} runs per model)` : `${data.task_count} ${bench.name} tasks`;
-  $('board-intro').textContent = refs === n
-    ? `${n} models on ${items} with at least one measured, in-scope passing reference.`
-    : `${n} models on ${items} with a measured, in-scope passing patch from at least one of ${refs} reference models.`;
-  if (data.calibration_policy) {
-    const missing = data.uncalibrated_tasks || [];
-    $('board-intro').textContent = `${n} model + agent configurations on all ${data.task_count} predefined ${bench.name} tasks. ${data.task_count - missing.length} tasks have usable passing references.`;
-    if (missing.length) {
-      $('coverage-note').hidden = false;
-      $('coverage-summary').textContent = `${missing.length} tasks have no passing reference; all remain in the score denominator.`;
-      $('coverage-tasks').textContent = `Scores for uncalibrated tasks are bounded by their source-reported outcome, not set to zero. Missing-reference task IDs: ${missing.join(', ')}.`;
-    }
-  }
-  if (data.excluded_tasks?.length) {
-    const omitted = [...new Set(data.excluded_tasks.map(t => t.split('#')[0]))];
-    $('coverage-note').hidden = false;
-    $('coverage-summary').textContent = `${data.excluded_tasks.length} population items outside the score panel (${omitted.length} task IDs).`;
-    $('coverage-tasks').textContent = `These tasks have no usable passing reference and cannot be scored. “All tasks” means all score-panel tasks; resolve rate still uses all ${data.population_count} published attempts. Unscored task IDs: ${omitted.join(', ')}.`;
-  }
+  const displayedTasks = data.footprint_tasks || data.tasks;
+  const taskCount = new Set(displayedTasks.map((t) => t[0].split('#')[0])).size;
+  const items = bench.attempts > 1 ? `${taskCount} ${bench.name} tasks (${data.population_count || data.task_count} attempts per model)` : `${data.population_count || data.task_count} ${bench.name} tasks`;
+  $('board-intro').textContent = `${n} model + agent configurations on ${items}, ranked by measured footprint—not correctness.`;
+  $('coverage-note').hidden = true; // Passing-reference gaps no longer exclude footprint data.
   if (data.measurement_track) {
     const language = {javascript: 'JavaScript / JSX and TypeScript', typescript: 'TypeScript / TSX and JavaScript', go: 'Go'}[data.measurement_track.language];
     $('language-scope').textContent = `Test, docs and generated files are excluded. This track measures ${language} with pinned Tree-sitter grammars. Units are syntax elements, not semantic complexity; raw counts are not comparable across language tracks.`;
@@ -193,31 +179,35 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   } else if (versions.length === 1) {
     $('harness-limit').textContent = `Scores are relative to the reference models, which all use the same agent harness (mini-SWE-agent ${versions[0]}).`;
   }
-  if (data.sensitivity_url) $('rank-link').href = data.sensitivity_url;
-  if (data.rank_policy) {
-    $('rank-note').innerHTML = `All-task rank range includes score-bound uncertainty from missing measurements or references and 2,000 paired task resamples. Overlapping ranges mean the order is uncertain (<a id="rank-link" href="${esc(data.sensitivity_url || 'https://github.com/La5u/Parsimony')}">sensitivity report</a>).`;
-  }
+  // Combined-score rank diagnostics are retained, but never used as footprint ranks.
+  $('harness-limit').textContent = $('harness-limit').textContent.replace('Scores are relative to the reference models', 'Footprints depend on the agent configuration');
   const ranked = data.models.some((m) => m.rank_range != null);
-  $('rank-head').hidden = $('rank-note').hidden = !ranked;
-  const rank = (r) => r == null ? '' : r[0] === r[1] ? `${r[0]}` : `${r[0]}–${r[1]}`;
-  const tasks = new Map(data.tasks.map((t) => [t[0], t]));
+  $('rank-head').hidden = false;
+  const ranks = new Map(data.models.map(m => [m.agent || m.name,
+    Number.isFinite(m.measured_net_mean) ? 1 + data.models.filter(other =>
+      Number.isFinite(other.measured_net_mean) && other.measured_net_mean < m.measured_net_mean).length : null]));
+  const tasks = new Map(displayedTasks.map((t) => [t[0], t]));
   const labels = {r: 'solved', f: 'failed', u: 'unknown', m: 'not measured', n: 'no attempt', o: 'out of scope', c: 'no passing reference'};
-  let selected = null, sortKey = 'score', ascending = false;
-  $('task-ids').innerHTML = data.tasks.map((t) => `<option value="${esc(t[0])}">`).join('');
+  let selected = null, sortKey = 'net', ascending = true;
+  $('task-ids').innerHTML = displayedTasks.map((t) => `<option value="${esc(t[0])}">`).join('');
   const midpoint = (value, low, high) => value ?? (low != null && high != null ? (low + high) / 2 : null);
   function metricValue(model, index, key) {
     if (!selected) {
       return {score: midpoint(model.score, model.lower, model.upper), ci: model.ci?.[0],
         ci_high: model.ci?.[1], resolve_rate: model.resolve_rate == null ? null : model.resolve_rate * 100,
+        coverage: model.measured_attempts / (model.footprint_population_count || data.population_count || data.task_count) * 100,
+        churn: model.measured_churn_mean,
         net: model.measured_net_mean, rank_low: model.rank_range?.[0], rank_high: model.rank_range?.[1]}[key];
     }
     const cell = selected[2][index];
-    return {score: midpoint(cell[3], cell[4], cell[5]), net: ['r', 'f', 'c'].includes(cell[0]) ? cell[1] : null}[key];
+    const eligible = cell.length > 7 ? cell[7] : ['r', 'f', 'c'].includes(cell[0]);
+    return {score: midpoint(cell[3], cell[4], cell[5]), net: eligible ? cell[1] : null,
+      churn: eligible ? cell[2] : null}[key];
   }
   function renderBoard() {
     const headers = selected
-      ? [['Model', null], ['Result', null], ['Task score', 'score'], ['Net units added', 'net']]
-      : [...(ranked ? [['Rank', null]] : []), ['Model', null], ['Score', 'score'], ['Solved', 'resolve_rate'], ['Net units added', 'net']];
+      ? [['Model', null], ['Result', null], ['Net units added', 'net']]
+      : [['Rank', null], ['Model', null], ['Net units added', 'net'], ['Solved', 'resolve_rate'], ['Measured', 'coverage']];
     document.querySelector('#board thead').innerHTML = '<tr>' + headers.map(([name, key]) => `<th${key ? ` aria-sort="${key === sortKey ? ascending ? 'ascending' : 'descending' : 'none'}"` : ''}${name === 'Model' ? ' class="left"' : ''}>${key ? `<button type="button" data-sort="${key}">${name}</button>` : name}</th>`).join('') + '</tr>';
     const buttons = [...document.querySelectorAll('#board button[data-sort]')];
     buttons.forEach((button) => button.addEventListener('click', () => {
@@ -229,29 +219,27 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const models = data.models.map((m, i) => ({m, i})).sort((a, b) => {
       const x = metricValue(a.m, a.i, sortKey), y = metricValue(b.m, b.i, sortKey);
       if (x == null || y == null || Number.isNaN(Number(x)) || Number.isNaN(Number(y))) return (x == null || Number.isNaN(Number(x))) - (y == null || Number.isNaN(Number(y)));
-      return ascending ? x - y : y - x;
+      return (ascending ? x - y : y - x) || a.m.name.localeCompare(b.m.name);
     });
     document.querySelector('#board tbody').innerHTML = models.map(({m, i}) => {
       if (selected) {
         const c = selected[2][i];
-        const taskScore = c[3] != null ? fmt(c[3]) : c[4] != null && c[5] != null
-          ? (fmt(c[4]) === fmt(c[5]) ? '≈' + fmt(c[4]) : `${fmt(c[4])}–${fmt(c[5])}`) : '—';
         const outcome = labels[c[6] || c[0]] || c[0];
-        const result = c[6] && labels[c[0]] !== outcome ? `${outcome} · ${labels[c[0]] || c[0]}` : outcome;
-        return `<tr><td class="left">${esc(m.name)}</td><td class="left ${esc(c[6] || c[0])}">${esc(result)}</td><td>${taskScore}</td><td>${signed(metricValue(m, i, 'net'))}</td></tr>`;
+        const result = metricValue(m, i, 'net') == null ? `${outcome} · not measured` : outcome;
+        return `<tr><td class="left">${esc(m.name)}</td><td class="left ${esc(c[6] || c[0])}">${esc(result)}</td><td>${signed(metricValue(m, i, 'net'))}</td></tr>`;
       }
-      const score = m.score != null ? fmt(m.score) : fmt(m.lower) === fmt(m.upper) ? '≈' + fmt(m.lower) : `${fmt(m.lower)}–${fmt(m.upper)}`;
-      return `<tr>${ranked ? `<td>${rank(m.rank_range)}</td>` : ''}<td class="left">${esc(m.name)}</td><td>${score}</td><td>${fmt(m.resolve_rate * 100)}%</td><td>${fmt(m.measured_net_mean)}</td></tr>`;
+      const denominator = m.footprint_population_count || data.population_count || data.task_count;
+      return `<tr><td>${ranks.get(m.agent || m.name) ?? '—'}</td><td class="left">${esc(m.name)}</td><td>${fmt(m.measured_net_mean)}</td><td>${fmt(m.resolve_rate * 100)}%</td><td>${m.measured_attempts}/${denominator}</td></tr>`;
     }).join('');
   }
   function showTask(id) {
     if (id && !tasks.has(id)) { $('task-status').textContent = `No task matches “${id}”. Still showing ${selected ? selected[0] : 'all tasks'}.`; return; }
-    if (!!selected !== !!id) { sortKey = 'score'; ascending = false; }
+    if (!!selected !== !!id) { sortKey = 'net'; ascending = true; }
     selected = id ? tasks.get(id) : null;
     $('task-status').textContent = selected ? `Selected task: ${selected[0]}` : 'Showing all tasks.';
     $('task-search').value = selected ? selected[0] : '';
     $('task-footer').hidden = !selected;
-    $('rank-note').hidden = !!selected || !ranked;
+    $('rank-note').hidden = !!selected;
     $('score-help').hidden = $('ci-help').hidden = !!selected;
     if (selected) {
       const task = selected[0], m = task.match(/^(.+?)__(.+)-(\d+)$/);
@@ -266,14 +254,16 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     'MiniMax': '#dc5263', 'Meta': '#8b5cf6', 'Mistral AI': '#b18a00', 'Other': '#64748b'
   };
   const companyColor = company => companyColors[company] || companyColors.Other;
-  const graphAxes = {all: {x: 'net', y: 'resolve_rate'}, task: {x: 'net', y: 'score'}};
+  const graphAxes = {all: {x: 'net', y: 'resolve_rate'}, task: {x: 'net', y: 'churn'}};
   const currentAxes = () => graphAxes[selected ? 'task' : 'all'];
   function axisOptions() {
-    if (selected) return [{key: 'score', label: 'Task score (midpoint if bounded)'}, {key: 'net', label: 'Net units added'}];
-    return [{key: 'score', label: 'Score (midpoint if bounded)'},
-      {key: 'ci', label: '95% CI: lower bound'}, {key: 'ci_high', label: '95% CI: upper bound'},
+    if (selected) return [{key: 'net', label: 'Net units added'}, {key: 'churn', label: 'Units changed'},
+      {key: 'score', label: 'Legacy combined task score (midpoint if bounded)'}];
+    return [{key: 'coverage', label: 'Measured coverage (%)'}, {key: 'churn', label: 'Units changed (mean per attempt)'},
+      {key: 'score', label: 'Legacy combined score (midpoint if bounded)' },
+      {key: 'ci', label: 'Combined score 95% CI: lower bound'}, {key: 'ci_high', label: 'Combined score 95% CI: upper bound'},
       {key: 'resolve_rate', label: 'Solved (%)'}, {key: 'net', label: 'Net units added (mean per attempt)'},
-      ...(ranked ? [{key: 'rank_low', label: 'Rank range: lower bound'}, {key: 'rank_high', label: 'Rank range: upper bound'}] : [])];
+      ...(ranked ? [{key: 'rank_low', label: 'Combined score rank: lower bound'}, {key: 'rank_high', label: 'Combined score rank: upper bound'}] : [])];
   }
   function renderAxisControls() {
     for (const axis of ['x', 'y']) {
@@ -296,10 +286,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     hideTooltip();
     const axes = currentAxes(), options = axisOptions();
     const xLabel = options.find(o => o.key === axes.x).label, yLabel = options.find(o => o.key === axes.y).label;
-    const axisFormat = (value, key) => fmt(value) + (key === 'resolve_rate' ? '%' : '');
+    const axisFormat = (value, key) => fmt(value) + (['resolve_rate', 'coverage'].includes(key) ? '%' : '');
     const points = data.models.map((m, i) => ({x: metricValue(m, i, axes.x), y: metricValue(m, i, axes.y),
       name: m.name, company: m.company || 'Other', count: m.measured_attempts,
-      kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : 'resolved') : 'all', i}))
+      kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : (selected[2][i][6] || selected[2][i][0]) === 'r' ? 'resolved' : 'unknown') : 'all', i}))
       .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
     $('graph-legend').textContent = points.length
       ? (selected ? 'Color indicates company. Dashed outline: failed attempt.' : 'Color indicates company. Net means include measured passing and failed attempts; measurement coverage can differ.')
@@ -309,7 +299,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
 
     const W = 720, H = 330, L = 66, R = 20, T = 18, B = 52;
     function extent(axis, key) {
-      if (key === 'resolve_rate') return [0, 100];
+      if (['resolve_rate', 'coverage'].includes(key)) return [0, 100];
       if (!points.length) return [0, 1];
       const values = points.map(p => p[axis]);
       const low = Math.min(...values), high = Math.max(...values);
@@ -319,7 +309,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const [xmin, xmax] = extent('x', axes.x), [ymin, ymax] = extent('y', axes.y);
     const sx = x => L + (x - xmin) / (xmax - xmin) * (W - L - R), sy = y => H - B - (y - ymin) / (ymax - ymin) * (H - T - B);
     const ticks = (lo, hi, axis) => Array.from({length: 5}, (_, i) => { const v = lo + (hi - lo) * i / 4; return axis === 'x' ? `<line class="axis" x1="${sx(v)}" y1="${H-B}" x2="${sx(v)}" y2="${H-B+4}"/><text class="tick" text-anchor="middle" x="${sx(v)}" y="${H-B+19}">${axisFormat(v, axes.x)}</text>` : `<line class="axis" x1="${L-4}" y1="${sy(v)}" x2="${L}" y2="${sy(v)}"/><text class="tick" text-anchor="end" x="${L-8}" y="${sy(v)+4}">${axisFormat(v, axes.y)}</text>`; }).join('');
-    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.kind === 'all' ? '; measured ' + p.count + '/' + data.task_count + ' score-panel attempts' : ''}`;
+    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.kind === 'all' ? '; measured ' + p.count + '/' + (data.models[p.i].footprint_population_count || data.population_count || data.task_count) + ' population attempts' : ''}`;
     const circles = points.map((p, i) => `<circle data-point="${i}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}" fill="${companyColor(p.company)}" cx="${sx(p.x)}" cy="${sy(p.y)}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip"></circle>`).join('');
     $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. Axes use the selected numeric table values. In selected-task view, failed attempts have dashed outlines. Hover, focus or tap a point for an immediate model-name tooltip.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>`;
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
@@ -341,6 +331,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   $('task-reset').addEventListener('click', () => showTask(''));
   showTask('');
 
-  $('provenance').textContent = `Analyzer ${data.analyzer_version}, score ${data.score_version}, panel ${data.panel}.${data.measurement_track ? ' Units: ' + data.measurement_track.unit_version + '.' : ''}`;
+  $('provenance').textContent = `Analyzer ${data.analyzer_version}. Footprint ranking: mean net units added. Archived combined-score diagnostics: ${data.score_version}, panel ${data.panel}.${data.measurement_track ? ' Units: ' + data.measurement_track.unit_version + '.' : ''}`;
 })();
 </script>

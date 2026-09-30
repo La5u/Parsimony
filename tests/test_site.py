@@ -22,9 +22,9 @@ class SiteTests(unittest.TestCase):
                    record('other-agent', 't2', net=3, churn=3)]
         panel = freeze(records, 'site-test')
         data = build(panel, records, draws=50)
-        # Ranked by score: the other agent also solved t2.
-        self.assertEqual([m['name'] for m in data['models']], ['other-agent', 'Claude Opus 4.6'])
-        opus = data['models'][1]
+        # Footprint rank ignores correctness: Opus has the smaller measured mean.
+        self.assertEqual([m['name'] for m in data['models']], ['Claude Opus 4.6', 'other-agent'])
+        opus = data['models'][0]
         self.assertEqual((opus['solved'], opus['failed']), (1, 1))
         self.assertEqual((opus['solved_net_mean'], opus['solved_churn_mean']), (5, 9))
         self.assertEqual((opus['measured_net_mean'], opus['measured_churn_mean']), (2.5, 4.5))
@@ -33,7 +33,7 @@ class SiteTests(unittest.TestCase):
         self.assertLessEqual(opus['ci'][0], opus['score'])
         self.assertEqual([t[0] for t in data['tasks']], ['t1', 't2'])
         self.assertEqual((data['references'], data['harness']), (2, ['v2.0.0']))
-        self.assertEqual([cell[0] for cell in data['tasks'][1][2]], ['r', 'f'])
+        self.assertEqual([cell[0] for cell in data['tasks'][1][2]], ['f', 'r'])
         page = render(data)
         self.assertTrue(page.startswith('<!doctype html>'))
         embedded = page.split('type="application/json">')[1].split('</script>')[0]
@@ -58,7 +58,7 @@ class SiteTests(unittest.TestCase):
                 self.assertEqual(first[key], second[key], key)
             self.assertNotEqual(first['ci'], second['ci'])
 
-    def test_plot_means_use_scored_successes_only(self):
+    def test_footprint_means_include_failures_and_tasks_without_references(self):
         records = [record('a', 't1', net=2, churn=4), record('a', 't2', net=6, churn=8),
                    record('a', 't3', net=100, churn=100, resolved=False),
                    record('b', 't3', net=1, churn=1)]
@@ -69,9 +69,11 @@ class SiteTests(unittest.TestCase):
         self.assertEqual((a['solved_net_mean'], a['solved_churn_mean']), (4, 6))
         self.assertEqual((a['net_units'], a['churn']), (4, 6))
         self.assertEqual(data['excluded_tasks'], ['outside'])
-        self.assertEqual(a['measured_net_mean'], 36)
-        self.assertAlmostEqual(a['measured_churn_mean'], 112 / 3)
-        self.assertEqual(a['measured_attempts'], 3)
+        self.assertEqual(a['measured_net_mean'], 1107 / 4)
+        self.assertEqual(a['measured_churn_mean'], 1111 / 4)
+        self.assertEqual(a['measured_attempts'], 4)
+        self.assertEqual(a['footprint_population_count'], 4)
+        self.assertEqual({t[0] for t in data['footprint_tasks']}, {'t1', 't2', 't3', 'outside'})
         for r in records:
             if r['agent'] == 'a' and r['task_id'] in ('t1', 't2'):
                 r['analysis_status'] = 'fetch_error'
@@ -82,11 +84,25 @@ class SiteTests(unittest.TestCase):
         self.assertIsNone(a['solved_churn_mean'])
         self.assertIsNone(a['churn'])
         # Failed attempts remain in the model point; missing measurements do not become zeros.
-        self.assertEqual((a['measured_net_mean'], a['measured_churn_mean']), (100, 100))
-        self.assertEqual(a['measured_attempts'], 1)
+        self.assertEqual((a['measured_net_mean'], a['measured_churn_mean']), (549.5, 549.5))
+        self.assertEqual(a['measured_attempts'], 2)
         i = next(i for i, m in enumerate(data['models']) if m['agent'] == 'a')
         t1 = next(t for t in data['tasks'] if t[0] == 't1')
         self.assertEqual(t1[2][i][3:], [None, 1, 100])
+
+    def test_footprint_ranking_retains_missing_population_and_failed_noops(self):
+        refs = [record('a', 't1', net=9, churn=9), record('a', 't2', net=8, churn=8)]
+        panel = freeze(refs, 'missing-population')
+        missing = record('c', 't1')
+        missing.update(metrics=None, analysis_status='fetch_error')
+        data = build(panel, [refs[0], record('b', 't1', net=0, churn=0, resolved=False), missing], draws=20)
+        self.assertEqual(data['ranking_metric'], 'measured-net-mean-v1')
+        self.assertEqual([m['agent'] for m in data['models']], ['b', 'a', 'c'])
+        self.assertEqual([m['measured_net_mean'] for m in data['models']], [0, 9, None])
+        self.assertEqual([m['measured_attempts'] for m in data['models']], [1, 1, 0])
+        self.assertEqual([m['footprint_population_count'] for m in data['models']], [2, 2, 2])
+        self.assertEqual([row[0] for row in data['footprint_tasks']], ['t1', 't2'])
+        self.assertTrue(all(cell[7] is False for cell in data['footprint_tasks'][1][2]))
 
     @unittest.skipUnless(shutil.which('node'), 'JavaScript interaction test requires Node.js')
     def test_column_sorting(self):
