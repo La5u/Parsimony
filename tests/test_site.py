@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest import mock
 
 from parsimony.scoring import freeze
-from parsimony.site import add_rank_ranges, build, company, label, main, render
+from parsimony.site import add_rank_ranges, build, company, label, main, render, trimmed_mean
 from tests.test_scoring import record
 
 
@@ -96,15 +96,34 @@ class SiteTests(unittest.TestCase):
         missing = record('c', 't1')
         missing.update(metrics=None, analysis_status='fetch_error')
         data = build(panel, [refs[0], record('b', 't1', net=0, churn=0, resolved=False), missing], draws=20)
-        self.assertEqual(data['ranking_metric'], 'measured-net-mean-v1')
+        self.assertEqual(data['ranking_metric'], 'measured-net-trimmed-mean-10-v1')
         self.assertEqual([m['agent'] for m in data['models']], ['b', 'a', 'c'])
         self.assertEqual([m['measured_net_mean'] for m in data['models']], [0, 9, None])
+        self.assertEqual([m['measured_net_trimmed_mean'] for m in data['models']], [0, 9, None])
         self.assertEqual([m['measured_attempts'] for m in data['models']], [1, 1, 0])
         self.assertEqual([m['footprint_population_count'] for m in data['models']], [2, 2, 2])
         self.assertEqual([row[0] for row in data['footprint_tasks']], ['t1', 't2'])
         self.assertTrue(all(cell[7] is False for cell in data['footprint_tasks'][1][2]))
 
     @unittest.skipUnless(shutil.which('node'), 'JavaScript interaction test requires Node.js')
+    def test_single_failed_mass_deletion_does_not_decide_rank(self):
+        tasks = [f't{i:02}' for i in range(20)]
+        steady = [record('steady', t, net=5, churn=5) for t in tasks]
+        # 19 larger patches plus one failed deletion: the plain mean is lower, the trimmed mean is not.
+        deleter = [record('deleter', t, net=20, churn=20) for t in tasks[1:]]
+        deleter.append(record('deleter', tasks[0], net=-5000, churn=5000, resolved=False))
+        panel = freeze(steady, 'trimmed')
+        data = build(panel, steady + deleter, draws=20)
+        by_agent = {m['agent']: m for m in data['models']}
+        self.assertLess(by_agent['deleter']['measured_net_mean'], by_agent['steady']['measured_net_mean'])
+        self.assertEqual(by_agent['deleter']['measured_net_trimmed_mean'], 20)
+        self.assertEqual([m['agent'] for m in data['models']], ['steady', 'deleter'])
+
+    def test_trimmed_mean(self):
+        self.assertIsNone(trimmed_mean([]))
+        self.assertEqual(trimmed_mean([1, 2, 100]), 103 / 3)  # Fewer than 20 values: plain mean.
+        self.assertEqual(trimmed_mean([-1000] + [1] * 18 + [1000]), 1)  # One value dropped from each end.
+
     def test_column_sorting(self):
         records = [record()]
         page = render(build(freeze(records, 'sorting-test'), records, draws=10))

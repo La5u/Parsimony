@@ -27,11 +27,11 @@ record is relabelled to the newer scoring/site implementation commit.
 
 ## Current website: net-unit footprint ranking
 
-The website now ranks by **mean net units added, ascending**, over all measured
+The website now ranks by **net units added, ascending** (10% trimmed mean), over all measured
 in-scope attempts, including 85 DeepSeek failures, 83 Slingshot failures and 174
 AiWork failures. Upstream Solved % is separate context. Measured/population
 coverage remains visible (287/300, 288/300 and 276/300). Missing footprints are
-never zero; missing means are unranked. Equal means tie. A failed no-op or large
+never zero; models without measurements are unranked. Equal values tie. A failed no-op or large
 deletion can rank first: this is footprint comparison, not a coding-ability rank.
 
 Passing references and their absence do not restrict footprint data. Task views
@@ -57,7 +57,7 @@ unchanged score; they do not create metrics, references or point estimates.
 Thus every configuration has **300 contributions** and a bounded overall Score.
 Default ordering uses the score-bound midpoint, as on other incomplete boards.
 **There is no fabricated point score.** Known in-scope passing and failed
-footprints both contribute to the displayed mean net units, including measured
+footprints both contribute to the displayed net units, including measured
 failures whose reference calibration is missing.
 
 Rank ranges use conservative lower/upper rank envelopes within **2,000 paired

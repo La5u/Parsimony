@@ -13,7 +13,7 @@ Current-state snapshot only. History lives in [CHANGELOG.md](CHANGELOG.md) and `
 
 Website ranking and columns:
 
-- All six boards rank by a **footprint statistic over measured, in-scope passing AND failed attempts** across the whole frozen population, lowest first, irrespective of passing-reference availability. Currently the statistic is the **mean net units added** (`ranking_metric: measured-net-mean-v1`); see open decision 1.
+- All six boards rank by a **footprint statistic over measured, in-scope passing AND failed attempts** across the whole frozen population, lowest first, irrespective of passing-reference availability. The statistic is a **10% trimmed mean of net units added** (`ranking_metric: measured-net-trimmed-mean-10-v1`, owner-approved 2026-10-01): drop floor(n × 5%) attempts at each end per model, so a plain mean below 20 attempts. The plain mean (`measured_net_mean`) stays in the data and as a graph metric. No coverage gate: every measured model is ranked and coverage is shown (a fixed 90% gate would unrank all TypeScript models).
 - No solved-only ranking or filtering, and no correctness tie-break (a solved-only ranking was tried and reverted). Equal values tie; models with no measurements stay unranked.
 - Visible columns: **Rank, Model, Net units added, Solved, Measured** (eligible/population). Solved % is upstream context only. Never zero-fill missing measurements.
 - Describe the ranking as *smallest measured footprint*, never *best coding model*. Negative deletions and failed no-ops may rank first; say so.
@@ -51,36 +51,28 @@ Cloudflare Pages serves `site/` at <https://parsimony.lasu.dev>; a push to `main
 
 ### Metric meanings
 
-- **Net units added:** added − deleted coding units per attempt; the board shows a per-model statistic over measured, in-scope passing and failed attempts. Unknown/out-of-scope records are excluded, never zeroed. Coverage differs by model and is shown in Measured.
+- **Net units added:** added − deleted coding units per attempt; the board shows each model's 10% trimmed mean over measured, in-scope passing and failed attempts. Unknown/out-of-scope records are excluded, never zeroed. Coverage differs by model and is shown in Measured.
 - **Solved:** upstream resolved count over the whole frozen population.
 - **Score (archived diagnostic):** 80% net / 20% churn percentile against frozen passing references, failures −25…0, bounds for unscored items. Bounds are not the bootstrap CI; CI never affects Score.
 - **Population vs panel:** a task needs a measured, in-scope passing reference to calibrate Score. Uncalibrated tasks stay in the population and in the footprint ranking.
 
-## Open decisions and next work, in priority order
+## Why the trimmed mean (settled 2026-10-01)
 
-### 1. Ranking statistic: mean is dominated by failed mass deletions (owner decision pending)
+The plain mean let a few huge failed patches decide rank. On Verified, Llama 4 Maverick ranked #1 at −244 with a median of +4; its five lowest attempts were failed deletions of 7k–14k units. The trimmed mean fixes that (Llama is now −3, still #1 but by a normal margin), barely moves the DeepSWE orders, and flips Live's top two (Opus 4.8 · AiWork now first). Smaller footprint still correlates with lower solve rate under every statistic tried (Spearman −0.25 to −0.57), and failed attempts are not systematically smaller than passing ones, so this is a real model-level tendency, not an artefact. Median was rejected because of heavy integer ties on Verified. Do not revert to the plain mean without the owner.
 
-An audit on 2026-10-01 found the mean lets a few huge failed patches decide rank. On Verified, #1 Llama 4 Maverick (mean −244, 21% solved) has median +4; its five lowest attempts are failed deletions of 7k–14k units. gpt-oss-120b (#2) and o4-mini (#3) show the same pattern. Qwen2.5-Coder 32B is ranked with only 33% coverage.
+## Next work, in priority order
 
-Offline comparison over all six boards (no page changes):
-
-- Median or 10% trimmed mean removes the deletion outliers. DeepSWE orders barely move; Verified's top becomes models with small typical patches. Medians tie heavily on Verified (integer values).
-- A fixed ≥90% coverage gate unranks every TypeScript model (coverage 80–91%, parser-driven), so any gate must be per-board or lower.
-- Smaller footprint correlates with lower solve rate under **every** statistic (Spearman −0.25 to −0.57). Failed attempts are *not* systematically smaller than passing ones (similar medians per board), so this is a genuine model-level tendency, not an artefact to fix.
-
-Needs the owner's choice before publishing. A change needs a new `ranking_metric` id, page/README/CHANGELOG copy updates and Node test updates; stored measurements do not change.
-
-### 2. TypeScript coverage
+### 1. TypeScript coverage
 
 Only 31/35 TS tasks calibrate; 323 TS records are analysis errors (322 syntax errors, 1 unsupported diff), plus 7 Go and 1 JS. The pinned grammar rejects valid constructs (`export type * as` in Vitest, Effect overload signatures); a base-file parse failure is not evidence of invalid model code. See `docs/typescript-parser-investigation.md`. Next: classify Kea's 96 error attempts and remaining after-only errors with minimal fixtures; evaluate candidate grammar versions offline; discuss a versioned parser change before remeasuring. Wrong-language metadata (`httpx-deterministic-cookie-store` = Python, `prometheus-transactional-reload-status` = Go) needs explicit versioned dataset corrections. KaTeX (JS-labelled) edits TS, so both tracks measure JS/TS extensions by file extension.
 
 Acceptance: malformed/recovered trees stay unmeasured (never suppress errors or assign zero); parser/rule changes bump the track version, freeze a new population and remeasure from a clean checkout; compare coverage/measurement deltas before rebuilding panels and pages together.
 
-### 3. Repository size
+### 2. Repository size
 
 `examples/` is ~250 MB in the working tree (~30 MB packed). Move large raw JSONL to versioned release assets with checksums and download commands before the next big import. Do not delete current artifacts or rewrite history without an agreed migration.
 
-### 4. Benchmark and model expansion
+### 3. Benchmark and model expansion
 
 - Candidate releases: the measured GPT-5.6 Sol JS/TS and PolyBench Opus cohorts, after passing-reference/population and rights review.
 - DeepSWE refresh (2026-09-29): same 26 usable configurations, unchanged checksums. Re-run discovery with a **fresh cache**; only analyze new/changed inputs. GPT-6 Astra declared no patches; Gemini 3.8 Flash patches returned 403.
@@ -88,7 +80,7 @@ Acceptance: malformed/recovered trees stay unmeasured (never suppress errors or 
 - SWE-Atlas Refactoring and SWE-bench Pro V2 are blocked on public per-attempt model-patch exports, not importer code (`docs/swe-atlas-investigation.md`, `docs/pro-atlas-artifact-audit.md`). Java/Rust need new unsupported tracks (`docs/language-expansion-opportunities.md`).
 - Never contact upstream, publish upstream issues or launch paid evaluations without owner approval.
 
-### 5. Lower priority
+### 4. Lower priority
 
 - Commit durable browser smoke checks (light mode under dark OS, tooltip, axis swaps, task/reset, mobile) if the UI changes again; Node tests mock the DOM.
 - CI `verify` job re-measures on `'3.14'`, not the pinned 3.14.7.
@@ -132,7 +124,7 @@ git diff --check
 
 ### Rebuild all six pages (offline, no remeasurement)
 
-As of `9c02b9a` this reproduces every committed page byte-for-byte.
+This reproduces every committed page byte-for-byte; check with `git status` after running it.
 
 ```sh
 NAV=(--nav 'DeepSWE Python=index.html' --nav 'DeepSWE JavaScript=javascript.html' --nav 'DeepSWE TypeScript=typescript.html'
@@ -147,7 +139,8 @@ python -m parsimony.site "$V/score-panel.json" "$V/"*.jsonl \
   --sensitivity "$V/sensitivity.json" --benchmark verified "${NAV[@]}" --output site/verified.html
 L=examples/live-python
 python -m parsimony.site "$L/score-panel.json" "$L/deepseek-v4.1-flash.jsonl" "$L/gpt-5.6-sol.jsonl" "$L/claude-opus-4.8.jsonl" \
-  --sensitivity "$L/stability.json" --benchmark live "${NAV[@]}" --output site/live.html
+  --sensitivity "$L/stability.json" --benchmark live "${NAV[@]}" --output site/live.html \
+  --data "$L/site-data.json"   # tests require the committed copy to match the page
 ```
 
 ### Inputs

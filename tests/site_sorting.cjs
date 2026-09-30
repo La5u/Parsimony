@@ -7,11 +7,11 @@ const data = JSON.parse(html.match(/type="application\/json">([\s\S]*?)<\/script
 const base = data.models[0];
 data.models = [
   {...base, agent: 'alpha', footprint_population_count: 4, measured_churn_mean: 4, name: 'Alpha', score: 10, lower: 4, upper: 16, ci: [1, 90], resolve_rate: .8,
-    company: 'Anthropic', measured_net_mean: -2, measured_attempts: 4, rank_range: [1, 2]},
+    company: 'Anthropic', measured_net_trimmed_mean: -2, measured_net_mean: 50, measured_attempts: 4, rank_range: [1, 2]},
   {...base, agent: 'beta', footprint_population_count: 4, measured_churn_mean: 6, name: 'Beta', score: null, lower: 10, upper: 30, ci: [2, 40], resolve_rate: .3,
-    company: 'OpenAI', measured_net_mean: 0, measured_attempts: 3, rank_range: [2, 3]},
+    company: 'OpenAI', measured_net_trimmed_mean: 0, measured_net_mean: -100, measured_attempts: 3, rank_range: [2, 3]},
   {...base, agent: 'gamma', footprint_population_count: 4, measured_churn_mean: null, name: 'Gamma', score: 5, lower: 5, upper: 5, ci: [3, 20], resolve_rate: .5,
-    company: 'Anthropic', measured_net_mean: null, measured_attempts: 0, rank_range: null},
+    company: 'Anthropic', measured_net_trimmed_mean: null, measured_net_mean: null, measured_attempts: 0, rank_range: null},
 ];
 data.task_count = 4;
 data.tasks = [
@@ -114,7 +114,9 @@ assert.equal(element('graph-y').value, 'resolve_rate');
 assert.equal(tickValues('x')[0], -2.1);
 assert.equal(tickValues('x').at(-1), .1);
 assert.deepEqual(tickValues('y'), [0, 25, 50, 75, 100]);
-assert.match(graph(), /Alpha \(Anthropic\).*Net units added \(mean per attempt\): −2.0, Solved \(%\): 80.0%/);
+assert.match(graph(), /Alpha \(Anthropic\).*Net units added \(10% trimmed mean per attempt\): −2.0, Solved \(%\): 80.0%/);
+// The plain mean stays available as a diagnostic axis but never drives rank.
+assert.match(element('graph-x').innerHTML, /value="net_mean">Net units added \(plain mean per attempt\)/);
 assert.doesNotMatch(graph(), /Gamma \(Anthropic\)/);
 assert.match(graph(), /aria-describedby="plot-desc"/);
 assert.doesNotMatch(graph(), /<title\b/); // Native SVG titles would create a second, delayed tooltip.
@@ -208,7 +210,7 @@ assert.deepEqual(names(), ['Alpha', 'Beta', 'Gamma']);
 assert.doesNotMatch(element('#board thead').innerHTML, /Score|churn|Per solve|95% CI|data-sort="ci"/i);
 assert(rows().every(row => [...row.matchAll(/<td\b/g)].length === 5));
 const tied = structuredClone(data);
-tied.models[1].measured_net_mean = -2;
+tied.models[1].measured_net_trimmed_mean = -2;
 tied.models[1].resolve_rate = 1; // Correctness must not break a footprint tie.
 element('parsimony-data').textContent = JSON.stringify(tied);
 vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc, window: browser});

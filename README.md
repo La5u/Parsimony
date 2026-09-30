@@ -110,13 +110,13 @@ python -m parsimony.snapshot restore cache-v4.tar.gz --cache .parsimony-cache  #
 
 ## Website
 
-**Current website ranking:** lowest mean net coding units added first, across all measured in-scope attempts (successful and failed), without correctness weighting or passing-reference selection. Columns are Rank, Model, Net units added, upstream Solved %, and Measured eligible/population. Equal means tie and absent means stay unranked. Partial coverage can bias the order; this is smallest measured footprint, not best coding ability. Failed no-ops and large deletions can rank first. The historical 80/20 scores, CI and score ranks remain available only as explicitly labelled optional archived diagnostics; they do not determine website rank.
+**Current website ranking:** lowest net coding units added first, as a 10% trimmed mean (the lowest and highest 5% of each model’s attempts dropped; none below 20 attempts) across all measured in-scope attempts (successful and failed), without correctness weighting or passing-reference selection. Trimming stops a few failed mass deletions from deciding rank alone (on Verified, one model’s plain mean was −244 against a median of +4). The plain mean stays available as a graph metric. Columns are Rank, Model, Net units added, upstream Solved %, and Measured eligible/population. Equal values tie and models with no measurements stay unranked. Partial coverage can bias the order; this is smallest measured footprint, not best coding ability. Failed no-ops and large deletions can rank first. The historical 80/20 scores, CI and score ranks remain available only as explicitly labelled optional archived diagnostics; they do not determine website rank.
 
 `python -m parsimony.site PANEL RECORDS... --output site/index.html` renders one self-contained page offline from a frozen panel and measured JSONL. Each page has:
 
 - a sortable table with the columns above;
 - a task-ID selector that swaps the same table and plot to one task's attempts, including failures (there is no second task table);
-- a scatterplot with one point per model, colored by developer company. You pick the X/Y metrics from the table; the defaults are mean net units added vs. solved %. Numeric axes fit the visible points with 5% padding, and solved % stays at 0–100%.
+- a scatterplot with one point per model, colored by developer company. You pick the X/Y metrics from the table; the defaults are net units added (trimmed mean) vs. solved %. Numeric axes fit the visible points with 5% padding, and solved % stays at 0–100%.
 
 Pages are always light mode and show an instant model-name-only tooltip. The archived 80/20 Score, its bootstrap 95% CI and rank ranges (`--sensitivity`) are available only as labelled optional graph metrics. They never affect the net ranking, and the CI never affects Score.
 
