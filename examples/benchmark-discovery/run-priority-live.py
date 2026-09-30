@@ -7,6 +7,7 @@ and inventory contain upstream patches and must NOT be committed or redistribute
 import argparse
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 from parsimony.artifacts import Cache
@@ -74,9 +75,12 @@ def main():
     if root.is_relative_to(repo):
         parser.error('use external storage: raw source/patch artifacts are not for redistribution')
     root.mkdir(parents=True, exist_ok=True)
-    identity = analyzer_identity()
-    if args.phase == 'measure' and (identity['dirty'] or not identity['git_commit']):
-        parser.error('measure only from a clean committed analyzer checkout')
+    commit, _source_sha256 = analyzer_identity()
+    if args.phase == 'measure':
+        dirty = subprocess.run(['git', 'status', '--porcelain', '--untracked-files=no'],
+                               cwd=repo, capture_output=True, text=True, check=True).stdout.strip()
+        if not commit or dirty:
+            parser.error('measure only from a clean committed analyzer checkout')
     cache = Cache(root / 'cache', timeout=90)
     for name, config, source_agent, model, language, agent in COHORTS:
         if args.cohort and name not in args.cohort:
