@@ -172,7 +172,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   $('coverage-note').hidden = true; // Passing-reference gaps no longer exclude footprint data.
   if (data.measurement_track) {
     const language = {javascript: 'JavaScript / JSX and TypeScript', typescript: 'TypeScript / TSX and JavaScript', go: 'Go'}[data.measurement_track.language];
-    $('language-scope').textContent = `Test, docs and generated files are excluded. This track measures ${language} with pinned Tree-sitter grammars. Units are syntax elements, not semantic complexity; raw counts are not comparable across language tracks.`;
+    const parser = data.measurement_track.unit_version.startsWith('typescript-compiler')
+      ? `the official TypeScript parser (typescript ${data.measurement_track.versions.typescript}, syntax only)` : 'pinned Tree-sitter grammars';
+    $('language-scope').textContent = `Test, docs and generated files are excluded. This track measures ${language} with ${parser}. Units are syntax elements, not semantic complexity; raw counts are not comparable across language tracks.`;
   }
   if (bench.notice) {
     $('benchmark-notice').hidden = false;

@@ -2,6 +2,15 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## 0.7.0-beta — JavaScript/TypeScript measured with the official TypeScript parser — 2026-10-01
+
+**Measurement revision for the JavaScript and TypeScript tracks.** Python and Go measurements are unchanged.
+
+- `tree-sitter-typescript==0.23.2` is unmaintained upstream and rejected valid modern TypeScript. A replay of all 323 TypeScript analysis errors, checked against the official TypeScript parser, found 319 valid files (261 of them unmodified base files), 3 invalid patches and 1 unsupported diff ([investigation](docs/typescript-parser-investigation.md)).
+- JavaScript and TypeScript now use `typescript@5.9.3` (pinned in `package.json`/`package-lock.json`, installed with `npm ci`) through a long-lived Node worker, `parsimony/typescript_units.cjs`. It parses syntax only; any syntax diagnostic, including TypeScript-only syntax in a JavaScript file, remains an explicit analysis error that now names the file and line. New unit track `typescript-compiler-units-v1`; raw counts are not comparable with `tree-sitter-units-v1`. Go keeps Tree-sitter, and its track identity now lists only the Go pins. The worker is part of the analyzer source hash.
+- Remeasured all 26 DeepSWE configurations from clean commit `ca37c31` against the unchanged datasets: TypeScript errors 323 → 5 of 3,640, calibratable tasks 31 → 33 of 35; JavaScript 520 of 520 measured. No previously measured record fails; upstream outcomes and patch hashes are identical; old and new net units correlate at 0.999. New populations, coverage audits, panels (`…-v0.7`), scores, stability reports and both pages were rebuilt together. The 0.6.0 records were replaced in place and were last present at commit `ca37c31`.
+- The `languages` extra now installs only `tree-sitter` and `tree-sitter-go`. CI installs Node 22 and runs `npm ci`.
+
 ## Website: trimmed-mean footprint ranking — 2026-10-01
 
 All six boards now rank by a **10% trimmed mean** of net coding units added (`measured-net-trimmed-mean-10-v1`): each model drops floor(n × 5%) measured attempts at each end, so the plain mean is used below 20 attempts. Passing and failed attempts still both count, there is still no correctness tie-break, and there is no coverage gate. Under the plain mean a few failed mass deletions decided rank; on Verified, Llama 4 Maverick ranked first at −244 against a median of +4. The plain mean stays in page data (`measured_net_mean`) and as a graph metric. No measurement, score, CI or task cell changed; only model order and the new field did. Verified and DeepSWE orders shift slightly. On Live, Claude Opus 4.8 · AiWork moves to first.
