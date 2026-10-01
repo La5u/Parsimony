@@ -116,7 +116,7 @@ python -m parsimony.snapshot restore cache-v4.tar.gz --cache .parsimony-cache  #
 
 - a sortable table with the columns above;
 - a task-ID selector that swaps the same table and plot to one task's attempts, including failures (there is no second task table);
-- a scatterplot with one point per model, colored by developer company. You pick the X/Y metrics from the table; the defaults are net units added (trimmed mean) vs. solved %. Numeric axes fit the visible points with 5% padding, and solved % stays at 0–100%.
+- a scatterplot with one point per model, colored by developer company. Each model line's newest generation (highest version, e.g. Claude Opus 5 over 4.8) is fully colored and labelled by name; earlier generations are faded. A green area marks the better corner on both axes (top-left for the default view: smaller footprint, more solved) and is omitted when an axis has no better direction. You pick the X/Y metrics from the table; the defaults are net units added (trimmed mean) vs. solved %. Numeric axes fit the visible points with 5% padding, and solved % stays at 0–100%.
 
 Pages are always light mode and show an instant model-name-only tooltip. The archived 80/20 Score, its bootstrap 95% CI and rank ranges (`--sensitivity`) are available only as labelled optional graph metrics. They never affect the net ranking, and the CI never affects Score.
 

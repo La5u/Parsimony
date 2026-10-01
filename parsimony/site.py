@@ -85,6 +85,26 @@ def company(agent):
     return 'Other'
 
 
+GENERATION = re.compile(r'\d+(?:\.\d+)*')
+
+
+def generation(name):
+    """(model line, version) from a display name: 'Claude Opus 4.8 (max)' -> ('claude opus', (4, 8))."""
+    match = GENERATION.search(name)
+    if not match:
+        return name.lower(), ()
+    return name[:match.start()].strip().lower(), tuple(int(part) for part in match.group().split('.'))
+
+
+def newest_generation(names):
+    """Names whose version is the highest of their model line (the text before the version)."""
+    newest = {}
+    for name in names:
+        line, version = generation(name)
+        newest[line] = max(newest.get(line, version), version)
+    return {name for name in names if generation(name)[1] == newest[generation(name)[0]]}
+
+
 def median(values):
     values = [v for v in values if v is not None]
     return statistics.median(values) if values else None
@@ -184,6 +204,10 @@ def build(panel, records, draws=2000, seed=42):
     models.sort(key=lambda m: (m['measured_net_trimmed_mean'] is None,
                                m['measured_net_trimmed_mean'] if m['measured_net_trimmed_mean'] is not None else 0,
                                m['name']))
+    # Chart emphasis only: older generations are drawn lighter and unlabelled; rank ignores this.
+    newest = newest_generation([m['name'] for m in models])
+    for m in models:
+        m['latest'] = m['name'] in newest
     order = [m['agent'] for m in models]
     tasks = []
     for task in panel['tasks']:

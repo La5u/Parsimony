@@ -7,9 +7,9 @@ const data = JSON.parse(html.match(/type="application\/json">([\s\S]*?)<\/script
 const base = data.models[0];
 data.models = [
   {...base, agent: 'alpha', footprint_population_count: 4, measured_churn_mean: 4, name: 'Alpha', score: 10, lower: 4, upper: 16, ci: [1, 90], resolve_rate: .8,
-    company: 'Anthropic', measured_net_trimmed_mean: -2, measured_net_mean: 50, measured_attempts: 4, rank_range: [1, 2]},
+    company: 'Anthropic', latest: true, measured_net_trimmed_mean: -2, measured_net_mean: 50, measured_attempts: 4, rank_range: [1, 2]},
   {...base, agent: 'beta', footprint_population_count: 4, measured_churn_mean: 6, name: 'Beta', score: null, lower: 10, upper: 30, ci: [2, 40], resolve_rate: .3,
-    company: 'OpenAI', measured_net_trimmed_mean: 0, measured_net_mean: -100, measured_attempts: 3, rank_range: [2, 3]},
+    company: 'OpenAI', latest: false, measured_net_trimmed_mean: 0, measured_net_mean: -100, measured_attempts: 3, rank_range: [2, 3]},
   {...base, agent: 'gamma', footprint_population_count: 4, measured_churn_mean: null, name: 'Gamma', score: 5, lower: 5, upper: 5, ci: [3, 20], resolve_rate: .5,
     company: 'Anthropic', measured_net_trimmed_mean: null, measured_net_mean: null, measured_attempts: 0, rank_range: null},
 ];
@@ -78,7 +78,9 @@ function tickValues(axis) {
   const pattern = new RegExp(`<text class="tick" text-anchor="${anchor}"[^>]*>([−\\d.]+%?)<\\/text>`, 'g');
   return [...graph().matchAll(pattern)].map(m => Number.parseFloat(m[1].replace('−', '-')));
 }
-const colors = () => [...graph().matchAll(/<circle[^>]*fill="([^"]+)"/g)].map(m => m[1]);
+// Circles are drawn older-generation first; report colors in model (point index) order.
+const colors = () => [...graph().matchAll(/<circle data-point="(\d+)"[^>]*fill="([^"]+)"/g)]
+  .sort((a, b) => a[1] - b[1]).map(m => m[2]);
 function click(key, expected, direction) {
   const button = doc.querySelectorAll('#board button[data-sort]').find(b => b.dataset.sort === key);
   assert(button, `missing sort button ${key}`);
@@ -118,6 +120,18 @@ assert.match(graph(), /Alpha \(Anthropic\).*Net units added \(10% trimmed mean p
 // The plain mean stays available as a diagnostic axis but never drives rank.
 assert.match(element('graph-x').innerHTML, /value="net_mean">Net units added \(plain mean per attempt\)/);
 assert.doesNotMatch(graph(), /Gamma \(Anthropic\)/);
+// Newest generation: full color and a permanent name label. Earlier generations: faded, no label.
+assert.match(graph(), /<text class="point-label"[^>]*>Alpha<\/text>/);
+assert.doesNotMatch(graph(), /<text class="point-label"[^>]*>Beta<\/text>/);
+assert.match(graph(), /<circle data-point="1" class="all-point older"/);
+assert.match(graph(), /<circle data-point="0" class="all-point"/);
+// Lower net units and higher solved are better: the green zone sits in the top-left corner.
+assert.match(graph(), /<rect class="best-zone" x="66" y="18"/);
+assert.match(graph(), /Smaller footprint, more solved/);
+element('graph-y').listeners.change({target: {value: 'coverage'}});
+assert.doesNotMatch(graph(), /best-zone/); // Coverage has no better direction.
+element('graph-y').listeners.change({target: {value: 'resolve_rate'}});
+assert.match(graph(), /best-zone/);
 assert.match(graph(), /aria-describedby="plot-desc"/);
 assert.doesNotMatch(graph(), /<title\b/); // Native SVG titles would create a second, delayed tooltip.
 assert.match(graph(), /tabindex="0"/);
@@ -127,7 +141,8 @@ const initialColors = colors();
 assert.notEqual(initialColors[0], initialColors[1]);
 const tooltip = element('graph-tooltip');
 assert.equal(tooltip.hidden, true);
-const firstCircle = doc.querySelectorAll('#graph circle[data-point]')[0];
+// Draw order puts earlier generations first, so select Alpha's circle by its point index.
+const firstCircle = doc.querySelectorAll('#graph circle[data-point]').find(c => c.dataset.point === '0');
 for (const event of ['mouseenter', 'mousemove', 'focus', 'click']) {
   firstCircle.listeners[event]();
   assert.equal(tooltip.textContent, 'Alpha'); // Immediate, model name only; no metrics/company.
