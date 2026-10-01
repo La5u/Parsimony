@@ -512,7 +512,7 @@ def measure(patch: str, get_source=None, language='python') -> dict:
         raise ValueError(f'unsupported language: {language}')
     measurement_track = languages.track(language)
     if language != 'python' and get_source is None:
-        raise ValueError('Tree-sitter tracks require full-file base sources, not patch-only estimates')
+        raise ValueError('JavaScript, TypeScript and Go tracks require full-file base sources, not patch-only estimates')
     totals = dict(units_added=0, units_deleted=0, net_units=0, churn=0, structural_churn=0,
                   tokens_added=0, tokens_deleted=0, net_tokens=0, token_churn=0,
                   files_changed=0, ast_delta=0, complexity_delta=0)
@@ -562,7 +562,7 @@ def measure(patch: str, get_source=None, language='python') -> dict:
             a, b = group_lines(la), group_lines(lb)
             units = unit_lines
         else:
-            # Full-file grammar errors are explicit analysis errors, never zero footprint.
+            # Full-file syntax errors are explicit analysis errors, never zero footprint.
             roots = (languages.parse(before, f.old if f.old != '/dev/null' else path),
                      languages.parse(after, path))
             parsed = True

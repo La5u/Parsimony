@@ -13,7 +13,7 @@ from urllib.parse import quote
 
 from .analysis import measure
 
-ANALYZER_VERSION = '0.6.0-beta'
+ANALYZER_VERSION = '0.7.0-beta'
 FAILED_CATEGORIES = {'unresolved', 'failed', 'not_resolved'}
 
 
@@ -30,7 +30,8 @@ def analyzer_identity():
     """Commit (None when uncommitted/unavailable) and hash of the analyzer sources."""
     root = Path(__file__).resolve().parent
     digest = hashlib.sha256()
-    for path in sorted(root.glob('*.py')):
+    # The Node worker for JavaScript/TypeScript is analyzer source too.
+    for path in sorted(root.glob('*.py')) + sorted(root.glob('*.cjs')):
         digest.update(path.name.encode() + b'\0' + path.read_bytes() + b'\0')
     commit = None
     try:
@@ -97,7 +98,7 @@ def analyze_submission(submission, cache, dataset=None, limit=None, patch_only=F
     language = next(iter(languages))
     measurement_track = track(language)
     if patch_only and measurement_track:
-        raise ValueError('Tree-sitter tracks require full-file analysis')
+        raise ValueError('JavaScript, TypeScript and Go tracks require full-file analysis')
     tasks = sorted(set(metadata) or (set(submission['predictions']) | submission['resolved'] |
                                     (submission['evaluated'] or set())))
     # The public Verified benchmark has a fixed 500-task denominator, even when

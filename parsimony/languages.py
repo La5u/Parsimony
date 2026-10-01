@@ -1,8 +1,15 @@
-"""Optional Tree-sitter coding-unit backend for JavaScript, TypeScript and Go.
+"""Optional coding-unit backends for JavaScript, TypeScript and Go.
 
-These syntax-derived counts are not semantic complexity and are not comparable
-across languages. Tree-sitter dependencies are deliberately imported lazily.
+JavaScript and TypeScript use the official TypeScript parser (pinned npm package,
+run by Node through ``typescript_units.cjs``); Go uses Tree-sitter. These
+syntax-derived counts are not semantic complexity and are not comparable across
+languages or backends. Dependencies are deliberately loaded lazily.
 """
+import atexit
+import json
+import os
+import shutil
+import subprocess
 from bisect import bisect_right
 from dataclasses import dataclass
 from importlib import metadata
@@ -10,12 +17,13 @@ from pathlib import Path
 
 SUPPORTED = ("python", "javascript", "typescript", "go")
 UNIT_VERSION = "tree-sitter-units-v1"
+TYPESCRIPT_UNIT_VERSION = "typescript-compiler-units-v1"
 _PINS = {
     "tree-sitter": "0.26.0",
-    "tree-sitter-javascript": "0.25.0",
-    "tree-sitter-typescript": "0.23.2",
     "tree-sitter-go": "0.25.0",
 }
+TYPESCRIPT_PIN = "5.9.3"
+_WORKER = Path(__file__).with_name("typescript_units.cjs")
 _EXTENSIONS = {
     ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript",
     ".ts": "typescript", ".tsx": "typescript", ".mts": "typescript", ".cts": "typescript",
@@ -65,7 +73,59 @@ def _versions():
 
 
 def _install_help():
-    return "python -m pip install tree-sitter==0.26.0 tree-sitter-javascript==0.25.0 tree-sitter-typescript==0.23.2 tree-sitter-go==0.25.0"
+    return "python -m pip install tree-sitter==0.26.0 tree-sitter-go==0.25.0"
+
+
+_TYPESCRIPT_HELP = ("JavaScript/TypeScript tracks need Node.js and the pinned parser: run `npm ci` in the "
+                    f"repository root (typescript=={TYPESCRIPT_PIN}), or set PARSIMONY_TYPESCRIPT_DIR to a "
+                    "directory whose node_modules contains it")
+
+
+class _TypeScriptWorker:
+    """One long-lived Node process; requests and responses are line-delimited JSON."""
+    def __init__(self):
+        node = os.environ.get("PARSIMONY_NODE") or shutil.which("node")
+        if not node:
+            raise ValueError(f"Node.js not found. {_TYPESCRIPT_HELP}")
+        self.process = subprocess.Popen([node, str(_WORKER)], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE, text=True, encoding="utf-8")
+        header = self.process.stdout.readline()
+        if not header:
+            error = self.process.stderr.read().strip().splitlines()
+            self.close()
+            raise ValueError(f"TypeScript parser unavailable ({error[-1] if error else 'no output'}). {_TYPESCRIPT_HELP}")
+        self.version = json.loads(header)["typescript"]
+
+    def request(self, path, source):
+        self.process.stdin.write(json.dumps({"path": path, "source": source}) + "\n")
+        self.process.stdin.flush()
+        line = self.process.stdout.readline()
+        if not line:
+            raise RuntimeError("TypeScript parser process exited unexpectedly")
+        response = json.loads(line)
+        if response.get("fatal"):
+            raise RuntimeError(f"TypeScript parser failed: {response['error']}")
+        return response
+
+    def close(self):
+        self.process.stdin.close()
+        self.process.wait(timeout=10)
+        self.process.stdout.close()
+        self.process.stderr.close()
+
+
+_worker = None
+
+
+def _typescript():
+    global _worker
+    if _worker is None:
+        _worker = _TypeScriptWorker()
+        atexit.register(_worker.close)
+    if _worker.version != TYPESCRIPT_PIN:
+        raise ValueError(f"TypeScript parser requires typescript=={TYPESCRIPT_PIN} (found {_worker.version}). "
+                         f"{_TYPESCRIPT_HELP}")
+    return _worker
 
 
 def track(language):
@@ -74,6 +134,10 @@ def track(language):
         raise ValueError(f"unsupported language: {language}")
     if language == "python":
         return None
+    if language in ("javascript", "typescript"):
+        _typescript()
+        return {"language": language, "unit_version": TYPESCRIPT_UNIT_VERSION,
+                "versions": {"typescript": TYPESCRIPT_PIN}}
     return {"language": language, "unit_version": UNIT_VERSION, "versions": _versions()}
 
 
@@ -85,23 +149,42 @@ class Parsed:
     line_starts: list
 
 
+@dataclass
+class CompilerParsed:
+    """Units, tokens and structure computed by the TypeScript parser worker."""
+    language: str
+    units: list
+    plain: list
+    tokens: list
+    structure: tuple
+
+
+def _rows(pairs):
+    result = []
+    for row, label in pairs:
+        if result and result[-1][0] == row:
+            result[-1][1].append(label)
+        else:
+            result.append((row, [label]))
+    return [tuple(labels) for _, labels in result]
+
+
 def parse(source, path):
     """Parse source without execution. Invalid or recovered syntax is rejected."""
     language = extension_language(path)
     if language is None or language == "python":
-        raise ValueError(f"unsupported Tree-sitter source path: {path}")
+        raise ValueError(f"unsupported source path for the language backends: {path}")
+    if language in ("javascript", "typescript"):
+        text = source.decode("utf-8") if isinstance(source, bytes) else source
+        response = _typescript().request(path, text)
+        if not response["ok"]:
+            raise ValueError(f"invalid or recovered {language} syntax: {response['error']}")
+        return CompilerParsed(language, _rows(response["units"]), _rows(response["plain"]),
+                              _rows(response["tokens"]), tuple(response["structure"]))
     _versions()
     from tree_sitter import Language, Parser
-    if language == "javascript":
-        import tree_sitter_javascript as grammar
-        capsule = grammar.language()
-    elif language == "typescript":
-        import tree_sitter_typescript as grammar
-        capsule = grammar.language_tsx() if Path(path).suffix.lower() == ".tsx" else grammar.language_typescript()
-    else:
-        import tree_sitter_go as grammar
-        capsule = grammar.language()
-    parser = Parser(Language(capsule))
+    import tree_sitter_go as grammar
+    parser = Parser(Language(grammar.language()))
     data = source.encode("utf-8") if isinstance(source, str) else bytes(source)
     tree = parser.parse(data)
     if tree.root_node.has_error:
@@ -140,6 +223,8 @@ def _unit_label(node, keep_values, source):
 
 def unit_lines(parsed, keep_values=True):
     """Return preorder syntax units grouped by source row, with block-end markers."""
+    if isinstance(parsed, CompilerParsed):
+        return parsed.units if keep_values else parsed.plain
     result = []
     def add(row, label):
         if label is None:
@@ -169,6 +254,8 @@ def unit_lines(parsed, keep_values=True):
 
 def token_lines(parsed):
     """Normalized significant lexical leaves, grouped by source row."""
+    if isinstance(parsed, CompilerParsed):
+        return parsed.tokens
     result = []
     stack = [parsed.tree.root_node]
     while stack:
@@ -192,6 +279,8 @@ def token_lines(parsed):
 
 def structure(parsed):
     """Return named-node count and a simple branch-count cyclomatic proxy."""
+    if isinstance(parsed, CompilerParsed):
+        return parsed.structure
     count = branches = 0
     stack = [parsed.tree.root_node]
     while stack:
