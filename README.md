@@ -8,7 +8,7 @@ Parsimony imports public **SWE-bench Verified** predictions and published evalua
 
 ## Quick start
 
-Python 3.12+, **no runtime dependencies for Python analysis**. Optional JavaScript/TypeScript and Go tracks use `pip install '.[languages]'`; see [language tracks](docs/language-tracks.md) for pinned parsers, scope and reproducible commands. Run from this checkout (`pip install -e .` is optional). Measurements depend on the interpreter's tokenizer, so use one pinned Python version for anything you compare.
+Python 3.12+, **no runtime dependencies for Python analysis**. Optional tracks: JavaScript/TypeScript use Node.js and the official TypeScript parser (`npm ci` installs the pinned `typescript`), Go uses `pip install '.[languages]'`; see [language tracks](docs/language-tracks.md) for pinned parsers, scope and reproducible commands. Run from this checkout (`pip install -e .` is optional). Measurements depend on the interpreter's tokenizer, so use one pinned Python version for anything you compare.
 
 ```sh
 # Metadata, base commits and human patches for all 500 Verified tasks.
@@ -138,8 +138,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). `python -m parsimony.contribute export` 
 | Example | Analyzer | What it shows |
 |---|---|---|
 | [deepswe-python](examples/deepswe-python/README.md) | 0.5.2-beta | 26 current models (2026) × 34 DeepSWE Python tasks × 4 attempts, one agent (mini-SWE-agent); imported with `python -m parsimony.deepswe` (the website's main board) |
-| [deepswe-javascript](examples/deepswe-javascript/README.md) | 0.6.0-beta | 26 models × 5 JS-labelled tasks × 4 attempts; all 5 tasks calibratable; JS/TS grammars by file extension |
-| [deepswe-typescript](examples/deepswe-typescript/README.md) | 0.6.0-beta | 26 models × 35 TS-labelled tasks × 4 attempts; 31 tasks calibratable, with grammar gaps and two upstream language-label mismatches documented |
+| [deepswe-javascript](examples/deepswe-javascript/README.md) | 0.7.0-beta | 26 models × 5 JS-labelled tasks × 4 attempts; all 5 tasks calibratable; official TypeScript parser, script kind by file extension |
+| [deepswe-typescript](examples/deepswe-typescript/README.md) | 0.7.0-beta | 26 models × 35 TS-labelled tasks × 4 attempts; official TypeScript parser; 33 tasks calibratable (5 analysis errors in 3,640 records), two upstream language-label mismatches documented |
 | [deepswe-go](examples/deepswe-go/README.md) | 0.6.0-beta | 26 models × 34 Go tasks × 4 attempts; all 34 tasks calibratable |
 | [mini-swe-agent-500](examples/mini-swe-agent-500/README.md) | 0.5.2-beta | 33 models × all 500 tasks with failures, mini-SWE-agent v0.0.0–v2.0.0; frozen panel, scores, rank ranges and an agent-version check (the website's second board) |
 | [ten-model-500](examples/ten-model-500/README.md) | 0.5.0-beta | Ten models (plus Claude Opus 4.5) × all 500 tasks, mini-SWE-agent v2.0.0 only; superseded as the website's data |
@@ -157,7 +157,7 @@ The smoke and ten-model samples were regenerated with 0.5.0 (`python -m examples
 
 **Code footprint is not technical debt.** Small code can be cryptic, incorrect beyond the benchmark tests, insecure or hard to maintain. Larger changes may add valuable validation. Human patches are a baseline, not an optimum. Net-weighted scores reward deletion, and SWE-bench tests do not protect untested code, so check the `net_floor` sensitivity variant.
 
-The existing Python boards measure Python only. Analyzer 0.6.0 adds optional [JavaScript/TypeScript and Go tracks](docs/language-tracks.md), kept separate from Python and each other; raw counts are not cross-language comparable. Scope is unified text diffs only: binary/rename-only diffs and quoted paths are unsupported. There is no call-graph, runtime, maintainability or behavioral-equivalence modeling. Path and generated-file filters are heuristic. Interpreter tokenizer/AST changes (notably f-strings) change results. Coding units measure size and nesting, not readability: a test-specific hardcoded branch can cost fewer units than a general fix.
+The existing Python boards measure Python only. Optional [JavaScript/TypeScript and Go tracks](docs/language-tracks.md) (analyzer 0.6.0; JavaScript/TypeScript moved to the official TypeScript parser in 0.7.0) are kept separate from Python and each other; raw counts are not cross-language comparable. Scope is unified text diffs only: binary/rename-only diffs and quoted paths are unsupported. There is no call-graph, runtime, maintainability or behavioral-equivalence modeling. Path and generated-file filters are heuristic. Interpreter tokenizer/AST changes (notably f-strings) change results. Coding units measure size and nesting, not readability: a test-specific hardcoded branch can cost fewer units than a general fix.
 
 ## Roadmap (priority order)
 
@@ -166,4 +166,4 @@ The existing Python boards measure Python only. Analyzer 0.6.0 adds optional [Ja
 3. Evaluate score sensitivity to panel composition, weights, failure cap and task mix, with paired uncertainty and per-task outcomes.
    [Stability report for 33 models × 500 tasks](examples/mini-swe-agent-500/sensitivity.md) (`python -m parsimony.stability`): weights and cap never change a rank; most neighbouring models are statistically tied, and the agent version alone moves a model by up to 5.6 points.
 4. Validate units against blind human preferences on patch pairs, and add readability diagnostics (test-input hardcoding, nesting depth, reuse of existing helpers).
-5. Expand to more models and harnesses on the **same frozen tasks**. Optional JS/TS and Go tracks are published in 0.6.0 with 7,696 additional attempt records and audited coverage (70 of 74 additional tasks calibratable). [SWE-Atlas investigation](docs/swe-atlas-investigation.md): newer-model aggregate scores exist, but public per-attempt model patches/results were not found.
+5. Expand to more models and harnesses on the **same frozen tasks**. Optional JS/TS and Go tracks are published with 7,696 additional attempt records and audited coverage (72 of 74 additional tasks calibratable; JS/TS remeasured in 0.7.0 with the official TypeScript parser). [SWE-Atlas investigation](docs/swe-atlas-investigation.md): newer-model aggregate scores exist, but public per-attempt model patches/results were not found.

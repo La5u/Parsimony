@@ -37,8 +37,8 @@ Cloudflare Pages serves `site/` at <https://parsimony.lasu.dev>; a push to `main
 | Board | Page | Data | Models | Population | Analyzer |
 |---|---|---|---:|---:|---|
 | DeepSWE Python (main) | `site/index.html` | `examples/deepswe-python/` | 26 | 34 tasks × 4 attempts | 0.5.2-beta |
-| DeepSWE JavaScript | `site/javascript.html` | `examples/deepswe-javascript/` | 26 | 5 × 4 | 0.6.0-beta |
-| DeepSWE TypeScript | `site/typescript.html` | `examples/deepswe-typescript/` | 26 | 35 × 4 | 0.6.0-beta |
+| DeepSWE JavaScript | `site/javascript.html` | `examples/deepswe-javascript/` | 26 | 5 × 4 | 0.7.0-beta @ `ca37c31` |
+| DeepSWE TypeScript | `site/typescript.html` | `examples/deepswe-typescript/` | 26 | 35 × 4 | 0.7.0-beta @ `ca37c31` |
 | DeepSWE Go | `site/go.html` | `examples/deepswe-go/` | 26 | 34 × 4 | 0.6.0-beta |
 | SWE-bench Verified | `site/verified.html` | `examples/mini-swe-agent-500/` | 33 | 500 × 1 | 0.5.2-beta |
 | SWE-bench Live Lite Python | `site/live.html` | `examples/live-python/` | 3 configs | 300 × 1 | 0.6.0-beta @ `de63300` |
@@ -62,11 +62,15 @@ The plain mean let a few huge failed patches decide rank. On Verified, Llama 4 M
 
 ## Next work, in priority order
 
-### 1. TypeScript coverage
+### 1. Remaining JavaScript/TypeScript follow-ups
 
-Only 31/35 TS tasks calibrate; 323 TS records are analysis errors (322 syntax errors, 1 unsupported diff), plus 7 Go and 1 JS. The pinned grammar rejects valid constructs (`export type * as` in Vitest, Effect overload signatures); a base-file parse failure is not evidence of invalid model code. See `docs/typescript-parser-investigation.md`. Next: classify Kea's 96 error attempts and remaining after-only errors with minimal fixtures; evaluate candidate grammar versions offline; discuss a versioned parser change before remeasuring. Wrong-language metadata (`httpx-deterministic-cookie-store` = Python, `prometheus-transactional-reload-status` = Go) needs explicit versioned dataset corrections. KaTeX (JS-labelled) edits TS, so both tracks measure JS/TS extensions by file extension.
+The parser problem is solved (analyzer 0.7.0, 2026-10-01): JS/TS use the official TypeScript parser, TS errors fell from 323 to 5 of 3,640 records and 33/35 TS tasks calibrate. See `docs/typescript-parser-investigation.md`. What is left:
 
-Acceptance: malformed/recovered trees stay unmeasured (never suppress errors or assign zero); parser/rule changes bump the track version, freeze a new population and remeasure from a clean checkout; compare coverage/measurement deltas before rebuilding panels and pages together.
+- Wrong-language upstream metadata: `httpx-deterministic-cookie-store` (Python patches) and `prometheus-transactional-reload-status` (Go patches) are the two uncalibrated TS tasks. Fixing them needs an explicit, versioned dataset correction, never a silent move.
+- Scope: Effect's `dtslint/*.tst.ts` type tests count as implementation; an exclusion rule would be a versioned scope change with a remeasure.
+- Root-level scratch scripts (`*.cjs`, `*.js`) left by agents count for JS/TS (only Python excludes new root files). One invalid scratch script causes one of the five remaining errors.
+- The externally held GPT-5.6 Sol Live JS/TS measurements (`examples/priority-live/`) were made with the 0.6.0 Tree-sitter backend. Remeasure them with 0.7.0 before any release.
+- Go still has 7 analysis errors under Tree-sitter; they have not been classified.
 
 ### 2. Repository size
 
@@ -90,7 +94,8 @@ Acceptance: malformed/recovered trees stay unmeasured (never suppress errors or 
 ## Code and data map
 
 - `parsimony/analysis.py`: strict patch application, scope/generated-file rules, unit-diff engine, Python AST units, language dispatch.
-- `parsimony/languages.py`: pinned lazy Tree-sitter backend. **Do not reintroduce repeated native Point access** (crashed on large trees with Python 3.14 / tree-sitter 0.26.0); use owned bytes, byte offsets and computed line starts.
+- `parsimony/typescript_units.cjs`: Node worker that parses JS/TS with the pinned official TypeScript parser and emits units, tokens and structure; part of the analyzer source hash.
+- `parsimony/languages.py`: backend dispatch, the long-lived Node worker client (JS/TS) and the pinned lazy Tree-sitter backend (Go). **Do not reintroduce repeated native Point access** (crashed on large trees with Python 3.14 / tree-sitter 0.26.0); use owned bytes, byte offsets and computed line starts.
 - `parsimony/benchmark.py`: records, analyzer identity, outcomes, failures, reference measurements.
 - `parsimony/deepswe.py`, `live.py`, `polybench.py`, `artifacts.py`, `preimages.py`: importers and provenance audits.
 - `parsimony/scoring.py` (formula, bounds, track compatibility), `stability.py`, `sensitivity.py` (diagnostics, bootstrap).
@@ -101,8 +106,8 @@ Acceptance: malformed/recovered trees stay unmeasured (never suppress errors or 
 ## Measurement rules
 
 - Published Python records use **Python 3.14.7**; use it for comparable measurements. Scoring rejects mixed analyzer/Python versions.
-- Optional parser pins: `tree-sitter==0.26.0`, `tree-sitter-javascript==0.25.0`, `tree-sitter-typescript==0.23.2`, `tree-sitter-go==0.25.0` (`.[languages]`).
-- DeepSWE language records were measured at clean `7705e8d` (0.6.0-beta); Python boards keep 0.5.2-beta. Never relabel.
+- Optional parser pins: JS/TS `typescript@5.9.3` via `npm ci` (Node.js; unit track `typescript-compiler-units-v1`); Go `tree-sitter==0.26.0`, `tree-sitter-go==0.25.0` via `.[languages]` (`tree-sitter-units-v1`). A measurement worktree needs its own `npm ci`; `node_modules/` is ignored, so the checkout stays clean.
+- DeepSWE JS/TS records were measured at clean `ca37c31` (0.7.0-beta), Go at clean `7705e8d` (0.6.0-beta); Python boards keep 0.5.2-beta. Never relabel. `deepswe panel` refuses to overwrite an existing panel: write to a new path, or delete the old file deliberately when replacing a track.
 - Measure from a **clean committed checkout**, ideally a detached worktree with cache/output outside it. `analyzer_identity` hashes every `parsimony/*.py`, including `site.py`. `release freeze` refuses a dirty tree, and `.claude/` makes the main checkout dirty: use a worktree, don't delete `.claude/`.
 - The download cache is immutable by URL (`--cache` goes before the subcommand); use a fresh cache for mutable upstream metadata.
 - Missing artifact, unknown outcome and explicit failure are distinct. Never infer failure from absence or invent patches.
@@ -113,7 +118,8 @@ Acceptance: malformed/recovered trees stay unmeasured (never suppress errors or 
 ### Before every push
 
 ```sh
-python -m unittest discover -s tests -q          # 219 tests; 16 skip without optional parsers
+npm ci                                            # pinned TypeScript parser for JS/TS tests
+python -m unittest discover -s tests -q          # 226 tests; Go tests skip without the languages extra
 python -m parsimony.contribute validate submissions
 uv venv --python 3.14.7 /tmp/parsimony-checks
 uv pip install --python /tmp/parsimony-checks/bin/python '.[languages]'
