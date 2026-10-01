@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest import mock
 
 from parsimony.scoring import freeze
-from parsimony.site import add_rank_ranges, build, company, label, main, newest_generation, render, trimmed_mean
+from parsimony.site import add_rank_ranges, build, company, label, main, newest_generation, render
 from tests.test_scoring import record
 
 
@@ -70,6 +70,8 @@ class SiteTests(unittest.TestCase):
         self.assertEqual((a['net_units'], a['churn']), (4, 6))
         self.assertEqual(data['excluded_tasks'], ['outside'])
         self.assertEqual(a['measured_net_mean'], 1107 / 4)
+        # Solved-only mean covers every measured solved attempt, including tasks outside the score panel.
+        self.assertEqual((a['measured_solved_net_mean'], a['measured_solved_attempts']), (1007 / 3, 3))
         self.assertEqual(a['measured_churn_mean'], 1111 / 4)
         self.assertEqual(a['measured_attempts'], 4)
         self.assertEqual(a['footprint_population_count'], 4)
@@ -96,28 +98,29 @@ class SiteTests(unittest.TestCase):
         missing = record('c', 't1')
         missing.update(metrics=None, analysis_status='fetch_error')
         data = build(panel, [refs[0], record('b', 't1', net=0, churn=0, resolved=False), missing], draws=20)
-        self.assertEqual(data['ranking_metric'], 'measured-net-trimmed-mean-10-v1')
+        self.assertEqual(data['ranking_metric'], 'measured-net-mean-v1')
         self.assertEqual([m['agent'] for m in data['models']], ['b', 'a', 'c'])
         self.assertEqual([m['measured_net_mean'] for m in data['models']], [0, 9, None])
-        self.assertEqual([m['measured_net_trimmed_mean'] for m in data['models']], [0, 9, None])
+        self.assertEqual([m['measured_solved_net_mean'] for m in data['models']], [None, 9, None])
         self.assertEqual([m['measured_attempts'] for m in data['models']], [1, 1, 0])
         self.assertEqual([m['footprint_population_count'] for m in data['models']], [2, 2, 2])
         self.assertEqual([row[0] for row in data['footprint_tasks']], ['t1', 't2'])
         self.assertTrue(all(cell[7] is False for cell in data['footprint_tasks'][1][2]))
 
-    @unittest.skipUnless(shutil.which('node'), 'JavaScript interaction test requires Node.js')
-    def test_single_failed_mass_deletion_does_not_decide_rank(self):
+    def test_rank_uses_plain_mean_and_reports_solved_only_mean(self):
         tasks = [f't{i:02}' for i in range(20)]
         steady = [record('steady', t, net=5, churn=5) for t in tasks]
-        # 19 larger patches plus one failed deletion: the plain mean is lower, the trimmed mean is not.
+        # One failed mass deletion pulls the all-attempt mean down; the solved-only mean ignores it.
         deleter = [record('deleter', t, net=20, churn=20) for t in tasks[1:]]
         deleter.append(record('deleter', tasks[0], net=-5000, churn=5000, resolved=False))
-        panel = freeze(steady, 'trimmed')
-        data = build(panel, steady + deleter, draws=20)
-        by_agent = {m['agent']: m for m in data['models']}
-        self.assertLess(by_agent['deleter']['measured_net_mean'], by_agent['steady']['measured_net_mean'])
-        self.assertEqual(by_agent['deleter']['measured_net_trimmed_mean'], 20)
-        self.assertEqual([m['agent'] for m in data['models']], ['steady', 'deleter'])
+        data = build(freeze(steady, 'means'), steady + deleter, draws=20)
+        self.assertEqual(data['ranking_metric'], 'measured-net-mean-v1')
+        self.assertEqual([m['agent'] for m in data['models']], ['deleter', 'steady'])
+        deleter_row, steady_row = data['models']
+        self.assertEqual(deleter_row['measured_net_mean'], (19 * 20 - 5000) / 20)
+        self.assertEqual((deleter_row['measured_solved_net_mean'], deleter_row['measured_solved_attempts']), (20, 19))
+        self.assertEqual((steady_row['measured_solved_net_mean'], steady_row['measured_solved_attempts']), (5, 20))
+        self.assertNotIn('measured_net_trimmed_mean', deleter_row)
 
     def test_newest_generation_per_model_line(self):
         names = ['Claude Opus 5 (max)', 'Claude Opus 4.8 (max)', 'Claude Sonnet 4.6 (high)', 'GPT-5.6 Sol (max)',
@@ -132,11 +135,7 @@ class SiteTests(unittest.TestCase):
         self.assertEqual({m['name']: m['latest'] for m in data['models']},
                          {label(records[0]['agent']): True, label(records[1]['agent']): False})
 
-    def test_trimmed_mean(self):
-        self.assertIsNone(trimmed_mean([]))
-        self.assertEqual(trimmed_mean([1, 2, 100]), 103 / 3)  # Fewer than 20 values: plain mean.
-        self.assertEqual(trimmed_mean([-1000] + [1] * 18 + [1000]), 1)  # One value dropped from each end.
-
+    @unittest.skipUnless(shutil.which('node'), 'JavaScript interaction test requires Node.js')
     def test_column_sorting(self):
         records = [record()]
         page = render(build(freeze(records, 'sorting-test'), records, draws=10))

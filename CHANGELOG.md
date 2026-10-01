@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Website: plain-mean ranking and solved-only mean column — 2026-10-01
+
+At the owner's request the 10% trimmed mean is removed. Boards rank by the plain mean of net units added over all measured attempts again (`measured-net-mean-v1`), and a new sortable column and chart metric shows the mean over upstream-solved attempts only (`measured_solved_net_mean`, with `measured_solved_attempts`). Rank stays on the all-attempt mean. Measurements and scores are unchanged.
+
 ## Website: newest-generation emphasis, name labels and better-corner zone — 2026-10-01
 
 The comparison chart now draws each model line's newest generation at full color with a permanent name label, fades earlier generations, and shades the corner that is better on both axes in green (top-left by default: smaller footprint, more solved). The chart is taller to fit labels. `site.py` adds a `latest` flag per model (highest version within its model line); rank, table, measurements and scores are unchanged. Hover tooltips still work for every point.

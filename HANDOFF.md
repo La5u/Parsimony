@@ -13,9 +13,9 @@ Current-state snapshot only. History lives in [CHANGELOG.md](CHANGELOG.md) and `
 
 Website ranking and columns:
 
-- All six boards rank by a **footprint statistic over measured, in-scope passing AND failed attempts** across the whole frozen population, lowest first, irrespective of passing-reference availability. The statistic is a **10% trimmed mean of net units added** (`ranking_metric: measured-net-trimmed-mean-10-v1`, owner-approved 2026-10-01): drop floor(n × 5%) attempts at each end per model, so a plain mean below 20 attempts. The plain mean (`measured_net_mean`) stays in the data and as a graph metric. No coverage gate: every measured model is ranked and coverage is shown (a fixed 90% gate would unrank all TypeScript models).
-- No solved-only ranking or filtering, and no correctness tie-break (a solved-only ranking was tried and reverted). Equal values tie; models with no measurements stay unranked.
-- Visible columns: **Rank, Model, Net units added, Solved, Measured** (eligible/population). Solved % is upstream context only. Never zero-fill missing measurements.
+- All six boards rank by a **footprint statistic over measured, in-scope passing AND failed attempts** across the whole frozen population, lowest first, irrespective of passing-reference availability. The statistic is the **plain mean of net units added** (`ranking_metric: measured-net-mean-v1`). A second column and chart metric, **net units added over solved attempts only (mean)** (`measured_solved_net_mean`), is sortable but does not set rank. **No trimmed mean:** the owner tried a 10% trimmed mean on 2026-10-01 and had it removed the same day; do not reintroduce it or another robust statistic without being asked. No coverage gate.
+- Default rank is never solved-only, and there is no correctness tie-break (a solved-only default ranking was tried and reverted). The solved-only mean is a sortable column, not the rank. Equal values tie; models with no measurements stay unranked.
+- Visible columns: **Rank, Model, Net units added (mean), Net units added, solved (mean), Solved, Measured** (eligible/population). Solved % is upstream context only. Never zero-fill missing measurements.
 - Describe the ranking as *smallest measured footprint*, never *best coding model*. Negative deletions and failed no-ops may rank first; say so.
 - The 80/20 Score, its calculator data, bootstrap CI and score-rank endpoints remain only as **explicitly labelled archived graph diagnostics**. Do not reintroduce combined-score rank, and do not use its CI/rank ranges as uncertainty for the net ranking. The Score formula (`parsimony-80-20-v0.5`) is unchanged; the owner has not approved a net-only Score.
 - Churn, Per solve and the dedicated 95% CI column are removed from the UI (data remains stored).
@@ -53,14 +53,14 @@ Cloudflare Pages serves `site/` at <https://parsimony.lasu.dev>; a push to `main
 
 ### Metric meanings
 
-- **Net units added:** added − deleted coding units per attempt; the board shows each model's 10% trimmed mean over measured, in-scope passing and failed attempts. Unknown/out-of-scope records are excluded, never zeroed. Coverage differs by model and is shown in Measured.
+- **Net units added:** added − deleted coding units per attempt; the board shows each model's mean over measured, in-scope passing and failed attempts. Unknown/out-of-scope records are excluded, never zeroed. Coverage differs by model and is shown in Measured.
 - **Solved:** upstream resolved count over the whole frozen population.
 - **Score (archived diagnostic):** 80% net / 20% churn percentile against frozen passing references, failures −25…0, bounds for unscored items. Bounds are not the bootstrap CI; CI never affects Score.
 - **Population vs panel:** a task needs a measured, in-scope passing reference to calibrate Score. Uncalibrated tasks stay in the population and in the footprint ranking.
 
-## Why the trimmed mean (settled 2026-10-01)
+## Known property of the mean ranking
 
-The plain mean let a few huge failed patches decide rank. On Verified, Llama 4 Maverick ranked #1 at −244 with a median of +4; its five lowest attempts were failed deletions of 7k–14k units. The trimmed mean fixes that (Llama is now −3, still #1 but by a normal margin), barely moves the DeepSWE orders, and flips Live's top two (Opus 4.8 · AiWork now first). Smaller footprint still correlates with lower solve rate under every statistic tried (Spearman −0.25 to −0.57), and failed attempts are not systematically smaller than passing ones, so this is a real model-level tendency, not an artefact. Median was rejected because of heavy integer ties on Verified. Do not revert to the plain mean without the owner.
+On Verified a few failed mass deletions decide the top ranks: Llama 4 Maverick is #1 at −244 with a solved-only mean of +10 and a median of +4. The owner knows this and chose the plain mean plus the solved-only column anyway. Smaller footprint also correlates with lower solve rate on every board (Spearman −0.25 to −0.57); failed attempts are not systematically smaller than passing ones, so this is a real model-level tendency.
 
 ## Next work, in priority order
 
