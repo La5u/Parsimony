@@ -4,16 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "parsimony-benchmark"
-version = "0.6.0b0"
+version = "0.7.0b0"
 description = "Correctness-gated static code footprint benchmarking for SWE-bench submissions"
 requires-python = ">=3.12"
 dependencies = []
 
 [project.optional-dependencies]
+# Go. JavaScript/TypeScript use Node.js plus the npm pin in package.json (`npm ci`).
 languages = [
     "tree-sitter==0.26.0",
-    "tree-sitter-javascript==0.25.0",
-    "tree-sitter-typescript==0.23.2",
     "tree-sitter-go==0.25.0",
 ]
 
@@ -22,3 +21,6 @@ parsimony = "parsimony.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["parsimony*"]
+
+[tool.setuptools.package-data]
+parsimony = ["*.cjs"]
