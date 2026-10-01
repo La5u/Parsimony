@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest import mock
 
 from parsimony.scoring import freeze
-from parsimony.site import add_rank_ranges, build, company, label, main, render, trimmed_mean
+from parsimony.site import add_rank_ranges, build, company, label, main, newest_generation, render, trimmed_mean
 from tests.test_scoring import record
 
 
@@ -118,6 +118,19 @@ class SiteTests(unittest.TestCase):
         self.assertLess(by_agent['deleter']['measured_net_mean'], by_agent['steady']['measured_net_mean'])
         self.assertEqual(by_agent['deleter']['measured_net_trimmed_mean'], 20)
         self.assertEqual([m['agent'] for m in data['models']], ['steady', 'deleter'])
+
+    def test_newest_generation_per_model_line(self):
+        names = ['Claude Opus 5 (max)', 'Claude Opus 4.8 (max)', 'Claude Sonnet 4.6 (high)', 'GPT-5.6 Sol (max)',
+                 'GPT-5.6 Luna (max)', 'GPT-5.5 (xhigh)', 'GPT-5 mini', 'Kimi K3 (max)', 'Kimi K2.7 Code',
+                 'gpt-oss-120b', 'o3', 'o4-mini', 'Claude Opus 4', 'other-agent']
+        self.assertEqual(newest_generation(names), {
+            'Claude Opus 5 (max)', 'Claude Sonnet 4.6 (high)', 'GPT-5.6 Sol (max)', 'GPT-5.6 Luna (max)',
+            'Kimi K3 (max)', 'gpt-oss-120b', 'o4-mini', 'other-agent'})
+        records = [record('20260217_mini-v2.0.0_claude-4-6-opus', 't1', net=5, churn=9),
+                   record('20251124_mini-v1.16.0_claude-opus-4-5-20251101', 't1', net=7, churn=9)]
+        data = build(freeze(records, 'generations'), records, draws=20)
+        self.assertEqual({m['name']: m['latest'] for m in data['models']},
+                         {label(records[0]['agent']): True, label(records[1]['agent']): False})
 
     def test_trimmed_mean(self):
         self.assertIsNone(trimmed_mean([]))

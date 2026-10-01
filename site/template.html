@@ -45,6 +45,11 @@ button { font: inherit; color: var(--ink); background: var(--bg); border: 1px so
 #graph .tick { fill: var(--muted); font: 12px system-ui, sans-serif; }
 #graph circle { stroke: var(--bg); stroke-width: 1; cursor: pointer; }
 #graph .failed-point { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 2 1; }
+#graph .older { fill-opacity: 0.28; stroke-opacity: 0.45; }
+#graph .leader { stroke-width: 1; stroke-opacity: 0.6; }
+#graph .point-label { font: 600 11px system-ui, sans-serif; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+#graph .best-zone { fill: #16a34a; fill-opacity: 0.12; }
+#graph .best-label { fill: #15803d; font: 600 11px system-ui, sans-serif; }
 #company-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .company-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
 #graph-tooltip {
@@ -104,7 +109,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="small muted">Net units added means coding units added minus removed, not semantic complexity. Measured shows eligible footprints / published population. Missing or entirely excluded edits are not zero. Solved comes from the upstream benchmark and never affects footprint rank. A failed no-op or large deletion can rank first. Click headings to sort; missing values stay last.</p>
 
   <h2 id="complexity">Compare models</h2>
-  <p class="small muted">Choose any two numeric metrics, including uncertainty endpoints. One point per model, colored by company. Archived combined-score diagnostics use the midpoint when bounded; their CI and rank endpoints are labelled explicitly and do not affect footprint ranking. Models missing either selected value have no point. Hover, focus or tap a point to see its model name instantly. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; Solved stays at 0–100%.</p>
+  <p class="small muted">Choose any two numeric metrics, including uncertainty endpoints. One point per model, colored by company. Each model line’s newest generation is labelled and fully colored; earlier generations are faded. Archived combined-score diagnostics use the midpoint when bounded; their CI and rank endpoints are labelled explicitly and do not affect footprint ranking. Models missing either selected value have no point. Hover, focus or tap a point to see its model name instantly. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; Solved stays at 0–100%.</p>
   <p><label for="graph-x">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
      <label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></p>
   <p class="small muted" id="graph-legend"></p>
@@ -291,16 +296,17 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const xLabel = options.find(o => o.key === axes.x).label, yLabel = options.find(o => o.key === axes.y).label;
     const axisFormat = (value, key) => fmt(value) + (['resolve_rate', 'coverage'].includes(key) ? '%' : '');
     const points = data.models.map((m, i) => ({x: metricValue(m, i, axes.x), y: metricValue(m, i, axes.y),
-      name: m.name, company: m.company || 'Other', count: m.measured_attempts,
+      name: m.name, company: m.company || 'Other', count: m.measured_attempts, latest: m.latest !== false,
       kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : (selected[2][i][6] || selected[2][i][0]) === 'r' ? 'resolved' : 'unknown') : 'all', i}))
       .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
     $('graph-legend').textContent = points.length
-      ? (selected ? 'Color indicates company. Dashed outline: failed attempt.' : 'Color indicates company. Net means include measured passing and failed attempts; measurement coverage can differ.')
+      ? (selected ? 'Color indicates company. Labelled points are each model line’s newest generation; faded points are earlier generations. Dashed outline: failed attempt. The green area is the better corner on both axes.'
+        : 'Color indicates company. Labelled points are each model line’s newest generation; faded points are earlier generations. The green area is the better corner on both axes. Net means include measured passing and failed attempts; measurement coverage can differ.')
       : 'No measured points available for this view.';
     $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort().map(company =>
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
 
-    const W = 720, H = 330, L = 66, R = 20, T = 18, B = 52;
+    const W = 720, H = 440, L = 66, R = 20, T = 18, B = 52;
     function extent(axis, key) {
       if (['resolve_rate', 'coverage'].includes(key)) return [0, 100];
       if (!points.length) return [0, 1];
@@ -313,8 +319,49 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const sx = x => L + (x - xmin) / (xmax - xmin) * (W - L - R), sy = y => H - B - (y - ymin) / (ymax - ymin) * (H - T - B);
     const ticks = (lo, hi, axis) => Array.from({length: 5}, (_, i) => { const v = lo + (hi - lo) * i / 4; return axis === 'x' ? `<line class="axis" x1="${sx(v)}" y1="${H-B}" x2="${sx(v)}" y2="${H-B+4}"/><text class="tick" text-anchor="middle" x="${sx(v)}" y="${H-B+19}">${axisFormat(v, axes.x)}</text>` : `<line class="axis" x1="${L-4}" y1="${sy(v)}" x2="${L}" y2="${sy(v)}"/><text class="tick" text-anchor="end" x="${L-8}" y="${sy(v)+4}">${axisFormat(v, axes.y)}</text>`; }).join('');
     const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.kind === 'all' ? '; measured ' + p.count + '/' + (data.models[p.i].footprint_population_count || data.population_count || data.task_count) + ' population attempts' : ''}`;
-    const circles = points.map((p, i) => `<circle data-point="${i}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}" fill="${companyColor(p.company)}" cx="${sx(p.x)}" cy="${sy(p.y)}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip"></circle>`).join('');
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. Axes use the selected numeric table values. In selected-task view, failed attempts have dashed outlines. Hover, focus or tap a point for an immediate model-name tooltip.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>`;
+    // Newest generations are drawn last (on top) at full color; earlier ones are faded.
+    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}" fill="${companyColor(p.company)}" cx="${sx(p.x)}" cy="${sy(p.y)}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip"></circle>`).join('');
+    // Green zone: the half of each axis that is better (lower footprint/rank, higher solved/score).
+    const better = {net: -1, net_mean: -1, churn: -1, rank_low: -1, rank_high: -1, resolve_rate: 1, score: 1, ci: 1, ci_high: 1};
+    const bx = better[axes.x], by = better[axes.y];
+    let zone = '';
+    if (bx && by && points.length) {
+      const pw = W - L - R, ph = H - T - B, zx = bx < 0 ? L : L + pw / 2, zy = by > 0 ? T : T + ph / 2;
+      const text = axes.x === 'net' && axes.y === 'resolve_rate' ? 'Smaller footprint, more solved' : 'Better on both axes';
+      zone = `<rect class="best-zone" x="${zx}" y="${zy}" width="${pw / 2}" height="${ph / 2}"/><text class="best-label" text-anchor="${bx < 0 ? 'start' : 'end'}" x="${bx < 0 ? zx + 8 : zx + pw / 2 - 8}" y="${by > 0 ? zy + 16 : zy + ph / 2 - 8}">${text}</text>`;
+    }
+    // Always-visible names for the newest generation, placed where they collide least.
+    const boxes = points.map(p => ({x0: sx(p.x) - 7, x1: sx(p.x) + 7, y0: sy(p.y) - 7, y1: sy(p.y) + 7, soft: !p.latest}));
+    if (zone) boxes.push(bx < 0 ? {x0: L, x1: L + 190, y0: by > 0 ? T : H - B - 22, y1: by > 0 ? T + 22 : H - B}
+      : {x0: W - R - 190, x1: W - R, y0: by > 0 ? T : H - B - 22, y1: by > 0 ? T + 22 : H - B});
+    // Drop the effort suffix unless two labelled models would then share a name.
+    const strip = name => name.replace(/ \([^)]*\)$/, '');
+    const shortName = name => points.filter(p => p.latest && strip(p.name) === strip(name)).length > 1 ? name : strip(name);
+    const labels = points.filter(p => p.latest).sort((a, b) => sy(a.y) - sy(b.y) || sx(a.x) - sx(b.x)).map(p => {
+      const text = shortName(p.name), w = text.length * 6.1 + 4, h = 13, cx = sx(p.x), cy = sy(p.y);
+      // Rings of positions around the point; farther rings cost a little and get a leader line.
+      const candidates = [];
+      for (const [d, far] of [[9, 0], [24, 1], [42, 2]]) {
+        candidates.push([cx + d, cy - h / 2, far], [cx - d - w, cy - h / 2, far], [cx - w / 2, cy - d - h, far], [cx - w / 2, cy + d, far],
+          [cx + d * 0.8, cy - d * 0.8 - h, far], [cx + d * 0.8, cy + d * 0.8, far], [cx - d * 0.8 - w, cy - d * 0.8 - h, far], [cx - d * 0.8 - w, cy + d * 0.8, far]);
+      }
+      let best = null, bestCost = Infinity;
+      for (const [x, y, far] of candidates) {
+        const box = {x0: x, x1: x + w, y0: y, y1: y + h, far, label: true};
+        let cost = far * 12 + Math.max(0, L - box.x0, box.x1 - (W - R), T - box.y0, box.y1 - (H - B)) * 50;
+        for (const other of boxes) {
+          const overlap = Math.max(0, Math.min(box.x1, other.x1) - Math.max(box.x0, other.x0)) * Math.max(0, Math.min(box.y1, other.y1) - Math.max(box.y0, other.y0));
+          cost += overlap * (other.label ? 4 : other.soft ? 0.3 : 1);
+        }
+        if (cost < bestCost) { bestCost = cost; best = box; }
+      }
+      boxes.push(best);
+      const color = companyColor(p.company);
+      const ax = Math.max(best.x0, Math.min(cx, best.x1)), ay = Math.max(best.y0, Math.min(cy, best.y1));
+      return (best.far ? `<line class="leader" stroke="${color}" x1="${cx}" y1="${cy}" x2="${ax}" y2="${ay}"/>` : '') +
+        `<text class="point-label" fill="${color}" x="${best.x0 + 2}" y="${best.y1 - 3}">${esc(text)}</text>`;
+    }).join('');
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. The newest generation of each model line is labelled; earlier generations are faded. Axes use the selected numeric table values. In selected-task view, failed attempts have dashed outlines. Hover, focus or tap a point for an immediate model-name tooltip.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${labels}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>`;
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
       const show = event => {
         tooltip.textContent = points[Number(circle.dataset.point)].name;
