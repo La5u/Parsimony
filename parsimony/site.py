@@ -110,15 +110,6 @@ def median(values):
     return statistics.median(values) if values else None
 
 
-def trimmed_mean(values, proportion=0.1):
-    """Mean after dropping floor(n * proportion / 2) values from each end (plain mean below 20 values)."""
-    values = sorted(values)
-    if not values:
-        return None
-    k = int(len(values) * proportion / 2)
-    return statistics.fmean(values[k:len(values) - k])
-
-
 def bootstrap(board, draws, seed):
     """Paired task bootstrap over all tasks; unscored tasks enter at their lower and upper bounds.
 
@@ -175,6 +166,7 @@ def build(panel, records, draws=2000, seed=42):
                              and r['metrics'].get('mode') == 'full_file'
                              and not out_of_scope(r['metrics'])]
         measured_metrics = [r['metrics'] for r in footprint_records]
+        solved_footprints = [r['metrics']['net_units'] for r in footprint_records if r['resolved']]
         # Failure penalty from the failures that could be measured; complete only when nothing is unscored.
         known_penalty = -sum(t['score'] for t in entry['tasks'].values()
                              if t['status'] == 'failed' and t['score'] is not None) / len(entry['tasks'])
@@ -184,8 +176,9 @@ def build(panel, records, draws=2000, seed=42):
                                                            for r in group.values()), default=len(population_tasks))),
             measured_attempts=len(measured_metrics),
             measured_net_mean=statistics.fmean(m['net_units'] for m in measured_metrics) if measured_metrics else None,
-            # Ranking statistic: a few failed mass deletions must not decide rank on their own.
-            measured_net_trimmed_mean=trimmed_mean(m['net_units'] for m in measured_metrics),
+            # Same measured, in-scope population restricted to upstream-solved attempts.
+            measured_solved_attempts=len(solved_footprints),
+            measured_solved_net_mean=statistics.fmean(solved_footprints) if solved_footprints else None,
             measured_churn_mean=statistics.fmean(m['churn'] for m in measured_metrics) if measured_metrics else None,
             lower=entry['lower'], upper=entry['upper'], ci=intervals[entry['agent']]['ci'],
             top=intervals[entry['agent']]['top'],
@@ -201,9 +194,8 @@ def build(panel, records, draws=2000, seed=42):
             churn=median(r['metrics']['churn'] for r in ok),
             token_churn=median(r['metrics'].get('token_churn') for r in ok),
             human_ratio=median(r.get('model_human_ratio') for r in ok)))
-    models.sort(key=lambda m: (m['measured_net_trimmed_mean'] is None,
-                               m['measured_net_trimmed_mean'] if m['measured_net_trimmed_mean'] is not None else 0,
-                               m['name']))
+    models.sort(key=lambda m: (m['measured_net_mean'] is None,
+                               m['measured_net_mean'] if m['measured_net_mean'] is not None else 0, m['name']))
     # Chart emphasis only: older generations are drawn lighter and unlabelled; rank ignores this.
     newest = newest_generation([m['name'] for m in models])
     for m in models:
@@ -255,7 +247,7 @@ def build(panel, records, draws=2000, seed=42):
     return dict(**(dict(calibration_policy=UNCALIBRATED,
                         uncalibrated_tasks=[t for t, refs in panel['tasks'].items() if not refs]) if bounded else {}),
                 measurement_track=panel.get('measurement_track'),
-                ranking_metric='measured-net-trimmed-mean-10-v1', footprint_tasks=footprint_tasks,
+                ranking_metric='measured-net-mean-v1', footprint_tasks=footprint_tasks,
                 score_version=VERSION, panel=panel['name'], references=len(references), harness=versions, analyzer_version=panel['analyzer_version'],
                 python_version=panel['python_version'], task_count=len(panel['tasks']),
                 population_count=max(len(footprint_tasks), max((r.get('benchmark_tasks', len(footprint_tasks)) for r in records),

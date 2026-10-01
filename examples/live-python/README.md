@@ -27,7 +27,7 @@ record is relabelled to the newer scoring/site implementation commit.
 
 ## Current website: net-unit footprint ranking
 
-The website now ranks by **net units added, ascending** (10% trimmed mean), over all measured
+The website now ranks by **mean net units added, ascending**, over all measured
 in-scope attempts, including 85 DeepSeek failures, 83 Slingshot failures and 174
 AiWork failures. Upstream Solved % is separate context. Measured/population
 coverage remains visible (287/300, 288/300 and 276/300). Missing footprints are

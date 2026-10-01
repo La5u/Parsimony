@@ -7,11 +7,11 @@ const data = JSON.parse(html.match(/type="application\/json">([\s\S]*?)<\/script
 const base = data.models[0];
 data.models = [
   {...base, agent: 'alpha', footprint_population_count: 4, measured_churn_mean: 4, name: 'Alpha', score: 10, lower: 4, upper: 16, ci: [1, 90], resolve_rate: .8,
-    company: 'Anthropic', latest: true, measured_net_trimmed_mean: -2, measured_net_mean: 50, measured_attempts: 4, rank_range: [1, 2]},
+    company: 'Anthropic', latest: true, measured_net_mean: -2, measured_solved_net_mean: 7, measured_attempts: 4, rank_range: [1, 2]},
   {...base, agent: 'beta', footprint_population_count: 4, measured_churn_mean: 6, name: 'Beta', score: null, lower: 10, upper: 30, ci: [2, 40], resolve_rate: .3,
-    company: 'OpenAI', latest: false, measured_net_trimmed_mean: 0, measured_net_mean: -100, measured_attempts: 3, rank_range: [2, 3]},
+    company: 'OpenAI', latest: false, measured_net_mean: 0, measured_solved_net_mean: 3, measured_attempts: 3, rank_range: [2, 3]},
   {...base, agent: 'gamma', footprint_population_count: 4, measured_churn_mean: null, name: 'Gamma', score: 5, lower: 5, upper: 5, ci: [3, 20], resolve_rate: .5,
-    company: 'Anthropic', measured_net_trimmed_mean: null, measured_net_mean: null, measured_attempts: 0, rank_range: null},
+    company: 'Anthropic', measured_net_mean: null, measured_solved_net_mean: null, measured_attempts: 0, rank_range: null},
 ];
 data.task_count = 4;
 data.tasks = [
@@ -99,7 +99,7 @@ function task(id) {
 }
 assert.deepEqual(names(), ['Alpha', 'Beta', 'Gamma']);
 assert.doesNotMatch(element('#board thead').innerHTML, /Per solve|churn|95% CI|data-sort="ci"/i);
-assert(rows().every(row => [...row.matchAll(/<td\b/g)].length === 5));
+assert(rows().every(row => [...row.matchAll(/<td\b/g)].length === 6));
 assert.doesNotMatch(element('#board thead').innerHTML, /Score|churn|95% CI/i);
 assert.match(element('#board tbody').innerHTML, /4\/4/);
 assert.match(element('#board tbody').innerHTML, /3\/4/);
@@ -116,9 +116,13 @@ assert.equal(element('graph-y').value, 'resolve_rate');
 assert.equal(tickValues('x')[0], -2.1);
 assert.equal(tickValues('x').at(-1), .1);
 assert.deepEqual(tickValues('y'), [0, 25, 50, 75, 100]);
-assert.match(graph(), /Alpha \(Anthropic\).*Net units added \(10% trimmed mean per attempt\): −2.0, Solved \(%\): 80.0%/);
-// The plain mean stays available as a diagnostic axis but never drives rank.
-assert.match(element('graph-x').innerHTML, /value="net_mean">Net units added \(plain mean per attempt\)/);
+assert.match(graph(), /Alpha \(Anthropic\).*Net units added \(mean\): −2.0, Solved \(%\): 80.0%/);
+// The solved-only mean is a second column and axis; rank stays on the all-attempt mean.
+assert.match(element('graph-x').innerHTML, /value="solved_net">Net units added, solved tasks \(mean\)/);
+assert.doesNotMatch(element('graph-x').innerHTML + element('#board thead').innerHTML, /trimmed/i);
+click('solved_net', ['Beta', 'Alpha', 'Gamma'], 'ascending');
+assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Alpha<\/td><td>−2.0<\/td><td>7.0<\/td>/);
+click('net', ['Alpha', 'Beta', 'Gamma'], 'ascending');
 assert.doesNotMatch(graph(), /Gamma \(Anthropic\)/);
 // Newest generation: full color and a permanent name label. Earlier generations: faded, no label.
 assert.match(graph(), /<text class="point-label"[^>]*>Alpha<\/text>/);
@@ -223,9 +227,9 @@ assert.equal(element('task-footer').hidden, true);
 assert.equal(element('ci-help').hidden, false);
 assert.deepEqual(names(), ['Alpha', 'Beta', 'Gamma']);
 assert.doesNotMatch(element('#board thead').innerHTML, /Score|churn|Per solve|95% CI|data-sort="ci"/i);
-assert(rows().every(row => [...row.matchAll(/<td\b/g)].length === 5));
+assert(rows().every(row => [...row.matchAll(/<td\b/g)].length === 6));
 const tied = structuredClone(data);
-tied.models[1].measured_net_trimmed_mean = -2;
+tied.models[1].measured_net_mean = -2;
 tied.models[1].resolve_rate = 1; // Correctness must not break a footprint tie.
 element('parsimony-data').textContent = JSON.stringify(tied);
 vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc, window: browser});
