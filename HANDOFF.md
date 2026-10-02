@@ -64,34 +64,49 @@ On Verified a few failed mass deletions decide the top ranks: Llama 4 Maverick i
 
 ## Next work, in priority order
 
-### 1. Remaining JavaScript/TypeScript follow-ups
+### 1. Add newer models to the existing benchmark battery
 
-The parser problem is solved (analyzer 0.7.0, 2026-10-01): JS/TS use the official TypeScript parser, TS errors fell from 323 to 5 of 3,640 records and 33/35 TS tasks calibrate. See `docs/typescript-parser-investigation.md`. What is left:
+**Recommended direction: recent models on supported Python/JS/TS/Go tracks first, not another ranking redesign or Java/Rust expansion.** Start with public exports on an existing board's frozen population and, where possible, the same harness. Cross-harness Live additions remain model + agent configurations, not controlled model-only comparisons. This is a plan, not a claim that new exports have been found.
 
-- Wrong-language upstream metadata: `httpx-deterministic-cookie-store` (Python patches) and `prometheus-transactional-reload-status` (Go patches) are the two uncalibrated TS tasks. Fixing them needs an explicit, versioned dataset correction, never a silent move.
-- Scope: Effect's `dtslint/*.tst.ts` type tests count as implementation; an exclusion rule would be a versioned scope change with a remeasure.
-- Root-level scratch scripts (`*.cjs`, `*.js`) left by agents count for JS/TS (only Python excludes new root files). One invalid scratch script causes one of the five remaining errors.
-- The externally held GPT-5.6 Sol Live JS/TS measurements (`examples/priority-live/`) were made with the 0.6.0 Tree-sitter backend. Remeasure them with 0.7.0 before any release.
-- Go still has 7 analysis errors under Tree-sitter; they have not been classified.
+First-session discovery checklist:
 
-### 2. Repository size
+1. Refresh **DeepSWE** configs with a fresh cache (command under Inputs), compare against `examples/deepswe-python/refresh-2026-09-29.json`, and inspect every new/changed configuration. Last refresh found the same 26 usable configs. Recheck GPT-6 Astra (previously no declared patches) and Gemini 3.8 Flash (previously HTTP 403), but do not treat either as available until artifacts are retrieved. Look for newer generations across all represented model families, not only the current leaders.
+2. Refresh public **Live** submission listings and **PolyBench** run listings at newly pinned upstream commits. Prioritize newer Python configurations alongside DeepSeek V4.1 Flash, GPT-5.6 Sol and Opus 4.8, then supported JS/TS cohorts. Model names in listings are source claims: require actual task-level patches, outcome records and usable preimages. Existing importer run choices and the priority driver are explicit inventories, not automatic discovery of future submissions; extend them only after checking the new export shape and population.
+3. Refresh **Verified** public experiments for genuinely newer model exports. Recheck known partial/blocked runs only as secondary work: Gemini 3.5 has 441/500 outcome rows; GPT-5.2 Codex lacks results; Claude 3.7 patches are missing. Retain the 500-task population and unknown outcomes, never convert missing rows into failures or measured zeros.
+4. Produce a small committed, numerical/metadata-only candidate census: source URL and immutable revision, source-reported model + harness, benchmark/language, population and attempts, patch/outcome availability, preimage tier, current blocker and next action. Record unavailable candidates too. Do not commit fetched patches, prompts or trajectories.
 
-`examples/` is ~250 MB in the working tree (~30 MB packed). Move large raw JSONL to versioned release assets with checksums and download commands before the next big import. Do not delete current artifacts or rewrite history without an agreed migration.
+Choose the first releasable newer-model cohort by **artifact completeness and compatibility**, not solve rate or expected footprint rank. Discovery can be refreshed broadly; static analysis should run only for new/changed checksum-bound inputs. Prefer adding comparable recent configurations to existing boards over opening a sparsely populated benchmark just to show a new model.
 
-### 3. Benchmark and model expansion
+### 2. Release the already located recent-model cohorts
 
-- Candidate releases: the measured GPT-5.6 Sol JS/TS and PolyBench Opus cohorts, after passing-reference/population and rights review.
-- DeepSWE refresh (2026-09-29): same 26 usable configurations, unchanged checksums. Re-run discovery with a **fresh cache**; only analyze new/changed inputs. GPT-6 Astra declared no patches; Gemini 3.8 Flash patches returned 403.
-- Verified: Gemini 3.5 has 441/500 outcome rows (partial coverage, not yet exposed); GPT-5.2 Codex lacks results; Claude 3.7 patches missing.
-- SWE-Atlas Refactoring and SWE-bench Pro V2 are blocked on public per-attempt model-patch exports, not importer code (`docs/swe-atlas-investigation.md`, `docs/pro-atlas-artifact-audit.md`). Java/Rust need new unsupported tracks (`docs/language-expansion-opportunities.md`).
-- Never contact upstream, publish upstream issues or launch paid evaluations without owner approval.
+These are concrete fallbacks if fresh discovery yields no immediately releasable newer exports:
 
-### 4. Lower priority
+- **GPT-5.6 Sol Live JS/TS:** preimages were audited and measurements exist externally (`examples/priority-live/`), but they use the old 0.6.0 Tree-sitter backend. Remeasure with the current 0.7.0 official TypeScript parser in a clean checkout. Freeze the complete language populations (108 JS / 111 TS); retain successes, failures, missing/error and out-of-scope records. Publish separate Live language tracks, not on the DeepSWE language boards. Audit release/provenance rights before publishing numerical exports.
+- **PolyBench Opus 4.8 Python:** 111/113 attempts have static measurements. Complete the provenance/population release review and publish a separate PolyBench board if justified. Preserve all 113 population items and distinguish missing measurements from failures. Do not mix it with Live or Verified.
+- **PolyBench GPT-5.4:** still blocked on historical before-state identity. Candidate-base hunk matches without usable old-blob prefixes are insufficient for release; seek stronger public operational/reset or byte-identity evidence, not permissive patch application. Lower priority than accessible newer-model cohorts.
 
-- Commit durable browser smoke checks (light mode under dark OS, tooltip, axis swaps, task/reset, mobile) if the UI changes again; Node tests mock the DOM.
-- CI `verify` job re-measures on `'3.14'`, not the pinned 3.14.7.
-- Blind reviewer preference study on passing patches to validate footprint beyond "smaller".
-- Upstream Verified issues to report with approval: Gemini 3 Pro (high) marks all tasks unresolved; some `metadata.yaml` point to wrong S3 folders.
+Passing references are needed only for archived combined-score diagnostics, **not** footprint eligibility or default ranking. Do not select a solved-derived population or delay a valid footprint release solely because some tasks have no passing reference. Use bounded archived scoring where needed without inventing scores.
+
+### 3. Acceptance checklist for every battery addition
+
+- Pin upstream submission/dataset revisions, full task/attempt membership, patch and outcome checksums, model/harness attribution and language mapping. Preserve submitted versus placeholder/missing distinctions. Corroborate touched-file preimages; do not claim full-checkout, evaluator or model-backend certification from that evidence.
+- Use a clean committed analyzer worktree with external cache/raw storage and Python 3.14.7. A same-board comparison must use compatible analyzer/track identities: use the existing identity where operationally possible, otherwise remeasure the comparison cohort and version the release. Never relabel old records or pool incompatible versions. JS/TS worktrees require their own pinned `npm ci`.
+- Retain the entire predefined population. Report eligible/population coverage plus source-reported outcomes and exclusion/error reasons. Rank by the plain mean over all measured in-scope attempts, including failures; preserve the separate solved-only mean column. No trimming, correctness tie-break, coverage gate or missing-zero imputation.
+- Review numerical publication separately from raw-artifact redistribution. Publish attributed scalars/hashes, coverage and reproduction metadata; do not assume an output ownership clause grants rights to another submitter's artifacts. Keep raw patches/source/prompts/trajectories external unless separately cleared.
+- Freeze/version population, numerical exports and diagnostics; update the example README, board navigation and Published state table. Rebuild all affected pages with the shared template, run the full pinned-parser suite and Node checks, reproduce archived score arithmetic, then commit/push `main`. Verify deployment if accessible; report access failures rather than claiming a push proves deployment.
+
+Before a large import, resolve storage growth: `examples/` is ~250 MB working-tree (~30 MB packed). Prefer versioned release assets for large measurement JSONL, with immutable checksums and reproduction/download commands. A raw-artifact cache is not a publication asset. Do not delete current artifacts or rewrite history without an agreed migration.
+
+### 4. Maintenance and secondary expansion
+
+The parser problem is solved (0.7.0, 2026-10-01): JS/TS use the official TypeScript parser, TS errors fell from 323 to 5 of 3,640 records and 33/35 TS tasks calibrate. Do not let residual cleanup displace newer-model additions. See `docs/typescript-parser-investigation.md`:
+
+- Wrong-language TS metadata: `httpx-deterministic-cookie-store` has Python patches; `prometheus-transactional-reload-status` has Go patches. Correct only through an explicit versioned dataset change, never a silent move.
+- Effect's `dtslint/*.tst.ts` type tests and new root-level JS/TS scratch scripts currently count as implementation. Excluding them requires a versioned scope change and remeasurement; one invalid scratch script explains one remaining TS error.
+- Classify the 7 Go Tree-sitter analysis errors; leave them missing, not zero, pending a fix.
+- SWE-Atlas Refactoring and SWE-bench Pro V2 remain blocked on public per-attempt patch exports, not importer code (`docs/swe-atlas-investigation.md`, `docs/pro-atlas-artifact-audit.md`). Java/Rust require new analyzers and separate tracks (`docs/language-expansion-opportunities.md`); defer until supported recent-model sources are exhausted or the owner reprioritizes.
+- Add durable real-browser smoke checks if changing UI again; Node tests mock the DOM. Pin CI `verify` from `'3.14'` to 3.14.7 for reproducibility. A blind reviewer study is optional later validation, not a gate for footprint reporting.
+- Never contact upstream, file issues or launch paid evaluations without owner approval. Known Verified issues for an approved future report: Gemini 3 Pro (high) marks all tasks unresolved; some `metadata.yaml` point to wrong S3 folders.
 
 ## Code and data map
 
