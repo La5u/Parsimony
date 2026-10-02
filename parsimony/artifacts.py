@@ -164,13 +164,14 @@ def _s3_prefix_exists(url: str, cache: Cache) -> bool:
 
 
 def _metadata_scalars(data: bytes) -> dict[str, str | None]:
-    """Read the documented top-level/assets scalar subset of submission YAML."""
+    """Read assets scalars and the optional immutable ``info.commit`` pin."""
     try:
         text = data.decode("utf-8-sig")
     except UnicodeDecodeError as exc:
         raise ValueError("metadata.yaml is not UTF-8") from exc
     values: dict[str, str | None] = {}
     section: str | None = None
+    section_indent: int | None = None
     for line_no, line in enumerate(text.splitlines(), 1):
         if not line.strip() or line.lstrip().startswith(("#", "---")):
             continue
@@ -183,16 +184,23 @@ def _metadata_scalars(data: bytes) -> dict[str, str | None]:
             continue
         if indent == 0:
             section = content[:-1] if content.endswith(":") else None
+            section_indent = None
             continue
-        if section != "assets":
+        if section == "info":
+            # Other info fields may contain YAML outside our scalar subset.
+            if section_indent is None:
+                section_indent = indent
+            if indent != section_indent or content.split(":", 1)[0].strip() != "commit":
+                continue
+        elif section != "assets":
             continue
         if indent < 2 or ":" not in content:
-            raise ValueError(f"unsupported assets YAML form on line {line_no}")
+            raise ValueError(f"unsupported {section} YAML form on line {line_no}")
         key, value = content.split(":", 1)
         key = key.strip()
         value = value.strip()
         if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_-]*", key):
-            raise ValueError(f"unsupported assets YAML key on line {line_no}")
+            raise ValueError(f"unsupported {section} YAML key on line {line_no}")
         if value in {"", "null", "~"}:
             parsed = None
         elif value.startswith(('"', "'")):
@@ -203,11 +211,20 @@ def _metadata_scalars(data: bytes) -> dict[str, str | None]:
         else:
             parsed = value.split(" #", 1)[0].strip()
             if any(ch in parsed for ch in "{}[],&*!|>"):
-                raise ValueError(f"unsupported assets YAML scalar on line {line_no}")
+                raise ValueError(f"unsupported {section} YAML scalar on line {line_no}")
+        if section == "info":
+            if parsed is None or not re.fullmatch(r"[0-9a-fA-F]{40}", parsed):
+                raise ValueError("info.commit must be a full 40-character Git commit SHA")
+            key = "info.commit"
         if key in values:
-            raise ValueError(f"duplicate assets YAML key on line {line_no}")
+            raise ValueError(f"duplicate {section} YAML key on line {line_no}")
         values[key] = parsed
     return values
+
+
+def _artifact_pin(assets: dict[str, str | None]) -> str | None:
+    """Explicit assets pins take precedence over the run's immutable info pin."""
+    return assets.get("commit") or assets.get("ref") or assets.get("info.commit")
 
 
 def _github_asset(value: str, repo_url: str, ref: str) -> tuple[str, str]:
@@ -254,10 +271,10 @@ def _new_submission(agent: str, submission_url: str, base: str, ref: str,
                 raise ValueError("assets.repo must be a public GitHub repository URL")
             repo = ("/".join(bits), ref, "")
         repo_name, repo_ref, repo_path = repo
-        pinned_ref = str(assets.get("commit") or assets.get("ref") or "main")
+        pinned_ref = _artifact_pin(assets) or "main"
         logs_value = str(logs_uri) if logs_uri else "logs"
         asset_ref, asset_path = _github_asset(logs_value, repo_url, pinned_ref)
-        if assets.get("commit") or assets.get("ref"):
+        if _artifact_pin(assets):
             asset_ref = pinned_ref
         logs_url = f"https://raw.githubusercontent.com/{repo_name}/{asset_ref}/{asset_path}".rstrip("/")
         artifact_kind = "github"
@@ -431,8 +448,8 @@ def load_submission(submission: str, cache: Cache, ref: str = "main",
                     repo_name, repo_ref, repo_path = "/".join(bits[:2]), "main", "/".join(bits[2:])
                 else:
                     repo_name, repo_ref, repo_path = repo
-                artifact_ref = str(assets.get("commit") or assets.get("ref") or "main")
-                if repo_ref and repo_path and not (assets.get("commit") or assets.get("ref")):
+                artifact_ref = _artifact_pin(assets) or "main"
+                if repo_ref and repo_path and not _artifact_pin(assets):
                     artifact_ref = repo_ref
                 artifact_path = unquote(repo_path).strip("/")
                 if any(part in {".", ".."} for part in artifact_path.split("/")) or "\\" in artifact_path:
@@ -463,7 +480,7 @@ def load_submission(submission: str, cache: Cache, ref: str = "main",
                                cache, artifact_ref)
                 logs_value = str(assets.get("logs") or "logs")
                 logs_ref, logs_path = _github_asset(logs_value, repo_url, artifact_ref)
-                if assets.get("commit") or assets.get("ref"):
+                if _artifact_pin(assets):
                     logs_ref = artifact_ref
                 logs_url = f"https://raw.githubusercontent.com/{repo_name}/{logs_ref}/{logs_path}".rstrip("/")
                 provenance = dict(loaded["provenance"], metadata_url=metadata_url,

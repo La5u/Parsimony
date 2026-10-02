@@ -2,6 +2,14 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Battery: Gemini 3.5 Flash added to Verified — 2026-10-02
+
+Fresh public listings confirm unchanged Live, PolyBench and Verified pins; DeepSWE leaderboard/release hashes are unchanged, but the full trials/config refresh timed out. The candidate census records that limitation rather than claiming fresh patch availability.
+
+Verified expands from 33 to **34 configurations** with source-reported Gemini 3.5 Flash / mini-SWE-agent 2.4.2. Pinned artifact commit `2f6637a` supplies 441 predictions that agree byte-for-byte with separate patch files: 359 passing and 82 failed. Aggregate outcomes explicitly identify the other 59 tasks as no generation; all 500 remain in the population, with no missing-zero imputation. Static analysis measured all 441 submitted attempts using clean `0aa66df`, Python 3.14.7 and the identical existing 0.5.2 source hash; mean net units added is +36.6031746031746. No model calls or target tests ran. Human-reference comparison is intentionally uncomputed for this addition.
+
+The importer honors immutable `info.commit` behind explicit assets pins; a tested reproduction driver checksum-binds inventory, population metadata and numerical/hash evidence, and launches the pinned clean analyzer. Raw artifacts remain external; publication is not blanket reuse/licensing or evaluator/model certification. Existing 33-model measurements, population/panel and reports are unchanged; new 34-configuration reports and the Verified page are published separately. See `docs/gemini-3.5-verified-release.md`.
+
 ## Website: plain-mean ranking and solved-only mean column — 2026-10-01
 
 At the owner's request the 10% trimmed mean is removed. Boards rank by the plain mean of net units added over all measured attempts again (`measured-net-mean-v1`), and a new sortable column and chart metric shows the mean over upstream-solved attempts only (`measured_solved_net_mean`, with `measured_solved_attempts`). Rank stays on the all-attempt mean. Measurements and scores are unchanged.

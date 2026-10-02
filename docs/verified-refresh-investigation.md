@@ -2,6 +2,8 @@
 
 This is an availability audit, not a remeasurement. The pinned experiments revision remains `40f164d5b8f1d249bf95a6df8b74b577fd8e519d`. See [`examples/benchmark-discovery/verified-exclusions-2026-09-29.json`](../examples/benchmark-discovery/verified-exclusions-2026-09-29.json) for raw URLs, fresh no-cache HTTP statuses, SHA-256 values, and representative patch probes. No models were run and no cohorts were measured.
 
+**2026-10-02 follow-up:** Gemini 3.5 Flash is now measured and published on the 34-configuration Verified board. All 441 separate pinned patches agree with predictions; aggregate results explicitly identify the other 59 tasks as no generation. See [release and reproduction](gemini-3.5-verified-release.md). The dated audit below remains a historical availability snapshot, not the current blocker list. GPT-5.2 Codex's two outcome probes still returned 404 in the fresh check.
+
 ## Corrected inventory
 
 The prior `mini_entries` shortlist included 54 names selected partly by model/harness substrings. Exactly 48 satisfy the experiment-name rule `^\d{8}_mini-`; the other six are not mini run names and were removed, along with their metadata shortlist entries: Google Jules, CodeShellAgent, Agentless Lite, PatchPilot, frogmini-14b, and LiveSWE-agent. The verified listing and all other evidence fields are unchanged. Of the 48 actual mini runs, 33 are in `published_agents` and 15 are excluded; the latter are inventoried in the JSON file.

@@ -124,7 +124,7 @@ Pages are always light mode and show an instant model-name-only tooltip. The arc
 |---|---|---|
 | [`site/index.html`](site/index.html) (main) | [DeepSWE Python](examples/deepswe-python/README.md), 26 models | `--benchmark deepswe` |
 | `site/javascript.html`, `typescript.html`, `go.html` | DeepSWE [JavaScript](examples/deepswe-javascript/README.md), [TypeScript](examples/deepswe-typescript/README.md), [Go](examples/deepswe-go/README.md); separate pinned tracks with explicit coverage limits | `--benchmark deepswe` |
-| [`site/verified.html`](site/verified.html) | [SWE-bench Verified](examples/mini-swe-agent-500/README.md), 33 models | `--benchmark verified` |
+| [`site/verified.html`](site/verified.html) | [SWE-bench Verified](examples/mini-swe-agent-500/README.md), 34 configurations | `--benchmark verified` |
 | `site/live.html` | [Live Lite Python](examples/live-python/README.md): DeepSeek V4.1 Flash, GPT-5.6 Sol and Claude Opus 4.8 as model + agent configurations on all 300 tasks | `--benchmark live` |
 
 `--nav LABEL=URL` links the boards. All pages are served at [parsimony.lasu.dev](https://parsimony.lasu.dev) (Cloudflare Pages, output directory `site`). Edit `site/template.html` for layout and copy, then rebuild all six pages ([HANDOFF.md](HANDOFF.md#rebuild-all-six-pages-offline-no-remeasurement) has the exact commands).
@@ -141,7 +141,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). `python -m parsimony.contribute export` 
 | [deepswe-javascript](examples/deepswe-javascript/README.md) | 0.7.0-beta | 26 models × 5 JS-labelled tasks × 4 attempts; all 5 tasks calibratable; official TypeScript parser, script kind by file extension |
 | [deepswe-typescript](examples/deepswe-typescript/README.md) | 0.7.0-beta | 26 models × 35 TS-labelled tasks × 4 attempts; official TypeScript parser; 33 tasks calibratable (5 analysis errors in 3,640 records), two upstream language-label mismatches documented |
 | [deepswe-go](examples/deepswe-go/README.md) | 0.6.0-beta | 26 models × 34 Go tasks × 4 attempts; all 34 tasks calibratable |
-| [mini-swe-agent-500](examples/mini-swe-agent-500/README.md) | 0.5.2-beta | 33 models × all 500 tasks with failures, mini-SWE-agent v0.0.0–v2.0.0; frozen panel, scores, rank ranges and an agent-version check (the website's second board) |
+| [mini-swe-agent-500](examples/mini-swe-agent-500/README.md) | 0.5.2-beta | 34 configurations × all 500 tasks with failures, mini-SWE-agent v0.0.0–v2.4.2; Gemini 3.5 Flash added with 441 measured attempts and 59 explicit no-generation outcomes; frozen population, archived score diagnostics and agent-version checks |
 | [ten-model-500](examples/ten-model-500/README.md) | 0.5.0-beta | Ten models (plus Claude Opus 4.5) × all 500 tasks, mini-SWE-agent v2.0.0 only; superseded as the website's data |
 | [beta-500-v5](examples/beta-500-v5/README.md) | 0.5.0-beta | Two complete 500-task cohorts in coding units; units vs tokens, coverage audit, fresh-artifact recheck |
 | [beta-500-v4](examples/beta-500-v4/README.md) | 0.4.0-beta | Two complete 500-task cohorts in tokens (superseded by v5) |
