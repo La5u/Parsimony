@@ -1,0 +1,138 @@
+{
+  "checked_at_utc": "2026-10-02T09:15:48.733805+00:00",
+  "scope": "fresh-public-listings-and-metadata-not-model-evaluations",
+  "sources": {
+    "live": {
+      "repository": "SWE-bench-Live/submission",
+      "branch": "main",
+      "revision": "cba8a6d3197cd53da09f8527cccbc689782302a6",
+      "evidence": [
+        {
+          "url": "https://api.github.com/repos/SWE-bench-Live/submission/commits/main",
+          "sha256": "c6d466c5a8b37995891d3c3b725f114d2729880ee4761a4dea858f30c2cb4a35",
+          "bytes": 7412
+        },
+        {
+          "url": "https://api.github.com/repos/SWE-bench-Live/submission/git/trees/cba8a6d3197cd53da09f8527cccbc689782302a6?recursive=1",
+          "sha256": "204ef9484e8348a1b7200ae441a012d05ad1350f6e5d2b6e4c02580ab1d8f8f7",
+          "bytes": 8016037
+        }
+      ],
+      "tree_truncated": false,
+      "files_under_cohort_prefix": 19108,
+      "changed_since_stored_pin": false
+    },
+    "polybench": {
+      "repository": "amazon-science/SWE-PolyBench",
+      "branch": "submission",
+      "revision": "e7062f4a848ca7775bc1c1313f7aa419bd6a3ec1",
+      "evidence": [
+        {
+          "url": "https://api.github.com/repos/amazon-science/SWE-PolyBench/commits/submission",
+          "sha256": "5ff49cd8be2e04675443c04ffc75bf8ae7d631dd119edc7322c4911a45c36b8e",
+          "bytes": 11684
+        },
+        {
+          "url": "https://api.github.com/repos/amazon-science/SWE-PolyBench/git/trees/e7062f4a848ca7775bc1c1313f7aa419bd6a3ec1?recursive=1",
+          "sha256": "80539942645b36e4b44729b7e00ea291dfda6bb776cd07eb0cb2364399d4b3cb",
+          "bytes": 4264684
+        }
+      ],
+      "tree_truncated": false,
+      "files_under_cohort_prefix": 9736,
+      "changed_since_stored_pin": false
+    },
+    "verified": {
+      "repository": "SWE-bench/experiments",
+      "branch": "main",
+      "revision": "40f164d5b8f1d249bf95a6df8b74b577fd8e519d",
+      "evidence": [
+        {
+          "url": "https://api.github.com/repos/SWE-bench/experiments/commits/main",
+          "sha256": "718f153a57a927cf110d7f27c06f568a6ff6863d22ff3767a551063de6bebe74",
+          "bytes": 58226
+        },
+        {
+          "url": "https://api.github.com/repos/SWE-bench/experiments/git/trees/40f164d5b8f1d249bf95a6df8b74b577fd8e519d?recursive=1",
+          "sha256": "cfee85efda2b5e596b5d49300beae64be2258aebebc6dba727551d0cde3f37a7",
+          "bytes": 1185310
+        }
+      ],
+      "tree_truncated": false,
+      "files_under_cohort_prefix": 998,
+      "changed_since_stored_pin": false
+    },
+    "deepswe-release": {
+      "evidence": {
+        "url": "https://deepswe.datacurve.ai/artifacts/v1.1/release.json",
+        "sha256": "0b77963ed8c54ef40c5f744ade178b54bfae2662ed94f9235cee85eb542bdc85",
+        "bytes": 562
+      },
+      "changed_since_2026_09_29": false
+    },
+    "deepswe-leaderboard-live": {
+      "evidence": {
+        "url": "https://deepswe.datacurve.ai/artifacts/v1.1/leaderboard-live.json",
+        "sha256": "a7c15d66288fd249c020b9931c017b92d1a3b90e480b3ff34974b752bd030019",
+        "bytes": 94758
+      },
+      "changed_since_2026_09_29": false
+    },
+    "deepswe-trials": {
+      "status": "refresh-timeout",
+      "usable_configs_status": "not-freshly-revalidated",
+      "note": "Full CLI refresh hit the 120-second limit; direct trials attempt also did not complete. Unchanged leaderboard/release is not a fresh patch-availability check."
+    }
+  },
+  "candidates": [
+    {
+      "model": "Gemini 3.5 Flash",
+      "harness": "mini-SWE-agent 2.4.2",
+      "benchmark": "SWE-bench Verified",
+      "language": "python",
+      "submission_path": "evaluation/verified/20260901_mini-v2.4.2_gemini-3-5-flash",
+      "submission_revision": "40f164d5b8f1d249bf95a6df8b74b577fd8e519d",
+      "artifact_repository": "john-b-yang/20260901_mini-v2.4.2_gemini-3-5-flash",
+      "artifact_revision": "2f6637a2557da1f7b5f2b583ab7090a077bbeed2",
+      "population": 500,
+      "patches": 441,
+      "resolved": 359,
+      "explicit_failed": 82,
+      "explicit_no_generation": 59,
+      "decision": "add-to-Verified-using-compatible-0.5.2-analyzer",
+      "note": "New coverage on Verified, not a claim of newest Gemini generation globally."
+    },
+    {
+      "model": "GPT-6 Astra",
+      "benchmark": "DeepSWE",
+      "status": "previously-no-declared-patches-not-revalidated",
+      "next_action": "retry-bounded-trials-discovery"
+    },
+    {
+      "model": "Gemini 3.8 Flash",
+      "benchmark": "DeepSWE",
+      "status": "previously-HTTP-403-not-revalidated",
+      "next_action": "retry-pinned-patch-availability-probes"
+    },
+    {
+      "model": "GPT-5.2 Codex",
+      "benchmark": "SWE-bench Verified",
+      "status": "fresh-per-instance-and-aggregate-results-probes-404",
+      "next_action": "seek-public-per-task-outcomes-without-inference"
+    },
+    {
+      "model": "GPT-5.6 Sol",
+      "benchmark": "Live MultiLang",
+      "language": "javascript/typescript",
+      "status": "known-artifacts-no-new-upstream-commit",
+      "next_action": "remeasure-using-0.7.0-official-TypeScript-parser"
+    },
+    {
+      "model": "Claude Opus 4.8",
+      "benchmark": "SWE-PolyBench Verified",
+      "language": "python",
+      "status": "known-artifacts-no-new-upstream-commit",
+      "next_action": "finish-separate-population-provenance-release-review"
+    }
+  ]
+}

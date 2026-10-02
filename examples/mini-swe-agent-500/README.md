@@ -1,40 +1,48 @@
-# 33 models × 500 Verified tasks (analyzer 0.5.2)
+# 34 configurations × 500 Verified tasks (analyzer 0.5.2)
 
-**Beta research preview, not an official ranking.** Every SWE-bench Verified task for 33 models run by SWE-bench with mini-SWE-agent (versions v0.0.0 to v2.0.0, July 2025 to February 2026), measured in coding units, including explicitly failed patches. This is the [site](../../site/index.html)'s data and replaces the [ten-model results](../ten-model-500/README.md) there.
+**Experimental footprint comparison, not an official coding-ability ranking.** The [Verified board](../../site/verified.html) contains 34 source-reported model + mini-SWE-agent configurations (v0.0.0 to v2.4.2, July 2025 to September 2026), over every one of the 500 Verified tasks. Default rank uses the plain mean of net coding units added across all measured in-scope passing and failed attempts. Solved-only mean, upstream Solved % and Measured coverage are separate context. Missing footprints are not zeros; harness versions differ.
+
+## Latest battery addition: Gemini 3.5 Flash
+
+Gemini 3.5 Flash / mini-SWE-agent 2.4.2 adds **441/500 eligible footprints**: 359 passing and 82 failed. The remaining 59 are explicitly source-reported `no_generation`, not fabricated failures or zero-footprint patches. Upstream Solved is **71.8%**; mean net units added is **36.6031746031746**. All 441 separate patches match their monolithic predictions. Analysis used the exact existing 0.5.2 commit/source hash and Python 3.14.7, with no identity relabelling. Human-reference comparisons are intentionally not computed for this addition.
+
+See [release/provenance/reproduction notes](../../docs/gemini-3.5-verified-release.md) and [numerical/hash publication evidence](gemini-3-5-publication-evidence.json). Raw patches, source, prompts and trajectories are not distributed. Existing 33-model records, the 500-task population and archived 33-model passing-reference panel remain unchanged. Current 34-configuration reports are [coverage-34.json](coverage-34.json), [scores-34.json](scores-34.json) and [sensitivity-34.json](sensitivity-34.json)/[report](sensitivity-34.md); the original report files below are historical snapshots, not the current footprint ranking.
 
 ## Pinned inputs
 
-- Analyzer commit `0aa66df`, version `0.5.2-beta`, Python 3.14.7. 0.5.2 repairs patch files that lost their final newline, finds patches when `metadata.yaml` names the wrong folder, and excludes scratch scripts at the repository root (see the [changelog](../../CHANGELOG.md)). All 38 runs, including the ten-model runs, were measured with it.
+- Analyzer commit `0aa66df`, version `0.5.2-beta`, Python 3.14.7. 0.5.2 repairs patch files that lost their final newline, finds patches when `metadata.yaml` names the wrong folder, and excludes scratch scripts at the repository root (see the [changelog](../../CHANGELOG.md)). All 39 measured runs (34 displayed and five older harness duplicates), including the ten-model runs, use it.
 - Scoring `parsimony-80-20-v0.5` (80% net units / 20% churn), panel `mini-swe-agent-33-448-solved-80-20-v0.5`.
 - Dataset SHA256 `82029e78b26e1da0ddc01653c98db18443fab1993e28dff052a38b01c3fd77f7`, experiments revision `40f164d5b8f1d249bf95a6df8b74b577fd8e519d`.
-- SHA256: [population.json](population.json) `02a66572…`, [score-panel.json](score-panel.json) `4d18e67f…`, [scores.json](scores.json) `4267ebb6…`, [coverage.json](coverage.json) `43d78bc1…`, [sensitivity.json](sensitivity.json) `07380194…`.
+- Historical 33-model report SHA256 (unchanged): [population.json](population.json) `02a66572…`, [score-panel.json](score-panel.json) `4d18e67f…`, [scores.json](scores.json) `4267ebb6…`, [coverage.json](coverage.json) `43d78bc1…`, [sensitivity.json](sensitivity.json) `07380194…`.
 
 ```sh
 # For each submission in the tables below (full names are the `agent` field of each JSONL file):
 python -m parsimony analyze SUBMISSION --dataset verified.jsonl \
   --ref 40f164d5b8f1d249bf95a6df8b74b577fd8e519d --include-failed --output NAME.jsonl
-# The panel is frozen from the records of the 448 tasks with at least one measured, in-scope solved patch:
-python -m parsimony.scoring freeze panel-tasks.jsonl --name mini-swe-agent-33-448-solved-80-20-v0.5 --output score-panel.json
-python -m parsimony.release audit population.json *.jsonl --dataset verified.jsonl --output coverage.json
-python -m parsimony.scoring score score-panel.json *.jsonl --output scores.json
-python -m parsimony.stability score-panel.json *.jsonl --output sensitivity.json
-python -m parsimony.site score-panel.json *.jsonl --sensitivity sensitivity.json --output site/index.html
+# Gemini requires the dedicated bound inventory/measurement driver linked above.
+# Keep the existing frozen 33-model passing-reference panel and 500-task population.
+# Do not overwrite the historical 33-model report files when adding a configuration:
+python -m parsimony.release audit population.json *.jsonl --output coverage-34.json
+python -m parsimony.scoring score score-panel.json *.jsonl --output scores-34.json
+python -m parsimony.stability score-panel.json *.jsonl --output sensitivity-34.json
+# For the current 34-configuration board, use the shared-navigation rebuild in HANDOFF.md:
+python -m parsimony.site score-panel.json *.jsonl --sensitivity sensitivity-34.json --benchmark verified --output site/verified.html
 ```
 
 ## Which runs are included
 
-All 48 mini-SWE-agent runs on Verified at the pinned revision were checked; 38 are measured here.
+All 48 mini-SWE-agent runs on Verified at the pinned revision were checked; 39 are measured here.
 
-- **33 on the leaderboard**, one per model. Where a model was run twice, the v2.0.0 run is shown.
+- **34 on the footprint board**, one per model. Where a model was run twice, the v2.0.0 run is shown.
 - **5 older duplicate runs** (GPT-5 mini v1.7.0, Claude Sonnet 4.5 v1.13.3, Claude Opus 4.5 v1.16.0, DeepSeek V3.2 v1.17.1, GPT-5.2 (high) v1.17.2) are in [agent-version-check/](agent-version-check/), scored against the same panel but not references.
-- **Left out:** Claude 3.7 Sonnet (402 of 500 patches missing from S3), Llama 4 Scout, GPT-4o, GPT-4.1, GPT-4.1 mini, Gemini 2.0 Flash, Gemini 2.5 Flash and GPT-5.2 Codex (no per-task results file), Gemini 3 Pro (high) (its results file marks all 500 tasks unresolved although its metadata reports 69.6%), and Gemini 3.5 Flash (mini-SWE-agent v2.4.2, results for 441 tasks, logs outside the official bucket).
+- **Left out:** Claude 3.7 Sonnet (402 of 500 patches missing from S3), Llama 4 Scout, GPT-4o, GPT-4.1, GPT-4.1 mini, Gemini 2.0 Flash, Gemini 2.5 Flash and GPT-5.2 Codex (no per-task results file), Gemini 3 Pro (high) (its results file marks all 500 tasks unresolved although its metadata reports 69.6%). Gemini 3.5 Flash's artifact blocker is now resolved by pinned submitter-repository patches plus explicit aggregate no-generation evidence.
 
-## Scored population
+## Archived combined-score reference panel (unchanged)
 
-- **448 tasks** that at least one of the 33 models solved with a measurable patch. The other 52 cannot calibrate footprint. Choosing tasks by panel success is a known bias.
+- **448 tasks** that at least one of the 33 models solved with a measurable patch. The other 52 do not calibrate the archived combined score against this panel. All 500 tasks remain in the footprint population; measured attempts on these 52 tasks still contribute to default rank. Choosing tasks by panel success is a known score-panel bias, not a footprint eligibility rule.
 - **Reference panel:** every measured, in-scope solved patch of the 33 models on those tasks. Identical patches from different models are not deduplicated.
 
-## Coverage
+## Historical 33-model coverage
 
 | Model | Resolved | Failed measured | Errors | Missing patch | Units unknown | Newline restored | Scratch files excluded |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -74,7 +82,7 @@ All 48 mini-SWE-agent runs on Verified at the pinned revision were checked; 38 a
 
 **Newline restored:** runs up to v1.7.0 stored patch files without their final newline; 0.5.2 restores it. Without this, most of those runs' solved patches could not be measured (for example 244 of o3's 292). **Scratch files excluded:** patches, mostly from runs before v2.0.0, that added scripts such as `reproduce_issue.py` at the repository root; those files are not counted. 46 solved and 591 failed patches could not be measured (Errors and Missing patch); their tasks get a score range instead of a point.
 
-## Results
+## Historical 33-model combined-score results (not footprint ranks)
 
 | Rank (95%) | Model | Agent | Score | 95% interval | Resolved | Per solve | Median net units | Median churn |
 |---:|---|---|---:|---|---:|---:|---:|---:|

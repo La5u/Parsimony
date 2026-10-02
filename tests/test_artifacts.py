@@ -42,7 +42,8 @@ class ArtifactsTests(unittest.TestCase):
                 raise HTTPError(url, 404, 'missing', {}, None)
             if url.endswith('/metadata.yaml'):
                 return (b'assets:\n  repo: https://github.com/submitter/run-artifacts\n'
-                        b'  ref: refs/tags/run-v1\n  logs: https://github.com/submitter/run-artifacts/tree/main/artifacts/logs\n')
+                        b'  ref: refs/tags/run-v1\n  logs: https://github.com/submitter/run-artifacts/tree/main/artifacts/logs\n'
+                        b'info:\n  commit: 2f6637a2557da1f7b5f2b583ab7090a077bbeed2\n')
             if url.endswith('/per_instance_details.json'):
                 return (b'{"pass":{"resolved":true},"fail":{"resolved":false},'
                         b'"absent":{"resolved":false,"status":"no_logs"},'
@@ -65,6 +66,98 @@ class ArtifactsTests(unittest.TestCase):
         self.assertEqual(loaded['provenance']['ref'], 'refs/tags/run-v1')
         self.assertEqual(loaded['provenance']['layout'], 'submitter-github-per-instance-v1')
         self.assertFalse(any('s3.amazonaws.com' in url for url in requested))
+
+    def test_info_commit_pins_per_instance_assets_without_inventing_outcomes(self):
+        submission = 'https://github.com/SWE-bench/experiments/tree/main/evaluation/verified/demo'
+        commit = '2f6637a2557da1f7b5f2b583ab7090a077bbeed2'
+        requested = []
+        metadata = (f'info:\n  commit: "{commit}"\n'
+                    'assets:\n  repo: https://github.com/submitter/artifacts/tree/main/run\n'
+                    '  logs: https://github.com/submitter/artifacts/tree/main/run/logs\n').encode()
+        def fetch(url, _cache):
+            requested.append(url)
+            if url.endswith('/metadata.yaml'):
+                return metadata
+            if url.endswith('/all_preds.jsonl'):
+                raise HTTPError(url, 404, 'missing', {}, None)
+            if url.endswith('/per_instance_details.json'):
+                return b'{"pass":{"resolved":true},"fail":{"resolved":false}}'
+            if url.endswith('/fail/patch.diff'):
+                return b'failed patch'
+            raise AssertionError('unexpected request: ' + url)
+        with patch('parsimony.artifacts._bytes', side_effect=fetch):
+            summary = load_submission(submission, None, task_ids=[], include_failed=True)
+            self.assertEqual(summary['predictions'], {})
+            self.assertFalse(any(url.endswith('/patch.diff') for url in requested))
+            loaded = load_submission(submission, None, task_ids=['fail'], limit=1, include_failed=True)
+        prefix = f'https://raw.githubusercontent.com/submitter/artifacts/{commit}/run'
+        self.assertIn(prefix + '/all_preds.jsonl', requested)
+        self.assertIn(prefix + '/logs/fail/patch.diff', requested)
+        self.assertFalse(any('/submitter/artifacts/main/' in url for url in requested))
+        self.assertEqual(loaded['predictions'], {'fail': 'failed patch'})
+        self.assertEqual(loaded['evaluated'], {'pass', 'fail'})
+        self.assertEqual(loaded['result_details']['unresolved'], ['fail'])
+        self.assertEqual(loaded['result_details']['no_generation'], [])
+        self.assertEqual(loaded['prediction_locations']['pass'], prefix + '/logs/pass/patch.diff')
+        self.assertEqual(loaded['provenance']['metadata_ref'], 'main')
+        self.assertEqual(loaded['provenance']['artifact_ref'], commit)
+        self.assertEqual(loaded['provenance']['ref'], commit)
+
+    def test_monolithic_info_pin_and_explicit_assets_pin_precedence(self):
+        submission = 'https://github.com/SWE-bench/experiments/tree/main/evaluation/verified/demo'
+        info_commit = '2f6637a2557da1f7b5f2b583ab7090a077bbeed2'
+        asset_commit = 'a' * 40
+        cases = [('', info_commit),
+                 ('  ref: refs/tags/run-v1\n', 'refs/tags/run-v1'),
+                 (f'  commit: {asset_commit}\n  ref: refs/tags/run-v1\n', asset_commit)]
+        for declared_pin, expected_ref in cases:
+            with self.subTest(pin=declared_pin):
+                requested = []
+                def fetch(url, _cache):
+                    requested.append(url)
+                    if url.endswith('/metadata.yaml'):
+                        return (f'info:\n  commit: {info_commit}\nassets:\n'
+                                '  repo: https://github.com/submitter/artifacts/tree/main/run\n'
+                                + declared_pin +
+                                '  logs: https://github.com/submitter/artifacts/tree/main/run/logs\n').encode()
+                    if url.endswith('/all_preds.jsonl'):
+                        return b'{"instance_id":"pass","patch":"p"}\n{"instance_id":"fail","patch":"q"}\n'
+                    if url.endswith('/results/results.json'):
+                        return b'{"resolved":["pass"]}'
+                    if url.endswith('/fail/report.json'):
+                        return b'{"fail":{"resolved":false,"patch_exists":true,"patch_successfully_applied":true}}'
+                    raise AssertionError('unexpected request: ' + url)
+                with patch('parsimony.artifacts._bytes', side_effect=fetch):
+                    loaded = load_submission(submission, None, include_failed=True)
+                prefix = f'https://raw.githubusercontent.com/submitter/artifacts/{expected_ref}/run'
+                self.assertIn(prefix + '/all_preds.jsonl', requested)
+                self.assertIn(prefix + '/logs/fail/report.json', requested)
+                self.assertEqual(loaded['provenance']['artifact_ref'], expected_ref)
+                self.assertEqual(loaded['provenance']['metadata_ref'], 'main')
+                self.assertEqual(loaded['result_details']['unresolved'], ['fail'])
+
+    def test_invalid_info_commit_rejected_before_artifact_requests(self):
+        submission = 'https://github.com/SWE-bench/experiments/tree/main/evaluation/verified/demo'
+        for value in ('main', 'abc123', 'g' * 40, 'a' * 39, 'a' * 41, 'null', '~', '', '../main'):
+            with self.subTest(commit=value):
+                metadata = (f'info:\n  commit: {value}\nassets:\n'
+                            '  repo: https://github.com/submitter/artifacts\n'
+                            '  ref: main\n').encode()
+                with patch('parsimony.artifacts._bytes', return_value=metadata) as fetch:
+                    with self.assertRaisesRegex(ValueError, 'info.commit.*40-character'):
+                        load_submission(submission, None, task_ids=[])
+                self.assertEqual(fetch.call_count, 1)
+
+    def test_info_commit_scalar_subset(self):
+        from parsimony.artifacts import _metadata_scalars
+        commit = 'A' * 40
+        for indent in ('  ', '    '):
+            metadata = (f'info:\n{indent}authors: [one, two]\n{indent}commit: \'{commit}\'\n'
+                        'assets:\n  logs: logs\n').encode()
+            self.assertEqual(_metadata_scalars(metadata), {'info.commit': commit, 'logs': 'logs'})
+        self.assertEqual(_metadata_scalars(f'info:\n  nested:\n    commit: {commit}\n'.encode()), {})
+        with self.assertRaisesRegex(ValueError, 'duplicate info YAML key'):
+            _metadata_scalars(f'info:\n  commit: {commit}\n  commit: {commit}\n'.encode())
 
     def test_submitter_assets_default_to_logs_and_missing_is_not_failure(self):
         submission = 'https://github.com/SWE-bench/experiments/tree/main/evaluation/verified/demo'

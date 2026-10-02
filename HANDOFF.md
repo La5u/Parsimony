@@ -1,4 +1,4 @@
-# Session handoff — 2026-10-01
+# Session handoff — 2026-10-02
 
 Current-state snapshot only. History lives in [CHANGELOG.md](CHANGELOG.md) and `git log`; older handoff text is in git history (`git show 9c02b9a:HANDOFF.md`). **Replace this file's facts when they change instead of appending dated sections.**
 
@@ -42,11 +42,12 @@ Cloudflare Pages serves `site/` at <https://parsimony.lasu.dev>; a push to `main
 | DeepSWE JavaScript | `site/javascript.html` | `examples/deepswe-javascript/` | 26 | 5 × 4 | 0.7.0-beta @ `ca37c31` |
 | DeepSWE TypeScript | `site/typescript.html` | `examples/deepswe-typescript/` | 26 | 35 × 4 | 0.7.0-beta @ `ca37c31` |
 | DeepSWE Go | `site/go.html` | `examples/deepswe-go/` | 26 | 34 × 4 | 0.6.0-beta |
-| SWE-bench Verified | `site/verified.html` | `examples/mini-swe-agent-500/` | 33 | 500 × 1 | 0.5.2-beta |
+| SWE-bench Verified | `site/verified.html` | `examples/mini-swe-agent-500/` | 34 | 500 × 1 | 0.5.2-beta |
 | SWE-bench Live Lite Python | `site/live.html` | `examples/live-python/` | 3 configs | 300 × 1 | 0.6.0-beta @ `de63300` |
 
 - Each example directory holds measured JSONL, `population.json`, `coverage.json`, `score-panel.json`, `scores.json`, sensitivity/stability reports and a README. Large JSON files are tens of MB: summarise them with Python rather than dumping them into context.
 - Live Python: three model + agent configurations (DeepSeek V4.1 Flash · TianxiCode, GPT-5.6 Sol · Slingshot 3.4.0, Claude Opus 4.8 · AiWork). 238/300 tasks calibrated, 62 uncalibrated under opt-in `full-population-uncalibrated-bounds-v1`. Records publish scalars and hashes only, not patches; raw-artifact redistribution remains uncleared (`docs/deepseek-v4.1-live-release-review.md`, `docs/priority-live-provenance.md`). The JSONLs are byte-identical to clean `de63300` measurements; never relabel them.
+- Verified now includes **Gemini 3.5 Flash / mini-SWE-agent 2.4.2**: 441 eligible attempts (359 passing, 82 failed), 59 explicit aggregate `no_generation`, all 500 retained. Source-reported Solved 71.8%, measured mean net +36.6031746031746. All 441 separate patches agree with pinned predictions. Measurement commit/source hash exactly match existing Verified 0.5.2; human-reference comparison is intentionally uncomputed. See `docs/gemini-3.5-verified-release.md` and `examples/benchmark-discovery/add-gemini-verified.py`. Old 33-model records, population/panel and reports stay unchanged; current reports use `coverage-34.json`, `scores-34.json`, `sensitivity-34.json`.
 - Measured but **not published**: GPT-5.6 Sol JS 101/108 and TS 99/111, PolyBench Opus 4.8 Python 111/113 (metadata/hashes in `examples/priority-live/`; full footprints external). GPT-5.4 PolyBench measurements are withheld (hunk-only corroboration, no usable old-blob prefixes).
 - `ten-model-500`, `beta-500-*` and root `ten-model-*` files are historical; never mix them with current cohorts.
 - There are zero contributed submission bundles.
@@ -68,11 +69,13 @@ On Verified a few failed mass deletions decide the top ranks: Llama 4 Maverick i
 
 **Recommended direction: recent models on supported Python/JS/TS/Go tracks first, not another ranking redesign or Java/Rust expansion.** Start with public exports on an existing board's frozen population and, where possible, the same harness. Cross-harness Live additions remain model + agent configurations, not controlled model-only comparisons. This is a plan, not a claim that new exports have been found.
 
-First-session discovery checklist:
+Latest discovery: **2026-10-02** fresh complete GitHub trees for Live, PolyBench and Verified match their stored pins; DeepSWE leaderboard/release hashes are unchanged. Full DeepSWE trials/config refresh timed out, so do not claim a fresh 26-config patch-availability check. Census: `examples/benchmark-discovery/model-battery-refresh-2026-10-02.json`. The accessible Gemini 3.5 Verified addition is now complete; next concrete supported-language work is Live GPT-5.6 Sol JS/TS remeasurement, or a newly available public export. Retry DeepSWE discovery with bounded requests rather than an unbounded full config probe.
+
+Next-session discovery checklist:
 
 1. Refresh **DeepSWE** configs with a fresh cache (command under Inputs), compare against `examples/deepswe-python/refresh-2026-09-29.json`, and inspect every new/changed configuration. Last refresh found the same 26 usable configs. Recheck GPT-6 Astra (previously no declared patches) and Gemini 3.8 Flash (previously HTTP 403), but do not treat either as available until artifacts are retrieved. Look for newer generations across all represented model families, not only the current leaders.
 2. Refresh public **Live** submission listings and **PolyBench** run listings at newly pinned upstream commits. Prioritize newer Python configurations alongside DeepSeek V4.1 Flash, GPT-5.6 Sol and Opus 4.8, then supported JS/TS cohorts. Model names in listings are source claims: require actual task-level patches, outcome records and usable preimages. Existing importer run choices and the priority driver are explicit inventories, not automatic discovery of future submissions; extend them only after checking the new export shape and population.
-3. Refresh **Verified** public experiments for genuinely newer model exports. Recheck known partial/blocked runs only as secondary work: Gemini 3.5 has 441/500 outcome rows; GPT-5.2 Codex lacks results; Claude 3.7 patches are missing. Retain the 500-task population and unknown outcomes, never convert missing rows into failures or measured zeros.
+3. Refresh **Verified** public experiments for genuinely newer model exports. Gemini 3.5 is now included with explicit outcomes for all 500 tasks. Recheck remaining blocked runs as secondary work: GPT-5.2 Codex still returned 404 for both per-instance and aggregate results on 2026-10-02; Claude 3.7 patches are missing. Retain the 500-task population and unknown outcomes, never convert missing rows into failures or measured zeros.
 4. Produce a small committed, numerical/metadata-only candidate census: source URL and immutable revision, source-reported model + harness, benchmark/language, population and attempts, patch/outcome availability, preimage tier, current blocker and next action. Record unavailable candidates too. Do not commit fetched patches, prompts or trajectories.
 
 Choose the first releasable newer-model cohort by **artifact completeness and compatibility**, not solve rate or expected footprint rank. Discovery can be refreshed broadly; static analysis should run only for new/changed checksum-bound inputs. Prefer adding comparable recent configurations to existing boards over opening a sparsely populated benchmark just to show a new model.
@@ -132,11 +135,13 @@ The parser problem is solved (0.7.0, 2026-10-01): JS/TS use the official TypeScr
 
 ## Commands
 
+Latest battery-addition validation: 247 tests passed with the exact optional parser pins; default Python run passed with 9 expected Go skips. All six Node page checks passed. Population/base/analyzer audit passed for all 500 Gemini records, all 33 archived score entries reproduce exactly, and existing raw records/panel/population/report files remain unchanged. External reproducible inventory/measurement data: `/tmp/parsimony-gemini-bound`; clean old analyzer: `/tmp/parsimony-verified-measure` (temporary paths, not durable publication inputs).
+
 ### Before every push
 
 ```sh
 npm ci                                            # pinned TypeScript parser for JS/TS tests
-python -m unittest discover -s tests -q          # 226 tests; Go tests skip without the languages extra
+python -m unittest discover -s tests -q          # 247 tests; Go tests skip without the languages extra
 python -m parsimony.contribute validate submissions
 uv venv --python 3.14.7 /tmp/parsimony-checks
 uv pip install --python /tmp/parsimony-checks/bin/python '.[languages]'
@@ -159,7 +164,7 @@ for lang in python javascript typescript go; do
 done
 V=examples/mini-swe-agent-500
 python -m parsimony.site "$V/score-panel.json" "$V/"*.jsonl \
-  --sensitivity "$V/sensitivity.json" --benchmark verified "${NAV[@]}" --output site/verified.html
+  --sensitivity "$V/sensitivity-34.json" --benchmark verified "${NAV[@]}" --output site/verified.html
 L=examples/live-python
 python -m parsimony.site "$L/score-panel.json" "$L/deepseek-v4.1-flash.jsonl" "$L/gpt-5.6-sol.jsonl" "$L/claude-opus-4.8.jsonl" \
   --sensitivity "$L/stability.json" --benchmark live "${NAV[@]}" --output site/live.html \
