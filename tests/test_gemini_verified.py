@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile
+from threading import Lock
 import unittest
 from unittest.mock import Mock, patch
 
@@ -252,12 +253,19 @@ class GeminiVerifiedTests(unittest.TestCase):
         self.bound_files()
         checkout = self.root / 'analyzer'
         identity = Mock(return_value=(gemini.ANALYZER_COMMIT, 'b' * 64))
+        analyze = Mock(wraps=benchmark.analyze_submission)
+        lock = Lock()
+        def recorded_analysis(*args, **kwargs):
+            # Mock.call_count increments are not thread-safe on every Python runtime.
+            # Keep two worker threads, but serialize this cheap mocked analysis.
+            with lock:
+                return analyze(*args, **kwargs)
         with patch.object(gemini, 'clean_checkout'), \
                 patch.object(gemini.platform, 'python_version', return_value=gemini.PYTHON_VERSION), \
                 patch.object(benchmark, '__file__', str(checkout / 'parsimony/benchmark.py')), \
                 patch.object(benchmark, 'analyzer_identity', identity), \
                 patch.object(benchmark, 'measure', return_value={'churn': 0}), \
-                patch.object(benchmark, 'analyze_submission', wraps=benchmark.analyze_submission) as analyze:
+                patch.object(benchmark, 'analyze_submission', new=recorded_analysis):
             gemini.measure_worker(self.root, checkout, workers=2)
         records = [json.loads(line) for line in (self.root / 'measurements.jsonl').read_bytes().splitlines()]
         self.assertEqual([r['task_id'] for r in records], self.ids)
