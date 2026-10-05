@@ -68,6 +68,28 @@ const doc = {
 const browser = {innerWidth: 800, innerHeight: 600, listeners: {},
   addEventListener(event, fn) { this.listeners[event] = fn; }};
 vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc, window: browser});
+const script = html.match(/<script>\n([\s\S]*?)<\/script>/)[1];
+const frontierContext = {};
+vm.runInNewContext(script.match(/  function paretoFrontier\([\s\S]*?\n  }/)[0] + '\nthis.frontier = paretoFrontier;', frontierContext);
+const frontier = (coords, bx, by) => JSON.parse(JSON.stringify(frontierContext.frontier(coords.map(([x, y]) => ({x, y})), bx, by))).map(p => [p.x, p.y]);
+for (const bx of [-1, 1]) for (const by of [-1, 1]) {
+  const coords = [[-2, 0], [-1, -1], [0, -2], [-2, -1], [-1, -2], [-2, 0]]
+    .map(([x, y]) => [x * bx, y * by]);
+  const expected = [[-2, 0], [-1, -1], [0, -2]].map(([x, y]) => [x * bx, y * by]).sort((a, b) => a[0] - b[0]);
+  assert.deepEqual(frontier(coords, bx, by), JSON.parse(JSON.stringify(expected))); // Equal x/y dominated samples and duplicate coordinates.
+}
+for (const coords of [[], [[1, 2]], [[1, 2], [1, 2]], [[null, 1], [1, null]], [[NaN, 1], [1, Infinity]]]) {
+  assert.deepEqual(frontier(coords, -1, 1), []);
+}
+assert.deepEqual(frontier([[0, 0], [1, 1]], undefined, 1), []);
+assert.match(html, /#graph \.point-label \{ font: 600 9px/);
+assert.match(html, /#graph text \{ fill: #000;/);
+assert.match(html, /#graph \.leader \{ stroke: #000;/);
+assert.match(html, /#graph \.best-label \{ fill: #000;/);
+assert.doesNotMatch(html, /paint-order|box-shadow|text-shadow/);
+const tooltipCSS = html.match(/#graph-tooltip \{([\s\S]*?)\}/)[1];
+assert.match(tooltipCSS, /color: #000/);
+assert.doesNotMatch(tooltipCSS, /(?:^|;)\s*(?:border(?:-[\w-]+)?|[\w-]*shadow)\s*:/);
 assert.match(html, /color-scheme: light/);
 assert.doesNotMatch(html, /prefers-color-scheme|color-scheme: dark/);
 const rows = () => [...element('#board tbody').innerHTML.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(m => m[1]);
@@ -134,6 +156,8 @@ assert.match(graph(), /<rect class="best-zone" x="66" y="18"/);
 assert.match(graph(), /Smaller footprint, more solved/);
 element('graph-y').listeners.change({target: {value: 'coverage'}});
 assert.doesNotMatch(graph(), /best-zone/); // Coverage has no better direction.
+assert.doesNotMatch(graph(), /<polyline/);
+assert.match(element('graph-legend').textContent, /no defined better direction/);
 element('graph-y').listeners.change({target: {value: 'resolve_rate'}});
 assert.match(graph(), /best-zone/);
 assert.match(graph(), /aria-describedby="plot-desc"/);
@@ -180,6 +204,10 @@ axis('x', 'net'); axis('y', 'score');
 assert.match(graph(), /Beta \(OpenAI\).*combined score \(midpoint if bounded\): 20.0/);
 axis('x', 'score'); // Selecting the other axis's metric swaps, rather than duplicating, it.
 assert.equal(element('graph-y').value, 'net');
+assert.match(graph(), /<polyline class="pareto-frontier"/);
+assert(graph().indexOf('<polyline') < graph().indexOf('<circle'));
+assert.match(element('graph-legend').textContent, /all generations.*failed attempts.*higher is better.*lower is better/);
+assert.match(element('graph-legend').textContent, /not interpolated capability or correctness certification; not a combined-score ranking/);
 axis('y', 'resolve_rate');
 task('org__repo-1');
 assert.equal(element('graph-x').value, 'net');
@@ -189,6 +217,10 @@ assert.equal(tickValues('x').at(-1), 342);
 assert.doesNotMatch(element('graph-x').innerHTML, /ci|resolve_rate|rank_low/);
 assert.match(element('#board tbody').innerHTML, /<td class="left">Alpha<\/td><td class="left r">solved<\/td><td>\+111<\/td><\/tr>/);
 assert.match(graph(), /Gamma \(Anthropic\): failed task attempt/);
+assert.doesNotMatch(graph(), /<polyline/); // Alpha dominates both task-footprint axes.
+axis('y', 'score');
+assert.match(graph(), /<polyline class="pareto-frontier"/); // Earlier Beta trades footprint for score.
+axis('y', 'churn');
 assert.deepEqual(colors(), [initialColors[0], initialColors[1], initialColors[0]]);
 assert.equal(element('ci-help').hidden, true);
 assert.equal(element('rank-note').hidden, true);
@@ -237,4 +269,8 @@ assert.deepEqual(names(), ['Alpha', 'Beta', 'Gamma']);
 assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Alpha/);
 assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Beta/);
 assert.match(element('#board tbody').innerHTML, /<td>—<\/td><td class="left">Gamma/);
+assert.doesNotMatch(graph(), /<polyline/); // Earlier Beta dominates latest Alpha at equal x.
+axis('x', 'score'); axis('y', 'net');
+assert.doesNotMatch(graph(), /<polyline/); // Earlier Beta also dominates in a swapped mixed-direction view.
+assert.match(graph(), /<circle data-point="1" class="all-point older/);
 console.log('Light mode, footprint ranks/ties, coverage, sorting, axes and task switching passed');
