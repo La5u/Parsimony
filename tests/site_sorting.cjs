@@ -69,20 +69,11 @@ const browser = {innerWidth: 800, innerHeight: 600, listeners: {},
   addEventListener(event, fn) { this.listeners[event] = fn; }};
 vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc, window: browser});
 const script = html.match(/<script>\n([\s\S]*?)<\/script>/)[1];
-const frontierContext = {};
-vm.runInNewContext(script.match(/  function paretoFrontier\([\s\S]*?\n  }/)[0] + '\nthis.frontier = paretoFrontier;', frontierContext);
-const frontier = (coords, bx, by) => JSON.parse(JSON.stringify(frontierContext.frontier(coords.map(([x, y]) => ({x, y})), bx, by))).map(p => [p.x, p.y]);
-for (const bx of [-1, 1]) for (const by of [-1, 1]) {
-  const coords = [[-2, 0], [-1, -1], [0, -2], [-2, -1], [-1, -2], [-2, 0]]
-    .map(([x, y]) => [x * bx, y * by]);
-  const expected = [[-2, 0], [-1, -1], [0, -2]].map(([x, y]) => [x * bx, y * by]).sort((a, b) => a[0] - b[0]);
-  assert.deepEqual(frontier(coords, bx, by), JSON.parse(JSON.stringify(expected))); // Equal x/y dominated samples and duplicate coordinates.
-}
-for (const coords of [[], [[1, 2]], [[1, 2], [1, 2]], [[null, 1], [1, null]], [[NaN, 1], [1, Infinity]]]) {
-  assert.deepEqual(frontier(coords, -1, 1), []);
-}
-assert.deepEqual(frontier([[0, 0], [1, 1]], undefined, 1), []);
-assert.match(html, /#graph \.point-label \{ font: 600 9px/);
+assert.match(html, /#graph \.point-label \{ position: absolute; font: 400 8px/);
+assert.match(html, /#graph circle \{ stroke: none/);
+assert.match(html, /circle:focus-visible \{ outline: 2px solid #000; outline-offset: 4px/);
+assert.match(html, /white-space: pre-line/);
+for (const [company, color] of Object.entries({OpenAI: '#000000', xAI: '#8b5cf6', Google: '#34a853', Anthropic: '#d97757', DeepSeek: '#2756bd'})) assert(html.includes(`'${company}': '${color}'`));
 assert.match(html, /#graph text \{ fill: #000;/);
 assert.match(html, /#graph \.leader \{ stroke: #000;/);
 assert.match(html, /#graph \.best-label \{ fill: #000;/);
@@ -147,17 +138,17 @@ assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Alp
 click('net', ['Alpha', 'Beta', 'Gamma'], 'ascending');
 assert.doesNotMatch(graph(), /Gamma \(Anthropic\)/);
 // Newest generation: full color and a permanent name label. Earlier generations: faded, no label.
-assert.match(graph(), /<text class="point-label"[^>]*>Alpha<\/text>/);
-assert.doesNotMatch(graph(), /<text class="point-label"[^>]*>Beta<\/text>/);
-assert.match(graph(), /<circle data-point="1" class="all-point older"/);
-assert.match(graph(), /<circle data-point="0" class="all-point"/);
+assert.match(graph(), /<span class="point-label"[^>]*>Alpha<\/span>/);
+assert.doesNotMatch(graph(), /<span class="point-label"[^>]*>Beta<\/span>/);
+assert.match(graph(), /<circle data-point="1" data-model="Beta" class="all-point older"/);
+assert.match(graph(), /<circle data-point="0" data-model="Alpha" class="all-point"/);
 // Lower net units and higher solved are better: the green zone sits in the top-left corner.
 assert.match(graph(), /<rect class="best-zone" x="66" y="18"/);
 assert.match(graph(), /Smaller footprint, more solved/);
 element('graph-y').listeners.change({target: {value: 'coverage'}});
 assert.doesNotMatch(graph(), /best-zone/); // Coverage has no better direction.
 assert.doesNotMatch(graph(), /<polyline/);
-assert.match(element('graph-legend').textContent, /no defined better direction/);
+
 element('graph-y').listeners.change({target: {value: 'resolve_rate'}});
 assert.match(graph(), /best-zone/);
 assert.match(graph(), /aria-describedby="plot-desc"/);
@@ -173,7 +164,7 @@ assert.equal(tooltip.hidden, true);
 const firstCircle = doc.querySelectorAll('#graph circle[data-point]').find(c => c.dataset.point === '0');
 for (const event of ['mouseenter', 'mousemove', 'focus', 'click']) {
   firstCircle.listeners[event]();
-  assert.equal(tooltip.textContent, 'Alpha'); // Immediate, model name only; no metrics/company.
+  assert.equal(tooltip.textContent, 'Alpha\nNet units added (mean): −2.0\nSolved (%): 80.0%');
   assert.equal(tooltip.hidden, false);
   firstCircle.listeners.mouseleave();
   assert.equal(tooltip.hidden, true);
@@ -197,6 +188,10 @@ for (const x of keys) for (const y of keys.filter(k => k !== x)) {
   assert.equal(element('graph-x').value, x);
   assert.equal(element('graph-y').value, y);
   assert.doesNotMatch(graph(), /NaN|Infinity/);
+  const circle = doc.querySelectorAll('#graph circle[data-point]').find(c => c.dataset.point === '0');
+  circle.listeners.focus();
+  assert(tooltip.textContent.includes(element('graph-x').innerHTML.match(new RegExp(`value="${x}">([^<]+)`))[1] + ':'));
+  assert(tooltip.textContent.includes(element('graph-y').innerHTML.match(new RegExp(`value="${y}">([^<]+)`))[1] + ':'));
   if (['resolve_rate', 'coverage'].includes(x)) assert.deepEqual(tickValues('x'), [0, 25, 50, 75, 100]);
   if (['resolve_rate', 'coverage'].includes(y)) assert.deepEqual(tickValues('y'), [0, 25, 50, 75, 100]);
 }
@@ -204,10 +199,7 @@ axis('x', 'net'); axis('y', 'score');
 assert.match(graph(), /Beta \(OpenAI\).*combined score \(midpoint if bounded\): 20.0/);
 axis('x', 'score'); // Selecting the other axis's metric swaps, rather than duplicating, it.
 assert.equal(element('graph-y').value, 'net');
-assert.match(graph(), /<polyline class="pareto-frontier"/);
-assert(graph().indexOf('<polyline') < graph().indexOf('<circle'));
-assert.match(element('graph-legend').textContent, /all generations.*failed attempts.*higher is better.*lower is better/);
-assert.match(element('graph-legend').textContent, /not interpolated capability or correctness certification; not a combined-score ranking/);
+assert.doesNotMatch(graph(), /<polyline/);
 axis('y', 'resolve_rate');
 task('org__repo-1');
 assert.equal(element('graph-x').value, 'net');
@@ -219,7 +211,7 @@ assert.match(element('#board tbody').innerHTML, /<td class="left">Alpha<\/td><td
 assert.match(graph(), /Gamma \(Anthropic\): failed task attempt/);
 assert.doesNotMatch(graph(), /<polyline/); // Alpha dominates both task-footprint axes.
 axis('y', 'score');
-assert.match(graph(), /<polyline class="pareto-frontier"/); // Earlier Beta trades footprint for score.
+assert.doesNotMatch(graph(), /<polyline/);
 axis('y', 'churn');
 assert.deepEqual(colors(), [initialColors[0], initialColors[1], initialColors[0]]);
 assert.equal(element('ci-help').hidden, true);
@@ -272,5 +264,48 @@ assert.match(element('#board tbody').innerHTML, /<td>—<\/td><td class="left">G
 assert.doesNotMatch(graph(), /<polyline/); // Earlier Beta dominates latest Alpha at equal x.
 axis('x', 'score'); axis('y', 'net');
 assert.doesNotMatch(graph(), /<polyline/); // Earlier Beta also dominates in a swapped mixed-direction view.
-assert.match(graph(), /<circle data-point="1" class="all-point older/);
-console.log('Light mode, footprint ranks/ties, coverage, sorting, axes and task switching passed');
+assert.match(graph(), /<circle data-point="1" data-model="Beta" class="all-point older/);
+function load(fixture) {
+  element('parsimony-data').textContent = JSON.stringify(fixture);
+  vm.runInNewContext(script, {document: doc, window: browser});
+}
+const cropped = structuredClone(data);
+cropped.models[2] = {...cropped.models[0], name: 'Gemini 3.1 Pro (high)', company: 'Google', latest: false, measured_net_mean: -10000};
+load(cropped);
+assert.equal(tickValues('x')[0], -2.1);
+assert.equal(tickValues('x').at(-1), .1);
+assert.match(element('graph-legend').textContent, /Gemini 3.1 Pro excluded from numeric axis fitting/);
+assert.match(graph(), /data-model="Gemini 3.1 Pro \(high\)"[^>]*cx="54"/);
+assert.match(graph(), /<span class="point-label"[^>]*>Gemini 3.1 Pro \(off-scale\)<\/span>/);
+const outlier = doc.querySelectorAll('#graph circle[data-point]').find(c => c.dataset.point === '2');
+outlier.listeners.focus();
+assert.match(tooltip.textContent, /off-scale marker.*\nNet units added \(mean\): −10000.0/);
+assert.match(element('#board tbody').innerHTML, /−10000.0/);
+axis('x', 'coverage');
+assert.doesNotMatch(element('graph-legend').textContent, /excluded from numeric axis fitting/);
+assert.doesNotMatch(graph(), /\(off-scale\)/);
+task('org__repo-1');
+assert.equal(tickValues('x')[0], 100);
+assert.doesNotMatch(element('graph-legend').textContent, /excluded from numeric axis fitting/);
+const similar = structuredClone(cropped);
+similar.models[2].name = 'Gemini 3.1 Other';
+load(similar);
+assert(tickValues('x')[0] < -10000);
+assert.doesNotMatch(element('graph-legend').textContent, /excluded from numeric axis fitting/);
+const singleton = structuredClone(cropped);
+singleton.models[1].measured_net_mean = null;
+load(singleton);
+assert(tickValues('x')[0] < -10000);
+assert.doesNotMatch(element('graph-legend').textContent, /excluded from numeric axis fitting/);
+const inside = structuredClone(cropped);
+inside.models[2].measured_net_mean = -1;
+load(inside);
+assert.doesNotMatch(graph(), /\(off-scale\)/);
+assert.doesNotMatch(element('graph-legend').textContent, /excluded from numeric axis fitting/);
+const right = structuredClone(cropped);
+right.models[2].measured_net_mean = 10000;
+load(right);
+assert.match(graph(), /data-model="Gemini 3.1 Pro \(high\)"[^>]*cx="702"/);
+axis('y', 'net'); // Swap direction: the same numeric outlier now appears above the plot.
+assert.match(graph(), /data-model="Gemini 3.1 Pro \(high\)"[^>]*cy="6"/);
+console.log('Palette, borderless markers, HTML labels, tooltips, outlier fitting, sorting and task switching passed');
