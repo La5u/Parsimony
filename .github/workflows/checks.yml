@@ -43,10 +43,12 @@ jobs:
           cmp examples/ten-model-scores.json /tmp/parsimony-scores.json
           python -m parsimony.scoring score examples/live-python/score-panel.json \
             examples/live-python/deepseek-v4.1-flash.jsonl examples/live-python/gpt-5.6-sol.jsonl \
-            examples/live-python/claude-opus-4.8.jsonl --output /tmp/live-scores.json
+            examples/live-python/claude-opus-4.8.jsonl examples/live-python/gpt-5.5-agav.jsonl \
+            --output /tmp/live-scores.json
           cmp examples/live-python/scores.json /tmp/live-scores.json
       - name: Static website regression checks
         run: |
+          node tests/custom_benchmark.cjs
           for page in index javascript typescript go verified live; do
             node tests/site_sorting.cjs "site/$page.html"
           done

@@ -43,10 +43,10 @@ Cloudflare Pages serves `site/` at <https://parsimony.lasu.dev>; a push to `main
 | DeepSWE TypeScript | `site/typescript.html` | `examples/deepswe-typescript/` | 26 | 35 × 4 | 0.7.0-beta @ `ca37c31` |
 | DeepSWE Go | `site/go.html` | `examples/deepswe-go/` | 26 | 34 × 4 | 0.6.0-beta |
 | SWE-bench Verified | `site/verified.html` | `examples/mini-swe-agent-500/` | 34 | 500 × 1 | 0.5.2-beta |
-| SWE-bench Live Lite Python | `site/live.html` | `examples/live-python/` | 3 configs | 300 × 1 | 0.6.0-beta @ `de63300` |
+| SWE-bench Live Lite Python | `site/live.html` | `examples/live-python/` | 4 configs | 300 × 1 | 0.6.0-beta @ `de63300` |
 
 - Each example directory holds measured JSONL, `population.json`, `coverage.json`, `score-panel.json`, `scores.json`, sensitivity/stability reports and a README. Large JSON files are tens of MB: summarise them with Python rather than dumping them into context.
-- Live Python: three model + agent configurations (DeepSeek V4.1 Flash · TianxiCode, GPT-5.6 Sol · Slingshot 3.4.0, Claude Opus 4.8 · AiWork). 238/300 tasks calibrated, 62 uncalibrated under opt-in `full-population-uncalibrated-bounds-v1`. Records publish scalars and hashes only, not patches; raw-artifact redistribution remains uncleared (`docs/deepseek-v4.1-live-release-review.md`, `docs/priority-live-provenance.md`). The JSONLs are byte-identical to clean `de63300` measurements; never relabel them.
+- Live Python: four model + agent configurations (DeepSeek V4.1 Flash · TianxiCode, GPT-5.6 Sol · Slingshot 3.4.0, Claude Opus 4.8 · AiWork, GPT-5.5 · agav 0.2.0-beta.2). The agav addition has 262 eligible footprints / 300 (271 completed analyses, 9 excluded-only), 186 source-reported successes, 85 failures, 29 empty-only unknowns; eligible mean net 50.38549618320611. All 271 nonempty patches have matching old-blob/hunk preimages. See `docs/agav-gpt55-live-release-review.md`; historical measurement authorization is not external board certification. 238/300 tasks calibrated, 62 uncalibrated under opt-in `full-population-uncalibrated-bounds-v1`. Records publish scalars and hashes only, not patches; raw-artifact redistribution remains uncleared (`docs/deepseek-v4.1-live-release-review.md`, `docs/priority-live-provenance.md`). The JSONLs are byte-identical to clean `de63300` measurements; never relabel them.
 - Verified now includes **Gemini 3.5 Flash / mini-SWE-agent 2.4.2**: 441 eligible attempts (359 passing, 82 failed), 59 explicit aggregate `no_generation`, all 500 retained. Source-reported Solved 71.8%, measured mean net +36.6031746031746. All 441 separate patches agree with pinned predictions. Measurement commit/source hash exactly match existing Verified 0.5.2; human-reference comparison is intentionally uncomputed. See `docs/gemini-3.5-verified-release.md` and `examples/benchmark-discovery/add-gemini-verified.py`. Old 33-model records, population/panel and reports stay unchanged; current reports use `coverage-34.json`, `scores-34.json`, `sensitivity-34.json`.
 - Measured but **not published**: GPT-5.6 Sol JS 101/108 and TS 99/111, PolyBench Opus 4.8 Python 111/113 (metadata/hashes in `examples/priority-live/`; full footprints external). GPT-5.4 PolyBench measurements are withheld (hunk-only corroboration, no usable old-blob prefixes).
 - `ten-model-500`, `beta-500-*` and root `ten-model-*` files are historical; never mix them with current cohorts.
@@ -102,6 +102,9 @@ Before a large import, resolve storage growth: `examples/` is ~250 MB working-tr
 
 ### 4. Maintenance and secondary expansion
 
+- Owner direction: Parsimony stays focused on delivered implementation footprint. A separate verbosity/yap/output-token/reasoning-expenditure benchmark is **noted for later only**; do not implement it or mix generation tokens into Parsimony ranking. Continue prioritizing model additions.
+- Fresh bounded discovery: DeepSWE's complete 31,617-trial export matches the stored SHA256; GPT-6 Astra has zero declared patches across five configs, and sampled Astra/Gemini 3.8 patch GETs returned HTTP 403. Live/Verified/PolyBench submission revisions remain at their stored pins. See `docs/new-model-discovery.md`.
+
 The parser problem is solved (0.7.0, 2026-10-01): JS/TS use the official TypeScript parser, TS errors fell from 323 to 5 of 3,640 records and 33/35 TS tasks calibrate. Do not let residual cleanup displace newer-model additions. See `docs/typescript-parser-investigation.md`:
 
 - Wrong-language TS metadata: `httpx-deterministic-cookie-store` has Python patches; `prometheus-transactional-reload-status` has Go patches. Correct only through an explicit versioned dataset change, never a silent move.
@@ -135,13 +138,13 @@ The parser problem is solved (0.7.0, 2026-10-01): JS/TS use the official TypeScr
 
 ## Commands
 
-Latest battery-addition validation: 247 tests passed with the exact optional parser pins; default Python run passed with 9 expected Go skips. All six Node page checks passed. Population/base/analyzer audit passed for all 500 Gemini records, all 33 archived score entries reproduce exactly, and existing raw records/panel/population/report files remain unchanged. External reproducible inventory/measurement data: `/tmp/parsimony-gemini-bound`; clean old analyzer: `/tmp/parsimony-verified-measure` (temporary paths, not durable publication inputs).
+Latest battery-addition validation: 250 tests passed with the exact optional parser pins; default Python run passed with 9 expected Go skips. GPT-5.5/agav is integrated as the fourth Live Python configuration; its 300 rows, artifact/audit bindings and excluded-only semantics have regression coverage. All six Node page checks passed. Population/base/analyzer audit passed for all 500 Gemini records, all 33 archived score entries reproduce exactly, and existing raw records/panel/population/report files remain unchanged. External reproducible inventory/measurement data: `/tmp/parsimony-gemini-bound`; clean old analyzer: `/tmp/parsimony-verified-measure` (temporary paths, not durable publication inputs).
 
 ### Before every push
 
 ```sh
 npm ci                                            # pinned TypeScript parser for JS/TS tests
-python -m unittest discover -s tests -q          # 247 tests; Go tests skip without the languages extra
+python -m unittest discover -s tests -q          # 250 tests; Go tests skip without the languages extra
 python -m parsimony.contribute validate submissions
 uv venv --python 3.14.7 /tmp/parsimony-checks
 uv pip install --python /tmp/parsimony-checks/bin/python '.[languages]'
@@ -166,7 +169,7 @@ V=examples/mini-swe-agent-500
 python -m parsimony.site "$V/score-panel.json" "$V/"*.jsonl \
   --sensitivity "$V/sensitivity-34.json" --benchmark verified "${NAV[@]}" --output site/verified.html
 L=examples/live-python
-python -m parsimony.site "$L/score-panel.json" "$L/deepseek-v4.1-flash.jsonl" "$L/gpt-5.6-sol.jsonl" "$L/claude-opus-4.8.jsonl" \
+python -m parsimony.site "$L/score-panel.json" "$L/deepseek-v4.1-flash.jsonl" "$L/gpt-5.6-sol.jsonl" "$L/claude-opus-4.8.jsonl" "$L/gpt-5.5-agav.jsonl" \
   --sensitivity "$L/stability.json" --benchmark live "${NAV[@]}" --output site/live.html \
   --data "$L/site-data.json"   # tests require the committed copy to match the page
 ```

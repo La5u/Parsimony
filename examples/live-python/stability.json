@@ -9,7 +9,7 @@
  },
  "calibration_policy": "full-population-uncalibrated-bounds-v1",
  "task_count": 300,
- "common_tasks": 221,
+ "common_tasks": 199,
  "panel_references": 509,
  "dedup_references_removed": 22,
  "leave_one_out": {
@@ -333,11 +333,12 @@
   "yt-dlp/yt-dlp": 4
  },
  "strata_tasks": {
-  "solved_by_all": 80,
-  "solved_by_fewer": 220
+  "solved_by_all": 75,
+  "solved_by_fewer": 225
  },
  "ranking": [
   "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+  "live-lite-gpt-5.5-agav-0.2.0-beta.2",
   "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
   "live-lite-claude-opus-4.8-aiwork"
  ],
@@ -346,119 +347,240 @@
    1,
    1
   ],
-  "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423": [
+  "live-lite-gpt-5.5-agav-0.2.0-beta.2": [
    2,
    2
   ],
-  "live-lite-claude-opus-4.8-aiwork": [
+  "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423": [
    3,
    3
+  ],
+  "live-lite-claude-opus-4.8-aiwork": [
+   4,
+   4
   ]
  },
  "adjacent_pairs": [
   {
    "a": "live-lite-gpt-5.6-sol-slingshot-3.4.0",
-   "b": "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
-   "difference": 4.14102389639331,
+   "b": "live-lite-gpt-5.5-agav-0.2.0-beta.2",
+   "difference": 2.6034558968163384,
    "ci_95": [
-    -6.230064550125917,
-    14.686995386445716
+    -14.683697291040918,
+    19.332853663044702
    ],
-   "p_greater": 0.135,
+   "p_greater": 0.0,
    "distinguishable": false,
    "flips_in": [],
-   "flips_in_strata": [],
+   "flips_in_strata": [
+    "solved_by_all"
+   ],
    "bounds_separate": false,
    "outcomes": {
     "a": "live-lite-gpt-5.6-sol-slingshot-3.4.0",
-    "b": "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
-    "difference": 3.7578572561651877,
+    "b": "live-lite-gpt-5.5-agav-0.2.0-beta.2",
+    "difference": 4.537642166234832,
     "by_outcome": {
+     "failed/failed": {
+      "tasks": 10,
+      "contribution": -0.08998091934012761
+     },
      "failed/solved": {
-      "tasks": 30,
-      "contribution": -7.726707375936151
+      "tasks": 17,
+      "contribution": -3.9655884119764444
      },
      "solved/failed": {
-      "tasks": 31,
-      "contribution": 7.883260284275252
+      "tasks": 23,
+      "contribution": 6.777422023867192
      },
      "solved/solved": {
-      "tasks": 169,
-      "contribution": 3.6013043478260878
+      "tasks": 159,
+      "contribution": 1.815789473684211
      }
     },
     "favoring_a": [
+     {
+      "task": "kubernetes-client__python-2303",
+      "outcome": "solved/failed",
+      "a": 83.5,
+      "b": -12.5,
+      "contribution": 0.45933014354066987
+     },
+     {
+      "task": "joke2k__faker-2173",
+      "outcome": "solved/solved",
+      "a": 83.5,
+      "b": 1.0,
+      "contribution": 0.39473684210526316
+     },
+     {
+      "task": "tox-dev__tox-3388",
+      "outcome": "solved/failed",
+      "a": 75.25,
+      "b": -4.657163863794603,
+      "contribution": 0.3823309275779646
+     },
+     {
+      "task": "beetbox__beets-5682",
+      "outcome": "solved/failed",
+      "a": 75.25,
+      "b": -4.583096914293719,
+      "contribution": 0.38197654025977856
+     },
      {
       "task": "pybamm-team__pybamm-4816",
       "outcome": "solved/failed",
       "a": 75.25,
       "b": -1.7942499246700598,
-      "contribution": 0.3349749996724785
-     },
-     {
-      "task": "theoehrly__fast-f1-699",
-      "outcome": "solved/failed",
-      "a": 65.35000000000001,
-      "b": -8.666958041958042,
-      "contribution": 0.32181286105199153
-     },
-     {
-      "task": "koxudaxi__datamodel-code-generator-2327",
-      "outcome": "solved/failed",
-      "a": 50.5,
-      "b": -20.794392523364486,
-      "contribution": 0.3099756196668021
-     },
-     {
-      "task": "conan-io__conan-17923",
-      "outcome": "solved/solved",
-      "a": 83.5,
-      "b": 17.5,
-      "contribution": 0.28695652173913044
-     },
-     {
-      "task": "kubernetes-client__python-2303",
-      "outcome": "solved/solved",
-      "a": 83.5,
-      "b": 17.5,
-      "contribution": 0.28695652173913044
+      "contribution": 0.3686327747591869
      }
     ],
     "favoring_b": [
-     {
-      "task": "matplotlib__matplotlib-29258",
-      "outcome": "failed/solved",
-      "a": -13.559322033898304,
-      "b": 75.25,
-      "contribution": -0.38612748710390565
-     },
      {
       "task": "keras-team__keras-20443",
       "outcome": "failed/solved",
       "a": -11.592506823256969,
       "b": 75.25,
-      "contribution": -0.3775761166228564
-     },
-     {
-      "task": "mikedh__trimesh-2363",
-      "outcome": "failed/solved",
-      "a": -11.698618795486544,
-      "b": 65.35000000000001,
-      "contribution": -0.33499399476298497
-     },
-     {
-      "task": "matplotlib__matplotlib-29689",
-      "outcome": "failed/solved",
-      "a": -18.915425971877585,
-      "b": 50.5,
-      "contribution": -0.3018061998777286
+      "contribution": -0.4155143867141482
      },
      {
       "task": "keras-team__keras-20880",
       "outcome": "failed/solved",
       "a": -2.9433497536945805,
       "b": 65.35000000000001,
-      "contribution": -0.29692760762475906
+      "contribution": -0.32676243901289276
+     },
+     {
+      "task": "pdm-project__pdm-3420",
+      "outcome": "solved/solved",
+      "a": 34.0,
+      "b": 100.0,
+      "contribution": -0.3157894736842105
+     },
+     {
+      "task": "pydata__xarray-10076",
+      "outcome": "solved/solved",
+      "a": 17.5,
+      "b": 83.5,
+      "contribution": -0.3157894736842105
+     },
+     {
+      "task": "sphinx-doc__sphinx-12975",
+      "outcome": "failed/solved",
+      "a": -11.425233644859812,
+      "b": 50.5,
+      "contribution": -0.2962929839466977
+     }
+    ]
+   }
+  },
+  {
+   "a": "live-lite-gpt-5.5-agav-0.2.0-beta.2",
+   "b": "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
+   "difference": 1.5375679995769715,
+   "ci_95": [
+    -14.32841251756799,
+    18.219452316444965
+   ],
+   "p_greater": 0.0,
+   "distinguishable": false,
+   "flips_in": [],
+   "flips_in_strata": [],
+   "bounds_separate": false,
+   "outcomes": {
+    "a": "live-lite-gpt-5.5-agav-0.2.0-beta.2",
+    "b": "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
+    "difference": -1.7410611374964584,
+    "by_outcome": {
+     "failed/failed": {
+      "tasks": 13,
+      "contribution": 0.009201048051915012
+     },
+     "failed/solved": {
+      "tasks": 20,
+      "contribution": -5.355459945030993
+     },
+     "solved/failed": {
+      "tasks": 11,
+      "contribution": 1.851574571076822
+     },
+     "solved/solved": {
+      "tasks": 163,
+      "contribution": 1.7536231884057973
+     }
+    },
+    "favoring_a": [
+     {
+      "task": "conan-io__conan-17923",
+      "outcome": "solved/solved",
+      "a": 83.5,
+      "b": 17.5,
+      "contribution": 0.3188405797101449
+     },
+     {
+      "task": "pdm-project__pdm-3420",
+      "outcome": "solved/solved",
+      "a": 100.0,
+      "b": 34.0,
+      "contribution": 0.3188405797101449
+     },
+     {
+      "task": "run-llama__llama_deploy-397",
+      "outcome": "solved/solved",
+      "a": 100.0,
+      "b": 35.65,
+      "contribution": 0.3108695652173913
+     },
+     {
+      "task": "instructlab__instructlab-2572",
+      "outcome": "solved/failed",
+      "a": 50.5,
+      "b": -9.958866544789762,
+      "contribution": 0.2920718190569554
+     },
+     {
+      "task": "theoehrly__fast-f1-699",
+      "outcome": "solved/failed",
+      "a": 50.5,
+      "b": -8.666958041958042,
+      "contribution": 0.28583071517854125
+     }
+    ],
+    "favoring_b": [
+     {
+      "task": "matplotlib__matplotlib-29258",
+      "outcome": "failed/solved",
+      "a": -11.224489795918368,
+      "b": 75.25,
+      "contribution": -0.41775115843438826
+     },
+     {
+      "task": "matplotlib__matplotlib-29689",
+      "outcome": "failed/solved",
+      "a": -18.915425971877585,
+      "b": 50.5,
+      "contribution": -0.3353402220863651
+     },
+     {
+      "task": "amoffat__sh-744",
+      "outcome": "failed/solved",
+      "a": -13.043478260869568,
+      "b": 50.5,
+      "contribution": -0.30697332493173707
+     },
+     {
+      "task": "streamlink__streamlink-6328",
+      "outcome": "failed/solved",
+      "a": -2.8780487804878043,
+      "b": 60.4,
+      "contribution": -0.3056910569105691
+     },
+     {
+      "task": "matplotlib__matplotlib-29486",
+      "outcome": "failed/solved",
+      "a": -12.5,
+      "b": 50.5,
+      "contribution": -0.30434782608695654
      }
     ]
    }
@@ -581,9 +703,10 @@
   "baseline": {
    "family": "baseline",
    "task_count": 300,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -605,15 +728,22 @@
      "lower": 7.880006937633108,
      "upper": 16.46334027096644,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.990735114965943,
+     "lower": 21.627401781632614,
+     "upper": 40.35406844829927,
+     "full_score": null
     }
    }
   },
   "net_weight=0.5": {
    "family": "weights",
    "task_count": 300,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -635,15 +765,22 @@
      "lower": 8.144128530039383,
      "upper": 16.727461863372717,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.402769719606052,
+     "lower": 22.039436386272715,
+     "upper": 40.766103052939386,
+     "full_score": null
     }
    }
   },
   "net_weight=0.6": {
    "family": "weights",
    "task_count": 300,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -665,15 +802,22 @@
      "lower": 8.056087999237294,
      "upper": 16.639421332570624,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.265424851392677,
+     "lower": 21.902091518059347,
+     "upper": 40.62875818472601,
+     "full_score": null
     }
    }
   },
   "net_weight=0.7": {
    "family": "weights",
    "task_count": 300,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -695,15 +839,22 @@
      "lower": 7.9680474684352,
      "upper": 16.551380801768534,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.128079983179312,
+     "lower": 21.764746649845982,
+     "upper": 40.49141331651264,
+     "full_score": null
     }
    }
   },
   "net_weight=0.9": {
    "family": "weights",
    "task_count": 300,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -725,15 +876,22 @@
      "lower": 7.7919664068310155,
      "upper": 16.375299740164348,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.853390246752575,
+     "lower": 21.49005691341924,
+     "upper": 40.21672358008591,
+     "full_score": null
     }
    }
   },
   "net_weight=1": {
    "family": "weights",
    "task_count": 300,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -755,15 +913,22 @@
      "lower": 7.703925876028923,
      "upper": 16.287259209362258,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.716045378539206,
+     "lower": 21.352712045205873,
+     "upper": 40.07937871187254,
+     "full_score": null
     }
    }
   },
   "net_floor=0": {
    "family": "weights",
    "task_count": 300,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -785,15 +950,22 @@
      "lower": 7.660006937633108,
      "upper": 16.24334027096644,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.584735114965945,
+     "lower": 22.22140178163261,
+     "upper": 40.94806844829928,
+     "full_score": null
     }
    }
   },
   "failure_cap=0": {
    "family": "failure_cap",
    "task_count": 300,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -815,15 +987,22 @@
      "lower": 17.148,
      "upper": 19.814666666666664,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 35.24683333333333,
+     "lower": 29.258499999999998,
+     "upper": 41.235166666666665,
+     "full_score": null
     }
    }
   },
   "failure_cap=10": {
    "family": "failure_cap",
    "task_count": 300,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -845,15 +1024,22 @@
      "lower": 13.440802775053244,
      "upper": 18.474136108386578,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 33.54439404598638,
+     "lower": 26.206060712653045,
+     "upper": 40.88272737931971,
+     "full_score": null
     }
    }
   },
   "failure_cap=50": {
    "family": "failure_cap",
    "task_count": 300,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -875,15 +1061,22 @@
      "lower": -1.387986124733784,
      "upper": 13.112013875266216,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 26.73463689659856,
+     "lower": 13.996303563265226,
+     "upper": 39.47297022993189,
+     "full_score": null
     }
    }
   },
   "panel_without=live-lite-claude-opus-4.8-aiwork": {
    "family": "panel",
    "task_count": 300,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -905,15 +1098,22 @@
      "lower": 7.852506937633108,
      "upper": 16.43584027096644,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.107248609716546,
+     "lower": 21.74391527638321,
+     "upper": 40.47058194304988,
+     "full_score": null
     }
    }
   },
   "panel_without=live-lite-deepseek-v4.1-flash-tianxicode-0.1.423": {
    "family": "panel",
    "task_count": 300,
-   "common_tasks": 208,
+   "common_tasks": 187,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -935,15 +1135,22 @@
      "lower": 6.777236263739224,
      "upper": 16.527236263739223,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.393276305092726,
+     "lower": 19.501609638426057,
+     "upper": 41.28494297175939,
+     "full_score": null
     }
    }
   },
   "panel_without=live-lite-gpt-5.6-sol-slingshot-3.4.0": {
    "family": "panel",
    "task_count": 300,
-   "common_tasks": 201,
+   "common_tasks": 182,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -965,15 +1172,22 @@
      "lower": 6.717532570213203,
      "upper": 17.38419923687987,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 32.817226700768785,
+     "lower": 20.973893367435455,
+     "upper": 44.66056003410212,
+     "full_score": null
     }
    }
   },
   "panel_dedup": {
    "family": "panel",
    "task_count": 300,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -995,15 +1209,22 @@
      "lower": 7.885506937633108,
      "upper": 16.468840270966442,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.97872663426119,
+     "lower": 21.61539330092786,
+     "upper": 40.34205996759452,
+     "full_score": null
     }
    }
   },
   "without_repo=Delgan/loguru": {
    "family": "task_mix",
    "task_count": 298,
-   "common_tasks": 219,
+   "common_tasks": 197,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1025,15 +1246,22 @@
      "lower": 7.983328538281848,
      "upper": 16.624268135597283,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.859800451307997,
+     "lower": 21.433625954663704,
+     "upper": 40.28597494795229,
+     "full_score": null
     }
    }
   },
   "without_repo=Flexget/Flexget": {
    "family": "task_mix",
    "task_count": 298,
-   "common_tasks": 219,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1055,15 +1283,22 @@
      "lower": 7.9829578393578595,
      "upper": 16.623897436673296,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.069531994932156,
+     "lower": 21.853089041912025,
+     "upper": 40.28597494795229,
+     "full_score": null
     }
    }
   },
   "without_repo=Kozea/WeasyPrint": {
    "family": "task_mix",
    "task_count": 295,
-   "common_tasks": 216,
+   "common_tasks": 194,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1085,15 +1320,22 @@
      "lower": 7.825332400771859,
      "upper": 16.55414596009389,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.514645879626386,
+     "lower": 20.9926119813213,
+     "upper": 40.03667977793147,
+     "full_score": null
     }
    }
   },
   "without_repo=PyPSA/PyPSA": {
    "family": "task_mix",
    "task_count": 296,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1115,15 +1357,22 @@
      "lower": 8.324331355709232,
      "upper": 16.685817842195718,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.57844775165467,
+     "lower": 22.257501805708728,
+     "upper": 40.899393697600615,
+     "full_score": null
     }
    }
   },
   "without_repo=aiogram/aiogram": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1145,15 +1394,22 @@
      "lower": 7.627097261839239,
      "upper": 16.239137395618503,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.98067068391232,
+     "lower": 21.586021854480883,
+     "upper": 40.375319513343754,
+     "full_score": null
     }
    }
   },
   "without_repo=amoffat/sh": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1175,15 +1431,22 @@
      "lower": 7.737465154815828,
      "upper": 16.34950528859509,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.138006731607536,
+     "lower": 21.743357902176097,
+     "upper": 40.53265556103897,
+     "full_score": null
     }
    }
   },
   "without_repo=arviz-devs/arviz": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1205,15 +1468,22 @@
      "lower": 7.951383343650405,
      "upper": 16.56342347742967,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.96896499829359,
+     "lower": 21.783346269196603,
+     "upper": 40.15458372739058,
+     "full_score": null
     }
    }
   },
   "without_repo=aws-cloudformation/cfn-lint": {
    "family": "task_mix",
    "task_count": 274,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1235,15 +1505,22 @@
      "lower": 10.938094144436667,
      "upper": 18.05488246560455,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 34.88766618426928,
+     "lower": 25.776352315656144,
+     "upper": 43.998980052882416,
+     "full_score": null
     }
    }
   },
   "without_repo=beancount/beancount": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1265,15 +1542,22 @@
      "lower": 7.9678112885145005,
      "upper": 16.579851422293768,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.99170747320998,
+     "lower": 21.59705864377854,
+     "upper": 40.38635630264142,
+     "full_score": null
     }
    }
   },
   "without_repo=beetbox/beets": {
    "family": "task_mix",
    "task_count": 297,
-   "common_tasks": 218,
+   "common_tasks": 196,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1295,15 +1579,22 @@
      "lower": 7.793742246648521,
      "upper": 16.46377591668219,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.979136806074333,
+     "lower": 21.521224348161876,
+     "upper": 40.437049263986786,
+     "full_score": null
     }
    }
   },
   "without_repo=beeware/briefcase": {
    "family": "task_mix",
    "task_count": 296,
-   "common_tasks": 218,
+   "common_tasks": 197,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1325,15 +1616,22 @@
      "lower": 7.559128653006528,
      "upper": 15.836155680033555,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.77101531922224,
+     "lower": 21.659528832735756,
+     "upper": 39.88250180570873,
+     "full_score": null
     }
    }
   },
   "without_repo=bridgecrewio/checkov": {
    "family": "task_mix",
    "task_count": 297,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1355,15 +1653,22 @@
      "lower": 8.212128219831422,
      "upper": 16.62963663733984,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.43003546966257,
+     "lower": 22.09838563801274,
+     "upper": 40.7616853013124,
+     "full_score": null
     }
    }
   },
   "without_repo=conan-io/conan": {
    "family": "task_mix",
    "task_count": 270,
-   "common_tasks": 193,
+   "common_tasks": 174,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1385,15 +1690,22 @@
      "lower": 6.75413094553152,
      "upper": 16.105982797383373,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 28.92666809661024,
+     "lower": 19.584075504017648,
+     "upper": 38.26926068920284,
+     "full_score": null
     }
    }
   },
   "without_repo=cyclotruc/gitingest": {
    "family": "task_mix",
    "task_count": 297,
-   "common_tasks": 219,
+   "common_tasks": 197,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1415,15 +1727,22 @@
      "lower": 8.02483865754186,
      "upper": 16.610697243400445,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.138976734159392,
+     "lower": 21.723151818334475,
+     "upper": 40.554801649984306,
+     "full_score": null
     }
    }
   },
   "without_repo=deepset-ai/haystack": {
    "family": "task_mix",
    "task_count": 284,
-   "common_tasks": 205,
+   "common_tasks": 187,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1445,15 +1764,22 @@
      "lower": 7.261898240941607,
      "upper": 16.328799649392312,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.30130469890769,
+     "lower": 21.290741318625997,
+     "upper": 39.31186807918938,
+     "full_score": null
     }
    }
   },
   "without_repo=dynaconf/dynaconf": {
    "family": "task_mix",
    "task_count": 296,
-   "common_tasks": 218,
+   "common_tasks": 197,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1475,15 +1801,22 @@
      "lower": 7.809793911694778,
      "upper": 16.509118236019106,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.520170724627643,
+     "lower": 21.241454508411433,
+     "upper": 39.798886940843865,
+     "full_score": null
     }
    }
   },
   "without_repo=encode/starlette": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1505,15 +1838,22 @@
      "lower": 7.71539157622051,
      "upper": 16.327431709999775,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.96896499829359,
+     "lower": 21.783346269196603,
+     "upper": 40.15458372739058,
+     "full_score": null
     }
    }
   },
   "without_repo=facebookresearch/hydra": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1535,15 +1875,22 @@
      "lower": 7.9292055927287075,
      "upper": 16.54124572650797,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.842710817691582,
+     "lower": 21.448061988260147,
+     "upper": 40.23735964712302,
+     "full_score": null
     }
    }
   },
   "without_repo=falconry/falcon": {
    "family": "task_mix",
    "task_count": 298,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1565,15 +1912,22 @@
      "lower": 8.06657877592463,
      "upper": 16.623625755790403,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.903424612381823,
+     "lower": 21.68698165936169,
+     "upper": 40.119867565401954,
+     "full_score": null
     }
    }
   },
   "without_repo=feast-dev/feast": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1595,15 +1949,22 @@
      "lower": 7.627097261839239,
      "upper": 16.239137395618503,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.98067068391232,
+     "lower": 21.586021854480883,
+     "upper": 40.375319513343754,
+     "full_score": null
     }
    }
   },
   "without_repo=fonttools/fonttools": {
    "family": "task_mix",
    "task_count": 298,
-   "common_tasks": 219,
+   "common_tasks": 197,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1625,15 +1986,22 @@
      "lower": 8.004033417920608,
      "upper": 16.644973015236044,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.98363428442714,
+     "lower": 21.55745978778284,
+     "upper": 40.40980878107143,
+     "full_score": null
     }
    }
   },
   "without_repo=geopandas/geopandas": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1655,15 +2023,22 @@
      "lower": 7.989973516019841,
      "upper": 16.518401609665325,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.13618907856115,
+     "lower": 21.783346269196603,
+     "upper": 40.4890318879257,
+     "full_score": null
     }
    }
   },
   "without_repo=hiyouga/LLaMA-Factory": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1685,15 +2060,22 @@
      "lower": 7.989973516019841,
      "upper": 16.183953449130208,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.96896499829359,
+     "lower": 21.783346269196603,
+     "upper": 40.15458372739058,
+     "full_score": null
     }
    }
   },
   "without_repo=huggingface/smolagents": {
    "family": "task_mix",
    "task_count": 296,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1715,15 +2097,22 @@
      "lower": 8.324331355709232,
      "upper": 16.685817842195718,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.57844775165467,
+     "lower": 22.257501805708728,
+     "upper": 40.899393697600615,
+     "full_score": null
     }
    }
   },
   "without_repo=icloud-photos-downloader/icloud_photos_downloader": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1745,15 +2134,22 @@
      "lower": 7.737465154815828,
      "upper": 16.34950528859509,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.925486737424023,
+     "lower": 21.530837907992588,
+     "upper": 40.32013556685546,
+     "full_score": null
     }
    }
   },
   "without_repo=instructlab/instructlab": {
    "family": "task_mix",
    "task_count": 289,
-   "common_tasks": 213,
+   "common_tasks": 192,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1775,15 +2171,22 @@
      "lower": 8.271903328093279,
      "upper": 16.922422359235146,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.45632760574224,
+     "lower": 22.167400270102103,
+     "upper": 40.74525494138238,
+     "full_score": null
     }
    }
   },
   "without_repo=ipython/ipython": {
    "family": "task_mix",
    "task_count": 296,
-   "common_tasks": 217,
+   "common_tasks": 195,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1805,15 +2208,22 @@
      "lower": 7.519517064280133,
      "upper": 16.218841388604456,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.704799103006028,
+     "lower": 21.21493423814116,
+     "upper": 40.194663967870895,
+     "full_score": null
     }
    }
   },
   "without_repo=iterative/dvc": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1835,15 +2245,22 @@
      "lower": 7.627097261839239,
      "upper": 16.239137395618503,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.98067068391232,
+     "lower": 21.586021854480883,
+     "upper": 40.375319513343754,
+     "full_score": null
     }
    }
   },
   "without_repo=jazzband/tablib": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1865,15 +2282,22 @@
      "lower": 7.938990564718755,
      "upper": 16.55103069849802,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.875821185584563,
+     "lower": 21.481172356153124,
+     "upper": 40.270470015016,
+     "full_score": null
     }
    }
   },
   "without_repo=joke2k/faker": {
    "family": "task_mix",
    "task_count": 295,
-   "common_tasks": 217,
+   "common_tasks": 195,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1895,15 +2319,22 @@
      "lower": 7.631763848332835,
      "upper": 16.275831644943004,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.194058627298862,
+     "lower": 21.714397610349707,
+     "upper": 40.67371964424802,
+     "full_score": null
     }
    }
   },
   "without_repo=jupyterlab/jupyter-ai": {
    "family": "task_mix",
    "task_count": 297,
-   "common_tasks": 218,
+   "common_tasks": 196,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1925,15 +2356,22 @@
      "lower": 7.759836572134134,
      "upper": 16.4298702421678,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.777005166632268,
+     "lower": 21.319092708719808,
+     "upper": 40.23491762454473,
+     "full_score": null
     }
    }
   },
   "without_repo=kedro-org/kedro": {
    "family": "task_mix",
    "task_count": 295,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1955,15 +2393,22 @@
      "lower": 8.43729519081333,
      "upper": 16.74237993657604,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.388883167761975,
+     "lower": 22.417696727084014,
+     "upper": 40.36006960843994,
+     "full_score": null
     }
    }
   },
   "without_repo=keras-team/keras": {
    "family": "task_mix",
    "task_count": 293,
-   "common_tasks": 215,
+   "common_tasks": 193,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -1985,15 +2430,22 @@
      "lower": 7.372571907277648,
      "upper": 16.075643579632594,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.49085506651803,
+     "lower": 21.072766329316668,
+     "upper": 39.908943803719396,
+     "full_score": null
     }
    }
   },
   "without_repo=koxudaxi/datamodel-code-generator": {
    "family": "task_mix",
    "task_count": 297,
-   "common_tasks": 218,
+   "common_tasks": 196,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2015,15 +2467,22 @@
      "lower": 7.473298481001684,
      "upper": 16.143332151035356,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.196069796672507,
+     "lower": 21.73815733876005,
+     "upper": 40.65398225458497,
+     "full_score": null
     }
    }
   },
   "without_repo=kubernetes-client/python": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2045,15 +2504,22 @@
      "lower": 7.737465154815828,
      "upper": 16.34950528859509,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.13618907856115,
+     "lower": 21.741540249129713,
+     "upper": 40.530837907992584,
+     "full_score": null
     }
    }
   },
   "without_repo=matplotlib/matplotlib": {
    "family": "task_mix",
    "task_count": 288,
-   "common_tasks": 212,
+   "common_tasks": 191,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2075,15 +2541,22 @@
      "lower": 7.7187075732190715,
      "upper": 16.399263128774628,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 32.20271285297524,
+     "lower": 22.970073964086353,
+     "upper": 41.43535174186413,
+     "full_score": null
     }
    }
   },
   "without_repo=mikedh/trimesh": {
    "family": "task_mix",
    "task_count": 298,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2105,15 +2578,22 @@
      "lower": 7.897154635201115,
      "upper": 16.454201615066886,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.10443132379122,
+     "lower": 21.720203135871756,
+     "upper": 40.488659511710686,
+     "full_score": null
     }
    }
   },
   "without_repo=modelcontextprotocol/python-sdk": {
    "family": "task_mix",
    "task_count": 298,
-   "common_tasks": 219,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2135,15 +2615,22 @@
      "lower": 7.685239451853192,
      "upper": 16.326179049168626,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.903424612381823,
+     "lower": 21.68698165936169,
+     "upper": 40.119867565401954,
+     "full_score": null
     }
    }
   },
   "without_repo=pallets/flask": {
    "family": "task_mix",
    "task_count": 298,
-   "common_tasks": 219,
+   "common_tasks": 197,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2165,15 +2652,22 @@
      "lower": 7.802869360193762,
      "upper": 16.4438089575092,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.859800451307997,
+     "lower": 21.433625954663704,
+     "upper": 40.28597494795229,
+     "full_score": null
     }
    }
   },
   "without_repo=patroni/patroni": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2195,15 +2689,22 @@
      "lower": 7.916394920702115,
      "upper": 16.528435054481378,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.842710817691582,
+     "lower": 21.448061988260147,
+     "upper": 40.23735964712302,
+     "full_score": null
     }
    }
   },
   "without_repo=pdm-project/pdm": {
    "family": "task_mix",
    "task_count": 293,
-   "common_tasks": 214,
+   "common_tasks": 192,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2225,15 +2726,22 @@
      "lower": 7.701861708154406,
      "upper": 16.490257612591265,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.694454549956113,
+     "lower": 21.107423833232563,
+     "upper": 40.28148526667967,
+     "full_score": null
     }
    }
   },
   "without_repo=privacyidea/privacyidea": {
    "family": "task_mix",
    "task_count": 295,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2255,15 +2763,22 @@
      "lower": 8.183119559019126,
      "upper": 16.91193311834116,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.962103506745027,
+     "lower": 21.440069608439945,
+     "upper": 40.48413740505011,
+     "full_score": null
     }
    }
   },
   "without_repo=projectmesa/mesa": {
    "family": "task_mix",
    "task_count": 295,
-   "common_tasks": 216,
+   "common_tasks": 194,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2285,15 +2800,22 @@
      "lower": 7.498104192380058,
      "upper": 16.226917751702093,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.88944199337718,
+     "lower": 21.3674080950721,
+     "upper": 40.411475891682265,
+     "full_score": null
     }
    }
   },
   "without_repo=pvlib/pvlib-python": {
    "family": "task_mix",
    "task_count": 293,
-   "common_tasks": 214,
+   "common_tasks": 192,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2315,15 +2837,22 @@
      "lower": 7.4859635104527635,
      "upper": 16.274359414889624,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.2768618924566,
+     "lower": 20.68983117573305,
+     "upper": 39.863892609180155,
+     "full_score": null
     }
    }
   },
   "without_repo=pybamm-team/PyBaMM": {
    "family": "task_mix",
    "task_count": 297,
-   "common_tasks": 218,
+   "common_tasks": 196,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2345,15 +2874,22 @@
      "lower": 7.955557274778802,
      "upper": 16.625590944812473,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.019746748870215,
+     "lower": 21.561834290957755,
+     "upper": 40.477659206782675,
+     "full_score": null
     }
    }
   },
   "without_repo=pydata/xarray": {
    "family": "task_mix",
    "task_count": 293,
-   "common_tasks": 216,
+   "common_tasks": 195,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2375,15 +2911,22 @@
      "lower": 8.124625228092102,
      "upper": 16.74237266836514,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.844865649475206,
+     "lower": 21.682749608519575,
+     "upper": 40.00698169043084,
+     "full_score": null
     }
    }
   },
   "without_repo=pylint-dev/pylint": {
    "family": "task_mix",
    "task_count": 295,
-   "common_tasks": 217,
+   "common_tasks": 196,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2405,15 +2948,22 @@
      "lower": 8.13030392470956,
      "upper": 16.77437172131973,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.825041359852374,
+     "lower": 21.51487186832695,
+     "upper": 40.1352108513778,
+     "full_score": null
     }
    }
   },
   "without_repo=pypa/twine": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2435,15 +2985,22 @@
      "lower": 7.737465154815828,
      "upper": 16.34950528859509,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.925486737424023,
+     "lower": 21.530837907992588,
+     "upper": 40.32013556685546,
+     "full_score": null
     }
    }
   },
   "without_repo=python-babel/babel": {
    "family": "task_mix",
    "task_count": 295,
-   "common_tasks": 216,
+   "common_tasks": 194,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2465,15 +3022,22 @@
      "lower": 7.6831935205334725,
      "upper": 16.412007079855506,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.906171303355197,
+     "lower": 21.38413740505011,
+     "upper": 40.42820520166028,
+     "full_score": null
     }
    }
   },
   "without_repo=python-control/python-control": {
    "family": "task_mix",
    "task_count": 297,
-   "common_tasks": 218,
+   "common_tasks": 196,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2495,15 +3059,22 @@
      "lower": 7.847695670213687,
      "upper": 16.51772934024736,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.96551850514561,
+     "lower": 21.507606047233146,
+     "upper": 40.42343096305807,
+     "full_score": null
     }
    }
   },
   "without_repo=python-telegram-bot/python-telegram-bot": {
    "family": "task_mix",
    "task_count": 297,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2525,15 +3096,22 @@
      "lower": 8.212128219831422,
      "upper": 15.619535627238829,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.43003546966257,
+     "lower": 22.09838563801274,
+     "upper": 40.7616853013124,
+     "full_score": null
     }
    }
   },
   "without_repo=pytorch/torchtune": {
    "family": "task_mix",
    "task_count": 297,
-   "common_tasks": 218,
+   "common_tasks": 197,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2555,15 +3133,22 @@
      "lower": 7.909089236752687,
      "upper": 16.579122906786356,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.881887321514423,
+     "lower": 21.634412574039676,
+     "upper": 40.129362068989174,
+     "full_score": null
     }
    }
   },
   "without_repo=qtile/qtile": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2585,15 +3170,22 @@
      "lower": 7.737465154815828,
      "upper": 16.34950528859509,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.925486737424023,
+     "lower": 21.530837907992588,
+     "upper": 40.32013556685546,
+     "full_score": null
     }
    }
   },
   "without_repo=reata/sqllineage": {
    "family": "task_mix",
    "task_count": 298,
-   "common_tasks": 220,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2615,15 +3207,22 @@
      "lower": 8.050117555307057,
      "upper": 16.607164535172828,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.903424612381823,
+     "lower": 21.853089041912025,
+     "upper": 39.95376018285162,
+     "full_score": null
     }
    }
   },
   "without_repo=reflex-dev/reflex": {
    "family": "task_mix",
    "task_count": 288,
-   "common_tasks": 211,
+   "common_tasks": 190,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2645,15 +3244,22 @@
      "lower": 7.936458505777633,
      "upper": 16.356597394666522,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.741583661843485,
+     "lower": 21.422139217399042,
+     "upper": 40.06102810628793,
+     "full_score": null
     }
    }
   },
   "without_repo=run-llama/llama_deploy": {
    "family": "task_mix",
    "task_count": 292,
-   "common_tasks": 214,
+   "common_tasks": 192,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2675,15 +3281,22 @@
      "lower": 7.899970882489819,
      "upper": 16.71846403317475,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.57489909071844,
+     "lower": 20.955036077019805,
+     "upper": 40.19476210441707,
+     "full_score": null
     }
    }
   },
   "without_repo=scrapy-plugins/scrapy-splash": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2705,15 +3318,22 @@
      "lower": 7.80368589060178,
      "upper": 16.415726024381044,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.96896499829359,
+     "lower": 21.783346269196603,
+     "upper": 40.15458372739058,
+     "full_score": null
     }
    }
   },
   "without_repo=shapely/shapely": {
    "family": "task_mix",
    "task_count": 297,
-   "common_tasks": 218,
+   "common_tasks": 196,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2735,15 +3355,22 @@
      "lower": 7.594068838135677,
      "upper": 16.264102508169348,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.7603384999656,
+     "lower": 21.302426042053142,
+     "upper": 40.218250957878055,
+     "full_score": null
     }
    }
   },
   "without_repo=sissbruecker/linkding": {
    "family": "task_mix",
    "task_count": 295,
-   "common_tasks": 216,
+   "common_tasks": 194,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2765,15 +3392,22 @@
      "lower": 8.23031194856383,
      "upper": 16.95912550788586,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.747652511903468,
+     "lower": 21.22561861359838,
+     "upper": 40.26968641020855,
+     "full_score": null
     }
    }
   },
   "without_repo=sphinx-doc/sphinx": {
    "family": "task_mix",
    "task_count": 294,
-   "common_tasks": 217,
+   "common_tasks": 195,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2795,15 +3429,22 @@
      "lower": 8.036620197527299,
      "upper": 15.94478346283342,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.530852158128514,
+     "lower": 20.976430389421033,
+     "upper": 40.085273926835995,
+     "full_score": null
     }
    }
   },
   "without_repo=stanford-crfm/helm": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2825,15 +3466,22 @@
      "lower": 7.908338787645982,
      "upper": 16.520378921425248,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.024817841102955,
+     "lower": 21.630169011671516,
+     "upper": 40.41946667053439,
+     "full_score": null
     }
    }
   },
   "without_repo=stanfordnlp/dspy": {
    "family": "task_mix",
    "task_count": 296,
-   "common_tasks": 218,
+   "common_tasks": 197,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2855,15 +3503,22 @@
      "lower": 8.121277951748894,
      "upper": 16.73614281661376,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.187090121646147,
+     "lower": 21.950603635159663,
+     "upper": 40.423576608132635,
+     "full_score": null
     }
    }
   },
   "without_repo=streamlink/streamlink": {
    "family": "task_mix",
    "task_count": 293,
-   "common_tasks": 214,
+   "common_tasks": 192,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2885,15 +3540,22 @@
      "lower": 7.349647888398391,
      "upper": 16.13804379283525,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.1292063886461,
+     "lower": 21.54217567192255,
+     "upper": 40.71623710536965,
+     "full_score": null
     }
    }
   },
   "without_repo=sympy/sympy": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2915,15 +3577,22 @@
      "lower": 7.737465154815828,
      "upper": 16.34950528859509,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.925486737424023,
+     "lower": 21.530837907992588,
+     "upper": 40.32013556685546,
+     "full_score": null
     }
    }
   },
   "without_repo=theOehrly/Fast-F1": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2945,15 +3614,22 @@
      "lower": 7.787130706655292,
      "upper": 16.399170840434557,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.925486737424023,
+     "lower": 21.530837907992588,
+     "upper": 40.32013556685546,
+     "full_score": null
     }
    }
   },
   "without_repo=tox-dev/tox": {
    "family": "task_mix",
    "task_count": 298,
-   "common_tasks": 219,
+   "common_tasks": 197,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -2975,15 +3651,22 @@
      "lower": 7.981370652401684,
      "upper": 16.622310249717117,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.228342591606317,
+     "lower": 21.80216809496202,
+     "upper": 40.654517088250614,
+     "full_score": null
     }
    }
   },
   "without_repo=urllib3/urllib3": {
    "family": "task_mix",
    "task_count": 299,
-   "common_tasks": 221,
+   "common_tasks": 199,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -3005,15 +3688,22 @@
      "lower": 7.989973516019841,
      "upper": 16.518401609665325,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 31.13618907856115,
+     "lower": 21.783346269196603,
+     "upper": 40.4890318879257,
+     "full_score": null
     }
    }
   },
   "without_repo=wemake-services/wemake-python-styleguide": {
    "family": "task_mix",
    "task_count": 295,
-   "common_tasks": 217,
+   "common_tasks": 195,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -3035,15 +3725,22 @@
      "lower": 7.845656673649199,
      "upper": 16.489724470259368,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.871934015219605,
+     "lower": 21.561764523694183,
+     "upper": 40.18210350674503,
+     "full_score": null
     }
    }
   },
   "without_repo=wireservice/csvkit": {
    "family": "task_mix",
    "task_count": 298,
-   "common_tasks": 220,
+   "common_tasks": 198,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -3065,15 +3762,22 @@
      "lower": 7.510913024462861,
      "upper": 16.151852621778296,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.942854142583165,
+     "lower": 21.516679645938872,
+     "upper": 40.36902863922746,
+     "full_score": null
     }
    }
   },
   "without_repo=yt-dlp/yt-dlp": {
    "family": "task_mix",
    "task_count": 296,
-   "common_tasks": 217,
+   "common_tasks": 195,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
@@ -3095,65 +3799,85 @@
      "lower": 7.794370076788774,
      "upper": 16.4936944011131,
      "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 30.83858288678981,
+     "lower": 21.348718021924945,
+     "upper": 40.32844775165467,
+     "full_score": null
     }
    }
   }
  },
  "strata": {
   "solved_by_all": {
-   "task_count": 80,
-   "common_tasks": 78,
+   "task_count": 75,
+   "common_tasks": 73,
    "ranking": [
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
     "live-lite-claude-opus-4.8-aiwork",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423"
    ],
    "models": {
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423": {
-     "score": 49.015,
-     "lower": 49.015,
-     "upper": 49.015,
-     "full_score": 49.015
+     "score": 49.532000000000004,
+     "lower": 49.532000000000004,
+     "upper": 49.532000000000004,
+     "full_score": 49.532000000000004
     },
     "live-lite-gpt-5.6-sol-slingshot-3.4.0": {
-     "score": 51.94375,
-     "lower": 50.70625,
-     "upper": 53.18125,
+     "score": 51.38,
+     "lower": 50.06,
+     "upper": 52.7,
      "full_score": null
     },
     "live-lite-claude-opus-4.8-aiwork": {
-     "score": 50.541250000000005,
-     "lower": 50.541250000000005,
-     "upper": 50.541250000000005,
-     "full_score": 50.541250000000005
+     "score": 50.588,
+     "lower": 50.588,
+     "upper": 50.588,
+     "full_score": 50.588
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 51.666,
+     "lower": 51.666,
+     "upper": 51.666,
+     "full_score": 51.666
     }
    }
   },
   "solved_by_fewer": {
-   "task_count": 220,
-   "common_tasks": 143,
+   "task_count": 225,
+   "common_tasks": 126,
    "ranking": [
     "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2",
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
     "live-lite-claude-opus-4.8-aiwork"
    ],
    "models": {
     "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423": {
-     "score": 22.339773339166783,
-     "lower": 18.196591520984963,
-     "upper": 26.4829551573486,
+     "score": 22.76022282051863,
+     "lower": 18.70911170940752,
+     "upper": 26.811333931629743,
      "full_score": null
     },
     "live-lite-gpt-5.6-sol-slingshot-3.4.0": {
-     "score": 26.92162410697584,
-     "lower": 22.669351379703112,
-     "upper": 31.17389683424857,
+     "score": 27.665588015709712,
+     "lower": 23.507810237931935,
+     "upper": 31.82336579348749,
      "full_score": null
     },
     "live-lite-claude-opus-4.8-aiwork": {
-     "score": -1.780899630500307,
-     "lower": -7.633172357773034,
-     "upper": 4.07137309677242,
+     "score": -0.6337685276003003,
+     "lower": -6.355990749822523,
+     "upper": 5.088453694621921,
+     "full_score": null
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+     "score": 24.098980153287926,
+     "lower": 11.614535708843482,
+     "upper": 36.583424597732375,
      "full_score": null
     }
    }
@@ -3173,11 +3897,12 @@
     "rank_counts": [
      0,
      0,
+     0,
      2000
     ],
     "rank_ci_95": [
-     3,
-     3
+     4,
+     4
     ],
     "top_frequency": 0.0
    },
@@ -3187,15 +3912,33 @@
      35.4739556981055
     ],
     "rank_counts": [
-     29,
-     1971,
+     22,
+     334,
+     1644,
      0
     ],
     "rank_ci_95": [
      1,
-     2
+     3
     ],
-    "top_frequency": 0.0145
+    "top_frequency": 0.011
+   },
+   "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+    "score_ci_95": [
+     17.45790518571017,
+     44.38393768528733
+    ],
+    "rank_counts": [
+     137,
+     1518,
+     345,
+     0
+    ],
+    "rank_ci_95": [
+     1,
+     3
+    ],
+    "top_frequency": 0.0685
    },
    "live-lite-gpt-5.6-sol-slingshot-3.4.0": {
     "score_ci_95": [
@@ -3203,15 +3946,16 @@
      40.29371685352905
     ],
     "rank_counts": [
-     1971,
-     29,
+     1841,
+     148,
+     11,
      0
     ],
     "rank_ci_95": [
      1,
-     2
+     3
     ],
-    "top_frequency": 0.9855
+    "top_frequency": 0.9205
    }
   },
   "pairs": {
@@ -3220,6 +3964,14 @@
     "ci_95": [
      -28.52318294759152,
      -5.143029244569686
+    ],
+    "p_greater": 0.0
+   },
+   "live-lite-claude-opus-4.8-aiwork|live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+    "difference": -18.81906151066617,
+    "ci_95": [
+     -37.630315689609276,
+     -0.24741428728155412
     ],
     "p_greater": 0.0
    },
@@ -3239,11 +3991,43 @@
     ],
     "p_greater": 1.0
    },
+   "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423|live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+    "difference": -1.5375679995769715,
+    "ci_95": [
+     -18.255623310148255,
+     14.295586037965588
+    ],
+    "p_greater": 0.0
+   },
    "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423|live-lite-gpt-5.6-sol-slingshot-3.4.0": {
     "difference": -4.14102389639331,
     "ci_95": [
      -14.697362629692162,
      6.229455458471374
+    ],
+    "p_greater": 0.0
+   },
+   "live-lite-gpt-5.5-agav-0.2.0-beta.2|live-lite-claude-opus-4.8-aiwork": {
+    "difference": 18.81906151066617,
+    "ci_95": [
+     0.23787013021242487,
+     37.56759029658929
+    ],
+    "p_greater": 0.982
+   },
+   "live-lite-gpt-5.5-agav-0.2.0-beta.2|live-lite-deepseek-v4.1-flash-tianxicode-0.1.423": {
+    "difference": 1.5375679995769715,
+    "ci_95": [
+     -14.32841251756799,
+     18.219452316444965
+    ],
+    "p_greater": 0.0
+   },
+   "live-lite-gpt-5.5-agav-0.2.0-beta.2|live-lite-gpt-5.6-sol-slingshot-3.4.0": {
+    "difference": -2.6034558968163384,
+    "ci_95": [
+     -19.33982595680528,
+     14.666413744751846
     ],
     "p_greater": 0.0
    },
@@ -3262,6 +4046,14 @@
      14.686995386445716
     ],
     "p_greater": 0.135
+   },
+   "live-lite-gpt-5.6-sol-slingshot-3.4.0|live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+    "difference": 2.6034558968163384,
+    "ci_95": [
+     -14.683697291040918,
+     19.332853663044702
+    ],
+    "p_greater": 0.0
    }
   }
  },

@@ -63,6 +63,11 @@ th[aria-sort="ascending"] button::after { content: ' ↑'; }
 th[aria-sort="descending"] button::after { content: ' ↓'; }
 th[aria-sort="none"] button::after { content: ' ↕'; }
 input:focus-visible, select:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.example-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.example-pair article { border: 1px solid var(--rule); border-radius: 6px; padding: 12px; }
+.example-pair h3 { margin: 0 0 8px; font-size: 1rem; }
+pre { overflow-x: auto; font-size: 0.85rem; line-height: 1.6; }
+#custom-results p { font-size: 0.85rem; color: var(--muted); }
 footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule); }
 </style>
 
@@ -134,12 +139,43 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     <li id="results-limit">Pass/fail comes from SWE-bench's published results; tests are not rerun.</li>
   </ul>
 
+  <section aria-labelledby="custom-heading">
+    <h2 id="custom-heading">Add your own benchmark</h2>
+    <p>Any benchmark, any language: if you know the amount of code used, you can explore it here. No patches or Parsimony analyzer required.</p>
+    <p class="small muted">Download the example JSON, replace its benchmark name, unit and results, then open it below. Use <code>total</code> for code used, <code>net</code> for added minus removed, or <code>churn</code> for added plus removed. Units can be lines, tokens, bytes or your own clearly defined measure. Keep different units and measurement methods in separate files.</p>
+    <p><button type="button" id="custom-example">Download example JSON</button> <button type="button" id="custom-clear">Clear</button></p>
+    <label for="custom-file">Open benchmark JSON</label><br>
+    <input type="file" id="custom-file" accept=".json,application/json" aria-describedby="custom-privacy custom-status">
+    <p class="small muted" id="custom-privacy">Your file stays in this browser tab: nothing is uploaded, published or saved. Up to 5 MB / 10,000 results. Imported counts are unverified and never mixed into the published leaderboard.</p>
+    <p class="small">Want to share it publicly? <a href="https://github.com/La5u/Parsimony/blob/main/docs/custom-benchmarks.md">See the format and contribution guide</a>.</p>
+    <p id="custom-status" class="small" role="status" aria-live="polite"></p>
+    <div id="custom-results" class="scroll"></div>
+  </section>
+
+  <section aria-labelledby="example-heading">
+    <h2 id="example-heading">Same answer, less code</h2>
+    <p>Task: does a finite list of numbers contain a negative value? Both solutions return the same answer—including <code>False</code> for an empty list.</p>
+    <div class="example-pair">
+      <article><h3>More bookkeeping · 6 lines</h3><pre><code>def has_negative(values):
+    found = False
+    for value in values:
+        if value &lt; 0:
+            found = True
+    return found</code></pre></article>
+      <article><h3>Same result · 2 lines</h3><pre><code>def has_negative(values):
+    return any(value &lt; 0 for value in values)</code></pre></article>
+    </div>
+    <p class="small">For <code>[3, -1, 2]</code> both return <code>True</code>; for <code>[0, 2]</code> and <code>[]</code> both return <code>False</code>. The second removes the mutable flag and explicit nested <code>if</code>, using Python’s built-in <code>any</code>.</p>
+    <p class="small muted">Illustrative example, not a benchmark result. The shorter version stops at the first match; equivalence here assumes a plain finite list of numbers, not side-effecting iterators. Less bookkeeping can be easier to read, but line count and coding units are footprint measures—not proof of lower semantic or runtime complexity. Both have O(n) worst-case time.</p>
+  </section>
+
   <footer class="small muted">
     <p id="provenance"></p>
     <p>Code and data: <a href="https://github.com/La5u/Parsimony">github.com/La5u/Parsimony</a></p>
   </footer>
 </main>
 
+<script>__CUSTOM_BENCHMARK_JS__</script>
 <script id="parsimony-data" type="application/json">__PARSIMONY_DATA__</script>
 <script>
 (function () {

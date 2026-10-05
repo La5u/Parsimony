@@ -32,6 +32,7 @@ NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude
          'o4-mini-2025-04-16': 'o4-mini', 'qwen3-coder-480b-a35b-instruct': 'Qwen3-Coder 480B',
          'qwen2-5-coder-32b-instruct': 'Qwen2.5-Coder 32B', 'kimi-k2-instruct': 'Kimi K2 Instruct',
          'live-lite-gpt-5.6-sol-slingshot-3.4.0': 'GPT-5.6 Sol · Slingshot 3.4.0',
+         'live-lite-gpt-5.5-agav-0.2.0-beta.2': 'GPT-5.5 · agav 0.2.0-beta.2',
          'live-lite-deepseek-v4.1-flash-tianxicode-0.1.423': 'DeepSeek V4.1 Flash · TianxiCode 0.1.423',
          'live-lite-claude-opus-4.8-aiwork': 'Claude Opus 4.8 · AiWork.Code',
          'live-multilang-gpt-5.6-sol-slingshot-3.4.0': 'GPT-5.6 Sol · Slingshot 3.4.0',
@@ -267,7 +268,9 @@ def add_rank_ranges(models, sensitivity):
 def render(data, standalone=True):
     # Escape '<' so no data string can close the embedding <script> element.
     payload = json.dumps(data, separators=(',', ':')).replace('<', '\\u003c')
-    page = TEMPLATE.read_text().replace('__PARSIMONY_DATA__', payload)
+    custom_js = TEMPLATE.with_name('custom-benchmark.js').read_text()
+    page = (TEMPLATE.read_text().replace('__CUSTOM_BENCHMARK_JS__', custom_js)
+            .replace('__PARSIMONY_DATA__', payload))
     if standalone:
         page = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
                 '<meta name="viewport" content="width=device-width, initial-scale=1">\n</head>\n<body>\n'

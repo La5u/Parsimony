@@ -125,9 +125,13 @@ Pages are always light mode and show an instant model-name-only tooltip. The arc
 | [`site/index.html`](site/index.html) (main) | [DeepSWE Python](examples/deepswe-python/README.md), 26 models | `--benchmark deepswe` |
 | `site/javascript.html`, `typescript.html`, `go.html` | DeepSWE [JavaScript](examples/deepswe-javascript/README.md), [TypeScript](examples/deepswe-typescript/README.md), [Go](examples/deepswe-go/README.md); separate pinned tracks with explicit coverage limits | `--benchmark deepswe` |
 | [`site/verified.html`](site/verified.html) | [SWE-bench Verified](examples/mini-swe-agent-500/README.md), 34 configurations | `--benchmark verified` |
-| `site/live.html` | [Live Lite Python](examples/live-python/README.md): DeepSeek V4.1 Flash, GPT-5.6 Sol and Claude Opus 4.8 as model + agent configurations on all 300 tasks | `--benchmark live` |
+| `site/live.html` | [Live Lite Python](examples/live-python/README.md): DeepSeek V4.1 Flash, GPT-5.6 Sol, Claude Opus 4.8 and GPT-5.5 / agav0.2.0-beta.2 as source-declared model + agent configurations on all 300 tasks | `--benchmark live` |
 
 `--nav LABEL=URL` links the boards. All pages are served at [parsimony.lasu.dev](https://parsimony.lasu.dev) (Cloudflare Pages, output directory `site`). Edit `site/template.html` for layout and copy, then rebuild all six pages ([HANDOFF.md](HANDOFF.md#rebuild-all-six-pages-offline-no-remeasurement) has the exact commands).
+
+## Bring your own benchmark
+
+Every website page includes a local JSON importer near the bottom. Explore any benchmark with known code amounts—lines, tokens, bytes or your own defined units—without running the analyzer. Download the example, edit it and open it in the browser. Imports stay local, are labeled unverified and never mix with published boards. See [the format and public contribution guide](docs/custom-benchmarks.md).
 
 ## Contributing
 
