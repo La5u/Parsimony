@@ -143,7 +143,7 @@ assert.doesNotMatch(graph(), /<span class="point-label"[^>]*>Beta<\/span>/);
 assert.match(graph(), /<circle data-point="1" data-model="Beta" class="all-point older"/);
 assert.match(graph(), /<circle data-point="0" data-model="Alpha" class="all-point"/);
 // Lower net units and higher solved are better: the green zone sits in the top-left corner.
-assert.match(graph(), /<rect class="best-zone" x="66" y="18"/);
+assert.match(graph(), /<rect class="best-zone" x="90" y="18"/);
 assert.match(graph(), /Smaller footprint, more solved/);
 element('graph-y').listeners.change({target: {value: 'coverage'}});
 assert.doesNotMatch(graph(), /best-zone/); // Coverage has no better direction.
@@ -270,42 +270,74 @@ function load(fixture) {
   vm.runInNewContext(script, {document: doc, window: browser});
 }
 const cropped = structuredClone(data);
-cropped.models[2] = {...cropped.models[0], name: 'Gemini 3.1 Pro (high)', company: 'Google', latest: false, measured_net_mean: -10000};
+cropped.models[0].resolve_rate = .2;
+cropped.models[1].resolve_rate = .6;
+cropped.models[2] = {...cropped.models[0], name: 'Gemini 3.1 Pro (high)', company: 'Google', latest: false, measured_net_mean: -500, resolve_rate: .08};
+function coordinates() {
+  const circle = graph().match(/<circle[^>]*data-model="Gemini 3\.1 Pro \(high\)"[^>]*>/)[0];
+  return ['cx', 'cy'].map(attr => Number(circle.match(new RegExp(`${attr}="([^"]+)"`))[1]));
+}
+function near(a, b) { assert(Math.abs(a - b) < 1e-8); }
 load(cropped);
 assert.equal(tickValues('x')[0], -2.1);
 assert.equal(tickValues('x').at(-1), .1);
-assert.match(element('graph-legend').textContent, /Gemini 3.1 Pro excluded from numeric axis fitting/);
-assert.match(graph(), /data-model="Gemini 3.1 Pro \(high\)"[^>]*cx="54"/);
+assert.match(element('graph-legend').textContent, /omitted from fitting X .* and Y/);
+assert.deepEqual(tickValues('y'), [18, 29, 40, 51, 62]);
+near(coordinates()[0], 90 + (-500 + 2.1) / 2.2 * 600);
+near(coordinates()[1], 388 - (8 - 18) / 44 * 370);
+assert(coordinates()[0] < 90 && coordinates()[1] > 388);
+assert(Number.parseFloat(element('graph').style.marginBottom) > coordinates()[1] - 440);
+assert.match(html, /height: auto; overflow: visible/);
+assert.doesNotMatch(graph(), /marker|third quadrant/i);
 assert.match(graph(), /<span class="point-label"[^>]*>Gemini 3.1 Pro \(off-scale\)<\/span>/);
 const outlier = doc.querySelectorAll('#graph circle[data-point]').find(c => c.dataset.point === '2');
 outlier.listeners.focus();
-assert.match(tooltip.textContent, /off-scale marker.*\nNet units added \(mean\): −10000.0/);
-assert.match(element('#board tbody').innerHTML, /−10000.0/);
+assert.match(tooltip.textContent, /outside fitted axes, plotted to scale.*\nNet units added \(mean\): −500.0\nSolved \(%\): 8.0%/);
+assert.doesNotMatch(tooltip.textContent, /marker/i);
+assert.match(element('#board tbody').innerHTML, /−500.0/);
+axis('x', 'resolve_rate');
+near(coordinates()[0], 90 + (8 - 18) / 44 * 600);
+near(coordinates()[1], 388 - (-500 + 2.1) / 2.2 * 370);
+axis('x', 'net');
 axis('x', 'coverage');
-assert.doesNotMatch(element('graph-legend').textContent, /excluded from numeric axis fitting/);
-assert.doesNotMatch(graph(), /\(off-scale\)/);
+assert.doesNotMatch(element('graph-legend').textContent, /omitted from fitting X/);
+assert.deepEqual(tickValues('x'), [0, 25, 50, 75, 100]);
 task('org__repo-1');
 assert.equal(tickValues('x')[0], 100);
-assert.doesNotMatch(element('graph-legend').textContent, /excluded from numeric axis fitting/);
-const similar = structuredClone(cropped);
-similar.models[2].name = 'Gemini 3.1 Other';
-load(similar);
-assert(tickValues('x')[0] < -10000);
-assert.doesNotMatch(element('graph-legend').textContent, /excluded from numeric axis fitting/);
+assert.doesNotMatch(element('graph-legend').textContent, /omitted from fitting/);
+const preview = structuredClone(cropped);
+preview.models[2].name = 'Gemini 3.1 Pro Preview (high)';
+load(preview);
+assert.equal(tickValues('x')[0], -2.1);
+assert.equal(tickValues('x').at(-1), .1);
+assert.deepEqual(tickValues('y'), [18, 29, 40, 51, 62]);
+assert.match(element('graph-legend').textContent, /omitted from fitting X .* and Y/);
+for (const name of ['Gemini 3.1 Professional', 'Gemini 3.1 Pro Plus']) {
+  const similar = structuredClone(cropped);
+  similar.models[2].name = name;
+  load(similar);
+  assert(tickValues('x')[0] < -500);
+  assert.deepEqual(tickValues('y'), [0, 25, 50, 75, 100]);
+  assert.doesNotMatch(element('graph-legend').textContent, /omitted from fitting/);
+}
 const singleton = structuredClone(cropped);
 singleton.models[1].measured_net_mean = null;
 load(singleton);
-assert(tickValues('x')[0] < -10000);
-assert.doesNotMatch(element('graph-legend').textContent, /excluded from numeric axis fitting/);
+assert(tickValues('x')[0] < -500);
+assert.deepEqual(tickValues('y'), [0, 25, 50, 75, 100]);
+assert.doesNotMatch(element('graph-legend').textContent, /omitted from fitting/);
 const inside = structuredClone(cropped);
 inside.models[2].measured_net_mean = -1;
+inside.models[2].resolve_rate = .4;
 load(inside);
 assert.doesNotMatch(graph(), /\(off-scale\)/);
-assert.doesNotMatch(element('graph-legend').textContent, /excluded from numeric axis fitting/);
+assert.deepEqual(tickValues('y'), [0, 25, 50, 75, 100]);
+assert.equal(element('graph').style.marginBottom, '0px');
+assert.doesNotMatch(element('graph-legend').textContent, /omitted from fitting/);
 const right = structuredClone(cropped);
 right.models[2].measured_net_mean = 10000;
 load(right);
-assert.match(graph(), /data-model="Gemini 3.1 Pro \(high\)"[^>]*cx="702"/);
+assert(coordinates()[0] > 690);
 axis('y', 'net'); // Swap direction: the same numeric outlier now appears above the plot.
-assert.match(graph(), /data-model="Gemini 3.1 Pro \(high\)"[^>]*cy="6"/);
+assert(coordinates()[1] < 18);
 console.log('Palette, borderless markers, HTML labels, tooltips, outlier fitting, sorting and task switching passed');
