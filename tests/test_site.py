@@ -1,3 +1,4 @@
+import hashlib
 import json
 import shutil
 import subprocess
@@ -10,11 +11,53 @@ from pathlib import Path
 from unittest import mock
 
 from parsimony.scoring import freeze
-from parsimony.site import add_rank_ranges, build, company, label, main, newest_generation, render
+from parsimony.site import add_rank_ranges, build, company, label, main, newest_generation, published_sources, render
 from tests.test_scoring import record
 
 
 class SiteTests(unittest.TestCase):
+    def test_published_sources_counts_and_hashes(self):
+        root = Path(__file__).resolve().parent.parent
+        sources = published_sources('deepswe', root=root)
+        self.assertEqual([s['tasks'] for s in sources], [34, 5, 35, 34, 500, 300])
+        self.assertEqual([s['population_per_model'] for s in sources], [136, 20, 140, 136, 500, 300])
+        self.assertEqual([s['attempts_per_task'] for s in sources], [4, 4, 4, 4, 1, 1])
+        self.assertEqual([s['board_url'] for s in sources],
+                         ['index.html', 'javascript.html', 'typescript.html', 'go.html', 'verified.html', 'live.html'])
+        for source in sources:
+            path = source['manifest_url'].split('/blob/main/')[1]
+            raw = (root / path).read_bytes()
+            self.assertEqual(source['manifest_sha256'], hashlib.sha256(raw).hexdigest())
+            self.assertEqual(source['dataset_sha256'], json.loads(raw)['dataset_sha256'])
+            self.assertEqual(source['report_url'], source['manifest_url'].rsplit('/', 1)[0] + '/README.md')
+
+    def test_published_sources_active_board(self):
+        for benchmark, language, index in [('deepswe', 'python', 0), ('deepswe', 'javascript', 1),
+                                            ('deepswe', 'typescript', 2), ('deepswe', 'go', 3),
+                                            ('verified', 'python', 4), ('live', 'python', 5),
+                                            ('polybench', 'python', None)]:
+            sources = published_sources(benchmark, language)
+            self.assertEqual([i for i, s in enumerate(sources) if s['active']],
+                             [] if index is None else [index])
+
+    def test_published_sources_reads_only_manifests_and_validates_attempts(self):
+        root = Path(__file__).resolve().parent.parent
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            for source in published_sources('live'):
+                path = source['manifest_url'].split('/blob/main/')[1]
+                target = temporary / path
+                target.parent.mkdir(parents=True)
+                shutil.copyfile(root / path, target)
+            # No success panels or records exist in this root.
+            self.assertEqual(published_sources('live', root=temporary), published_sources('live'))
+            path = temporary / 'examples/deepswe-python/population.json'
+            manifest = json.loads(path.read_bytes())
+            manifest['tasks'].pop(next(iter(manifest['tasks'])))
+            path.write_text(json.dumps(manifest))
+            with self.assertRaisesRegex(ValueError, 'four attempts'):
+                published_sources('live', root=temporary)
+
     def test_build_and_render(self):
         records = [record('20260217_mini-v2.0.0_claude-4-6-opus', 't1', net=5, churn=9),
                    record('20260217_mini-v2.0.0_claude-4-6-opus', 't2', net=0, churn=0, resolved=False),

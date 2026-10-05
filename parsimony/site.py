@@ -64,6 +64,46 @@ BENCHMARKS = {
 }
 
 
+def published_sources(benchmark, language='python', root=None):
+    """Describe each frozen board population without selecting successful attempts."""
+    root = Path(root) if root is not None else TEMPLATE.parent.parent
+    github = 'https://github.com/La5u/Parsimony/blob/main/'
+    boards = [
+        ('DeepSWE · Python', 'deepswe', 'python', 'deepswe-python', 'population.json', 'index.html'),
+        ('DeepSWE · JavaScript', 'deepswe', 'javascript', 'deepswe-javascript', 'population.json', 'javascript.html'),
+        ('DeepSWE · TypeScript', 'deepswe', 'typescript', 'deepswe-typescript', 'population.json', 'typescript.html'),
+        ('DeepSWE · Go', 'deepswe', 'go', 'deepswe-go', 'population.json', 'go.html'),
+        ('SWE-bench Verified', 'verified', 'python', 'mini-swe-agent-500', 'population.json', 'verified.html'),
+        ('SWE-bench Live Lite', 'live', 'python', 'live-python', 'population-manifest.json', 'live.html'),
+    ]
+    sources = []
+    for name, key, lang, directory, filename, board_url in boards:
+        path = f'examples/{directory}/{filename}'
+        raw = (root / path).read_bytes()
+        manifest = json.loads(raw)
+        tasks = manifest['tasks']
+        attempts = 4 if key == 'deepswe' else 1
+        if key == 'deepswe':
+            groups = {}
+            for task in tasks:
+                base, separator, attempt = task.rpartition('#')
+                if not separator or not base:
+                    raise ValueError(f'{path}: invalid attempt ID {task!r}')
+                groups.setdefault(base, set()).add(attempt)
+            if any(ids != {'1', '2', '3', '4'} for ids in groups.values()):
+                raise ValueError(f'{path}: each task must have four attempts (#1–#4)')
+            count = len(groups)
+        else:
+            count = len(tasks)
+        sources.append(dict(name=name, benchmark=key, language=lang, tasks=count,
+                            attempts_per_task=attempts, population_per_model=len(tasks),
+                            active=(benchmark == key and language == lang), board_url=board_url,
+                            report_url=github + f'examples/{directory}/README.md',
+                            manifest_url=github + path, manifest_sha256=hashlib.sha256(raw).hexdigest(),
+                            dataset_sha256=manifest['dataset_sha256']))
+    return sources
+
+
 def label(agent):
     if agent.startswith('deepswe-'):
         return display_name(agent)
@@ -197,7 +237,7 @@ def build(panel, records, draws=2000, seed=42):
             human_ratio=median(r.get('model_human_ratio') for r in ok)))
     models.sort(key=lambda m: (m['measured_net_mean'] is None,
                                m['measured_net_mean'] if m['measured_net_mean'] is not None else 0, m['name']))
-    # Chart emphasis only: older generations are drawn lighter and unlabelled; rank ignores this.
+    # Chart emphasis only: older generations and their labels are slightly lighter; rank ignores this.
     newest = newest_generation([m['name'] for m in models])
     for m in models:
         m['latest'] = m['name'] in newest
@@ -294,6 +334,8 @@ def main():
         data = build(json.loads(raw), [r for path in args.records for r in read_jsonl(path)])
         data['panel_sha256'] = hashlib.sha256(raw).hexdigest()
         data['benchmark'] = BENCHMARKS[args.benchmark]
+        track = data.get('measurement_track') or {}
+        data['sources'] = published_sources(args.benchmark, track.get('language') or 'python')
         data['nav'] = [dict(zip(('label', 'url'), item.split('=', 1))) for item in args.nav]
         if args.sensitivity:
             sensitivity = json.loads(Path(args.sensitivity).read_text())
