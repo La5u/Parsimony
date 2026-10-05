@@ -56,10 +56,8 @@ body { overflow-x: clip; }
 #graph .tick { fill: #000; font: 12px system-ui, sans-serif; }
 #graph circle { stroke: none; cursor: pointer; }
 #graph .older { fill-opacity: 0.28; }
-#graph .leader { stroke: #000; stroke-width: 1; }
-#graph .point-label { position: absolute; font: 400 8px system-ui, sans-serif; color: #000; white-space: nowrap; pointer-events: none; }
+#graph .point-label { position: absolute; font: 400 8px system-ui, sans-serif; color: #000; white-space: nowrap; pointer-events: none; transform: translate(10px,-50%); line-height: 10px; }
 #graph .best-zone { fill: #16a34a; fill-opacity: 0.12; }
-#graph .best-label { fill: #000; font: 600 11px system-ui, sans-serif; }
 #company-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .company-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
 #graph-tooltip {
@@ -86,7 +84,15 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="muted">How much code do coding agents write to fix real issues? Research preview.</p>
   <p class="small" id="nav" hidden></p>
 
-  <p>Parsimony measures published <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a> patches in <b>coding units</b>: each statement, call, comparison, name and literal counts as one unit. Formatting, comments and punctuation are not counted. Models are ranked by mean net units added across measured in-scope attempts, including failures. Upstream correctness and measurement coverage are shown separately; smaller does not mean better at coding.</p>
+  <p class="small" id="units-definition"><b>Coding units</b> count syntax elements—statements, calls, comparisons, names and literals—not lines or runtime complexity. Net units = added − removed.</p>
+  <details class="small muted"><summary>How to read this</summary>
+  <p>We parse published <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a> patches and count syntax elements plus block-end markers. Formatting, comments and punctuation do not count. Python, JavaScript/TypeScript and Go use separate parser-specific tracks; raw unit counts are not comparable across them.</p>
+  <p>Rank is by mean net units added, lowest first, across measured in-scope attempts—including failures. The solved column averages only attempts the upstream benchmark marks solved; click it to sort by it instead. Equal means tie; models with no measurements are unranked. Partial coverage can change the order, and a few very large deletions can dominate a mean. This is smallest measured footprint, not best coding ability.</p>
+  <p>Net units added means coding units added minus removed, not semantic complexity. Measured shows eligible footprints / published population. Missing or entirely excluded edits are not zero. Solved comes from the upstream benchmark and never affects footprint rank. A failed no-op or large deletion can rank first. Click headings to sort; missing values stay last.</p>
+  <p>Archived combined-score diagnostics use the midpoint when bounded; their CI and rank endpoints are labelled explicitly and do not affect footprint ranking. Models missing either selected value have no point. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; percentage axes normally stay at 0–100%. Points outside fitted axes remain at their actual, true-scale positions.</p>
+  <p id="score-help">The previous combined score and its 95% CI remain available as optional graph diagnostics and in the data, but do not determine footprint rank. Its 80% net / 20% units-changed formula is unchanged.</p>
+  <p id="ci-help">Combined-score CI endpoints are not net-unit uncertainty or inputs to footprint rank.</p>
+  </details>
 
   <h2 id="leaderboard">Leaderboard</h2>
   <p class="small muted" id="board-intro"></p>
@@ -115,17 +121,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       <tbody></tbody>
     </table>
   </div>
-  <p class="small muted" id="rank-note" style="margin-top:8px">Rank is by mean net units added, lowest first, across measured in-scope attempts—including failures. The solved column averages only attempts the upstream benchmark marks solved; click it to sort by it instead. Equal means tie; models with no measurements are unranked. Partial coverage can change the order, and a few very large deletions can dominate a mean. This is smallest measured footprint, not best coding ability.</p>
+  <p class="small muted" id="rank-note" style="margin-top:8px">Mean net units added, including failures. Smaller footprint ≠ better coding.</p>
   <p class="small" id="task-footer" hidden><a id="task-link" href="#">Maintainers' pull request</a></p>
-  <details class="small muted"><summary>Archived combined-score diagnostics</summary>
-  <p id="score-help">The previous combined score and its 95% CI remain available as optional graph diagnostics and in the data, but do not determine footprint rank. Its 80% net / 20% units-changed formula is unchanged.</p>
-  <p id="ci-help">Combined-score CI endpoints are not net-unit uncertainty or inputs to footprint rank.</p>
-  </details>
-
-  <p class="small muted">Net units added means coding units added minus removed, not semantic complexity. Measured shows eligible footprints / published population. Missing or entirely excluded edits are not zero. Solved comes from the upstream benchmark and never affects footprint rank. A failed no-op or large deletion can rank first. Click headings to sort; missing values stay last.</p>
 
   <h2 id="complexity">Compare models</h2>
-  <p class="small muted">Choose any two numeric metrics, including uncertainty endpoints. One point per model, colored by company. Each model line’s newest generation is labelled and fully colored; earlier generations are faded. Archived combined-score diagnostics use the midpoint when bounded; their CI and rank endpoints are labelled explicitly and do not affect footprint ranking. Models missing either selected value have no point. Hover, focus or tap a point to see its model name and both selected axis values instantly. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; percentage axes normally stay at 0–100%. When Gemini 3.1 Pro is omitted from Solved axis fitting, that axis fits the other models. Points outside fitted axes are plotted to scale.</p>
+  <p class="small muted">Hover, focus or tap for values; labels identify newest generations and outside points.</p>
   <p><label for="graph-x">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
      <label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></p>
   <p class="small muted" id="graph-legend"></p>
@@ -494,8 +494,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : (selected[2][i][6] || selected[2][i][0]) === 'r' ? 'resolved' : 'unknown') : 'all', i}))
       .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
     $('graph-legend').textContent = points.length
-      ? (selected ? 'Color indicates company. Labelled points are each model line’s newest generation; faded points are earlier generations. Attempt status is available on hover or focus. The green area is the better corner on both axes.'
-        : 'Color indicates company. Labelled points are each model line’s newest generation; faded points are earlier generations. The green area is the better corner on both axes. Net means include measured passing and failed attempts; measurement coverage can differ.')
+      ? 'Company colors; earlier generations faded.' + (selected ? ' Attempt status on hover or focus.' : '')
       : 'No measured points available for this view.';
     $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort().map(company =>
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
@@ -519,7 +518,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     }
     const [xmin, xmax] = extent('x', axes.x), [ymin, ymax] = extent('y', axes.y);
     const sx = x => L + (x - xmin) / (xmax - xmin) * (W - L - R), sy = y => H - B - (y - ymin) / (ymax - ymin) * (H - T - B);
-    if (excludedAxes.length) $('graph-legend').textContent += ` Gemini 3.1 Pro omitted from fitting ${excludedAxes.map(axis => `${axis.toUpperCase()} (${axis === 'x' ? xLabel : yLabel})`).join(' and ')}; outside fitted axes, plotted to scale.`;
+    if (excludedAxes.length) $('graph-legend').textContent += ` Gemini 3.1 Pro omitted from fitting ${excludedAxes.map(axis => axis.toUpperCase()).join('/')}; plotted to scale.`;
     for (const p of points) {
       p.offscale = p.x < xmin || p.x > xmax || p.y < ymin || p.y > ymax;
       p.px = sx(p.x);
@@ -535,44 +534,22 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     let zone = '';
     if (bx && by && points.length) {
       const pw = W - L - R, ph = H - T - B, zx = bx < 0 ? L : L + pw / 2, zy = by > 0 ? T : T + ph / 2;
-      const text = ['net', 'solved_net'].includes(axes.x) && axes.y === 'resolve_rate' ? 'Smaller footprint, more solved' : 'Better on both axes';
-      zone = `<rect class="best-zone" x="${zx}" y="${zy}" width="${pw / 2}" height="${ph / 2}"/><text class="best-label" text-anchor="${bx < 0 ? 'start' : 'end'}" x="${bx < 0 ? zx + 8 : zx + pw / 2 - 8}" y="${by > 0 ? zy + 16 : zy + ph / 2 - 8}">${text}</text>`;
+      zone = `<rect class="best-zone" x="${zx}" y="${zy}" width="${pw / 2}" height="${ph / 2}"/>`;
     }
-    // Always-visible names for the newest generation, placed where they collide least.
-    const boxes = points.map(p => ({x0: p.px - 7, x1: p.px + 7, y0: p.py - 7, y1: p.py + 7, soft: !p.latest}));
+    // All labels share a fixed CSS-pixel offset from the actual point.
     const overlays = [];
-    const leaders = [];
-    if (zone) boxes.push(bx < 0 ? {x0: L, x1: L + 190, y0: by > 0 ? T : H - B - 22, y1: by > 0 ? T + 22 : H - B}
-      : {x0: W - R - 190, x1: W - R, y0: by > 0 ? T : H - B - 22, y1: by > 0 ? T + 22 : H - B});
     // Drop the effort suffix unless two labelled models would then share a name.
     const strip = name => name.replace(/ \([^)]*\)$/, '');
     const shortName = name => points.filter(p => p.latest && strip(p.name) === strip(name)).length > 1 ? name : strip(name);
-    points.filter(p => p.latest || p.offscale).sort((a, b) => Number(b.offscale) - Number(a.offscale) || a.py - b.py || a.px - b.px).forEach(p => {
-      const text = shortName(p.name) + (p.offscale ? ' (off-scale)' : ''), w = text.length * 4 + 4, h = 10, cx = p.px, cy = p.py;
-      // Rings of positions around the point; farther rings cost a little and get a leader line.
-      const candidates = [];
-      for (const [d, far] of [[9, 0], [24, 1], [42, 2]]) {
-        candidates.push([cx + d, cy - h / 2, far], [cx - d - w, cy - h / 2, far], [cx - w / 2, cy - d - h, far], [cx - w / 2, cy + d, far],
-          [cx + d * 0.8, cy - d * 0.8 - h, far], [cx + d * 0.8, cy + d * 0.8, far], [cx - d * 0.8 - w, cy - d * 0.8 - h, far], [cx - d * 0.8 - w, cy + d * 0.8, far]);
-      }
-      let best = null, bestCost = Infinity;
-      for (const [x, y, far] of candidates) {
-        const box = {x0: x, x1: x + w, y0: y, y1: y + h, far, label: true};
-        let cost = far * 12 + (p.offscale ? 0 : Math.max(0, L - box.x0, box.x1 - (W - R), T - box.y0, box.y1 - (H - B)) * 50);
-        for (const other of boxes) {
-          const overlap = Math.max(0, Math.min(box.x1, other.x1) - Math.max(box.x0, other.x0)) * Math.max(0, Math.min(box.y1, other.y1) - Math.max(box.y0, other.y0));
-          cost += overlap * (other.label ? 4 : other.soft ? 0.3 : 1);
-        }
-        if (cost < bestCost) { bestCost = cost; best = box; }
-      }
-      boxes.push(best);
-      const ax = Math.max(best.x0, Math.min(cx, best.x1)), ay = Math.max(best.y0, Math.min(cy, best.y1));
-      if (best.far) leaders.push(`<line class="leader" stroke="#000" x1="${cx}" y1="${cy}" x2="${ax}" y2="${ay}"/>`);
-      overlays.push(`<span class="point-label" style="left:${(best.x0 + 2) / W * 100}%;top:${best.y0 / H * 100}%">${esc(text)}</span>`);
+    const labelled = points.filter(p => p.latest || p.offscale);
+    labelled.forEach(p => {
+      const text = shortName(p.name) + (p.offscale ? ' (off-scale)' : '');
+      overlays.push(`<span class="point-label" data-point="${points.indexOf(p)}" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(text)}</span>`);
     });
-    const bottom = Math.max(H, ...points.map(p => p.py + 7), ...boxes.map(box => box.y1));
-    $('graph').style.marginBottom = `${Math.max(0, bottom - H) * ($('graph').clientWidth || W) / W + (bottom > H ? 16 : 0)}px`;
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. The newest generation of each model line is labelled; earlier generations are faded. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${leaders.join('')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    const scale = ($('graph').clientWidth || W) / W;
+    const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
+    $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. The newest generation of each model line is labelled; earlier generations are faded. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
       const show = event => {
         const p = points[Number(circle.dataset.point)];

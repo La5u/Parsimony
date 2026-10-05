@@ -75,8 +75,13 @@ assert.match(html, /circle:focus-visible \{ outline: 2px solid #000; outline-off
 assert.match(html, /white-space: pre-line/);
 for (const [company, color] of Object.entries({OpenAI: '#000000', xAI: '#8b5cf6', Google: '#34a853', Anthropic: '#d97757', DeepSeek: '#2756bd'})) assert(html.includes(`'${company}': '${color}'`));
 assert.match(html, /#graph text \{ fill: #000;/);
-assert.match(html, /#graph \.leader \{ stroke: #000;/);
-assert.match(html, /#graph \.best-label \{ fill: #000;/);
+assert.doesNotMatch(html, /best-label|class="leader"|Smaller footprint, more solved|Better on both axes|const candidates|const boxes/);
+assert.match(html, /transform: translate\(10px,-50%\); line-height: 10px/);
+assert.match(html, /<summary>How to read this<\/summary>/);
+assert.match(html, /id="units-definition"><b>Coding units<\/b> count syntax elements/);
+assert.match(html, /not lines or runtime complexity\. Net units = added − removed\./);
+assert(html.indexOf('id="units-definition"') < html.indexOf('<summary>How to read this</summary>'));
+assert.match(html, /Mean net units added, including failures\. Smaller footprint ≠ better coding\./);
 assert.doesNotMatch(html, /paint-order|box-shadow|text-shadow/);
 const tooltipCSS = html.match(/#graph-tooltip \{([\s\S]*?)\}/)[1];
 assert.match(tooltipCSS, /color: #000/);
@@ -85,7 +90,17 @@ assert.match(html, /color-scheme: light/);
 assert.doesNotMatch(html, /prefers-color-scheme|color-scheme: dark/);
 const rows = () => [...element('#board tbody').innerHTML.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(m => m[1]);
 const names = () => rows().map(row => row.match(/<td class="left">(.*?)<\/td>/)?.[1]);
-const graph = () => element('graph').innerHTML;
+const graph = () => {
+  const markup = element('graph').innerHTML;
+  assert.doesNotMatch(markup, /best-label|class="leader"|Smaller footprint, more solved|Better on both axes/);
+  for (const label of markup.matchAll(/<span class="point-label" data-point="(\d+)" style="left:([^%]+)%;top:([^%]+)%">/g)) {
+    const circle = markup.match(new RegExp(`<circle data-point="${label[1]}"[^>]*cx="([^"]+)" cy="([^"]+)"`));
+    assert(circle, 'label must anchor to an actual dot');
+    assert(Math.abs(Number(label[2]) - Number(circle[1]) / 720 * 100) < 1e-8);
+    assert(Math.abs(Number(label[3]) - Number(circle[2]) / 440 * 100) < 1e-8);
+  }
+  return markup;
+};
 function tickValues(axis) {
   const anchor = axis === 'x' ? 'middle' : 'end';
   const pattern = new RegExp(`<text class="tick" text-anchor="${anchor}"[^>]*>([−\\d.]+%?)<\\/text>`, 'g');
@@ -144,7 +159,7 @@ assert.match(graph(), /<circle data-point="1" data-model="Beta" class="all-point
 assert.match(graph(), /<circle data-point="0" data-model="Alpha" class="all-point"/);
 // Lower net units and higher solved are better: the green zone sits in the top-left corner.
 assert.match(graph(), /<rect class="best-zone" x="90" y="18"/);
-assert.match(graph(), /Smaller footprint, more solved/);
+assert.equal(element('graph-legend').textContent, 'Company colors; earlier generations faded.');
 element('graph-y').listeners.change({target: {value: 'coverage'}});
 assert.doesNotMatch(graph(), /best-zone/); // Coverage has no better direction.
 assert.doesNotMatch(graph(), /<polyline/);
@@ -209,6 +224,7 @@ assert.equal(tickValues('x').at(-1), 342);
 assert.doesNotMatch(element('graph-x').innerHTML, /ci|resolve_rate|rank_low/);
 assert.match(element('#board tbody').innerHTML, /<td class="left">Alpha<\/td><td class="left r">solved<\/td><td>\+111<\/td><\/tr>/);
 assert.match(graph(), /Gamma \(Anthropic\): failed task attempt/);
+assert.equal(element('graph-legend').textContent, 'Company colors; earlier generations faded. Attempt status on hover or focus.');
 assert.doesNotMatch(graph(), /<polyline/); // Alpha dominates both task-footprint axes.
 axis('y', 'score');
 assert.doesNotMatch(graph(), /<polyline/);
@@ -281,8 +297,9 @@ function near(a, b) { assert(Math.abs(a - b) < 1e-8); }
 load(cropped);
 assert.equal(tickValues('x')[0], -2.1);
 assert.equal(tickValues('x').at(-1), .1);
-assert.match(element('graph-legend').textContent, /omitted from fitting X .* and Y/);
+assert.match(element('graph-legend').textContent, /omitted from fitting X\/Y/);
 assert.deepEqual(tickValues('y'), [18, 29, 40, 51, 62]);
+assert.match(element('graph-legend').textContent, /plotted to scale/);
 near(coordinates()[0], 90 + (-500 + 2.1) / 2.2 * 600);
 near(coordinates()[1], 388 - (8 - 18) / 44 * 370);
 assert(coordinates()[0] < 90 && coordinates()[1] > 388);
@@ -311,7 +328,7 @@ load(preview);
 assert.equal(tickValues('x')[0], -2.1);
 assert.equal(tickValues('x').at(-1), .1);
 assert.deepEqual(tickValues('y'), [18, 29, 40, 51, 62]);
-assert.match(element('graph-legend').textContent, /omitted from fitting X .* and Y/);
+assert.match(element('graph-legend').textContent, /omitted from fitting X\/Y/);
 for (const name of ['Gemini 3.1 Professional', 'Gemini 3.1 Pro Plus']) {
   const similar = structuredClone(cropped);
   similar.models[2].name = name;
