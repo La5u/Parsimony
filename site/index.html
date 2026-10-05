@@ -49,21 +49,24 @@ th button { font: inherit; color: inherit; background: none; border: 0; padding:
 button { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 5px 9px; cursor: pointer; }
 #graph svg { display: block; width: 100%; height: auto; }
 #graph .axis { stroke: var(--muted); }
-#graph .tick { fill: var(--muted); font: 12px system-ui, sans-serif; }
+#graph text { fill: #000; }
+#graph-legend, #company-legend { color: #000; }
+#graph .tick { fill: #000; font: 12px system-ui, sans-serif; }
 #graph circle { stroke: var(--bg); stroke-width: 1; cursor: pointer; }
 #graph .failed-point { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 2 1; }
 #graph .older { fill-opacity: 0.28; stroke-opacity: 0.45; }
-#graph .leader { stroke-width: 1; stroke-opacity: 0.6; }
-#graph .point-label { font: 600 11px system-ui, sans-serif; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+#graph .leader { stroke: #000; stroke-width: 1; }
+#graph .pareto-frontier { fill: none; stroke: #000; stroke-width: 1; stroke-dasharray: 4 3; pointer-events: none; }
+#graph .point-label { font: 600 9px system-ui, sans-serif; pointer-events: none; }
 #graph .best-zone { fill: #16a34a; fill-opacity: 0.12; }
-#graph .best-label { fill: #15803d; font: 600 11px system-ui, sans-serif; }
+#graph .best-label { fill: #000; font: 600 11px system-ui, sans-serif; }
 #company-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .company-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
 #graph-tooltip {
   position: fixed; z-index: 1000; pointer-events: none;
   max-width: calc(100vw - 16px); box-sizing: border-box;
-  padding: 5px 9px; border: 1px solid var(--rule); border-radius: 4px;
-  background: var(--bg); color: var(--ink); box-shadow: 0 2px 8px #0002;
+  padding: 5px 9px;
+  background: var(--bg); color: #000;
 }
 #graph circle:focus { outline: none; stroke: var(--ink); stroke-width: 3; }
 th[aria-sort="ascending"] button::after { content: ' ↑'; }
@@ -83,7 +86,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="muted">How much code do coding agents write to fix real issues? Research preview.</p>
   <p class="small" id="nav" hidden></p>
 
-  <p>Parsimony measures published <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a> patches in <b>coding units</b>: each statement, call, comparison, name and literal counts as one unit. Formatting, comments and punctuation are not counted. Patches that pass the tests score higher when they are smaller. Failed patches score zero or below.</p>
+  <p>Parsimony measures published <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a> patches in <b>coding units</b>: each statement, call, comparison, name and literal counts as one unit. Formatting, comments and punctuation are not counted. Models are ranked by mean net units added across measured in-scope attempts, including failures. Upstream correctness and measurement coverage are shown separately; smaller does not mean better at coding.</p>
 
   <h2 id="leaderboard">Leaderboard</h2>
   <p class="small muted" id="board-intro"></p>
@@ -473,6 +476,16 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   function hideTooltip() { tooltip.hidden = true; tooltip.textContent = ''; }
   window.addEventListener('scroll', hideTooltip, true);
   window.addEventListener('resize', hideTooltip);
+  // Exact dominance over the displayed samples; duplicates represent one coordinate.
+  function paretoFrontier(points, bx, by) {
+    if (![1, -1].includes(bx) || ![1, -1].includes(by)) return [];
+    const unique = points.filter(p => Number.isFinite(p.x) && Number.isFinite(p.y))
+      .filter((p, i, all) => all.findIndex(q => q.x === p.x && q.y === p.y) === i);
+    const frontier = unique.filter(p => !unique.some(q =>
+      bx * q.x >= bx * p.x && by * q.y >= by * p.y && (q.x !== p.x || q.y !== p.y)))
+      .sort((a, b) => a.x - b.x);
+    return frontier.length >= 2 ? frontier : [];
+  }
   function renderGraph() {
     hideTooltip();
     const axes = currentAxes(), options = axisOptions();
@@ -507,6 +520,13 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     // Green zone: the half of each axis that is better (lower footprint/rank, higher solved/score).
     const better = {net: -1, solved_net: -1, churn: -1, rank_low: -1, rank_high: -1, resolve_rate: 1, score: 1, ci: 1, ci_high: 1};
     const bx = better[axes.x], by = better[axes.y];
+    const frontier = paretoFrontier(points, bx, by);
+    const frontierLine = frontier.length ? `<polyline class="pareto-frontier" points="${frontier.map(p => `${sx(p.x)},${sy(p.y)}`).join(' ')}"/>` : '';
+    const frontierCopy = bx && by
+      ? `Dashed line: sampled Pareto frontier across all generations and measured failed attempts (${xLabel}: ${bx < 0 ? 'lower' : 'higher'} is better; ${yLabel}: ${by < 0 ? 'lower' : 'higher'} is better). Hidden with fewer than two distinct frontier points.`
+      : 'No Pareto frontier: an axis has no defined better direction.';
+    const frontierNote = `${frontierCopy} Descriptive samples, not interpolated capability or correctness certification; not a combined-score ranking.`;
+    $('graph-legend').textContent += ' ' + frontierNote;
     let zone = '';
     if (bx && by && points.length) {
       const pw = W - L - R, ph = H - T - B, zx = bx < 0 ? L : L + pw / 2, zy = by > 0 ? T : T + ph / 2;
@@ -521,7 +541,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const strip = name => name.replace(/ \([^)]*\)$/, '');
     const shortName = name => points.filter(p => p.latest && strip(p.name) === strip(name)).length > 1 ? name : strip(name);
     const labels = points.filter(p => p.latest).sort((a, b) => sy(a.y) - sy(b.y) || sx(a.x) - sx(b.x)).map(p => {
-      const text = shortName(p.name), w = text.length * 6.1 + 4, h = 13, cx = sx(p.x), cy = sy(p.y);
+      const text = shortName(p.name), w = text.length * 5 + 4, h = 11, cx = sx(p.x), cy = sy(p.y);
       // Rings of positions around the point; farther rings cost a little and get a leader line.
       const candidates = [];
       for (const [d, far] of [[9, 0], [24, 1], [42, 2]]) {
@@ -539,12 +559,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         if (cost < bestCost) { bestCost = cost; best = box; }
       }
       boxes.push(best);
-      const color = companyColor(p.company);
       const ax = Math.max(best.x0, Math.min(cx, best.x1)), ay = Math.max(best.y0, Math.min(cy, best.y1));
-      return (best.far ? `<line class="leader" stroke="${color}" x1="${cx}" y1="${cy}" x2="${ax}" y2="${ay}"/>` : '') +
-        `<text class="point-label" fill="${color}" x="${best.x0 + 2}" y="${best.y1 - 3}">${esc(text)}</text>`;
+      return (best.far ? `<line class="leader" stroke="#000" x1="${cx}" y1="${cy}" x2="${ax}" y2="${ay}"/>` : '') +
+        `<text class="point-label" fill="#000" x="${best.x0 + 2}" y="${best.y1 - 3}">${esc(text)}</text>`;
     }).join('');
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. The newest generation of each model line is labelled; earlier generations are faded. Axes use the selected numeric table values. In selected-task view, failed attempts have dashed outlines. Hover, focus or tap a point for an immediate model-name tooltip.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${labels}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>`;
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. The newest generation of each model line is labelled; earlier generations are faded. Axes use the selected numeric table values. In selected-task view, failed attempts have dashed outlines. Hover, focus or tap a point for an immediate model-name tooltip. ${esc(frontierNote)}</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${frontierLine}${labels}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>`;
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
       const show = event => {
         tooltip.textContent = points[Number(circle.dataset.point)].name;
