@@ -48,7 +48,8 @@ input, select {
 th button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 button { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 5px 9px; cursor: pointer; }
 #graph { position: relative; }
-#graph svg { display: block; width: 100%; height: auto; }
+#graph svg { display: block; width: 100%; height: auto; overflow: visible; }
+body { overflow-x: clip; }
 #graph .axis { stroke: var(--muted); }
 #graph text { fill: #000; }
 #graph-legend, #company-legend { color: #000; }
@@ -124,7 +125,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="small muted">Net units added means coding units added minus removed, not semantic complexity. Measured shows eligible footprints / published population. Missing or entirely excluded edits are not zero. Solved comes from the upstream benchmark and never affects footprint rank. A failed no-op or large deletion can rank first. Click headings to sort; missing values stay last.</p>
 
   <h2 id="complexity">Compare models</h2>
-  <p class="small muted">Choose any two numeric metrics, including uncertainty endpoints. One point per model, colored by company. Each model line’s newest generation is labelled and fully colored; earlier generations are faded. Archived combined-score diagnostics use the midpoint when bounded; their CI and rank endpoints are labelled explicitly and do not affect footprint ranking. Models missing either selected value have no point. Hover, focus or tap a point to see its model name and both selected axis values instantly. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; Solved stays at 0–100%.</p>
+  <p class="small muted">Choose any two numeric metrics, including uncertainty endpoints. One point per model, colored by company. Each model line’s newest generation is labelled and fully colored; earlier generations are faded. Archived combined-score diagnostics use the midpoint when bounded; their CI and rank endpoints are labelled explicitly and do not affect footprint ranking. Models missing either selected value have no point. Hover, focus or tap a point to see its model name and both selected axis values instantly. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; percentage axes normally stay at 0–100%. When Gemini 3.1 Pro is omitted from Solved axis fitting, that axis fits the other models. Points outside fitted axes are plotted to scale.</p>
   <p><label for="graph-x">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
      <label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></p>
   <p class="small muted" id="graph-legend"></p>
@@ -474,7 +475,15 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const tooltip = $('graph-tooltip');
   function hideTooltip() { tooltip.hidden = true; tooltip.textContent = ''; }
   window.addEventListener('scroll', hideTooltip, true);
-  window.addEventListener('resize', hideTooltip);
+  let resizePending = false;
+  window.addEventListener('resize', () => {
+    hideTooltip();
+    if (resizePending) return;
+    resizePending = true;
+    const update = () => { resizePending = false; renderGraph(); };
+    if (window.requestAnimationFrame) window.requestAnimationFrame(update);
+    else update();
+  });
   function renderGraph() {
     hideTooltip();
     const axes = currentAxes(), options = axisOptions();
@@ -491,30 +500,33 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort().map(company =>
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
 
-    const W = 720, H = 440, L = 66, R = 30, T = 18, B = 52;
+    // Leave a wider left gutter on narrow screens for true-scale extrapolated points.
+    const W = 720, H = 440, L = $('graph').clientWidth && $('graph').clientWidth < 600 ? 160 : 90, R = 30, T = 18, B = 52;
     const excludedAxes = [];
     function extent(axis, key) {
-      if (['resolve_rate', 'coverage'].includes(key)) return [0, 100];
-      if (!points.length) return [0, 1];
-      const others = points.filter(p => !/^Gemini 3\.1 Pro\b/i.test(p.name));
+      if (key === 'coverage') return [0, 100];
+      if (!points.length) return key === 'resolve_rate' ? [0, 100] : [0, 1];
+      const others = points.filter(p => !/^Gemini 3\.1 Pro(?: Preview)?(?: \([^)]*\))?$/i.test(p.name));
       const exclude = !selected && others.length >= 2 && others.length < points.length;
       const samples = exclude ? others : points;
       const values = samples.map(p => p[axis]);
-      if (exclude && (Math.min(...values) !== Math.min(...points.map(p => p[axis])) || Math.max(...values) !== Math.max(...points.map(p => p[axis])))) excludedAxes.push(axis);
+      const changed = exclude && (Math.min(...values) !== Math.min(...points.map(p => p[axis])) || Math.max(...values) !== Math.max(...points.map(p => p[axis])));
+      if (key === 'resolve_rate' && !changed) return [0, 100];
+      if (changed) excludedAxes.push(axis);
       const low = Math.min(...values), high = Math.max(...values);
       const padding = high > low ? (high - low) * 0.05 : Math.max(Math.abs(low) * 0.05, 1);
-      return [low - padding, high + padding];
+      return key === 'resolve_rate' ? [Math.max(0, low - padding), Math.min(100, high + padding)] : [low - padding, high + padding];
     }
     const [xmin, xmax] = extent('x', axes.x), [ymin, ymax] = extent('y', axes.y);
     const sx = x => L + (x - xmin) / (xmax - xmin) * (W - L - R), sy = y => H - B - (y - ymin) / (ymax - ymin) * (H - T - B);
-    if (excludedAxes.length) $('graph-legend').textContent += ' Gemini 3.1 Pro excluded from numeric axis fitting. Off-scale markers are not actual plotted coordinates; hover for actual values.';
+    if (excludedAxes.length) $('graph-legend').textContent += ` Gemini 3.1 Pro omitted from fitting ${excludedAxes.map(axis => `${axis.toUpperCase()} (${axis === 'x' ? xLabel : yLabel})`).join(' and ')}; outside fitted axes, plotted to scale.`;
     for (const p of points) {
       p.offscale = p.x < xmin || p.x > xmax || p.y < ymin || p.y > ymax;
-      p.px = p.x < xmin ? L - 12 : p.x > xmax ? W - R + 12 : sx(p.x);
-      p.py = p.y < ymin ? H - B + 12 : p.y > ymax ? T - 12 : sy(p.y);
+      p.px = sx(p.x);
+      p.py = sy(p.y);
     }
     const ticks = (lo, hi, axis) => Array.from({length: 5}, (_, i) => { const v = lo + (hi - lo) * i / 4; return axis === 'x' ? `<line class="axis" x1="${sx(v)}" y1="${H-B}" x2="${sx(v)}" y2="${H-B+4}"/><text class="tick" text-anchor="middle" x="${sx(v)}" y="${H-B+19}">${axisFormat(v, axes.x)}</text>` : `<line class="axis" x1="${L-4}" y1="${sy(v)}" x2="${L}" y2="${sy(v)}"/><text class="tick" text-anchor="end" x="${L-8}" y="${sy(v)+4}">${axisFormat(v, axes.y)}</text>`; }).join('');
-    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; off-scale marker, not actual plotted coordinates' : ''}${p.kind === 'all' ? '; measured ' + p.count + '/' + (data.models[p.i].footprint_population_count || data.population_count || data.task_count) + ' population attempts' : ''}`;
+    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; outside fitted axes, plotted to scale' : ''}${p.kind === 'all' ? '; measured ' + p.count + '/' + (data.models[p.i].footprint_population_count || data.population_count || data.task_count) + ' population attempts' : ''}`;
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
     const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip"></circle>`).join('');
     // Green zone: the half of each axis that is better (lower footprint/rank, higher solved/score).
@@ -546,7 +558,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       let best = null, bestCost = Infinity;
       for (const [x, y, far] of candidates) {
         const box = {x0: x, x1: x + w, y0: y, y1: y + h, far, label: true};
-        let cost = far * 12 + Math.max(0, L - box.x0, box.x1 - (W - R), T - box.y0, box.y1 - (H - B)) * 50;
+        let cost = far * 12 + (p.offscale ? 0 : Math.max(0, L - box.x0, box.x1 - (W - R), T - box.y0, box.y1 - (H - B)) * 50);
         for (const other of boxes) {
           const overlap = Math.max(0, Math.min(box.x1, other.x1) - Math.max(box.x0, other.x0)) * Math.max(0, Math.min(box.y1, other.y1) - Math.max(box.y0, other.y0));
           cost += overlap * (other.label ? 4 : other.soft ? 0.3 : 1);
@@ -558,11 +570,13 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       if (best.far) leaders.push(`<line class="leader" stroke="#000" x1="${cx}" y1="${cy}" x2="${ax}" y2="${ay}"/>`);
       overlays.push(`<span class="point-label" style="left:${(best.x0 + 2) / W * 100}%;top:${best.y0 / H * 100}%">${esc(text)}</span>`);
     });
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. The newest generation of each model line is labelled; earlier generations are faded. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values. Off-scale markers are not actual plotted coordinates.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${leaders.join('')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    const bottom = Math.max(H, ...points.map(p => p.py + 7), ...boxes.map(box => box.y1));
+    $('graph').style.marginBottom = `${Math.max(0, bottom - H) * ($('graph').clientWidth || W) / W + (bottom > H ? 16 : 0)}px`;
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. The newest generation of each model line is labelled; earlier generations are faded. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${leaders.join('')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
       const show = event => {
         const p = points[Number(circle.dataset.point)];
-        tooltip.textContent = `${p.name}${p.offscale ? ' (off-scale marker)' : ''}\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${p.kind !== 'all' ? '\n' + p.kind + ' task attempt' : ''}`;
+        tooltip.textContent = `${p.name}${p.offscale ? ' (outside fitted axes, plotted to scale)' : ''}\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${p.kind !== 'all' ? '\n' + p.kind + ' task attempt' : ''}`;
         tooltip.hidden = false;
         const rect = circle.getBoundingClientRect();
         const x = Number.isFinite(event?.clientX) ? event.clientX : rect.left + rect.width / 2;
