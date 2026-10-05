@@ -15,7 +15,7 @@ Website ranking and columns:
 
 - All six boards rank by a **footprint statistic over measured, in-scope passing AND failed attempts** across the whole frozen population, lowest first, irrespective of passing-reference availability. The statistic is the **plain mean of net units added** (`ranking_metric: measured-net-mean-v1`). A second column and chart metric, **net units added over solved attempts only (mean)** (`measured_solved_net_mean`), is sortable but does not set rank. **No trimmed mean:** the owner tried a 10% trimmed mean on 2026-10-01 and had it removed the same day; do not reintroduce it or another robust statistic without being asked. No coverage gate.
 - Default rank is never solved-only, and there is no correctness tie-break (a solved-only default ranking was tried and reverted). The solved-only mean is a sortable column, not the rank. Equal values tie; models with no measurements stay unranked.
-- Visible columns: **Rank, Model, Net units added (mean), Net units added, solved (mean), Solved, Measured** (eligible/population). Solved % is upstream context only. Never zero-fill missing measurements.
+- Visible columns: **Rank, Model, Net units added (mean), Net units added, solved (mean), Solved, Measured** (eligible/population). Solved % is upstream resolved / full frozen population, context only. Footprint is raw mean coding units, **not %**, with equal 1/N weight for each measured in-scope attempt, including failures; no correctness weighting. Exclude missing measurements, never zero-fill them.
 - Describe the ranking as *smallest measured footprint*, never *best coding model*. Negative deletions and failed no-ops may rank first; say so.
 - The 80/20 Score, its calculator data, bootstrap CI and score-rank endpoints remain only as **explicitly labelled archived graph diagnostics**. Do not reintroduce combined-score rank, and do not use its CI/rank ranges as uncertainty for the net ranking. The Score formula (`parsimony-80-20-v0.5`) is unchanged; the owner has not approved a net-only Score.
 - Churn, Per solve and the dedicated 95% CI column are removed from the UI (data remains stored).
@@ -23,11 +23,13 @@ Website ranking and columns:
 
 Page behaviour:
 
+- Chart **before** leaderboard; frozen-population **Sources** bar chart **after** leaderboard. Sources uses manifest task counts: DeepSWE Python/JS/TS/Go 34/5/35/34 with 4 attempts per task; Verified 500 and Live Python 300 with 1 attempt per task. Widths are task counts relative to the maximum, not ranking weights. Mark the active board and link reports and manifest hashes. Separate boards, never pooled.
+
 - One shared table. A task-ID text/datalist input replaces that table with the selected task's attempts (including failures); an All tasks button resets. No second task table. `footprint_tasks` keeps every recorded task ID, including ones outside the old score panel.
 - Numeric headers sort on click and reverse on a second click; missing values stay last.
 - Graph: one borderless circle per model; company colours are **OpenAI black, xAI purple, Google green, Anthropic orange, DeepSeek blue**. Task failures are disclosed via tooltip and ARIA labels, never a dashed point outline. Selectable X/Y metrics come from the table (default X = net units added, Y = Solved %). Choosing an already-used metric swaps axes. Numeric axes fit visible points with 5% padding; coverage stays 0–100%, and Solved normally stays 0–100% (exception below); constant values use ±5% (min 1 unit); empty views 0–1; negatives supported.
 - **Gemini 3.1 Pro range exclusion:** in All tasks only, exclude Gemini 3.1 Pro (including Preview and effort variants) from numeric-axis fitting when at least two other points have finite values on that axis and exclusion changes the fit. Never match Gemini 3.1 Professional or Gemini 3.1 Pro Plus, or remove any model from data, rank or table. Solved normally stays 0–100%; when this exclusion changes its fit, use the other points' 5%-padded range bounded to 0–100%. Coverage stays fixed at 0–100%, and task-view scaling is unchanged. Points outside fitted axes are extrapolated at their true coordinates using the same linear scales, never clamped or replaced with edge markers; disclose them in labels and hover, retaining actual hover/table values. Data and ranks are unchanged; no Pareto overlay.
-- **Newest generation emphasised**: `site.py` sets `latest` per model, the highest version within its model line (the name text before the version number). Newest points are full color with a permanent plain HTML name label: **8px, normal weight (400), black, no halo/shadow/border** (effort suffix dropped unless two labels would collide; every label is 10 CSS pixels to the right of its dot, vertically centered; no leader lines or variable-distance placement); earlier generations are faded and unlabelled but keep hover tooltips. This is chart emphasis only and never affects rank or the table.
+- **Newest generation emphasised**: `site.py` sets `latest` per model, the highest version within its model line (the name text before the version number). Every generation has a permanent plain HTML name label: **8px, normal weight (400), black, no halo/shadow/border** (effort suffix dropped unless two labels would collide; every label is a fixed 10 CSS pixels to the right of its dot, vertically centered; no leader lines or variable-distance placement). Newest circles and labels have full opacity; older circles use **70% opacity**, older labels **75% opacity**, and all keep hover tooltips. This is chart emphasis only and never affects rank or the table.
 - **Green better-corner square**, in the style of Artificial Analysis charts: half the plot in each dimension, at the corner that is better on both axes (lower net/churn/rank, higher solved/score). Top-left on the default axes, without any text caption; hidden when an axis has no better direction (coverage).
 - Company colors belong to points/legend swatches; all graph text is black and tooltips have no border/shadow.
 - **Light mode only**, even under a dark OS preference.
@@ -59,7 +61,7 @@ Cloudflare Pages serves `site/` at <https://parsimony.lasu.dev>; a push to `main
 
 - **Net units added:** added − deleted coding units per attempt; the board shows each model's mean over measured, in-scope passing and failed attempts. Unknown/out-of-scope records are excluded, never zeroed. Coverage differs by model and is shown in Measured.
 - **Solved:** upstream resolved count over the whole frozen population.
-- **Score (archived diagnostic):** 80% net / 20% churn percentile against frozen passing references, failures −25…0, bounds for unscored items. Bounds are not the bootstrap CI; CI never affects Score.
+- **Score (archived diagnostic, not default):** 80% net / 20% churn percentiles against frozen passing references; failed attempts receive a bounded growth/churn penalty of −25…0, with bounds for unscored items. Bounds are not the bootstrap CI; CI never affects Score.
 - **Population vs panel:** a task needs a measured, in-scope passing reference to calibrate Score. Uncalibrated tasks stay in the population and in the footprint ranking.
 
 ## Known property of the mean ranking
@@ -141,13 +143,13 @@ The parser problem is solved (0.7.0, 2026-10-01): JS/TS use the official TypeScr
 
 ## Commands
 
-Latest battery-addition validation: 250 tests passed with the exact optional parser pins; default Python run passed with 9 expected Go skips. GPT-5.5/agav is integrated as the fourth Live Python configuration; its 300 rows, artifact/audit bindings and excluded-only semantics have regression coverage. All six Node page checks passed. Population/base/analyzer audit passed for all 500 Gemini records, all 33 archived score entries reproduce exactly, and existing raw records/panel/population/report files remain unchanged. External reproducible inventory/measurement data: `/tmp/parsimony-gemini-bound`; clean old analyzer: `/tmp/parsimony-verified-measure` (temporary paths, not durable publication inputs).
+Latest validation: 253 tests passed with the exact optional parser pins; the default Python suite skips Go tests without the languages extra. GPT-5.5/agav is integrated as the fourth Live Python configuration; its 300 rows, artifact/audit bindings and excluded-only semantics have regression coverage. All six Node page checks passed. Population/base/analyzer audit passed for all 500 Gemini records, all 33 archived score entries reproduce exactly, and existing raw records/panel/population/report files remain unchanged. External reproducible inventory/measurement data: `/tmp/parsimony-gemini-bound`; clean old analyzer: `/tmp/parsimony-verified-measure` (temporary paths, not durable publication inputs).
 
 ### Before every push
 
 ```sh
 npm ci                                            # pinned TypeScript parser for JS/TS tests
-python -m unittest discover -s tests -q          # 250 tests; Go tests skip without the languages extra
+python -m unittest discover -s tests -q          # 253 tests collected; Go tests skip without the languages extra
 python -m parsimony.contribute validate submissions
 uv venv --python 3.14.7 /tmp/parsimony-checks
 uv pip install --python /tmp/parsimony-checks/bin/python '.[languages]'

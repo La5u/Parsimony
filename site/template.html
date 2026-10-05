@@ -48,8 +48,12 @@ body { overflow-x: clip; }
 #graph-legend, #company-legend { color: #000; }
 #graph .tick { fill: #000; font: 12px system-ui, sans-serif; }
 #graph circle { stroke: none; cursor: pointer; }
-#graph .older { fill-opacity: 0.28; }
+#graph .older { fill-opacity: 0.70; }
 #graph .point-label { position: absolute; font: 400 8px system-ui, sans-serif; color: #000; white-space: nowrap; pointer-events: none; transform: translate(10px,-50%); line-height: 10px; }
+#graph .point-label.older-label { opacity: 0.75; }
+.source-bar { height: 8px; background: var(--link); margin: 4px 0; }
+.source-row { margin-bottom: 16px; }
+#source-evidence { overflow-wrap: anywhere; }
 #graph .best-zone { fill: #16a34a; fill-opacity: 0.12; }
 #company-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .company-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
@@ -83,7 +87,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p>Rank is by mean net units added, lowest first, across measured in-scope attempts—including failures. The solved column averages only attempts the upstream benchmark marks solved; click it to sort by it instead. Equal means tie; models with no measurements are unranked. Partial coverage can change the order, and a few very large deletions can dominate a mean. This is smallest measured footprint, not best coding ability.</p>
   <p>Net units added means coding units added minus removed, not semantic complexity. Measured shows eligible footprints / published population. Missing or entirely excluded edits are not zero. Solved comes from the upstream benchmark and never affects footprint rank. A failed no-op or large deletion can rank first. Click headings to sort; missing values stay last.</p>
   <p>Archived combined-score diagnostics use the midpoint when bounded; their CI and rank endpoints are labelled explicitly and do not affect footprint ranking. Models missing either selected value have no point. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; percentage axes normally stay at 0–100%. Points outside fitted axes remain at their actual, true-scale positions.</p>
-  <p id="score-help">The previous combined score and its 95% CI remain available as optional graph diagnostics and in the data, but do not determine footprint rank. Its 80% net / 20% units-changed formula is unchanged.</p>
+  <p>Solved % = upstream resolved attempts / frozen attempt population × 100. Tests are not rerun by Parsimony. Footprint = sum of net coding units / N measured in-scope attempts: each attempt has equal weight 1/N, including failures. Missing measurements are not zero; solved-only footprint is separate. Benchmarks and languages are not pooled and have no benchmark weights. Default footprint uses no correctness weight.</p>
+  <p id="score-help">Archived score only: passing results blend 80% net / 20% churn per-task percentiles; failed results use the same 80/20 weights in a bounded growth/churn penalty. It never affects footprint rank. <a href="https://github.com/La5u/Parsimony/blob/main/docs/scoring.md">Full formula</a>.</p>
   <p id="ci-help">Combined-score CI endpoints are not net-unit uncertainty or inputs to footprint rank.</p>
   </details>
 
@@ -99,6 +104,20 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <button type="button" id="task-reset">All tasks</button>
   <datalist id="task-ids"></datalist>
   <p class="small muted" id="task-status" role="status" aria-live="polite"></p>
+  <section aria-labelledby="complexity">
+  <h2 id="complexity">Compare models</h2>
+  <p class="small muted">Solved %: upstream pass rate. Footprint: mean net coding units, not a %. No correctness weighting.</p>
+  <p class="small muted">Hover, focus or tap for values; all models are labelled.</p>
+  <p><label for="graph-x">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
+     <label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></p>
+  <p class="small muted" id="graph-legend"></p>
+  <div class="small" id="company-legend" aria-label="Model companies"></div>
+  <div id="graph" aria-label="Comparison of selected metrics per model"></div>
+  <div class="small" id="graph-tooltip" role="tooltip" hidden></div>
+  <p class="small muted" id="attempts-note" hidden>Each task was run four times; every measured attempt contributes to its model’s footprint.</p>
+  </section>
+
+  <h2>Leaderboard</h2>
   <div class="scroll">
     <table id="board">
       <thead>
@@ -117,15 +136,17 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="small muted" id="rank-note" style="margin-top:8px">Mean net units added, including failures. Smaller footprint ≠ better coding.</p>
   <p class="small" id="task-footer" hidden><a id="task-link" href="#">Maintainers' pull request</a></p>
 
-  <h2 id="complexity">Compare models</h2>
-  <p class="small muted">Hover, focus or tap for values; labels identify newest generations and outside points.</p>
-  <p><label for="graph-x">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
-     <label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></p>
-  <p class="small muted" id="graph-legend"></p>
-  <div class="small" id="company-legend" aria-label="Model companies"></div>
-  <div id="graph" aria-label="Comparison of selected metrics per model"></div>
-  <div class="small" id="graph-tooltip" role="tooltip" hidden></div>
-  <p class="small muted" id="attempts-note" hidden>Each task was run four times; every measured attempt contributes to its model’s footprint.</p>
+  <section id="data-sources" aria-labelledby="sources-heading" hidden>
+    <h2 id="sources-heading">Data sources</h2>
+    <p class="small muted">Separate boards—not ingredients in a combined ranking.</p>
+    <p class="small muted">Bars show frozen task counts relative to the largest source, not percentages or weights. Counts describe planned populations, not measurement eligibility.</p>
+    <div id="source-counts"></div>
+    <details class="small muted"><summary>Source contribution and evidence</summary>
+      <p>Each leaderboard uses only its own benchmark and language: 100% from that board, 0% from the others. These are source shares, not combined-score weights.</p>
+      <p id="metric-source"></p>
+      <div id="source-evidence"></div>
+    </details>
+  </section>
 
   <h2 id="method">Method</h2>
   <ul>
@@ -197,6 +218,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   $('bench-link').textContent = bench.name;
   $('bench-link').href = bench.url;
   $('results-limit').textContent = `Pass/fail comes from ${bench.results}; tests are not rerun.`;
+  $('metric-source').textContent = `${bench.name}: ${bench.results}`;
+  const sources = data.sources || [];
+  $('data-sources').hidden = sources.length === 0;
+  const maxTasks = Math.max(1, ...sources.map(s => s.tasks));
+  const sourceLink = (url, label) => /^(https?:\/\/|\.?\.?\/|[^:/?#]+\.html(?:[?#]|$))/.test(String(url || ''))
+    ? `<a href="${esc(url)}">${esc(label)}</a>` : esc(label);
+  $('source-counts').innerHTML = sources.map(s => `<div class="source-row">${sourceLink(s.board_url, s.name)}${s.active ? ' — Current board' : ' — Separate board'}<div class="source-bar" style="width:${Number.isFinite(s.tasks) && s.tasks >= 0 ? s.tasks / maxTasks * 100 : 0}%" aria-hidden="true"></div><span>${esc(s.tasks)} tasks · ${esc(s.attempts_per_task)} attempts per task · ${esc(s.population_per_model)} total planned attempts/model</span></div>`).join('');
+  $('source-evidence').innerHTML = sources.map(s => `<p>${esc(s.name)}: ${sourceLink(s.report_url, 'Report')} · ${sourceLink(s.manifest_url, 'Manifest')}<br>Manifest SHA-256: ${esc(s.manifest_sha256)}<br>Dataset SHA-256: ${esc(s.dataset_sha256)}</p>`).join('');
   $('task-link').textContent = bench.task_link;
   $('attempts-note').hidden = bench.attempts <= 1;
   if ((data.nav || []).length) {
@@ -394,16 +423,16 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const overlays = [];
     // Drop the effort suffix unless two labelled models would then share a name.
     const strip = name => name.replace(/ \([^)]*\)$/, '');
-    const shortName = name => points.filter(p => p.latest && strip(p.name) === strip(name)).length > 1 ? name : strip(name);
-    const labelled = points.filter(p => p.latest || p.offscale);
+    const shortName = name => points.filter(p => strip(p.name) === strip(name)).length > 1 ? name : strip(name);
+    const labelled = points;
     labelled.forEach(p => {
       const text = shortName(p.name) + (p.offscale ? ' (off-scale)' : '');
-      overlays.push(`<span class="point-label" data-point="${points.indexOf(p)}" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(text)}</span>`);
+      overlays.push(`<span class="point-label${p.latest ? '' : ' older-label'}" data-point="${points.indexOf(p)}" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(text)}</span>`);
     });
     const scale = ($('graph').clientWidth || W) / W;
     const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
     $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. The newest generation of each model line is labelled; earlier generations are faded. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. All models are labelled; earlier generations are lighter. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
       const show = event => {
         const p = points[Number(circle.dataset.point)];

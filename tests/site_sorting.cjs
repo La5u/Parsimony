@@ -13,6 +13,10 @@ data.models = [
   {...base, agent: 'gamma', footprint_population_count: 4, measured_churn_mean: null, name: 'Gamma', score: 5, lower: 5, upper: 5, ci: [3, 20], resolve_rate: .5,
     company: 'Anthropic', measured_net_mean: null, measured_solved_net_mean: null, measured_attempts: 0, rank_range: null},
 ];
+data.sources = [
+  {name: 'Current <source>', benchmark: 'Frozen', language: 'python', tasks: 100, attempts_per_task: 4, population_per_model: 400, active: true, board_url: 'current.html', report_url: 'https://example.org/report', manifest_url: 'https://example.org/manifest', manifest_sha256: '<hash>', dataset_sha256: 'dataset'},
+  {name: '<img src=x onerror=alert(1)>', benchmark: 'Other', language: 'go', tasks: 50, attempts_per_task: 1, population_per_model: 50, active: false, board_url: 'other.html', report_url: 'javascript:alert(1)', manifest_url: 'https://example.org/other', manifest_sha256: 'manifest', dataset_sha256: 'dataset'},
+];
 data.task_count = 4;
 data.tasks = [
   ['org__repo-1', 99, [['r', 111, 112, 10], ['r', 221, 222, 20], ['f', 331, 332, 5]]],
@@ -69,6 +73,30 @@ const browser = {innerWidth: 800, innerHeight: 600, listeners: {},
   addEventListener(event, fn) { this.listeners[event] = fn; }};
 vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc, window: browser});
 const script = html.match(/<script>\n([\s\S]*?)<\/script>/)[1];
+assert(html.indexOf('id="task-search"') < html.indexOf('id="graph-x"'));
+assert(html.indexOf('id="graph"') < html.indexOf('id="board"'));
+assert(html.indexOf('id="board"') < html.indexOf('id="data-sources"'));
+assert(html.indexOf('id="data-sources"') < html.indexOf('id="method"'));
+assert.equal(element('data-sources').hidden, false);
+assert.match(element('source-counts').innerHTML, /width:100%/);
+assert.match(element('source-counts').innerHTML, /width:50%/);
+assert.match(element('source-counts').innerHTML, /100 tasks · 4 attempts per task · 400 total planned attempts\/model/);
+assert.match(element('source-counts').innerHTML, /50 tasks · 1 attempts per task · 50 total planned attempts\/model/);
+assert.match(element('source-counts').innerHTML, /Current board/);
+assert.match(element('source-counts').innerHTML, /href="current.html">Current &lt;source&gt;<\/a>/);
+assert.doesNotMatch(element('source-counts').innerHTML, /<img|rank|contribution/i);
+assert.match(element('source-evidence').innerHTML, /href="https:\/\/example.org\/manifest">Manifest<\/a>/);
+assert.doesNotMatch(element('source-evidence').innerHTML, /javascript:|<hash>/);
+assert.equal(element('metric-source').textContent, `${data.benchmark?.name || 'SWE-bench Verified'}: ${data.benchmark?.results || "SWE-bench's published results"}`);
+const savedSources = data.sources;
+delete data.sources;
+element('parsimony-data').textContent = JSON.stringify(data);
+vm.runInNewContext(script, {document: doc, window: browser});
+assert.equal(element('data-sources').hidden, true);
+assert.equal(element('source-counts').innerHTML, '');
+data.sources = savedSources;
+element('parsimony-data').textContent = JSON.stringify(data);
+vm.runInNewContext(script, {document: doc, window: browser});
 assert.match(html, /#graph \.point-label \{ position: absolute; font: 400 8px/);
 assert.match(html, /#graph circle \{ stroke: none/);
 assert.match(html, /circle:focus-visible \{ outline: 2px solid #000; outline-offset: 4px/);
@@ -93,7 +121,7 @@ const names = () => rows().map(row => row.match(/<td class="left">(.*?)<\/td>/)?
 const graph = () => {
   const markup = element('graph').innerHTML;
   assert.doesNotMatch(markup, /best-label|class="leader"|Smaller footprint, more solved|Better on both axes/);
-  for (const label of markup.matchAll(/<span class="point-label" data-point="(\d+)" style="left:([^%]+)%;top:([^%]+)%">/g)) {
+  for (const label of markup.matchAll(/<span class="point-label(?: older-label)?" data-point="(\d+)" style="left:([^%]+)%;top:([^%]+)%">/g)) {
     const circle = markup.match(new RegExp(`<circle data-point="${label[1]}"[^>]*cx="([^"]+)" cy="([^"]+)"`));
     assert(circle, 'label must anchor to an actual dot');
     assert(Math.abs(Number(label[2]) - Number(circle[1]) / 720 * 100) < 1e-8);
@@ -152,9 +180,11 @@ click('solved_net', ['Beta', 'Alpha', 'Gamma'], 'ascending');
 assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Alpha<\/td><td>−2.0<\/td><td>7.0<\/td>/);
 click('net', ['Alpha', 'Beta', 'Gamma'], 'ascending');
 assert.doesNotMatch(graph(), /Gamma \(Anthropic\)/);
-// Newest generation: full color and a permanent name label. Earlier generations: faded, no label.
+// Every generation is labelled; earlier generations remain legible but lighter.
 assert.match(graph(), /<span class="point-label"[^>]*>Alpha<\/span>/);
-assert.doesNotMatch(graph(), /<span class="point-label"[^>]*>Beta<\/span>/);
+assert.match(graph(), /<span class="point-label older-label"[^>]*>Beta<\/span>/);
+assert.match(html, /fill-opacity: 0\.70/);
+assert.match(html, /older-label \{ opacity: 0\.75/);
 assert.match(graph(), /<circle data-point="1" data-model="Beta" class="all-point older"/);
 assert.match(graph(), /<circle data-point="0" data-model="Alpha" class="all-point"/);
 // Lower net units and higher solved are better: the green zone sits in the top-left corner.
@@ -306,7 +336,7 @@ assert(coordinates()[0] < 90 && coordinates()[1] > 388);
 assert(Number.parseFloat(element('graph').style.marginBottom) > coordinates()[1] - 440);
 assert.match(html, /height: auto; overflow: visible/);
 assert.doesNotMatch(graph(), /marker|third quadrant/i);
-assert.match(graph(), /<span class="point-label"[^>]*>Gemini 3.1 Pro \(off-scale\)<\/span>/);
+assert.match(graph(), /<span class="point-label older-label"[^>]*>Gemini 3.1 Pro \(off-scale\)<\/span>/);
 const outlier = doc.querySelectorAll('#graph circle[data-point]').find(c => c.dataset.point === '2');
 outlier.listeners.focus();
 assert.match(tooltip.textContent, /outside fitted axes, plotted to scale.*\nNet units added \(mean\): −500.0\nSolved \(%\): 8.0%/);
