@@ -42,6 +42,25 @@ class SiteTests(unittest.TestCase):
         hostile = render({**data, 'panel': '</script><script>alert(1)</script>'})
         self.assertEqual(hostile.count('</script>'), page.count('</script>'))
 
+    def test_example_and_custom_importer_are_embedded(self):
+        import html
+        import re
+
+        page = render({'models': [], 'tasks': []})
+        self.assertNotIn('__CUSTOM_BENCHMARK_JS__', page)
+        self.assertIn('id="custom-file"', page)
+        self.assertIn('function validateBenchmark(data)', page)
+        examples = re.findall(r'<pre><code>(.*?)</code></pre>', page, re.S)
+        self.assertEqual(len(examples), 2)
+        functions = []
+        for example in examples:
+            namespace = {}
+            exec(html.unescape(example), namespace)
+            functions.append(namespace['has_negative'])
+        for values, expected in [([], False), ([0, 2], False), ([3, -1, 2], True), ([-1], True)]:
+            for function in functions:
+                self.assertEqual(function(values), expected)
+
     def test_confidence_intervals_do_not_affect_scores_or_order(self):
         records = [record('a', 't1', net=1, churn=1), record('a', 't2', net=2, churn=2),
                    record('b', 't1', net=9, churn=9), record('b', 't2', resolved=False)]

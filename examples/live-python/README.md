@@ -17,6 +17,7 @@ bytes and the underlying HF provenance.
 | DeepSeek V4.1 Flash / TianxiCode 0.1.423 | 204 | 287 (202 successful, 85 failed) |
 | GPT-5.6 Sol / Slingshot 3.4.0 | 211 | 288 (205 successful, 83 failed) |
 | Claude Opus 4.8 / AiWork.Code | 102 | 276 (102 successful, 174 failed) |
+| GPT-5.5 / agav0.2.0-beta.2 | 186 | 262 (185 successful, 77 failed) |
 
 The unchanged static measurements were made from clean analyzer commit
 `de633004011e1b6c8dda81d234baefc024a88b75`, analyzer **0.6.0-beta**, Python
@@ -28,9 +29,15 @@ record is relabelled to the newer scoring/site implementation commit.
 ## Current website: net-unit footprint ranking
 
 The website now ranks by **mean net units added, ascending**, over all measured
-in-scope attempts, including 85 DeepSeek failures, 83 Slingshot failures and 174
-AiWork failures. Upstream Solved % is separate context. Measured/population
-coverage remains visible (287/300, 288/300 and 276/300). Missing footprints are
+in-scope attempts, including 85 DeepSeek failures, 83 Slingshot failures, 174
+AiWork failures and 77 agav failures. Upstream Solved % is separate context. Eligible/population
+coverage remains visible (287/300, 288/300, 276/300 and 262/300). GPT-5.5 / agav
+has mean net units **50.38549618320611** across eligible attempts and
+**57.52972972972973** over eligible solved attempts only. Its 271 completed
+full-file analyses (`analysis_status=ok`) include 9 excluded-only attempts
+(1 success, 8 failures), which are not ranking inputs: successful analysis does
+not guarantee an in-scope footprint. The 29 empty-patch-only records
+have unknown correctness and no footprint metrics. Missing footprints are
 never zero; models without measurements are unranked. Equal values tie. A failed no-op or large
 deletion can rank first: this is footprint comparison, not a coding-ability rank.
 
@@ -55,14 +62,15 @@ retain the existing outcome-conditioned bounds. These enclose every admissible
 unchanged score; they do not create metrics, references or point estimates.
 
 Thus every configuration has **300 contributions** and a bounded overall Score.
-Default ordering uses the score-bound midpoint, as on other incomplete boards.
+Archived score diagnostics order by score-bound midpoint; the website's default
+ordering is mean net units, not the archived score.
 **There is no fabricated point score.** Known in-scope passing and failed
 footprints both contribute to the displayed net units, including measured
 failures whose reference calibration is missing.
 
 Rank ranges use conservative lower/upper rank envelopes within **2,000 paired
-full-population task resamples**, not just the order of bound midpoints. The two
-leading configurations overlap in rank. Bootstrap score CI/graph endpoints remain
+full-population task resamples**, not just the order of bound midpoints. Both adjacent pairs among the top three
+configurations overlap in archived score rank. Bootstrap score CI/graph endpoints remain
 computed separately; there is no dedicated CI table column. Removing a reference
 model in sensitivity analysis retains all 300 tasks with enlarged uncertainty.
 Reference/task membership does not drift with candidate success or UI filtering.
@@ -98,8 +106,14 @@ Specific caveats retained from the source review:
 - AiWork: adaptive reasoning effort, submitted-patch transformations and grader
   errors/empty-only outcome. Do not label this a constant-xhigh run or independently
   certify absence of future-fix contamination.
+- agav: GPT-5.5 and agav0.2.0-beta.2 are source-declared labels, not provider
+  authentication or independent grading. The 29 empty-patch-only outcomes remain
+  unknown, not failed no-ops. The targeted release review does not establish that
+  every detailed report was audited or certify historical protocol compliance.
 
-Detailed evidence: [targeted DeepSeek review](../../docs/deepseek-v4.1-live-release-review.md),
+Detailed evidence: [targeted GPT-5.5 / agav review](../../docs/agav-gpt55-live-release-review.md),
+[agav discovery metadata](../benchmark-discovery/agav-gpt55-release.json),
+[targeted DeepSeek review](../../docs/deepseek-v4.1-live-release-review.md),
 [full source/protocol/terms audit](../../docs/priority-live-provenance.md),
 [preimage/coverage archive](../priority-live/README.md),
 [coverage audit](coverage.json), [sensitivity](stability.md).
@@ -110,7 +124,7 @@ The population and panel are frozen; do not overwrite them when adding entrants.
 A new reference pool requires a separately named snapshot.
 
 ```sh
-RECORDS='examples/live-python/deepseek-v4.1-flash.jsonl examples/live-python/gpt-5.6-sol.jsonl examples/live-python/claude-opus-4.8.jsonl'
+RECORDS='examples/live-python/deepseek-v4.1-flash.jsonl examples/live-python/gpt-5.6-sol.jsonl examples/live-python/claude-opus-4.8.jsonl examples/live-python/gpt-5.5-agav.jsonl'
 python -m parsimony.scoring score examples/live-python/score-panel.json $RECORDS \
   --output /tmp/live-scores.json
 cmp examples/live-python/scores.json /tmp/live-scores.json
