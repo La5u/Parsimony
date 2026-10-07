@@ -2,6 +2,12 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Discovery: LiveCodeBench static feasibility pilot — 2026-10-07
+
+Bounded source refreshes confirm unchanged Verified, Live, PolyBench and complete DeepSWE metadata. Existing blockers remain: missing Codex outcomes, no Astra declared patches, sampled Gemini 3.8 HTTP 403s. Body-level discovery verified six LiveCodeBench exports with common 1,055-task membership and paired code/outcomes; all 327 BigCodeBench sample exports lack paired outcomes.
+
+A checksum-bound **NONPUBLISHED** complete-file Python pilot freezes sample index 0 and all exported tasks. Clean `2645271` / Python 3.14.7 measured 6,263/6,330 attempts, retaining 24 empty bodies and 43 parse errors as null footprints. It uses existing docstring-free coding units including EndBlock; raw code and scalar rows remain external. Summary/hash metadata, frozen population and reproduction driver are committed. No target code, evaluations or model calls ran. No seventh website board or new frontier-model claim: dataset/provenance/configuration release review remains pending. Existing website records, rankings and scores are unchanged. Twelve regression tests added; 265 pinned-parser tests and all six Node page checks pass. See `examples/livecodebench-pilot/README.md` and `docs/new-model-discovery.md`.
+
 ## Battery: Gemini 3.5 Flash added to Verified — 2026-10-02
 
 Fresh public listings confirm unchanged Live, PolyBench and Verified pins; DeepSWE leaderboard/release hashes are unchanged, but the full trials/config refresh timed out. The candidate census records that limitation rather than claiming fresh patch availability.
