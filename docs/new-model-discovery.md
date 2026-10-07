@@ -14,6 +14,14 @@ The only names outside the existing 26-model DeepSWE inventory remain GPT-6 Astr
 
 Opus 5 and Sonnet 5 max configurations are already measured on all four DeepSWE language boards. Do not duplicate them or relabel as 5.5. No GPT-6.1, Ara, Opus 5.5 or Sonnet 5.5 generated-code export was located in the inspected inventories; this is not proof of global absence.
 
+## 2026-10-07 refresh and fresh-code pilot
+
+Bounded fresh checks retrieved complete DeepSWE metadata and GitHub trees for Verified, Live and PolyBench. All known revisions/hashes remain unchanged; no new existing-board export was located. GPT-5.2 Codex outcomes still returned 404, Astra still declares no patches, and four Gemini 3.8 Flash success/failure patch probes returned 403. These are sampled access results, not proof that no other export exists. Numerical evidence: [`model-battery-refresh-2026-10-07.json`](../examples/benchmark-discovery/model-battery-refresh-2026-10-07.json).
+
+New body-level discovery verified six LiveCodeBench Python exports with the same complete 1,055-task membership and paired Boolean outcomes. A [NONPUBLISHED static pilot](../examples/livecodebench-pilot/README.md) now freezes that export population and sample index 0, with checksum-bound inputs and regression tests. This adds a concrete benchmark route and the EXAONE/Qwen model families to discovery, not a published board or new frontier-model claim. Generation configurations differ, and dataset/rights provenance still needs release review.
+
+BigCodeBench v0.2.4's complete 94,704,640-byte archive was retrieved and all 327 exports / 156 model labels inspected. It contains no paired outcome fields or outcome-result members; one Sonnet export has duplicate task records. Sanitized/calibrated filenames do not establish correctness. Exact asset hash, body counts and blockers: [`fresh-code-refresh-2026-10-07.json`](../examples/benchmark-discovery/fresh-code-refresh-2026-10-07.json).
+
 ## Existing-source revisions
 
 Fresh public revision checks still resolve to:
