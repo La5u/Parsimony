@@ -25,7 +25,7 @@ python examples/benchmark-discovery/measure-livecodebench.py \
 
 Repeat `--export` for up to all 18 frozen configurations (quote specifications containing spaces). The driver rejects changed hashes, any export subset other than its exact pinned membership, revision mismatches and dirty tracked code. Numerical rows include task IDs, outcomes, statuses and hashes only. Metadata binds the manifest, input, output rows, script, analyzer sources and commit. Keep raw downloads external; do not commit code, contest statements, prompts or reasoning.
 
-## Measured feasibility results
+## Initial six-configuration feasibility results
 
 Clean analyzer commit `2645271` / Python 3.14.7 completed **6,263 measurements / 6,330 attempts**, preserving all 1,055 tasks per configuration. Input/output/analyzer bindings and exact means are in [`measurement-summary.json`](measurement-summary.json); per-attempt scalar rows remain external and reproducible with the driver.
 
@@ -39,6 +39,29 @@ Clean analyzer commit `2645271` / Python 3.14.7 completed **6,263 measurements /
 | Qwen3 235B A22B | 1,051 | 848 | 165.72 | 139.98 |
 
 These are feasibility statistics, not a model-quality ranking. The 67 unavailable footprints are 24 empty bodies and 43 parse errors; all outcomes remain recorded. No no-generation outcome is inferred from an empty body.
+
+## Expanded 18-configuration snapshot
+
+[`measurement-summary-18.json`](measurement-summary-18.json) combines the unchanged original six metadata records with **12 new configurations**, measured from clean `cbe8768` / Python 3.14.7. The analyzer source hash and exact unit definition match the original pilot. Unchanged inputs were not remeasured. Total: **17,353 eligible static measurements / 18,990 retained task-attempt slots**. Missing footprints remain explicit: **1,209 absent tasks, 43 missing code lists, 318 empty bodies and 67 syntax errors**.
+
+| Additional source configuration | Exported tasks | Measured / 1,055 | Observed source solved / 1,055 | Mean units, all measured |
+|---|---:|---:|---:|---:|
+| GPT-4o 2024-08-06 | 1,055 | 1,047 | 402 | 119.36 |
+| o3 High | 1,055 | 991 | 894 | 155.66 |
+| o4-mini High | 1,055 | 1,038 | 921 | 183.20 |
+| Grok 3 Mini High | 1,055 | 958 | 824 | 152.94 |
+| Llama 3.3 70B Instruct | 713 | 707 | 257* | 104.08 |
+| Mistral Large | 880 | 878 | 328* | 123.51 |
+| Codestral Latest | 880 | 876 | 315* | 111.50 |
+| QwQ Max Preview | 880 | 875 | 704* | 158.33 |
+| Qwen 2.5 Coder 32B Instruct | 713 | 657 | 339* | 113.30 |
+| DeepSeek V3 | 1,055 | 957 | 525 | 135.87 |
+| Claude Opus 4 Thinking | 1,055 | 1,052 | 743 | 123.92 |
+| Claude Sonnet 4 Thinking | 1,055 | 1,054 | 723 | 125.22 |
+
+`*` Partial export: only observed successes are known; missing-task outcomes are **unknown**, not failures. Observed solved / 1,055 is a lower bound, not a complete rate. Exact unknown-outcome intervals and solved-only means are in each numerical metadata entry. Do not rank these as coding ability, infer provider identity from source labels, or compare configuration variants as controlled reasoning-effort experiments.
+
+To reproduce the initial six byte-identically use driver/manifest at `2645271`; to reproduce new measurements use the 18-binding manifest and driver at `cbe8768`. Each metadata record retains its original manifest, script and clean analyzer hashes rather than being relabelled to the latest commit. Raw caches and attempt rows remain external.
 
 ## Release blockers
 

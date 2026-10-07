@@ -2,6 +2,12 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Discovery: 12 more fresh-code configurations; Seed-OSS conflict — 2026-10-07
+
+Expanded the NONPUBLISHED LiveCodeBench pilot from six to **18 configurations**, adding GPT-4o, o3/o4-mini High, Grok 3 Mini High, Llama 3.3, Mistral Large, Codestral, QwQ, Qwen 2.5 Coder, DeepSeek V3 and Claude 4 Thinking variants. Clean `cbe8768` measured only new checksum-bound inputs; original six exports/metadata remain unchanged. Total **17,353 measurements / 18,990 retained task-attempt slots**; explicit missing states comprise 1,209 absent tasks, 43 absent code lists, 318 empty bodies and 67 parse errors. Exact subset-export bindings preserve the full frozen population; unknown outcomes stay unknown, with observed solve-fraction bounds. No board or model-quality ranking is implied.
+
+Deeper Seed-OSS Live auditing found substantial rollout/prediction patch conflicts, so its footprint release is withheld despite usable touched-file preimages. A bounded BigCodeBench search still lacks exact paired per-task outcomes; the official requests dataset is access-restricted. Added four regression tests (269 total with pinned parsers). See `examples/livecodebench-pilot/README.md` and `docs/seedoss-live-candidate-review.md`. No target code, model APIs or paid evaluations ran; existing website boards are unchanged.
+
 ## Discovery: LiveCodeBench static feasibility pilot — 2026-10-07
 
 Bounded source refreshes confirm unchanged Verified, Live, PolyBench and complete DeepSWE metadata. Existing blockers remain: missing Codex outcomes, no Astra declared patches, sampled Gemini 3.8 HTTP 403s. Body-level discovery verified six LiveCodeBench exports with common 1,055-task membership and paired code/outcomes; all 327 BigCodeBench sample exports lack paired outcomes.
