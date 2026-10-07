@@ -1,4 +1,4 @@
-# Session handoff — 2026-10-02
+# Session handoff — 2026-10-07
 
 Current-state snapshot only. History lives in [CHANGELOG.md](CHANGELOG.md) and `git log`; older handoff text is in git history (`git show 9c02b9a:HANDOFF.md`). **Replace this file's facts when they change instead of appending dated sections.**
 
@@ -74,7 +74,11 @@ On Verified a few failed mass deletions decide the top ranks: Llama 4 Maverick i
 
 **Recommended direction: recent models on supported Python/JS/TS/Go tracks first, not another ranking redesign or Java/Rust expansion.** Start with public exports on an existing board's frozen population and, where possible, the same harness. Cross-harness Live additions remain model + agent configurations, not controlled model-only comparisons. This is a plan, not a claim that new exports have been found.
 
-Latest discovery: **2026-10-02** fresh complete GitHub trees for Live, PolyBench and Verified match their stored pins; DeepSWE leaderboard/release hashes are unchanged. Full DeepSWE trials/config refresh timed out, so do not claim a fresh 26-config patch-availability check. Census: `examples/benchmark-discovery/model-battery-refresh-2026-10-02.json`. The accessible Gemini 3.5 Verified addition is now complete; next concrete supported-language work is Live GPT-5.6 Sol JS/TS remeasurement, or a newly available public export. Retry DeepSWE discovery with bounded requests rather than an unbounded full config probe.
+Latest discovery: **2026-10-07** complete GitHub trees for Live, PolyBench and Verified match their stored pins. Complete DeepSWE trials/release/leaderboard hashes are unchanged: 70 configs / 28 model names, Astra has no declared patches; four representative Gemini 3.8 GETs returned 403. This is not a full usable-config patch-availability refresh. GPT-5.2 Codex outcome probes still returned 404. Census: `examples/benchmark-discovery/model-battery-refresh-2026-10-07.json`.
+
+New benchmark feasibility: six complete LiveCodeBench Python exports share 1,055 tasks (2023-05-07–2025-04-06). `examples/livecodebench-pilot/` freezes input hashes, membership and sample index 0; a clean `2645271` / Python 3.14.7 static pilot measured 6,263/6,330 attempts, with 24 empty-code and 43 parse-error footprints remaining null. Exact means and analyzer/output bindings are in `measurement-summary.json`. This is **NONPUBLISHED**, not a seventh website board: pinned benchmark-dataset corroboration, rights/numerical-publication review and configuration evidence remain blockers. Model labels are Opus 4, Sonnet 4, Gemini 2.5 Pro, DeepSeek R1-0528, EXAONE 4.0 and Qwen3; do not call them newly released frontier models. Raw code and scalar attempt rows stay external; the driver reproduces them. All 327 BigCodeBench sample exports were body-inspected but have no paired outcomes. Evidence: `examples/benchmark-discovery/fresh-code-refresh-2026-10-07.json`.
+
+Next existing-board work remains Live GPT-5.6 Sol JS/TS remeasurement or a newly available public export. Fresh-code release work is separate and must not pool units with repository patches.
 
 Next-session discovery checklist:
 
@@ -143,13 +147,13 @@ The parser problem is solved (0.7.0, 2026-10-01): JS/TS use the official TypeScr
 
 ## Commands
 
-Latest validation: 253 tests passed with the exact optional parser pins; the default Python suite skips Go tests without the languages extra. GPT-5.5/agav is integrated as the fourth Live Python configuration; its 300 rows, artifact/audit bindings and excluded-only semantics have regression coverage. All six Node page checks passed. Population/base/analyzer audit passed for all 500 Gemini records, all 33 archived score entries reproduce exactly, and existing raw records/panel/population/report files remain unchanged. External reproducible inventory/measurement data: `/tmp/parsimony-gemini-bound`; clean old analyzer: `/tmp/parsimony-verified-measure` (temporary paths, not durable publication inputs).
+Latest validation: 265 tests passed with Python 3.14.7 and the exact optional parser pins (12 new LiveCodeBench pilot tests); the default Python suite skips Go tests without the languages extra. GPT-5.5/agav is integrated as the fourth Live Python configuration; its 300 rows, artifact/audit bindings and excluded-only semantics have regression coverage. All six Node page checks passed. Population/base/analyzer audit passed for all 500 Gemini records, all 33 archived score entries reproduce exactly, and existing raw records/panel/population/report files remain unchanged. External reproducible inventory/measurement data: `/tmp/parsimony-gemini-bound`; clean old analyzer: `/tmp/parsimony-verified-measure` (temporary paths, not durable publication inputs).
 
 ### Before every push
 
 ```sh
 npm ci                                            # pinned TypeScript parser for JS/TS tests
-python -m unittest discover -s tests -q          # 253 tests collected; Go tests skip without the languages extra
+python -m unittest discover -s tests -q          # 265 tests collected; Go tests skip without the languages extra
 python -m parsimony.contribute validate submissions
 uv venv --python 3.14.7 /tmp/parsimony-checks
 uv pip install --python /tmp/parsimony-checks/bin/python '.[languages]'
