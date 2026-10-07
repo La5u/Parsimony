@@ -26,7 +26,11 @@ def manifest_for(source, ids, models=('Model',)):
     return dict(revision='a' * 40, population_size=len(ids), task_ids=ids,
                 membership_sha256=pilot.membership_hash(ids),
                 source_bindings=[dict(model=model, filename='Scenario.codegeneration_1_0.2_eval_all.json',
-                                      sha256=pilot.digest(source.read_bytes())) for model in models])
+                                      sha256=pilot.digest(source.read_bytes()),
+                                      export_population_size=len(json.loads(source.read_bytes())),
+                                      export_membership_sha256=pilot.membership_hash(
+                                          r['question_id'] for r in json.loads(source.read_bytes())))
+                                 for model in models])
 
 
 class PilotTests(unittest.TestCase):
@@ -131,13 +135,18 @@ class PilotTests(unittest.TestCase):
             source = Path(tmp) / 'input'
             source.write_text(json.dumps([record()]))
             valid = manifest_for(source, ['a'])
-            for kind in ('artifact', 'subset', 'revision', 'binding'):
+            for kind in ('artifact', 'subset', 'membership', 'foreign', 'revision', 'binding'):
                 manifest = json.loads(json.dumps(valid))
                 if kind == 'artifact':
                     manifest['source_bindings'][0]['sha256'] = '0' * 64
                 elif kind == 'subset':
-                    manifest.update(task_ids=['a', 'b'], population_size=2,
-                                    membership_sha256=pilot.membership_hash(['a', 'b']))
+                    manifest['source_bindings'][0].update(
+                        export_population_size=2,
+                        export_membership_sha256=pilot.membership_hash(['a', 'b']))
+                elif kind == 'membership':
+                    manifest['source_bindings'][0]['export_membership_sha256'] = '0' * 64
+                elif kind == 'foreign':
+                    manifest.update(task_ids=['b'], membership_sha256=pilot.membership_hash(['b']))
                 elif kind == 'revision':
                     manifest['revision'] = 'b' * 40
                 else:
@@ -193,6 +202,81 @@ class PilotTests(unittest.TestCase):
         with patch.object(pilot.sys, 'version_info', (3, 14, 7)), patch.object(pilot.subprocess, 'check_output', side_effect=['', 'script', b'not script']):
             with self.assertRaisesRegex(ValueError, 'byte-equal'):
                 pilot.analyzer_identity()
+
+    def test_partial_export_and_space_labels(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source, output = Path(tmp) / 'input', Path(tmp) / 'output'
+            source.write_text(json.dumps([record('a', [], [True])]))
+            model = 'Model (High)'
+            manifest = manifest_for(source, ['a', 'b'], (model,))
+            with patch.object(pilot, 'analyzer_identity', return_value={}), \
+                    patch.object(pilot, 'load_manifest', return_value=(manifest, 'hash')):
+                pilot.main(['--export', f'{model}=Scenario.codegeneration_1_0.2_eval_all.json={source}',
+                            '--output-dir', str(output), '--source-revision', 'a' * 40])
+            rows = [json.loads(line) for line in (output / f'{model}.rows.jsonl').read_text().splitlines()]
+            self.assertEqual([r['status'] for r in rows], ['missing_code_list', 'missing_task'])
+            self.assertEqual([r['upstream_solved'] for r in rows], [True, None])
+            self.assertTrue(all(r['code_sha256'] is None and r['net_units'] is None for r in rows))
+            meta = json.loads((output / f'{model}.metadata.json').read_text())
+            self.assertIn('/Model%20%28High%29/', meta['source_url'])
+            summary = meta['summary']
+            self.assertEqual(summary['source_export_population'], 1)
+            self.assertEqual(summary['known_outcome_population'], 1)
+            self.assertEqual(summary['unknown_outcome_population'], 1)
+            self.assertEqual(summary['upstream_solved'], 1)
+            self.assertEqual(summary['source_reported_solved_fraction_interval'], [0.5, 1.0])
+            self.assertTrue(summary['source_partial_population'])
+            self.assertIsNone(summary['mean_measured_all_outcomes'])
+
+    def test_empty_code_list_requires_complete_boolean_grades(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / 'input'
+            for samples in (1, 10):
+                source.write_text(json.dumps([record(codes=[], grades=[False] * samples)]))
+                records, _ = pilot.load_export(source, samples)
+                self.assertFalse(pilot.measure(records)[0]['upstream_solved'])
+                for grades in ([], [False] * (samples - 1), [1] * samples):
+                    source.write_text(json.dumps([record(codes=[], grades=grades)]))
+                    with self.assertRaises(ValueError):
+                        pilot.load_export(source, samples)
+            source.write_text(json.dumps([record(codes=['x=1'], grades=[True] * 10)]))
+            with self.assertRaises(ValueError):
+                pilot.load_export(source, 10)
+
+    def test_old_six_complete_bindings_preserve_outcomes(self):
+        rows = pilot.measure([record('a'), record('b', [' '], [False])], ['a', 'b'])
+        summary = pilot.summarize(rows)
+        self.assertEqual(summary['upstream_solved_fraction'], 0.5)
+        self.assertEqual(summary['unknown_outcome_population'], 0)
+        self.assertEqual(summary['source_reported_solved_fraction_interval'], [0.5, 0.5])
+        self.assertFalse(summary['source_partial_population'])
+        with tempfile.TemporaryDirectory() as tmp:
+            source, output = Path(tmp) / 'input', Path(tmp) / 'output'
+            source.write_text(json.dumps([record('a'), record('b', [' '], [False])]))
+            models = tuple(f'Model{i}' for i in range(6))
+            manifest = manifest_for(source, ['a', 'b'], models)
+            args = []
+            for model in models:
+                args.extend(['--export', f'{model}=Scenario.codegeneration_1_0.2_eval_all.json={source}'])
+            with patch.object(pilot, 'analyzer_identity', return_value={}), \
+                    patch.object(pilot, 'load_manifest', return_value=(manifest, 'hash')):
+                pilot.main(args + ['--output-dir', str(output), '--source-revision', 'a' * 40])
+            self.assertEqual(list(json.loads((output / 'summary.json').read_text()).values()), [summary] * 6)
+
+    def test_versioned_real_manifest_preserves_initial_snapshot(self):
+        original = json.loads((SCRIPT.parents[1] / 'livecodebench-pilot/population.json').read_text())
+        expanded, _ = pilot.load_manifest()
+        self.assertEqual(expanded['task_ids'], original['task_ids'])
+        self.assertEqual(expanded['population_size'], 1055)
+        self.assertEqual(expanded['membership_sha256'], original['membership_sha256'])
+        self.assertEqual(len(expanded['source_bindings']), 18)
+        for old, new in zip(original['source_bindings'], expanded['source_bindings']):
+            self.assertEqual({key: new[key] for key in old}, old)
+            self.assertEqual(new['export_population_size'], 1055)
+            self.assertEqual(new['export_membership_sha256'], original['membership_sha256'])
+        self.assertEqual(sorted(binding['export_population_size'] for binding in expanded['source_bindings']),
+                         [713] * 2 + [880] * 3 + [1055] * 13)
+        self.assertEqual(sum(binding['missing_code_lists'] for binding in expanded['source_bindings']), 43)
 
     def test_cli_guards(self):
         with patch.object(pilot.sys, 'version_info', (3, 14, 6)):

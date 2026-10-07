@@ -1,19 +1,21 @@
 # LiveCodeBench Python — static pilot (not a published board)
 
-Six complete generated-code exports share **1,055 tasks**, dated 2023-05-07 through 2025-04-06. Source labels: Claude Opus 4, Claude Sonnet 4, Gemini 2.5 Pro 06-05, DeepSeek R1-0528, EXAONE 4.0 32B and Qwen3 235B A22B. These are newly audited benchmark candidates, **not new 2026 frontier models**.
+The initial six complete generated-code exports share **1,055 tasks**, dated 2023-05-07 through 2025-04-06: Claude Opus 4, Claude Sonnet 4, Gemini 2.5 Pro 06-05, DeepSeek R1-0528, EXAONE 4.0 32B and Qwen3 235B A22B. An expanded snapshot binds **18 configurations** to the same full population, adding GPT-4o, o3/o4-mini High, Grok 3 Mini High, Llama 3.3, Mistral Large, Codestral, QwQ, Qwen 2.5 Coder, DeepSeek V3 and Opus/Sonnet 4 Thinking. These are newly audited benchmark candidates, **not new 2026 frontier models**.
 
-`population.json` freezes all task IDs, revision, input hashes and sample index **0**, regardless of outcome. Discovery evidence: [`fresh-code-refresh-2026-10-07.json`](../benchmark-discovery/fresh-code-refresh-2026-10-07.json). Samples per task differ (1, 4 or 10), as do filename-reported temperatures (0.2 or 0.6). This is not a controlled model-only comparison or a reproduction of multi-sample pass@1 estimates.
+Original `population.json` and `measurement-summary.json` remain immutable six-configuration snapshots, reproducible with the driver at `2645271`. Current `population-18.json` versions the source bindings without changing full task membership or sample index **0**. Five exports cover only 713 or 880 tasks; absent tasks remain unknown outcomes and null footprints in the full 1,055-task population. Grok and DeepSeek V3 have 13 and 30 missing entire code lists with available Boolean outcomes; those footprints remain null, not inferred zeros. Other malformed code/grade pairings are rejected.
+
+Discovery evidence: [`initial audit`](../benchmark-discovery/fresh-code-refresh-2026-10-07.json) and [`expansion audit`](../benchmark-discovery/livecodebench-expansion-2026-10-07.json). The expansion census's `blocked_for_shared1055` describes incompatibility with the original **complete-export-only** driver; the versioned retained-population policy explicitly records exact subset membership and missing artifacts instead of silently treating them as complete. Source sample counts/temperatures differ. This is not a controlled model-only comparison or a reproduction of multi-sample pass@1 estimates.
 
 ## Measurement
 
 The pilot statically parses extracted `code_list[0]` with Python **3.14.7**. It uses Parsimony's docstring-free `unit_lines` coding units, including EndBlock markers. Complete submitted files count, without repository/path exclusions. The baseline is empty: added = net = submitted units; deleted = 0. This fresh-code scope is separate from SWE implementation-patch boards; never pool them.
 
-Failures remain measured attempts. Empty bodies and syntax errors retain null footprints, not zero. Source-reported `graded_list[0]` Boolean outcomes retain the full denominator. No generated code, tests, imports, model APIs or target environment is executed.
+Failures remain measured attempts. Empty bodies, absent code lists/tasks and syntax errors retain null footprints, not zero. Source-reported `graded_list[0]` Boolean outcomes retain the full denominator; absent task outcomes stay unknown. For partial exports, observed solved / 1,055 is explicitly a lower bound with an unknown-outcome interval, not a complete solve rate. No generated code, tests, imports, model APIs or target environment is executed.
 
 Run from a clean committed checkout; outputs must be external:
 
 ```sh
-# Fetch each population.json source_bindings URL into external storage;
+# Fetch each population-18.json source_bindings URL into external storage;
 # verify its sha256, then pass the original model and source filename.
 python examples/benchmark-discovery/measure-livecodebench.py \
   --source-revision 6ca212e9c2039373f6e5069d37ffa9db66e23736 \
@@ -21,7 +23,7 @@ python examples/benchmark-discovery/measure-livecodebench.py \
   --output-dir /external/new-pilot-output
 ```
 
-Repeat `--export` for up to all six frozen configurations. The driver rejects changed hashes, subset populations, revision mismatches and dirty tracked code. Numerical rows include task IDs, outcomes, statuses and hashes only. Metadata binds the manifest, input, output rows, script, analyzer sources and commit. Keep raw downloads external; do not commit code, contest statements, prompts or reasoning.
+Repeat `--export` for up to all 18 frozen configurations (quote specifications containing spaces). The driver rejects changed hashes, any export subset other than its exact pinned membership, revision mismatches and dirty tracked code. Numerical rows include task IDs, outcomes, statuses and hashes only. Metadata binds the manifest, input, output rows, script, analyzer sources and commit. Keep raw downloads external; do not commit code, contest statements, prompts or reasoning.
 
 ## Measured feasibility results
 

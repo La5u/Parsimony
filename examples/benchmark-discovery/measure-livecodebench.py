@@ -2,7 +2,7 @@
 """NONPUBLISHED standalone fresh-code pilot; never executes submissions.
 
 Usage: --export MODEL=Scenario.codegeneration_1_0.2_eval_all.json=/local/export
-(repeat up to six times) --output-dir /external/new-directory
+(repeat up to the number of frozen source bindings) --output-dir /external/new-directory
 Source filenames disclose upstream configuration, not a verified runtime config.
 """
 from __future__ import annotations
@@ -24,7 +24,7 @@ from urllib.parse import quote
 from parsimony.analysis import unit_lines, without_docstrings
 from parsimony import benchmark
 
-POPULATION_MANIFEST = ROOT / 'examples/livecodebench-pilot/population.json'
+POPULATION_MANIFEST = ROOT / 'examples/livecodebench-pilot/population-18.json'
 MAX_BYTES = 120_000_000
 MAX_TASKS = 1055
 POLICY = 'index 0 fixed before inspecting outcomes; no best-of selection'
@@ -70,7 +70,7 @@ def load_export(path, num_samples):
         seen.add(qid)
         codes, grades = record.get('code_list'), record.get('graded_list')
         if (not isinstance(codes, list) or not isinstance(grades, list)
-                or len(codes) != num_samples or len(grades) != num_samples
+                or len(codes) not in (0, num_samples) or len(grades) != num_samples
                 or any(not isinstance(c, str) for c in codes)
                 or any(type(g) is not bool for g in grades)):
             raise ValueError('code_list/graded_list must match declared samples and contain strings/bools')
@@ -82,14 +82,14 @@ def load_export(path, num_samples):
     return records, digest(raw)
 
 
-def measure(records):
+def measure(records, task_ids=None):
     rows = []
     for record in sorted(records, key=lambda r: r['question_id']):
-        code = record['code_list'][0]
+        code = record['code_list'][0] if record['code_list'] else None
         row = dict(question_id=record['question_id'], attempt_index=0,
-                   upstream_solved=record['graded_list'][0], code_sha256=digest(code.encode()),
-                   status='missing_code', units_added=None, units_deleted=None, net_units=None)
-        if code.strip():
+                   upstream_solved=record['graded_list'][0], code_sha256=digest(code.encode()) if code is not None else None,
+                   status='missing_code' if code is not None else 'missing_code_list', units_added=None, units_deleted=None, net_units=None)
+        if code is not None and code.strip():
             try:
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
@@ -99,14 +99,34 @@ def measure(records):
             except (SyntaxError, ValueError, RecursionError):
                 row['status'] = 'parse_error'
         rows.append(row)
-    return rows
+    present = {row['question_id'] for row in rows}
+    for qid in set(task_ids or ()) - present:
+        rows.append(dict(question_id=qid, attempt_index=0, upstream_solved=None,
+                         code_sha256=None, status='missing_task', units_added=None,
+                         units_deleted=None, net_units=None))
+    return sorted(rows, key=lambda row: row['question_id'])
 
 
 def summarize(rows):
     measured = [r['net_units'] for r in rows if r['status'] == 'measured']
     solved = [r['net_units'] for r in rows if r['status'] == 'measured' and r['upstream_solved']]
-    return dict(full_population=len(rows), upstream_solved=sum(r['upstream_solved'] for r in rows),
-                upstream_solved_fraction=sum(r['upstream_solved'] for r in rows) / len(rows),
+    known = sum(r['upstream_solved'] is not None for r in rows)
+    unknown = len(rows) - known
+    solved_count = sum(r['upstream_solved'] is True for r in rows)
+    fraction = solved_count / len(rows)
+    return dict(full_population=len(rows), upstream_solved=solved_count,
+                source_export_population=sum(r['status'] != 'missing_task' for r in rows),
+                known_outcome_population=known, unknown_outcome_population=unknown,
+                source_partial_population=bool(unknown),
+                source_reported_solved_count=solved_count,
+                source_reported_solved_fraction=fraction,
+                upstream_solved_fraction=fraction,
+                upstream_solved_fraction_meaning=('observed solved count / full population; lower bound, '
+                                                  'not a complete outcome rate' if unknown else
+                                                  'complete source-reported outcome fraction'),
+                source_reported_solved_fraction_interval=[fraction, (solved_count + unknown) / len(rows)],
+                missing_task=sum(r['status'] == 'missing_task' for r in rows),
+                missing_code_list=sum(r['status'] == 'missing_code_list' for r in rows),
                 measured_population=len(measured), solved_measured_population=len(solved),
                 mean_measured_all_outcomes=sum(measured) / len(measured) if measured else None,
                 mean_measured_solved_only=sum(solved) / len(solved) if solved else None,
@@ -158,12 +178,12 @@ def main(argv=None):
         manifest, manifest_hash = load_manifest()
         if manifest.get('revision') != revision:
             raise ValueError('source revision must match frozen manifest')
-        if not 1 <= len(args.export) <= 6:
-            raise ValueError('pilot accepts at most six models')
+        if not 1 <= len(args.export) <= len(manifest['source_bindings']):
+            raise ValueError('pilot export count exceeds frozen source bindings')
         prepared, models = [], set()
         for spec in args.export:
             model, filename, local = spec.split('=', 2)
-            if not re.fullmatch(r'[A-Za-z0-9_.()-]+', model) or model in models:
+            if not re.fullmatch(r'[A-Za-z0-9_.()-]+(?: [A-Za-z0-9_.()-]+)*', model) or model in models:
                 raise ValueError('invalid or duplicate model name')
             models.add(model)
             match = re.fullmatch(r'Scenario\.codegeneration_(\d+)_(\d+(?:\.\d+)?)_eval_all\.json', filename)
@@ -178,11 +198,11 @@ def main(argv=None):
             if artifact_hash != bindings[0]['sha256']:
                 raise ValueError('artifact SHA256 must match frozen source binding')
             membership = membership_hash(r['question_id'] for r in records)
-            if (len(records) != manifest['population_size']
-                    or membership != manifest['membership_sha256']
-                    or set(r['question_id'] for r in records) != set(manifest['task_ids'])):
-                raise ValueError('records must match full frozen task population')
-            rows = measure(records)
+            if (len(records) != bindings[0]['export_population_size']
+                    or membership != bindings[0]['export_membership_sha256']
+                    or not set(r['question_id'] for r in records) <= set(manifest['task_ids'])):
+                raise ValueError('records must match exact frozen export population and be a subset of full population')
+            rows = measure(records, manifest['task_ids'])
             metadata = dict(publication_status='NONPUBLISHED', track='standalone complete-file Python footprint',
                             measurement_scope='complete file; not repository scope',
                             source_revision=revision,
@@ -192,7 +212,9 @@ def main(argv=None):
                             source_reported_num_samples=samples, source_reported_temperature=temperature,
                             configuration_evidence='filename only; not independently verified',
                             population_manifest_sha256=manifest_hash,
-                            input_artifact_sha256=artifact_hash, full_task_membership_sha256=membership,
+                            input_artifact_sha256=artifact_hash,
+                            full_task_membership_sha256=manifest['membership_sha256'],
+                            export_population_size=len(records), export_membership_sha256=membership,
                             attempt_policy=POLICY, analyzer_identity=identity, summary=summarize(rows))
             row_bytes = ''.join(json.dumps(row, sort_keys=True) + '\n' for row in rows).encode()
             metadata['rows_sha256'] = digest(row_bytes)
