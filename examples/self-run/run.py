@@ -14,6 +14,7 @@ prompt forbids using it, and transcripts are scanned for network use afterwards.
     python examples/self-run/run.py DEEPSWE_CHECKOUT --scratch DIR [--only CONFIG] [--parallel N]
 """
 import argparse
+import fcntl
 import hashlib
 import json
 import os
@@ -61,8 +62,11 @@ def mirror_of(mirrors, repo, base):
     """
     with MIRROR_GUARD:
         lock = MIRROR_LOCKS.setdefault(repo, threading.Lock())
-    with lock:
-        mirror = mirrors / repo.replace('/', '__')
+    mirrors.mkdir(parents=True, exist_ok=True)
+    mirror = mirrors / repo.replace('/', '__')
+    # Thread lock within this process, file lock across runner processes (e.g. one per harness).
+    with lock, open(mirror.with_name(mirror.name + '.lock'), 'w') as handle:
+        fcntl.flock(handle, fcntl.LOCK_EX)
         if not mirror.exists():
             partial = mirror.with_name(mirror.name + '.partial')
             shutil.rmtree(partial, ignore_errors=True)
@@ -180,7 +184,7 @@ def run_one(config, task, attempt, args, instruction):
     started, clock = now(), time.monotonic()
     try:
         proc = subprocess.run(sandbox(work, args.scratch, binds, hides) + command, capture_output=True,
-                              text=True, timeout=RUN_TIMEOUT)
+                              text=True, timeout=RUN_TIMEOUT, stdin=subprocess.DEVNULL)
         transcript, stderr, code, timed_out = proc.stdout, proc.stderr, proc.returncode, False
     except subprocess.TimeoutExpired as exc:
         transcript = (exc.stdout or b'').decode(errors='replace') if isinstance(exc.stdout, bytes) else (exc.stdout or '')
@@ -189,6 +193,10 @@ def run_one(config, task, attempt, args, instruction):
     seconds = round(time.monotonic() - clock)
     stop, error, usage = summarize(config, transcript)
     limited = bool(error and LIMIT.search(error)) or (not transcript.strip() and LIMIT.search(stderr or ''))
+    if not limited and not timed_out and not transcript.strip():
+        # The harness crashed before the agent started: retried as a setup failure, never recorded.
+        shutil.rmtree(work, ignore_errors=True)
+        raise RuntimeError(f'harness exited {code} without a transcript: {(stderr or "")[-300:]}')
     git('add', '-A', cwd=work)
     patch = subprocess.run(['git', 'diff', '--cached', '--binary', task['base_commit']], cwd=work,
                            capture_output=True).stdout.decode('utf-8', errors='replace')
