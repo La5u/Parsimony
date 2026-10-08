@@ -5,6 +5,7 @@ const vm = require('node:vm');
 const html = fs.readFileSync(process.argv[2], 'utf8');
 const data = JSON.parse(html.match(/type="application\/json">([\s\S]*?)<\/script>/)[1]);
 delete data.external; // Pages built with --external are checked separately below.
+delete data.self_run_models; // Likewise for self-run points.
 const base = data.models[0];
 data.models = [
   {...base, agent: 'alpha', footprint_population_count: 4, measured_churn_mean: 4, name: 'Alpha', score: 10, lower: 4, upper: 16, ci: [1, 90], resolve_rate: .8,
@@ -412,4 +413,21 @@ const noGamma = structuredClone(withExternal);
 noGamma.models[2].measured_net_mean = 1;
 load(noGamma);
 assert.match(element('graph-legend').textContent, /1 configuration has no matching Artificial Analysis entry/);
-console.log('Palette, borderless markers, HTML labels, tooltips, outlier fitting, sorting, task switching and external axes passed');
+// Self-run configurations are faded, explained on hover, listed unranked and absent from task views.
+const withSelfRun = structuredClone(data);
+withSelfRun.self_run_models = [{agent: 'self-run-v1_x', name: 'Delta (high)', company: 'OpenAI', self_run: true, latest: true,
+  harness: 'pi', tasks: 2, attempts: 4, footprint_population_count: 20, measured_attempts: 4, measured_net_mean: -5,
+  measured_churn_mean: 9, measured_solved_net_mean: null, resolve_rate: null}];
+load(withSelfRun);
+assert.doesNotMatch(graph(), /Delta/); // Not graded: no point on the Solved axis.
+axis('y', 'churn');
+assert.match(graph(), /<circle[^>]*data-model="Delta \(high\)"[^>]*class="all-point self-run"/);
+assert.match(graph(), /class="point-label self-run-label"[^>]*>Delta/);
+assert.match(graph(), /Delta \(high\) \(OpenAI\)[^"]*Self-run with pi, unverified: not graded, 2 of \d+ tasks, 4\/20 planned attempts measured/);
+assert.match(element('#board tbody').innerHTML, /<tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta \(high\) · self-run<\/td><td>−5.0<\/td><td>—<\/td><td>—<\/td><td>4\/20<\/td>/);
+assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Alpha/); // Self-run never takes a rank.
+assert.equal(element('self-run-note').hidden, false);
+task('org__repo-1');
+assert.doesNotMatch(graph(), /Delta/);
+assert.doesNotMatch(element('#board tbody').innerHTML, /Delta/);
+console.log('Palette, borderless markers, HTML labels, tooltips, outlier fitting, sorting, task switching, external axes and self-run points passed');
