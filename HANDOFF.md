@@ -176,7 +176,8 @@ NAV=(--nav 'DeepSWE Python=index.html' --nav 'DeepSWE JavaScript=javascript.html
 for lang in python javascript typescript go; do
   E=examples/deepswe-$lang; PAGE=$lang; [ "$lang" = python ] && PAGE=index
   python -m parsimony.site "$E/score-panel.json" "$E/"*.jsonl \
-    --sensitivity "$E/sensitivity.json" --benchmark deepswe "${NAV[@]}" --output "site/$PAGE.html"
+    --sensitivity "$E/sensitivity.json" --benchmark deepswe "${NAV[@]}" --output "site/$PAGE.html" \
+    --external examples/external/artificial-analysis-2026-10-08.json
 done
 V=examples/mini-swe-agent-500
 python -m parsimony.site "$V/score-panel.json" "$V/"*.jsonl \
@@ -188,6 +189,8 @@ python -m parsimony.site "$L/score-panel.json" "$L/deepseek-v4.1-flash.jsonl" "$
 ```
 
 ### Inputs
+
+- Artificial Analysis axis (DeepSWE boards only): `examples/external/aa-mapping.json` is the hand-curated agent → AA model `id` mapping (match `exact` / `effort_unlabelled` / `undated_alias`, or `aa_id: null` with a reason; never borrow another effort's score). Refresh with `AA_API_KEY=... python -m parsimony.external snapshot examples/external/aa-mapping.json --output examples/external/artificial-analysis-YYYY-MM-DD.json` (`list` prints candidate ids). The key is read from the environment only; never commit it. Attribution to https://artificialanalysis.ai/ is required by the free-API terms and is shown on the page. Verified and Live have no mapping yet (older or effort-unspecified configurations).
 
 - DeepSWE tasks: `datacurve-ai/deep-swe` @ `0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea`; release `v1.1`, trials SHA256 `310cb428fe8914cff21b8edcb0b17256884efca55666bd6d6646d223c77d2ce6`. Discover configs: `python -m parsimony.deepswe --cache "$(mktemp -d)" configs --output configs.json` and compare with `examples/deepswe-python/refresh-2026-09-29.json`.
 - DeepSWE attempts become `task#1`…`task#4` in start-time order; references pool across attempts as `agent#attempt`; bootstrap resamples a task's attempts together. Most large DeepSWE patches exceed the 500-edit exact-diff threshold and use flagged approximate alignment.
