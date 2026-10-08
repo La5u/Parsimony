@@ -207,7 +207,7 @@ def main():
     parser.add_argument('checkout', type=Path, help='datacurve-ai/deep-swe checkout at the pinned commit')
     parser.add_argument('--scratch', type=Path, required=True, help='mirrors, work trees and transcripts')
     parser.add_argument('--only', action='append', help='configuration id (repeatable)')
-    parser.add_argument('--parallel', type=int, default=2, help='concurrent runs per harness')
+    parser.add_argument('--parallel', type=int, default=4, help='concurrent runs per harness')
     args = parser.parse_args()
     args.scratch = args.scratch.resolve()
     plan = json.loads((HERE / 'plan.json').read_text())
