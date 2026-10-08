@@ -58,6 +58,9 @@ body { overflow-x: clip; }
 #graph .older { fill-opacity: 0.70; }
 #graph .point-label { position: absolute; font: 400 8px system-ui, sans-serif; color: #000; white-space: nowrap; pointer-events: none; transform: translate(10px,-50%); line-height: 10px; }
 #graph .point-label.older-label { opacity: 0.75; }
+#graph .self-run { fill-opacity: 0.35; }
+#graph .point-label.self-run-label { opacity: 0.45; }
+#board tr.self-run td { color: var(--muted); }
 .source-bar { height: 8px; background: var(--link); margin: 4px 0; }
 .source-row { margin-bottom: 16px; }
 #source-evidence { overflow-wrap: anywhere; }
@@ -123,6 +126,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <div class="small" id="company-legend" aria-label="Model companies"></div>
   <div id="graph" aria-label="Comparison of selected metrics per model"></div>
   <div class="small" id="graph-tooltip" role="tooltip" hidden></div>
+  <p class="small muted" id="self-run-note" hidden></p>
   <p class="small muted" id="attempts-note" hidden>Each task was run four times; every measured attempt contributes to its model’s footprint.</p>
   </section>
 
@@ -407,6 +411,13 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   $('harness-limit').textContent = $('harness-limit').textContent.replace('Scores are relative to the reference models', 'Footprints depend on the agent configuration');
   const ranked = data.models.some((m) => m.rank_range != null);
   const external = data.external || null;
+  // Owner-run configurations: shown faded in the all-tasks view, never ranked and not graded.
+  const selfRun = data.self_run_models || [];
+  const selfRunNote = m => `Self-run with ${m.harness}, unverified: not graded, ${m.tasks} of ${taskCount} tasks, ${m.measured_attempts}/${m.footprint_population_count} planned attempts measured`;
+  if (selfRun.length) {
+    $('self-run-note').hidden = false;
+    $('self-run-note').textContent = `Faded points and grey rows are self-run by the site owner (OpenAI models via pi, Anthropic models via Claude Code) on the first 3–10 of these tasks, without the task containers. They are unverified, not graded and never ranked; footprints cover a task subset, so compare them mainly with each other and with their published anchors (GPT-5.6 Sol, Claude Sonnet 5).`;
+  }
   if (external) {
     $('external-note').hidden = $('external-help').hidden = false;
     $('external-note').innerHTML = `Default Y axis: <a href="${esc(external.attribution)}">Artificial Analysis</a> Intelligence Index, an external model-level score (snapshot ${esc(external.fetched_at.slice(0, 10))}), not measured on this benchmark. The AA Coding Index and Solved % stay selectable.`;
@@ -446,7 +457,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       sortKey = key;
       renderBoard();
     }));
-    const models = data.models.map((m, i) => ({m, i})).sort((a, b) => {
+    const models = data.models.map((m, i) => ({m, i})).concat(selected ? [] : selfRun.map(m => ({m, i: -1}))).sort((a, b) => {
       const x = metricValue(a.m, a.i, sortKey), y = metricValue(b.m, b.i, sortKey);
       if (x == null || y == null || Number.isNaN(Number(x)) || Number.isNaN(Number(y))) return (x == null || Number.isNaN(Number(x))) - (y == null || Number.isNaN(Number(y)));
       return (ascending ? x - y : y - x) || a.m.name.localeCompare(b.m.name);
@@ -459,6 +470,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         return `<tr><td class="left">${esc(m.name)}</td><td class="left ${esc(c[6] || c[0])}">${esc(result)}</td><td>${signed(metricValue(m, i, 'net'))}</td></tr>`;
       }
       const denominator = m.footprint_population_count || data.population_count || data.task_count;
+      if (m.self_run) return `<tr class="self-run" title="${esc(selfRunNote(m))}"><td>—</td><td class="left">${esc(m.name)} · self-run</td><td>${fmt(m.measured_net_mean)}</td><td>—</td><td>—</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${m.measured_attempts}/${denominator}</td></tr>`;
       return `<tr><td>${ranks.get(m.agent || m.name) ?? '—'}</td><td class="left">${esc(m.name)}</td><td>${fmt(m.measured_net_mean)}</td><td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.resolve_rate * 100)}%</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${m.measured_attempts}/${denominator}</td></tr>`;
     }).join('');
   }
@@ -532,7 +544,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const axisFormat = (value, key) => fmt(value) + (['resolve_rate', 'coverage'].includes(key) ? '%' : '');
     const points = data.models.map((m, i) => ({x: metricValue(m, i, axes.x), y: metricValue(m, i, axes.y),
       name: m.name, company: m.company || 'Other', count: m.measured_attempts, match: m.aa_match, latest: m.latest !== false,
-      kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : (selected[2][i][6] || selected[2][i][0]) === 'r' ? 'resolved' : 'unknown') : 'all', i}))
+      kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : (selected[2][i][6] || selected[2][i][0]) === 'r' ? 'resolved' : 'unknown') : 'all', i, m}))
+      .concat(selected ? [] : selfRun.map(m => ({x: metricValue(m, -1, axes.x), y: metricValue(m, -1, axes.y), name: m.name,
+        company: m.company || 'Other', count: m.measured_attempts, match: m.aa_match, latest: true, kind: 'all', i: -1, m, selfRun: true})))
       .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
     $('graph-legend').textContent = points.length
       ? 'Company colors; earlier generations faded.' + (selected ? ' Attempt status on hover or focus.' : '')
@@ -571,9 +585,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const usesExternal = [axes.x, axes.y].some(k => k.startsWith('aa_'));
     const matchNote = p => usesExternal && p.match && p.match !== 'exact'
       ? {effort_unlabelled: 'Artificial Analysis entry has no effort label', undated_alias: 'undated model ID matched to the Artificial Analysis snapshot'}[p.match] : '';
-    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; outside fitted axes, plotted to scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + p.count + '/' + (data.models[p.i].footprint_population_count || data.population_count || data.task_count) + ' population attempts' : ''}`;
+    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; outside fitted axes, plotted to scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + p.count + '/' + (p.m.footprint_population_count || data.population_count || data.task_count) + ' population attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}`;
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
-    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip"></circle>`).join('');
+    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip"></circle>`).join('');
     // Green zone: the half of each axis that is better (lower footprint/rank, higher solved/score).
     const better = {net: -1, solved_net: -1, churn: -1, rank_low: -1, rank_high: -1, resolve_rate: 1, score: 1, ci: 1, ci_high: 1, aa_coding: 1, aa_intelligence: 1};
     const bx = better[axes.x], by = better[axes.y];
@@ -590,7 +604,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const labelled = points;
     labelled.forEach(p => {
       const text = shortName(p.name) + (p.offscale ? ' (off-scale)' : '');
-      overlays.push(`<span class="point-label${p.latest ? '' : ' older-label'}" data-point="${points.indexOf(p)}" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(text)}</span>`);
+      overlays.push(`<span class="point-label${p.latest ? '' : ' older-label'}${p.selfRun ? ' self-run-label' : ''}" data-point="${points.indexOf(p)}" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(text)}</span>`);
     });
     const scale = ($('graph').clientWidth || W) / W;
     const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
@@ -599,7 +613,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
       const show = event => {
         const p = points[Number(circle.dataset.point)];
-        tooltip.textContent = `${p.name}${p.offscale ? ' (outside fitted axes, plotted to scale)' : ''}\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${matchNote(p) ? '\n' + matchNote(p) : ''}${p.kind !== 'all' ? '\n' + p.kind + ' task attempt' : ''}`;
+        tooltip.textContent = `${p.name}${p.offscale ? ' (outside fitted axes, plotted to scale)' : ''}\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${matchNote(p) ? '\n' + matchNote(p) : ''}${p.selfRun ? '\n' + selfRunNote(p.m) : ''}${p.kind !== 'all' ? '\n' + p.kind + ' task attempt' : ''}`;
         tooltip.hidden = false;
         const rect = circle.getBoundingClientRect();
         const x = Number.isFinite(event?.clientX) ? event.clientX : rect.left + rect.width / 2;

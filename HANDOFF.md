@@ -177,7 +177,8 @@ for lang in python javascript typescript go; do
   E=examples/deepswe-$lang; PAGE=$lang; [ "$lang" = python ] && PAGE=index
   python -m parsimony.site "$E/score-panel.json" "$E/"*.jsonl \
     --sensitivity "$E/sensitivity.json" --benchmark deepswe "${NAV[@]}" --output "site/$PAGE.html" \
-    --external examples/external/artificial-analysis-2026-10-08.json
+    --external examples/external/artificial-analysis-2026-10-08.json \
+    $([ "$lang" = python ] && echo --self-run examples/self-run/results/*.jsonl)
 done
 V=examples/mini-swe-agent-500
 python -m parsimony.site "$V/score-panel.json" "$V/"*.jsonl \

@@ -298,6 +298,37 @@ def build(panel, records, draws=2000, seed=42):
                 bootstrap_tasks=common, draws=draws, models=models, tasks=tasks)
 
 
+SELF_RUN_MODELS = {'gpt-6-luna': 'GPT-6 Luna', 'gpt-6-sol': 'GPT-6 Sol', 'gpt-6.1-sol': 'GPT-6.1 Sol',
+                   'gpt-6-astra': 'GPT-6 Astra', 'gpt-5.6-sol': 'GPT-5.6 Sol', 'claude-haiku-5-5': 'Claude Haiku 5.5',
+                   'claude-sonnet-5-5': 'Claude Sonnet 5.5', 'claude-opus-5-5': 'Claude Opus 5.5',
+                   'claude-sonnet-5': 'Claude Sonnet 5'}
+HARNESSES = {'pi': 'pi', 'claude-code': 'Claude Code'}
+
+
+def self_run_models(records):
+    """Unranked, ungraded owner-run configurations, summarised like measured board models."""
+    groups = {}
+    for r in records:
+        if not r.get('self_run'):
+            raise ValueError(f"{r['agent']}: not a self-run record")
+        groups.setdefault(r['agent'], []).append(r)
+    models = []
+    for agent, group in sorted(groups.items()):
+        provenance = group[0]['provenance']
+        eligible = [r['metrics'] for r in group if measured(r) and r['metrics'].get('mode') == 'full_file'
+                    and not out_of_scope(r['metrics'])]
+        name = f"{SELF_RUN_MODELS.get(provenance['model'], provenance['model'])} ({provenance['reasoning_effort']})"
+        models.append(dict(
+            agent=agent, name=name, company=company(name), self_run=True, latest=True,
+            harness=HARNESSES.get(provenance['harness'], provenance['harness']),
+            tasks=len({r['task_id'].split('#', 1)[0] for r in group}), attempts=len(group),
+            footprint_population_count=group[0]['benchmark_tasks'], measured_attempts=len(eligible),
+            measured_net_mean=statistics.fmean(m['net_units'] for m in eligible) if eligible else None,
+            measured_churn_mean=statistics.fmean(m['churn'] for m in eligible) if eligible else None,
+            measured_solved_net_mean=None, resolve_rate=None))
+    return models
+
+
 def add_rank_ranges(models, sensitivity):
     """Set each model's 95% bootstrap rank range from the stability analysis; None when it is missing."""
     boot = sensitivity['bootstrap']['models']
@@ -329,6 +360,8 @@ def main():
     parser.add_argument('--fragment', action='store_true', help='omit the <html>/<head> wrapper')
     parser.add_argument('--benchmark', choices=sorted(BENCHMARKS), default='verified')
     parser.add_argument('--nav', action='append', default=[], metavar='LABEL=URL', help='link to another board')
+    parser.add_argument('--self-run', nargs='+', default=[], metavar='JSONL',
+                        help='self-run results (examples/self-run/results); plotted faded, never ranked')
     parser.add_argument('--external', help='pinned Artificial Analysis snapshot from parsimony.external; adds axes only')
     args = parser.parse_args()
     try:
@@ -339,8 +372,12 @@ def main():
         track = data.get('measurement_track') or {}
         data['sources'] = published_sources(args.benchmark, track.get('language') or 'python')
         data['nav'] = [dict(zip(('label', 'url'), item.split('=', 1))) for item in args.nav]
+        if args.self_run:
+            data['self_run_models'] = self_run_models([r for path in args.self_run for r in read_jsonl(path)])
         if args.external:
-            data['external'] = attach(data['models'], json.loads(Path(args.external).read_text()))
+            snapshot = json.loads(Path(args.external).read_text())
+            data['external'] = attach(data['models'], snapshot)
+            attach(data.get('self_run_models', []), snapshot)
         if args.sensitivity:
             sensitivity = json.loads(Path(args.sensitivity).read_text())
             add_rank_ranges(data['models'], sensitivity)

