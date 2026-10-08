@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .benchmark import read_jsonl
 from .deepswe import display_name
+from .external import attach
 from .scoring import UNCALIBRATED, VERSION, measured, out_of_scope, score_records
 
 TEMPLATE = Path(__file__).resolve().parent.parent / 'site' / 'template.html'
@@ -328,6 +329,7 @@ def main():
     parser.add_argument('--fragment', action='store_true', help='omit the <html>/<head> wrapper')
     parser.add_argument('--benchmark', choices=sorted(BENCHMARKS), default='verified')
     parser.add_argument('--nav', action='append', default=[], metavar='LABEL=URL', help='link to another board')
+    parser.add_argument('--external', help='pinned Artificial Analysis snapshot from parsimony.external; adds axes only')
     args = parser.parse_args()
     try:
         raw = Path(args.panel).read_bytes()
@@ -337,6 +339,8 @@ def main():
         track = data.get('measurement_track') or {}
         data['sources'] = published_sources(args.benchmark, track.get('language') or 'python')
         data['nav'] = [dict(zip(('label', 'url'), item.split('=', 1))) for item in args.nav]
+        if args.external:
+            data['external'] = attach(data['models'], json.loads(Path(args.external).read_text()))
         if args.sensitivity:
             sensitivity = json.loads(Path(args.sensitivity).read_text())
             add_rank_ranges(data['models'], sensitivity)

@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const html = fs.readFileSync(process.argv[2], 'utf8');
 const data = JSON.parse(html.match(/type="application\/json">([\s\S]*?)<\/script>/)[1]);
+delete data.external; // Pages built with --external are checked separately below.
 const base = data.models[0];
 data.models = [
   {...base, agent: 'alpha', footprint_population_count: 4, measured_churn_mean: 4, name: 'Alpha', score: 10, lower: 4, upper: 16, ci: [1, 90], resolve_rate: .8,
@@ -387,4 +388,28 @@ load(right);
 assert(coordinates()[0] > 690);
 axis('y', 'net'); // Swap direction: the same numeric outlier now appears above the plot.
 assert(coordinates()[1] < 18);
-console.log('Palette, borderless markers, HTML labels, tooltips, outlier fitting, sorting and task switching passed');
+// A pinned external index becomes the default Y axis, adds one column and stays missing when unmatched.
+const withExternal = structuredClone(data);
+withExternal.external = {source: 'Artificial Analysis', attribution: 'https://artificialanalysis.ai/', fetched_at: '2026-10-08T00:00:00Z', response_sha256: 'x'};
+Object.assign(withExternal.models[0], {aa_coding: 70, aa_intelligence: 40, aa_match: 'exact'});
+Object.assign(withExternal.models[1], {aa_coding: 60, aa_intelligence: 30, aa_match: 'effort_unlabelled'});
+Object.assign(withExternal.models[2], {aa_coding: null, aa_intelligence: null, aa_match: null});
+load(withExternal);
+assert.equal(element('graph-y').value, 'aa_intelligence');
+assert.match(element('graph-y').innerHTML, /Artificial Analysis Coding Index/);
+assert.match(element('graph-y').innerHTML, /value="resolve_rate"/);
+assert(rows().every(row => [...row.matchAll(/<td\b/g)].length === 7));
+assert.match(element('#board thead').innerHTML, /AA Intelligence Index/);
+assert.match(element('external-note').innerHTML, /href="https:\/\/artificialanalysis.ai\/"/);
+assert.equal(element('external-help').hidden, false);
+assert.match(graph(), /Beta \(OpenAI\).*Artificial Analysis entry has no effort label/);
+assert.doesNotMatch(graph(), /Alpha \(Anthropic\)[^"]*no effort label/);
+axis('y', 'resolve_rate');
+assert.doesNotMatch(graph(), /no effort label/);
+assert.doesNotMatch(element('graph-legend').textContent, /Artificial Analysis/);
+axis('y', 'aa_intelligence');
+const noGamma = structuredClone(withExternal);
+noGamma.models[2].measured_net_mean = 1;
+load(noGamma);
+assert.match(element('graph-legend').textContent, /1 configuration has no matching Artificial Analysis entry/);
+console.log('Palette, borderless markers, HTML labels, tooltips, outlier fitting, sorting, task switching and external axes passed');

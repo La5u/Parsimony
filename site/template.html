@@ -89,6 +89,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p>Archived combined-score diagnostics use the midpoint when bounded; their CI and rank endpoints are labelled explicitly and do not affect footprint ranking. Models missing either selected value have no point. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; percentage axes normally stay at 0–100%. Points outside fitted axes remain at their actual, true-scale positions.</p>
   <p>Solved % = upstream resolved attempts / frozen attempt population × 100. Tests are not rerun by Parsimony. Footprint = sum of net coding units / N measured in-scope attempts: each attempt has equal weight 1/N, including failures. Missing measurements are not zero; solved-only footprint is separate. Benchmarks and languages are not pooled and have no benchmark weights. Default footprint uses no correctness weight.</p>
   <p id="score-help">Archived score only: passing results blend 80% net / 20% churn per-task percentiles; failed results use the same 80/20 weights in a bounded growth/churn penalty. It never affects footprint rank. <a href="https://github.com/La5u/Parsimony/blob/main/docs/scoring.md">Full formula</a>.</p>
+  <p id="external-help" hidden>Artificial Analysis indices are external, model-level capability scores from a pinned snapshot, not results on this benchmark. They are matched to a configuration only for the same model and reasoning effort, or where Artificial Analysis lists a single unlabelled entry or resolves an undated model ID; these weaker matches are disclosed on hover. Configurations without a match have no value and no point. They never affect footprint rank.</p>
   <p id="ci-help">Combined-score CI endpoints are not net-unit uncertainty or inputs to footprint rank.</p>
   </details>
 
@@ -107,6 +108,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <section aria-labelledby="complexity">
   <h2 id="complexity">Compare models</h2>
   <p class="small muted">Solved %: upstream pass rate. Footprint: mean net coding units, not a %. No correctness weighting.</p>
+  <p class="small muted" id="external-note" hidden></p>
   <p class="small muted">Hover, focus or tap for values; all models are labelled.</p>
   <p><label for="graph-x">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
      <label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></p>
@@ -258,6 +260,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   // Combined-score rank diagnostics are retained, but never used as footprint ranks.
   $('harness-limit').textContent = $('harness-limit').textContent.replace('Scores are relative to the reference models', 'Footprints depend on the agent configuration');
   const ranked = data.models.some((m) => m.rank_range != null);
+  const external = data.external || null;
+  if (external) {
+    $('external-note').hidden = $('external-help').hidden = false;
+    $('external-note').innerHTML = `Default Y axis: <a href="${esc(external.attribution)}">Artificial Analysis</a> Intelligence Index, an external model-level score (snapshot ${esc(external.fetched_at.slice(0, 10))}), not measured on this benchmark. The AA Coding Index and Solved % stay selectable.`;
+  }
   $('rank-head').hidden = false;
   const ranks = new Map(data.models.map(m => [m.agent || m.name,
     Number.isFinite(m.measured_net_mean) ? 1 + data.models.filter(other =>
@@ -273,7 +280,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         ci_high: model.ci?.[1], resolve_rate: model.resolve_rate == null ? null : model.resolve_rate * 100,
         coverage: model.measured_attempts / (model.footprint_population_count || data.population_count || data.task_count) * 100,
         churn: model.measured_churn_mean,
-        net: model.measured_net_mean, solved_net: model.measured_solved_net_mean, rank_low: model.rank_range?.[0], rank_high: model.rank_range?.[1]}[key];
+        net: model.measured_net_mean, solved_net: model.measured_solved_net_mean,
+        aa_coding: model.aa_coding, aa_intelligence: model.aa_intelligence, rank_low: model.rank_range?.[0], rank_high: model.rank_range?.[1]}[key];
     }
     const cell = selected[2][index];
     const eligible = cell.length > 7 ? cell[7] : ['r', 'f', 'c'].includes(cell[0]);
@@ -283,7 +291,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   function renderBoard() {
     const headers = selected
       ? [['Model', null], ['Result', null], ['Net units added', 'net']]
-      : [['Rank', null], ['Model', null], ['Net units added (mean)', 'net'], ['Net units added, solved (mean)', 'solved_net'], ['Solved', 'resolve_rate'], ['Measured', 'coverage']];
+      : [['Rank', null], ['Model', null], ['Net units added (mean)', 'net'], ['Net units added, solved (mean)', 'solved_net'], ['Solved', 'resolve_rate'], ...(external ? [['AA Intelligence Index', 'aa_intelligence']] : []), ['Measured', 'coverage']];
     document.querySelector('#board thead').innerHTML = '<tr>' + headers.map(([name, key]) => `<th${key ? ` aria-sort="${key === sortKey ? ascending ? 'ascending' : 'descending' : 'none'}"` : ''}${name === 'Model' ? ' class="left"' : ''}>${key ? `<button type="button" data-sort="${key}">${name}</button>` : name}</th>`).join('') + '</tr>';
     const buttons = [...document.querySelectorAll('#board button[data-sort]')];
     buttons.forEach((button) => button.addEventListener('click', () => {
@@ -305,7 +313,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         return `<tr><td class="left">${esc(m.name)}</td><td class="left ${esc(c[6] || c[0])}">${esc(result)}</td><td>${signed(metricValue(m, i, 'net'))}</td></tr>`;
       }
       const denominator = m.footprint_population_count || data.population_count || data.task_count;
-      return `<tr><td>${ranks.get(m.agent || m.name) ?? '—'}</td><td class="left">${esc(m.name)}</td><td>${fmt(m.measured_net_mean)}</td><td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.resolve_rate * 100)}%</td><td>${m.measured_attempts}/${denominator}</td></tr>`;
+      return `<tr><td>${ranks.get(m.agent || m.name) ?? '—'}</td><td class="left">${esc(m.name)}</td><td>${fmt(m.measured_net_mean)}</td><td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.resolve_rate * 100)}%</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${m.measured_attempts}/${denominator}</td></tr>`;
     }).join('');
   }
   function showTask(id) {
@@ -330,7 +338,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     'MiniMax': '#dc5263', 'Meta': '#6366f1', 'Mistral AI': '#b18a00', 'Other': '#64748b'
   };
   const companyColor = company => companyColors[company] || companyColors.Other;
-  const graphAxes = {all: {x: 'net', y: 'resolve_rate'}, task: {x: 'net', y: 'churn'}};
+  // External capability indices replace Solved as the default Y axis when a pinned snapshot is present.
+  const graphAxes = {all: {x: 'net', y: external ? 'aa_intelligence' : 'resolve_rate'}, task: {x: 'net', y: 'churn'}};
   const currentAxes = () => graphAxes[selected ? 'task' : 'all'];
   function axisOptions() {
     if (selected) return [{key: 'net', label: 'Net units added'}, {key: 'churn', label: 'Units changed'},
@@ -340,6 +349,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       {key: 'ci', label: 'Combined score 95% CI: lower bound'}, {key: 'ci_high', label: 'Combined score 95% CI: upper bound'},
       {key: 'resolve_rate', label: 'Solved (%)'}, {key: 'net', label: 'Net units added (mean)'},
       {key: 'solved_net', label: 'Net units added, solved tasks (mean)'},
+      ...(external ? [{key: 'aa_intelligence', label: 'Artificial Analysis Intelligence Index'},
+        {key: 'aa_coding', label: 'Artificial Analysis Coding Index'}] : []),
       ...(ranked ? [{key: 'rank_low', label: 'Combined score rank: lower bound'}, {key: 'rank_high', label: 'Combined score rank: upper bound'}] : [])];
   }
   function renderAxisControls() {
@@ -367,18 +378,21 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     if (window.requestAnimationFrame) window.requestAnimationFrame(update);
     else update();
   });
+  const usesExternalAxis = () => !selected && [currentAxes().x, currentAxes().y].some(k => k.startsWith('aa_'));
   function renderGraph() {
     hideTooltip();
     const axes = currentAxes(), options = axisOptions();
     const xLabel = options.find(o => o.key === axes.x).label, yLabel = options.find(o => o.key === axes.y).label;
     const axisFormat = (value, key) => fmt(value) + (['resolve_rate', 'coverage'].includes(key) ? '%' : '');
     const points = data.models.map((m, i) => ({x: metricValue(m, i, axes.x), y: metricValue(m, i, axes.y),
-      name: m.name, company: m.company || 'Other', count: m.measured_attempts, latest: m.latest !== false,
+      name: m.name, company: m.company || 'Other', count: m.measured_attempts, match: m.aa_match, latest: m.latest !== false,
       kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : (selected[2][i][6] || selected[2][i][0]) === 'r' ? 'resolved' : 'unknown') : 'all', i}))
       .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
     $('graph-legend').textContent = points.length
       ? 'Company colors; earlier generations faded.' + (selected ? ' Attempt status on hover or focus.' : '')
       : 'No measured points available for this view.';
+    const unmatched = usesExternalAxis() ? data.models.filter(m => [currentAxes().x, currentAxes().y].some(k => k.startsWith('aa_') && m[k] == null)).length : 0;
+    if (unmatched) $('graph-legend').textContent += ` ${unmatched} configuration${unmatched > 1 ? 's have' : ' has'} no matching Artificial Analysis entry and no point.`;
     $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort().map(company =>
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
 
@@ -408,11 +422,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       p.py = sy(p.y);
     }
     const ticks = (lo, hi, axis) => Array.from({length: 5}, (_, i) => { const v = lo + (hi - lo) * i / 4; return axis === 'x' ? `<line class="axis" x1="${sx(v)}" y1="${H-B}" x2="${sx(v)}" y2="${H-B+4}"/><text class="tick" text-anchor="middle" x="${sx(v)}" y="${H-B+19}">${axisFormat(v, axes.x)}</text>` : `<line class="axis" x1="${L-4}" y1="${sy(v)}" x2="${L}" y2="${sy(v)}"/><text class="tick" text-anchor="end" x="${L-8}" y="${sy(v)+4}">${axisFormat(v, axes.y)}</text>`; }).join('');
-    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; outside fitted axes, plotted to scale' : ''}${p.kind === 'all' ? '; measured ' + p.count + '/' + (data.models[p.i].footprint_population_count || data.population_count || data.task_count) + ' population attempts' : ''}`;
+    const usesExternal = [axes.x, axes.y].some(k => k.startsWith('aa_'));
+    const matchNote = p => usesExternal && p.match && p.match !== 'exact'
+      ? {effort_unlabelled: 'Artificial Analysis entry has no effort label', undated_alias: 'undated model ID matched to the Artificial Analysis snapshot'}[p.match] : '';
+    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; outside fitted axes, plotted to scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + p.count + '/' + (data.models[p.i].footprint_population_count || data.population_count || data.task_count) + ' population attempts' : ''}`;
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
     const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip"></circle>`).join('');
     // Green zone: the half of each axis that is better (lower footprint/rank, higher solved/score).
-    const better = {net: -1, solved_net: -1, churn: -1, rank_low: -1, rank_high: -1, resolve_rate: 1, score: 1, ci: 1, ci_high: 1};
+    const better = {net: -1, solved_net: -1, churn: -1, rank_low: -1, rank_high: -1, resolve_rate: 1, score: 1, ci: 1, ci_high: 1, aa_coding: 1, aa_intelligence: 1};
     const bx = better[axes.x], by = better[axes.y];
     let zone = '';
     if (bx && by && points.length) {
@@ -436,7 +453,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
       const show = event => {
         const p = points[Number(circle.dataset.point)];
-        tooltip.textContent = `${p.name}${p.offscale ? ' (outside fitted axes, plotted to scale)' : ''}\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${p.kind !== 'all' ? '\n' + p.kind + ' task attempt' : ''}`;
+        tooltip.textContent = `${p.name}${p.offscale ? ' (outside fitted axes, plotted to scale)' : ''}\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${matchNote(p) ? '\n' + matchNote(p) : ''}${p.kind !== 'all' ? '\n' + p.kind + ' task attempt' : ''}`;
         tooltip.hidden = false;
         const rect = circle.getBoundingClientRect();
         const x = Number.isFinite(event?.clientX) ? event.clientX : rect.left + rect.width / 2;
