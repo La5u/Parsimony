@@ -36,7 +36,7 @@ SUFFIX = ('\n\n---\nThe repository is checked out in the current working directo
           'Implement the change described above by editing the repository\'s source files. Work autonomously '
           'and do not ask questions. Do not commit. Do not use the network; project dependencies may not be '
           'installed.\n')
-LIMIT = re.compile(r'usage limit|rate limit|rate_limit|429|quota|limit reached|extra usage|try again (later|at)', re.I)
+LIMIT = re.compile(r'session limit|weekly limit|hit your .{0,20}limit|usage limit|rate limit|rate_limit|429|quota|limit reached|extra usage|try again (later|at)', re.I)
 
 
 def now():
