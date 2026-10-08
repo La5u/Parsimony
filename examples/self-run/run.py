@@ -50,17 +50,42 @@ def git(*args, cwd=None, check=True):
     return subprocess.run(['git', *args], cwd=cwd, check=check, capture_output=True, text=True).stdout
 
 
+MIRROR_LOCKS = {}
+MIRROR_GUARD = threading.Lock()
+
+
+def mirror_of(mirrors, repo, base):
+    """A local mirror holding ``base`` under refs/parsimony/<base>; one download per repository.
+
+    Some DeepSWE base commits are not reachable from any upstream branch, so they are fetched by SHA.
+    """
+    with MIRROR_GUARD:
+        lock = MIRROR_LOCKS.setdefault(repo, threading.Lock())
+    with lock:
+        mirror = mirrors / repo.replace('/', '__')
+        if not mirror.exists():
+            partial = mirror.with_name(mirror.name + '.partial')
+            shutil.rmtree(partial, ignore_errors=True)
+            git('clone', '-q', '--mirror', f'https://github.com/{repo}.git', str(partial))
+            partial.rename(mirror)
+        ref = f'refs/parsimony/{base}'
+        if subprocess.run(['git', 'rev-parse', '-q', '--verify', ref], cwd=mirror, capture_output=True).returncode:
+            if subprocess.run(['git', 'cat-file', '-e', f'{base}^{{commit}}'], cwd=mirror, capture_output=True).returncode:
+                git('fetch', '-q', '--no-tags', 'origin', base, cwd=mirror)
+            git('update-ref', ref, base, cwd=mirror)
+        return mirror, ref
+
+
 def prepare_repo(mirrors, repo, base, work):
     """A repository holding exactly the base commit's history, checked out on main."""
-    mirror = mirrors / repo.replace('/', '__')
-    if not mirror.exists():
-        git('clone', '-q', '--mirror', f'https://github.com/{repo}.git', str(mirror))
+    mirror, ref = mirror_of(mirrors, repo, base)
     if work.exists():
         shutil.rmtree(work)
     work.mkdir(parents=True)
     git('init', '-q', '-b', 'main', cwd=work)
-    git('fetch', '-q', '--no-tags', str(mirror), f'{base}:refs/heads/main', cwd=work)
-    git('checkout', '-q', 'main', cwd=work)
+    git('fetch', '-q', '--no-tags', str(mirror), ref, cwd=work)
+    git('checkout', '-q', '-B', 'main', 'FETCH_HEAD', cwd=work)
+    (work / '.git' / 'FETCH_HEAD').unlink()
     git('config', 'core.hooksPath', '/dev/null', cwd=work)
     git('submodule', 'update', '--init', '--recursive', cwd=work, check=False)
     git('reflog', 'expire', '--expire=now', '--all', cwd=work)
@@ -231,14 +256,21 @@ def main():
                 job = pending[0]
                 jobs.remove(job)
             config, task, attempt = job
+            failures = 0
             while True:
                 while paused.get(harness, 0) > time.time():
                     time.sleep(30)
                 try:
                     result = run_one(config, task, attempt, args, instructions[task['task']])
-                except Exception as exc:  # setup failures are logged and retried later, never scored
-                    print(f'{now()} {config["id"]} {task["task"]}#{attempt}: setup failed: {exc}', flush=True)
-                    result = 'limited'
+                except Exception as exc:  # setup failures are retried, then skipped; never scored
+                    detail = getattr(exc, 'stderr', None) or ''
+                    print(f'{now()} {config["id"]} {task["task"]}#{attempt}: setup failed: {exc} {detail}'.strip(), flush=True)
+                    failures += 1
+                    if failures >= 3:
+                        print(f'{now()} {config["id"]} {task["task"]}#{attempt}: skipped after 3 setup failures', flush=True)
+                        break
+                    time.sleep(60)
+                    continue
                 print(f'{now()} {config["id"]} {task["task"]}#{attempt}: {result}', flush=True)
                 if result != 'limited':
                     break
