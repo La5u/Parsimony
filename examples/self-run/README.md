@@ -41,3 +41,13 @@ Runs are resumable: finished items are skipped. Usage-limit errors pause that ha
 minutes and retry the same item; they are never recorded as results. Each finished item writes
 `runs/<config>/<task>__<attempt>/patch.diff` and `meta.json`; transcripts stay in the scratch
 directory.
+
+## Anchor check (2026-10-09)
+
+GPT-5.6 Sol ran self-run (pi, high effort) on the first 5 tasks × 2 attempts. Its mean net units
+added was **1,725** versus **1,969** for the published DeepSWE runs of GPT-5.6 Sol (mini-SWE-agent,
+max effort) on the same 5 tasks × 4 attempts: a ratio of about **0.88**. Per task the self-run
+attempts fall inside or slightly below the published range, except tomlkit (2,690–2,703 versus
+3,251–3,556). The self-run setup therefore appears to shrink footprints modestly, not to explain the
+much smaller GPT-6 Luna footprint (931 on the same 5 tasks). One anchor on 5 tasks is weak evidence;
+the effort level also differs. The Claude Sonnet 5 anchor has not been run.
