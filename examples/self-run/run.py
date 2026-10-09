@@ -139,7 +139,7 @@ def summarize(config, transcript):
             message = event.get('message') or {}
             if event.get('type') == 'message_end' and message.get('role') == 'assistant':
                 stop = message.get('stopReason')
-                error = message.get('errorMessage') or error
+                error = message.get('errorMessage')  # only the final message decides; pi retries transient errors
                 for key, value in (message.get('usage') or {}).items():
                     if isinstance(value, (int, float)):
                         usage[key] = usage.get(key, 0) + value

