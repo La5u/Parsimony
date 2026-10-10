@@ -54,6 +54,7 @@ body { overflow-x: clip; }
 #graph .self-run { fill-opacity: 0.35; }
 #graph .point-label.self-run-label { opacity: 0.45; }
 #board tr.self-run td { color: var(--muted); }
+#board tr.self-run-head td { text-align: left; color: var(--muted); font-size: 0.8rem; padding-top: 14px; }
 .source-bar { height: 8px; background: var(--link); margin: 4px 0; }
 .source-row { margin-bottom: 16px; }
 #source-evidence { overflow-wrap: anywhere; }
@@ -107,6 +108,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p>Solved % = upstream resolved attempts / frozen attempt population × 100. Tests are not rerun by Parsimony. Footprint = sum of net coding units / N measured in-scope attempts: each attempt has equal weight 1/N, including failures. Missing measurements are not zero; solved-only footprint is separate. Benchmarks and languages are not pooled and have no benchmark weights. Default footprint uses no correctness weight.</p>
   <p id="score-help">Archived score only: passing results blend 80% net / 20% churn per-task percentiles; failed results use the same 80/20 weights in a bounded growth/churn penalty. It never affects footprint rank. <a href="https://github.com/La5u/Parsimony/blob/main/docs/scoring.md">Full formula</a>.</p>
   <p id="external-help" hidden>Artificial Analysis indices are external, model-level capability scores from a pinned snapshot, not results on this benchmark. They are matched to a configuration only for the same model and reasoning effort, or where Artificial Analysis lists a single unlabelled entry or resolves an undated model ID; these weaker matches are disclosed on hover. Configurations without a match have no value and no point. They never affect footprint rank.</p>
+  <p id="self-run-help" hidden>Self-run models were run by the site owner on the first 3–10 DeepSWE Python tasks (OpenAI models via pi, Anthropic models via Claude Code), without the task containers. They are unverified, not graded and never ranked, and cover only a task subset, so compare them mainly with each other. GPT-5.6 Sol is the one model run both ways: its self-run footprint was 0.88× its published one on the same tasks. Claude Code has no such check.</p>
   <p id="ci-help">Combined-score CI endpoints are not net-unit uncertainty or inputs to footprint rank.</p>
   </details>
 
@@ -124,9 +126,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="small muted" id="task-status" role="status" aria-live="polite"></p>
   <section aria-labelledby="complexity">
   <h2 id="complexity">Compare models</h2>
-  <p class="small muted">Solved %: upstream pass rate. Footprint: mean net coding units, not a %. No correctness weighting.</p>
   <p class="small muted" id="external-note" hidden></p>
-  <p class="small muted">Hover, focus or tap for values; all models are labelled.</p>
   <p><label for="chart-type">Chart</label> <select id="chart-type" aria-label="Chart type">
        <option value="scatter">Scatter: compare two metrics</option><option value="bar">Bars: net units added</option></select></p>
   <p id="axis-controls"><label for="graph-x">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
@@ -136,7 +136,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <div id="graph" aria-label="Comparison of selected metrics per model"></div>
   <div class="small" id="graph-tooltip" role="tooltip" hidden></div>
   <p class="small muted" id="self-run-note" hidden></p>
-  <p class="small muted" id="attempts-note" hidden>Each task was run four times; every measured attempt contributes to its model’s footprint.</p>
   </section>
 
   <h2>Leaderboard</h2>
@@ -160,8 +159,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
 
   <section id="data-sources" aria-labelledby="sources-heading" hidden>
     <h2 id="sources-heading">Data sources</h2>
-    <p class="small muted">Separate boards—not ingredients in a combined ranking.</p>
-    <p class="small muted">Bars show frozen task counts relative to the largest source, not percentages or weights. Counts describe planned populations, not measurement eligibility.</p>
+    <p class="small muted">Separate boards, never pooled. Bars show task counts, not weights.</p>
     <div id="source-counts"></div>
     <details class="small muted"><summary>Source contribution and evidence</summary>
       <p>Each leaderboard uses only its own benchmark and language: 100% from that board, 0% from the others. These are source shares, not combined-score weights. The self-run pilot is the only exception: its points are shown faded on the DeepSWE Python board, outside the ranking.</p>
@@ -249,7 +247,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   $('source-counts').innerHTML = sources.map(s => `<div class="source-row">${sourceLink(s.board_url, s.name)}${s.self_run ? ' — Self-run by the owner, unverified; shown faded on the DeepSWE Python board, never ranked' : s.active ? ' — Current board' : ' — Separate board'}<div class="source-bar" style="width:${Number.isFinite(s.tasks) && s.tasks >= 0 ? s.tasks / maxTasks * 100 : 0}%" aria-hidden="true"></div><span>${s.self_run ? `up to ${esc(s.tasks)} tasks · ${esc(s.attempts_per_task)} attempts per task · ${esc(s.population_per_model)} planned attempts/model, by model` : `${esc(s.tasks)} tasks · ${esc(s.attempts_per_task)} attempts per task · ${esc(s.population_per_model)} total planned attempts/model`}</span></div>`).join('');
   $('source-evidence').innerHTML = sources.map(s => `<p>${esc(s.name)}: ${sourceLink(s.report_url, 'Report')} · ${sourceLink(s.manifest_url, 'Manifest')}<br>${s.self_run ? 'Plan' : 'Manifest'} SHA-256: ${esc(s.manifest_sha256)}<br>${s.self_run ? `DeepSWE commit: ${esc(s.deepswe_commit)}` : `Dataset SHA-256: ${esc(s.dataset_sha256)}`}</p>`).join('');
   $('task-link').textContent = bench.task_link;
-  $('attempts-note').hidden = bench.attempts <= 1;
   if ((data.nav || []).length) {
     $('nav').hidden = false;
     $('nav').innerHTML = 'Leaderboards: ' + data.nav.map((l) => `<a href="${esc(l.url)}">${esc(l.label)}</a>`).join(' · ');
@@ -286,11 +283,12 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const selfRunNote = m => `Self-run with ${m.harness}, unverified: not graded, ${m.tasks} of ${taskCount} tasks, ${m.measured_attempts}/${m.footprint_population_count} planned attempts measured`;
   if (selfRun.length) {
     $('self-run-note').hidden = false;
-    $('self-run-note').textContent = `Faded points and grey rows are self-run by the site owner (OpenAI models via pi, Anthropic models via Claude Code) on the first 3–10 of these tasks, without the task containers. They are unverified, not graded and never ranked; footprints cover a task subset, so compare them mainly with each other and with GPT-5.6 Sol, the one model run both ways (its self-run footprint was 0.88× its published one on the same tasks). Claude Code has no such anchor.`;
+    $('self-run-help').hidden = false;
+    $('self-run-note').textContent = 'Faded: self-run by the site owner on 3–10 of these tasks. Unverified, ungraded, unranked; details under How to read this.';
   }
   if (external) {
     $('external-note').hidden = $('external-help').hidden = false;
-    $('external-note').innerHTML = `Default Y axis: <a href="${esc(external.attribution)}">Artificial Analysis</a> Intelligence Index, an external model-level score (snapshot ${esc(external.fetched_at.slice(0, 10))}), not measured on this benchmark. The AA Coding Index and Solved % stay selectable.`;
+    $('external-note').innerHTML = `Y axis: <a href="${esc(external.attribution)}">Artificial Analysis</a> Intelligence Index, an external score (snapshot ${esc(external.fetched_at.slice(0, 10))}).`;
   }
   $('rank-head').hidden = false;
   const ranks = new Map(data.models.map(m => [m.agent || m.name,
@@ -327,12 +325,16 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       sortKey = key;
       renderBoard();
     }));
-    const models = data.models.map((m, i) => ({m, i})).concat(selected ? [] : selfRun.map(m => ({m, i: -1}))).sort((a, b) => {
+    const order = (a, b) => {
       const x = metricValue(a.m, a.i, sortKey), y = metricValue(b.m, b.i, sortKey);
       if (x == null || y == null || Number.isNaN(Number(x)) || Number.isNaN(Number(y))) return (x == null || Number.isNaN(Number(x))) - (y == null || Number.isNaN(Number(y)));
       return (ascending ? x - y : y - x) || a.m.name.localeCompare(b.m.name);
-    });
-    document.querySelector('#board tbody').innerHTML = models.map(({m, i}) => {
+    };
+    // Self-run rows cover a task subset: listed after the ranked rows, never interleaved.
+    const extra = selected ? [] : selfRun.map(m => ({m, i: -1})).sort(order);
+    const models = data.models.map((m, i) => ({m, i})).sort(order).concat(extra);
+    document.querySelector('#board tbody').innerHTML = models.map(({m, i}, k) => (k === models.length - extra.length && extra.length
+      ? `<tr class="self-run-head"><td colspan="${headers.length}">Self-run pilot · unranked, 3–10 tasks</td></tr>` : '') + (() => {
       if (selected) {
         const c = selected[2][i];
         const outcome = labels[c[6] || c[0]] || c[0];
@@ -340,9 +342,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         return `<tr><td class="left">${esc(m.name)}</td><td class="left ${esc(c[6] || c[0])}">${esc(result)}</td><td>${signed(metricValue(m, i, 'net'))}</td></tr>`;
       }
       const denominator = m.footprint_population_count || data.population_count || data.task_count;
-      if (m.self_run) return `<tr class="self-run" title="${esc(selfRunNote(m))}"><td>—</td><td class="left">${esc(m.name)} · self-run</td><td>${fmt(m.measured_net_mean)}</td><td>—</td><td>—</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${m.measured_attempts}/${denominator}</td></tr>`;
+      if (m.self_run) return `<tr class="self-run" title="${esc(selfRunNote(m))}"><td>—</td><td class="left">${esc(m.name)}</td><td>${fmt(m.measured_net_mean)}</td><td>—</td><td>—</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${m.measured_attempts}/${denominator}</td></tr>`;
       return `<tr><td>${ranks.get(m.agent || m.name) ?? '—'}</td><td class="left">${esc(m.name)}</td><td>${fmt(m.measured_net_mean)}</td><td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.resolve_rate * 100)}%</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${m.measured_attempts}/${denominator}</td></tr>`;
-    }).join('');
+    })()).join('');
   }
   function showTask(id) {
     if (id && !tasks.has(id)) { $('task-status').textContent = `No task matches “${id}”. Still showing ${selected ? selected[0] : 'all tasks'}.`; return; }
@@ -438,9 +440,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     // Self-run means cover only their own task subset, so they get their own group, never interleaved.
     rows.sort((a, b) => !!a.selfRun - !!b.selfRun);
     const firstSelfRun = rows.findIndex(r => r.selfRun);
-    const metric = selected ? 'Net units added in this attempt' : 'Net units added (mean per measured attempt)';
+    const metric = selected ? 'Net units added in this attempt' : 'Mean net units added per attempt';
     $('graph-legend').textContent = rows.length
-      ? `${metric}, smallest first. Failures included; not a ranking of coding ability. Company colors; earlier generations faded.`
+      ? `${metric}${selected ? '' : ', failures included'}. Smaller ≠ better. Older generations faded.`
       : 'No measured values available for this view.';
     $('company-legend').innerHTML = [...new Set(rows.map(r => r.m.company || 'Other'))].sort().map(company =>
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
@@ -453,7 +455,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     };
     $('graph').style.marginBottom = '0px';
     $('graph').innerHTML = `<div class="bars" role="list" aria-label="${esc(metric)} per model, smallest first">` + rows.map((r, k) =>
-      (k === firstSelfRun ? `<div class="bar-group" role="presentation">Self-run pilot: run by the site owner on only the first 3–10 of these tasks, so not comparable with the bars above. Unverified and unranked.</div>` : '') +
+      (k === firstSelfRun ? `<div class="bar-group" role="presentation">Self-run pilot: 3–10 tasks only, not comparable with the bars above</div>` : '') +
       `<div class="bar-row${r.latest ? '' : ' older'}${r.selfRun ? ' self-run' : ''}" role="listitem" tabindex="0" data-bar="${k}" aria-label="${esc(note(r).replace(/\n/g, '; '))}">` +
       `<span class="bar-name">${esc(r.m.name)}</span>` +
       `<span class="bar-track">${lo < 0 ? `<span class="bar-zero" style="left:${pct(0)}%"></span>` : ''}<span class="bar" style="left:${pct(Math.min(0, r.v))}%;width:${Math.abs(r.v) / span * 100}%;background:${companyColor(r.m.company || 'Other')}"></span></span>` +
@@ -478,10 +480,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         company: m.company || 'Other', count: m.measured_attempts, match: m.aa_match, latest: true, kind: 'all', i: -1, m, selfRun: true})))
       .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
     $('graph-legend').textContent = points.length
-      ? 'Company colors; earlier generations faded.' + (selected ? ' Attempt status on hover or focus.' : '')
+      ? 'Older generations faded.' + (selected ? ' Status on hover.' : '')
       : 'No measured points available for this view.';
     const unmatched = usesExternalAxis() ? data.models.filter(m => [currentAxes().x, currentAxes().y].some(k => k.startsWith('aa_') && m[k] == null)).length : 0;
-    if (unmatched) $('graph-legend').textContent += ` ${unmatched} configuration${unmatched > 1 ? 's have' : ' has'} no matching Artificial Analysis entry and no point.`;
+    if (unmatched) $('graph-legend').textContent += ` ${unmatched} model${unmatched > 1 ? 's have' : ' has'} no AA score.`;
     $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort().map(company =>
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
 

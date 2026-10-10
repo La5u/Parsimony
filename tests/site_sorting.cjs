@@ -201,7 +201,7 @@ assert.match(graph(), /<circle data-point="1" data-model="Beta" class="all-point
 assert.match(graph(), /<circle data-point="0" data-model="Alpha" class="all-point"/);
 // Lower net units and higher solved are better: the green zone sits in the top-left corner.
 assert.match(graph(), /<rect class="best-zone" x="90" y="18"/);
-assert.equal(element('graph-legend').textContent, 'Company colors; earlier generations faded.');
+assert.equal(element('graph-legend').textContent, 'Older generations faded.');
 element('graph-y').listeners.change({target: {value: 'coverage'}});
 assert.doesNotMatch(graph(), /best-zone/); // Coverage has no better direction.
 assert.doesNotMatch(graph(), /<polyline/);
@@ -266,7 +266,7 @@ assert.equal(tickValues('x').at(-1), 342);
 assert.doesNotMatch(element('graph-x').innerHTML, /ci|resolve_rate|rank_low/);
 assert.match(element('#board tbody').innerHTML, /<td class="left">Alpha<\/td><td class="left r">solved<\/td><td>\+111<\/td><\/tr>/);
 assert.match(graph(), /Gamma \(Anthropic\): failed task attempt/);
-assert.equal(element('graph-legend').textContent, 'Company colors; earlier generations faded. Attempt status on hover or focus.');
+assert.equal(element('graph-legend').textContent, 'Older generations faded. Status on hover.');
 assert.doesNotMatch(graph(), /<polyline/); // Alpha dominates both task-footprint axes.
 axis('y', 'score');
 assert.doesNotMatch(graph(), /<polyline/);
@@ -422,7 +422,7 @@ axis('y', 'aa_intelligence');
 const noGamma = structuredClone(withExternal);
 noGamma.models[2].measured_net_mean = 1;
 load(noGamma);
-assert.match(element('graph-legend').textContent, /1 configuration has no matching Artificial Analysis entry/);
+assert.match(element('graph-legend').textContent, /1 model has no AA score\./);
 // Self-run configurations are faded, explained on hover, listed unranked and absent from task views.
 const withSelfRun = structuredClone(data);
 withSelfRun.self_run_models = [{agent: 'self-run-v1_x', name: 'Delta (high)', company: 'OpenAI', self_run: true, latest: true,
@@ -440,8 +440,11 @@ axis('y', 'churn');
 assert.match(graph(), /<circle[^>]*data-model="Delta \(high\)"[^>]*class="all-point self-run"/);
 assert.match(graph(), /class="point-label self-run-label"[^>]*>Delta/);
 assert.match(graph(), /Delta \(high\) \(OpenAI\)[^"]*Self-run with pi, unverified: not graded, 2 of \d+ tasks, 4\/20 planned attempts measured/);
-assert.match(element('#board tbody').innerHTML, /<tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta \(high\) · self-run<\/td><td>−5.0<\/td><td>—<\/td><td>—<\/td><td>4\/20<\/td>/);
+assert.match(element('#board tbody').innerHTML, /<tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta \(high\)<\/td><td>−5.0<\/td><td>—<\/td><td>—<\/td><td>4\/20<\/td>/);
 assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Alpha/); // Self-run never takes a rank.
+assert.match(element('#board tbody').innerHTML, /Beta[\s\S]*<tr class="self-run-head"><td colspan="6">Self-run pilot · unranked, 3–10 tasks<\/td><\/tr><tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta/); // after ranked rows, even with the smallest mean
+assert.match(element('self-run-note').textContent, /^Faded: self-run by the site owner on 3–10 of these tasks\./);
+assert.equal(element('self-run-help').hidden, false);
 assert.equal(element('self-run-note').hidden, false);
 task('org__repo-1');
 assert.doesNotMatch(graph(), /Delta/);
@@ -453,14 +456,14 @@ element('chart-type').listeners.change({target: {value: 'bar'}});
 assert.equal(element('axis-controls').hidden, true);
 const barNames = () => [...element('graph').innerHTML.matchAll(/<span class="bar-name">([^<]*)<\/span>/g)].map(m => m[1]);
 assert.deepEqual(barNames(), ['Alpha', 'Beta', 'Delta (high)']); // Gamma has no measurement; self-run listed after, never interleaved
-assert.match(element('graph').innerHTML, /data-bar="1"[\s\S]*?<div class="bar-group" role="presentation">Self-run pilot: run by the site owner on only the first 3–10 of these tasks, so not comparable with the bars above\. Unverified and unranked\.<\/div><div class="bar-row self-run"[^>]*data-bar="2"/);
+assert.match(element('graph').innerHTML, /data-bar="1"[\s\S]*?<div class="bar-group" role="presentation">Self-run pilot: 3–10 tasks only, not comparable with the bars above<\/div><div class="bar-row self-run"[^>]*data-bar="2"/);
 assert.match(element('graph').innerHTML, /class="bar-row self-run"[^>]*>[\s\S]*?background:#000000/);
-assert.match(element('graph').innerHTML, /class="bar-row older"[^>]*aria-label="Beta \(OpenAI\); Net units added \(mean per measured attempt\): 0; Measured 3\/4 attempts"/);
+assert.match(element('graph').innerHTML, /class="bar-row older"[^>]*aria-label="Beta \(OpenAI\); Mean net units added per attempt: 0; Measured 3\/4 attempts"/);
 assert.match(element('graph').innerHTML, /<span class="bar-zero" style="left:100%"><\/span>/);
 assert.match(element('graph').innerHTML, /<span class="bar-value">−5<\/span>/);
-assert.match(element('graph-legend').textContent, /smallest first\. Failures included; not a ranking of coding ability\./);
+assert.equal(element('graph-legend').textContent, 'Mean net units added per attempt, failures included. Smaller ≠ better. Older generations faded.');
 doc.querySelectorAll('#graph [data-bar]')[2].listeners.focus({});
-assert.match(element('graph-tooltip').textContent, /^Delta \(high\) · self-run \(OpenAI\)\nNet units added \(mean per measured attempt\): −5\nMeasured 4\/20 attempts\nSelf-run with pi/);
+assert.match(element('graph-tooltip').textContent, /^Delta \(high\) · self-run \(OpenAI\)\nMean net units added per attempt: −5\nMeasured 4\/20 attempts\nSelf-run with pi/);
 task('org__repo-1');
 assert.deepEqual(barNames(), ['Alpha', 'Beta', 'Gamma']); // a measured failed attempt still has a bar
 assert.match(element('graph').innerHTML, /<span class="bar-value">331<\/span>/);
