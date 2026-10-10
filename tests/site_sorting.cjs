@@ -93,7 +93,7 @@ assert.equal(element('data-sources').hidden, false);
 assert.match(element('source-counts').innerHTML, /width:100%/);
 assert.match(element('source-counts').innerHTML, /width:50%/);
 assert.match(element('source-counts').innerHTML, /100 tasks · 4 attempts per task · 400 total planned attempts\/model/);
-assert.match(element('source-counts').innerHTML, /50 tasks · 1 attempts per task · 50 total planned attempts\/model/);
+assert.match(element('source-counts').innerHTML, /50 tasks · 1 attempt per task · 50 total planned attempts\/model/);
 assert.match(element('source-counts').innerHTML, /Current board/);
 assert.match(element('source-counts').innerHTML, /href="current.html">Current &lt;source&gt;<\/a>/);
 assert.doesNotMatch(element('source-counts').innerHTML, /<img|rank|contribution/i);
