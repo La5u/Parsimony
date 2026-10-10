@@ -1,8 +1,20 @@
-# Contributing benchmark results
+# Contributing
+
+## Ways to help
+
+- **Point to a public patch export.** New models can only be added when a benchmark publishes per-attempt patches and outcomes. If you find one (for example GPT-6, Claude 5.5 or Gemini 4 runs on DeepSWE, SWE-bench Verified or SWE-bench Live), open an issue with the link and revision. Model names in listings are not enough; the patches must be downloadable.
+- **Compare your own measurements.** Every page has *Add your own benchmark*: load a JSON of per-task code amounts and compare locally. Nothing is uploaded. See [the format](docs/custom-benchmarks.md).
+- **Submit a result bundle** measured from public artifacts (below).
+- **Improve the analyzer.** Java and Rust have no analyzer yet, and the Go track has 7 unclassified parse errors. See [language tracks](docs/language-tracks.md) and [expansion notes](docs/language-expansion-opportunities.md).
+- **Critique the method.** Issues questioning the unit, scope rules or ranking rule are welcome.
+
+Contributions must come from **public artifacts**: do not call an LLM or rerun a benchmark to produce a contribution, because others cannot verify it. The site's **self-run pilot** (`examples/self-run/`) is the owner's labelled exception, shown faded and never ranked; it is not a template for contributed data.
+
+## Result bundles
 
 Use pull requests to add or update **reproducible result bundles**, not hand-edited scores. All tools use the Python standard library. We welcome small samples when they are clearly labeled.
 
-**Current bundle format:** successful-solution footprint medians, resolve rate and per-task measurements. The [80/20 signed-score calculator](docs/scoring.md) is experimental and separate from bundle validation; do not substitute scalar scores for the generated median summary. You may include a reproducible scalar-score command and frozen panel hash in the PR description. Records from `analyze --include-failed` may be exported: failed-patch measurements need an explicit failed category (`unresolved`/`failed`/`not_resolved`) and never enter the median summary. Existing bundles and sample scores do not contain them.
+**Current bundle format:** successful-solution footprint medians, resolve rate and per-task measurements. This generated summary is for bundle validation only. The website ranks differently: by the mean net units over **all** measured in-scope attempts, failures included, on a frozen population built by maintainers. A merged bundle does not by itself add a row to a website board. The [80/20 signed-score calculator](docs/scoring.md) is experimental and separate from bundle validation; do not substitute scalar scores for the generated median summary. You may include a reproducible scalar-score command and frozen panel hash in the PR description. Records from `analyze --include-failed` may be exported: failed-patch measurements need an explicit failed category (`unresolved`/`failed`/`not_resolved`) and never enter the median summary. Existing bundles and sample scores do not contain them.
 
 ## Fast path: existing analysis, no heavy computation
 
