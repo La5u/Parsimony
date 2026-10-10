@@ -102,6 +102,18 @@ def published_sources(benchmark, language='python', root=None):
                             report_url=github + f'examples/{directory}/README.md',
                             manifest_url=github + path, manifest_sha256=hashlib.sha256(raw).hexdigest(),
                             dataset_sha256=manifest['dataset_sha256']))
+    plan_path = 'examples/self-run/plan.json'
+    if (root / plan_path).exists():
+        # Owner-run pilot: plotted faded on the DeepSWE Python board, never ranked or pooled.
+        raw = (root / plan_path).read_bytes()
+        plan = json.loads(raw)
+        planned = sorted({c['tasks'] * plan['attempts'] for c in plan['configurations']})
+        sources.append(dict(name='Self-run pilot · DeepSWE Python tasks', benchmark='self-run', language=plan['language'],
+                            tasks=len(plan['tasks']), attempts_per_task=plan['attempts'],
+                            population_per_model=f'{planned[0]}–{planned[-1]}' if len(planned) > 1 else planned[0],
+                            active=False, self_run=True, board_url='index.html',
+                            report_url=github + 'examples/self-run/README.md', manifest_url=github + plan_path,
+                            manifest_sha256=hashlib.sha256(raw).hexdigest(), deepswe_commit=plan['deepswe_commit']))
     return sources
 
 

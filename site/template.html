@@ -148,7 +148,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     <p class="small muted">Bars show frozen task counts relative to the largest source, not percentages or weights. Counts describe planned populations, not measurement eligibility.</p>
     <div id="source-counts"></div>
     <details class="small muted"><summary>Source contribution and evidence</summary>
-      <p>Each leaderboard uses only its own benchmark and language: 100% from that board, 0% from the others. These are source shares, not combined-score weights.</p>
+      <p>Each leaderboard uses only its own benchmark and language: 100% from that board, 0% from the others. These are source shares, not combined-score weights. The self-run pilot is the only exception: its points are shown faded on the DeepSWE Python board, outside the ranking.</p>
       <p id="metric-source"></p>
       <div id="source-evidence"></div>
     </details>
@@ -230,8 +230,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const maxTasks = Math.max(1, ...sources.map(s => s.tasks));
   const sourceLink = (url, label) => /^(https?:\/\/|\.?\.?\/|[^:/?#]+\.html(?:[?#]|$))/.test(String(url || ''))
     ? `<a href="${esc(url)}">${esc(label)}</a>` : esc(label);
-  $('source-counts').innerHTML = sources.map(s => `<div class="source-row">${sourceLink(s.board_url, s.name)}${s.active ? ' — Current board' : ' — Separate board'}<div class="source-bar" style="width:${Number.isFinite(s.tasks) && s.tasks >= 0 ? s.tasks / maxTasks * 100 : 0}%" aria-hidden="true"></div><span>${esc(s.tasks)} tasks · ${esc(s.attempts_per_task)} attempts per task · ${esc(s.population_per_model)} total planned attempts/model</span></div>`).join('');
-  $('source-evidence').innerHTML = sources.map(s => `<p>${esc(s.name)}: ${sourceLink(s.report_url, 'Report')} · ${sourceLink(s.manifest_url, 'Manifest')}<br>Manifest SHA-256: ${esc(s.manifest_sha256)}<br>Dataset SHA-256: ${esc(s.dataset_sha256)}</p>`).join('');
+  $('source-counts').innerHTML = sources.map(s => `<div class="source-row">${sourceLink(s.board_url, s.name)}${s.self_run ? ' — Self-run by the owner, unverified; shown faded on the DeepSWE Python board, never ranked' : s.active ? ' — Current board' : ' — Separate board'}<div class="source-bar" style="width:${Number.isFinite(s.tasks) && s.tasks >= 0 ? s.tasks / maxTasks * 100 : 0}%" aria-hidden="true"></div><span>${s.self_run ? `up to ${esc(s.tasks)} tasks · ${esc(s.attempts_per_task)} attempts per task · ${esc(s.population_per_model)} planned attempts/model, by model` : `${esc(s.tasks)} tasks · ${esc(s.attempts_per_task)} attempts per task · ${esc(s.population_per_model)} total planned attempts/model`}</span></div>`).join('');
+  $('source-evidence').innerHTML = sources.map(s => `<p>${esc(s.name)}: ${sourceLink(s.report_url, 'Report')} · ${sourceLink(s.manifest_url, 'Manifest')}<br>${s.self_run ? 'Plan' : 'Manifest'} SHA-256: ${esc(s.manifest_sha256)}<br>${s.self_run ? `DeepSWE commit: ${esc(s.deepswe_commit)}` : `Dataset SHA-256: ${esc(s.dataset_sha256)}`}</p>`).join('');
   $('task-link').textContent = bench.task_link;
   $('attempts-note').hidden = bench.attempts <= 1;
   if ((data.nav || []).length) {
