@@ -141,3 +141,15 @@ python -m parsimony.site examples/live-python/score-panel.json $RECORDS \
 These commands do arithmetic/rendering only. They do not fetch or execute target
 code/tests. Existing DeepSWE/Verified measurement/score data are unchanged, apart
 from adding navigation to this separate benchmark/language board.
+
+## TianxiCode version note (checked 2026-10-10)
+
+The DeepSeek V4.1 Flash configuration is labelled **TianxiCode 0.1.423**, from the pinned submission
+revision `cba8a6d3197cd53da09f8527cccbc689782302a6`. A later upstream commit
+(`055881da712762c7e41b9f967e20ad189e3ddfd3`, 2026-10-07) replaced the submission README with one naming
+**v0.1.486**, while `preds.json` and `results.json` stayed byte-identical. The run's own records at the
+pinned revision support 0.1.423: `logs/rollout-summary.json` records `"version": "0.1.423"` for all 300
+tasks, `logs/environment.md` names 0.1.423, and run timestamps fall on 2026-09-21/22. The new README
+describes itself as a static description that "does not change with a re-run", and the same commit
+removed `rollout-summary.json` and `environment.md`. The label therefore stays 0.1.423; the version has
+not been confirmed by the submitter.
