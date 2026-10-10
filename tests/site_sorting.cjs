@@ -143,8 +143,15 @@ const graph = () => {
 };
 function tickValues(axis) {
   const anchor = axis === 'x' ? 'middle' : 'end';
-  const pattern = new RegExp(`<text class="tick" text-anchor="${anchor}"[^>]*>([−\\d.]+%?)<\\/text>`, 'g');
-  return [...graph().matchAll(pattern)].map(m => Number.parseFloat(m[1].replace('−', '-')));
+  const pattern = new RegExp(`<text class="tick" text-anchor="${anchor}"[^>]*>([−\\d.,]+%?)<\\/text>`, 'g');
+  return [...graph().matchAll(pattern)].map(m => Number.parseFloat(m[1].replace('−', '-').replace(/,/g, '')));
+}
+// The fitted axis range (data-driven); tick labels sit at round values inside it.
+const domain = axis => graph().match(new RegExp(`data-${axis}-domain="([^"]+)"`))[1].split(',').map(Number);
+function domainNear(axis, low, high, tolerance = 0.06) {
+  const [lo, hi] = graph().match(new RegExp(`data-${axis}-domain="([^"]+)"`))[1].split(',').map(Number);
+  assert(Math.abs(lo - low) < tolerance && Math.abs(hi - high) < tolerance, `${axis} domain ${lo},${hi} != ${low},${high}`);
+  for (const v of tickValues(axis)) assert(v >= lo - 1e-9 && v <= hi + 1e-9, `${axis} tick ${v} outside ${lo},${hi}`);
 }
 // Circles are drawn older-generation first; report colors in model (point index) order.
 const colors = () => [...graph().matchAll(/<circle data-point="(\d+)"[^>]*fill="([^"]+)"/g)]
@@ -181,9 +188,9 @@ click('net', ['Alpha', 'Beta', 'Gamma'], 'ascending');
 click('net', ['Beta', 'Alpha', 'Gamma'], 'descending');
 assert.equal(element('graph-x').value, 'net');
 assert.equal(element('graph-y').value, 'resolve_rate');
-assert.equal(tickValues('x')[0], -2.1);
-assert.equal(tickValues('x').at(-1), .1);
-assert.deepEqual(tickValues('y'), [0, 25, 50, 75, 100]);
+domainNear('x', -2.1, .1);
+assert.deepEqual(tickValues('x'), [-2, -1.5, -1, -.5, 0]); // round values, not -2.1 / -1.55 / …
+assert.deepEqual(tickValues('y'), [0, 20, 40, 60, 80, 100]);
 assert.match(graph(), /Alpha \(Anthropic\).*Net units added \(mean\): −2.0, Solved \(%\): 80.0%/);
 // The solved-only mean is a second column and axis; rank stays on the all-attempt mean.
 assert.match(element('graph-x').innerHTML, /value="solved_net">Net units added, solved tasks \(mean\)/);
@@ -249,8 +256,8 @@ for (const x of keys) for (const y of keys.filter(k => k !== x)) {
   circle.listeners.focus();
   assert(tooltip.textContent.includes(element('graph-x').innerHTML.match(new RegExp(`value="${x}">([^<]+)`))[1] + ':'));
   assert(tooltip.textContent.includes(element('graph-y').innerHTML.match(new RegExp(`value="${y}">([^<]+)`))[1] + ':'));
-  if (['resolve_rate', 'coverage'].includes(x)) assert.deepEqual(tickValues('x'), [0, 25, 50, 75, 100]);
-  if (['resolve_rate', 'coverage'].includes(y)) assert.deepEqual(tickValues('y'), [0, 25, 50, 75, 100]);
+  if (['resolve_rate', 'coverage'].includes(x)) assert.deepEqual(tickValues('x'), [0, 20, 40, 60, 80, 100]);
+  if (['resolve_rate', 'coverage'].includes(y)) assert.deepEqual(tickValues('y'), [0, 20, 40, 60, 80, 100]);
 }
 axis('x', 'net'); axis('y', 'score');
 assert.match(graph(), /Beta \(OpenAI\).*combined score \(midpoint if bounded\): 20.0/);
@@ -261,8 +268,8 @@ axis('y', 'resolve_rate');
 task('org__repo-1');
 assert.equal(element('graph-x').value, 'net');
 assert.equal(element('graph-y').value, 'churn');
-assert.equal(tickValues('x')[0], 100); // 111..331 with 5% padding, not anchored at zero.
-assert.equal(tickValues('x').at(-1), 342);
+domainNear('x', 100, 342); // 111..331 with 5% padding, not anchored at zero.
+assert.deepEqual(tickValues('x'), [100, 150, 200, 250, 300]);
 assert.doesNotMatch(element('graph-x').innerHTML, /ci|resolve_rate|rank_low/);
 assert.match(element('#board tbody').innerHTML, /<td class="left">Alpha<\/td><td class="left r">solved<\/td><td>\+111<\/td><\/tr>/);
 assert.match(graph(), /Gamma \(Anthropic\): failed task attempt/);
@@ -286,8 +293,8 @@ assert.match(element('task-status').textContent, /Still showing org__repo-2/);
 task('org__repo-3');
 assert.match(element('graph-legend').textContent, /No measured points/);
 assert.doesNotMatch(graph(), /<circle|NaN|Infinity/);
-assert.deepEqual(tickValues('x'), [0, .3, .5, .8, 1]);
-assert.deepEqual(tickValues('y'), [0, .3, .5, .8, 1]);
+assert.deepEqual(tickValues('x'), [0, .2, .4, .6, .8, 1]);
+assert.deepEqual(tickValues('y'), [0, .2, .4, .6, .8, 1]);
 axis('x', 'net');
 task('uncalibrated');
 assert.match(element('#board tbody').innerHTML, /class="left f">failed/);
@@ -297,9 +304,8 @@ assert.equal(colors().length, 2); // Known failed footprint remains visible; exc
 for (const [id, low, high] of [['constant', 1140, 1260], ['single', 950, 1050],
                               ['negative', -2040, -1160], ['zero', -1, 1]]) {
   task(id);
-  assert.equal(tickValues('x')[0], low);
-  assert.equal(tickValues('x').at(-1), high);
-  assert.equal(tickValues('x').length, 5);
+  domainNear('x', low, high);
+  assert(tickValues('x').length >= 3);
   assert.doesNotMatch(graph(), /NaN|Infinity/);
 }
 element('task-reset').listeners.click();
@@ -337,10 +343,10 @@ function coordinates() {
 }
 function near(a, b) { assert(Math.abs(a - b) < 1e-8); }
 load(cropped);
-assert.equal(tickValues('x')[0], -2.1);
-assert.equal(tickValues('x').at(-1), .1);
+domainNear('x', -2.1, .1);
 assert.match(element('graph-legend').textContent, /omitted from fitting X\/Y/);
-assert.deepEqual(tickValues('y'), [18, 29, 40, 51, 62]);
+domainNear('y', 18, 62);
+assert.deepEqual(tickValues('y'), [20, 30, 40, 50, 60]);
 assert.match(element('graph-legend').textContent, /plotted to scale/);
 near(coordinates()[0], 90 + (-500 + 2.1) / 2.2 * 600);
 near(coordinates()[1], 388 - (8 - 18) / 44 * 370);
@@ -360,37 +366,37 @@ near(coordinates()[1], 388 - (-500 + 2.1) / 2.2 * 370);
 axis('x', 'net');
 axis('x', 'coverage');
 assert.doesNotMatch(element('graph-legend').textContent, /omitted from fitting X/);
-assert.deepEqual(tickValues('x'), [0, 25, 50, 75, 100]);
+assert.deepEqual(tickValues('x'), [0, 20, 40, 60, 80, 100]);
 task('org__repo-1');
-assert.equal(tickValues('x')[0], 100);
+domainNear('x', 100, 342);
 assert.doesNotMatch(element('graph-legend').textContent, /omitted from fitting/);
 const preview = structuredClone(cropped);
 preview.models[2].name = 'Gemini 3.1 Pro Preview (high)';
 load(preview);
-assert.equal(tickValues('x')[0], -2.1);
-assert.equal(tickValues('x').at(-1), .1);
-assert.deepEqual(tickValues('y'), [18, 29, 40, 51, 62]);
+domainNear('x', -2.1, .1);
+domainNear('y', 18, 62);
+assert.deepEqual(tickValues('y'), [20, 30, 40, 50, 60]);
 assert.match(element('graph-legend').textContent, /omitted from fitting X\/Y/);
 for (const name of ['Gemini 3.1 Professional', 'Gemini 3.1 Pro Plus']) {
   const similar = structuredClone(cropped);
   similar.models[2].name = name;
   load(similar);
-  assert(tickValues('x')[0] < -500);
-  assert.deepEqual(tickValues('y'), [0, 25, 50, 75, 100]);
+  assert(domain('x')[0] < -500); // the outlier is inside the fitted range
+  assert.deepEqual(tickValues('y'), [0, 20, 40, 60, 80, 100]);
   assert.doesNotMatch(element('graph-legend').textContent, /omitted from fitting/);
 }
 const singleton = structuredClone(cropped);
 singleton.models[1].measured_net_mean = null;
 load(singleton);
-assert(tickValues('x')[0] < -500);
-assert.deepEqual(tickValues('y'), [0, 25, 50, 75, 100]);
+assert(domain('x')[0] < -500); // the outlier is inside the fitted range
+assert.deepEqual(tickValues('y'), [0, 20, 40, 60, 80, 100]);
 assert.doesNotMatch(element('graph-legend').textContent, /omitted from fitting/);
 const inside = structuredClone(cropped);
 inside.models[2].measured_net_mean = -1;
 inside.models[2].resolve_rate = .4;
 load(inside);
 assert.doesNotMatch(graph(), /\(off-scale\)/);
-assert.deepEqual(tickValues('y'), [0, 25, 50, 75, 100]);
+assert.deepEqual(tickValues('y'), [0, 20, 40, 60, 80, 100]);
 assert.equal(element('graph').style.marginBottom, '0px');
 assert.doesNotMatch(element('graph-legend').textContent, /omitted from fitting/);
 const right = structuredClone(cropped);
@@ -473,4 +479,21 @@ task('');
 element('chart-type').listeners.change({target: {value: 'scatter'}});
 assert.equal(element('axis-controls').hidden, false);
 assert.match(graph(), /<circle/);
-console.log('Palette, borderless markers, HTML labels, tooltips, outlier fitting, sorting, task switching, external axes, self-run points and bar view passed');
+// Self-run toggle: hides self-run models from scatter, bars and table, and refits the axes; ?selfrun=0 starts hidden.
+load(withSelfRun);
+assert.equal(element('self-run-toggle-label').hidden, false);
+axis('y', 'churn');
+assert.match(graph(), /data-model="Delta \(high\)"/);
+element('self-run-toggle').listeners.change({target: {checked: false}});
+assert.doesNotMatch(graph(), /Delta/);
+assert.doesNotMatch(element('#board tbody').innerHTML, /Delta|self-run-head/);
+assert.equal(element('self-run-note').hidden, true);
+element('chart-type').listeners.change({target: {value: 'bar'}});
+assert.doesNotMatch(element('graph').innerHTML, /Delta|bar-group/);
+element('chart-type').listeners.change({target: {value: 'scatter'}});
+element('self-run-toggle').listeners.change({target: {checked: true}});
+assert.match(graph(), /data-model="Delta \(high\)"/);
+assert.equal(element('self-run-note').hidden, false);
+load(data); // no self-run models: no toggle
+assert.equal(element('self-run-toggle-label').hidden, true);
+console.log('Palette, borderless markers, HTML labels, tooltips, outlier fitting, sorting, task switching, external axes, self-run points, self-run toggle and bar view passed');

@@ -73,6 +73,8 @@ body { overflow-x: clip; }
 #graph .bar-row.self-run .bar { opacity: 0.35; }
 #graph .bar-row.self-run .bar-name, #graph .bar-row.self-run .bar-value { opacity: 0.45; }
 #graph .bar-row:focus-visible .bar-name { outline: 2px solid #000; outline-offset: 2px; }
+#self-run-toggle-label { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
+#self-run-toggle { width: auto; min-width: 0; padding: 0; margin: 0; border: initial; flex: none; }
 #company-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .company-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
 #graph-tooltip {
@@ -128,7 +130,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <h2 id="complexity">Compare models</h2>
   <p class="small muted" id="external-note" hidden></p>
   <p><label for="chart-type">Chart</label> <select id="chart-type" aria-label="Chart type">
-       <option value="scatter">Scatter: compare two metrics</option><option value="bar">Bars: net units added</option></select></p>
+       <option value="scatter">Scatter: compare two metrics</option><option value="bar">Bars: net units added</option></select>
+     <label id="self-run-toggle-label" hidden><input type="checkbox" id="self-run-toggle" checked> Show self-run (unverified)</label></p>
   <p id="axis-controls"><label for="graph-x">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
      <label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></p>
   <p class="small muted" id="graph-legend"></p>
@@ -280,6 +283,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const external = data.external || null;
   // Owner-run configurations: shown faded in the all-tasks view, never ranked and not graded.
   const selfRun = data.self_run_models || [];
+  let showSelfRun = true;
+  const activeSelfRun = () => showSelfRun ? selfRun : [];
   const selfRunNote = m => `Self-run with ${m.harness}, unverified: not graded, ${m.tasks} of ${taskCount} tasks, ${m.measured_attempts}/${m.footprint_population_count} planned attempts measured`;
   if (selfRun.length) {
     $('self-run-note').hidden = false;
@@ -331,7 +336,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       return (ascending ? x - y : y - x) || a.m.name.localeCompare(b.m.name);
     };
     // Self-run rows cover a task subset: listed after the ranked rows, never interleaved.
-    const extra = selected ? [] : selfRun.map(m => ({m, i: -1})).sort(order);
+    const extra = selected ? [] : activeSelfRun().map(m => ({m, i: -1})).sort(order);
     const models = data.models.map((m, i) => ({m, i})).sort(order).concat(extra);
     document.querySelector('#board tbody').innerHTML = models.map(({m, i}, k) => (k === models.length - extra.length && extra.length
       ? `<tr class="self-run-head"><td colspan="${headers.length}">Self-run pilot · unranked, 3–10 tasks</td></tr>` : '') + (() => {
@@ -397,17 +402,34 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     renderAxisControls(); renderGraph();
   });
   // Chart type: the scatter, or bars of net units added; ?chart=bar opens the bars (shareable link).
+  // ?selfrun=0 hides the self-run models from the chart and table (shareable link).
   let chartType = 'scatter';
-  try { if (new URLSearchParams(window.location.search).get('chart') === 'bar') chartType = 'bar'; } catch (e) {}
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('chart') === 'bar') chartType = 'bar';
+    if (params.get('selfrun') === '0') showSelfRun = false;
+  } catch (e) {}
+  const setParam = (key, value) => {
+    try {
+      const url = new URL(window.location.href);
+      if (value == null) url.searchParams.delete(key); else url.searchParams.set(key, value);
+      window.history.replaceState(null, '', url);
+    } catch (e) {}
+  };
   $('chart-type').value = chartType;
   $('chart-type').addEventListener('change', e => {
     chartType = e.target.value === 'bar' ? 'bar' : 'scatter';
-    try {
-      const url = new URL(window.location.href);
-      if (chartType === 'bar') url.searchParams.set('chart', 'bar'); else url.searchParams.delete('chart');
-      window.history.replaceState(null, '', url);
-    } catch (e) {}
+    setParam('chart', chartType === 'bar' ? 'bar' : null);
     renderGraph();
+  });
+  $('self-run-toggle-label').hidden = selfRun.length === 0;
+  $('self-run-toggle').checked = showSelfRun;
+  if (selfRun.length) $('self-run-note').hidden = !showSelfRun;
+  $('self-run-toggle').addEventListener('change', e => {
+    showSelfRun = !!e.target.checked;
+    setParam('selfrun', showSelfRun ? null : '0');
+    $('self-run-note').hidden = !showSelfRun;
+    renderBoard(); renderGraph();
   });
   const tooltip = $('graph-tooltip');
   function hideTooltip() { tooltip.hidden = true; tooltip.textContent = ''; }
@@ -435,7 +457,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   function renderBars() {
     const units = v => (v < 0 ? '−' : '') + Math.abs(Math.round(v)).toLocaleString('en-US');
     const rows = data.models.map((m, i) => ({m, i, v: metricValue(m, i, 'net'), latest: m.latest !== false}))
-      .concat(selected ? [] : selfRun.map(m => ({m, i: -1, v: m.measured_net_mean, latest: true, selfRun: true})))
+      .concat(selected ? [] : activeSelfRun().map(m => ({m, i: -1, v: m.measured_net_mean, latest: true, selfRun: true})))
       .filter(r => Number.isFinite(r.v)).sort((a, b) => a.v - b.v || a.m.name.localeCompare(b.m.name));
     // Self-run means cover only their own task subset, so they get their own group, never interleaved.
     rows.sort((a, b) => !!a.selfRun - !!b.selfRun);
@@ -476,7 +498,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const points = data.models.map((m, i) => ({x: metricValue(m, i, axes.x), y: metricValue(m, i, axes.y),
       name: m.name, company: m.company || 'Other', count: m.measured_attempts, match: m.aa_match, latest: m.latest !== false,
       kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : (selected[2][i][6] || selected[2][i][0]) === 'r' ? 'resolved' : 'unknown') : 'all', i, m}))
-      .concat(selected ? [] : selfRun.map(m => ({x: metricValue(m, -1, axes.x), y: metricValue(m, -1, axes.y), name: m.name,
+      .concat(selected ? [] : activeSelfRun().map(m => ({x: metricValue(m, -1, axes.x), y: metricValue(m, -1, axes.y), name: m.name,
         company: m.company || 'Other', count: m.measured_attempts, match: m.aa_match, latest: true, kind: 'all', i: -1, m, selfRun: true})))
       .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
     $('graph-legend').textContent = points.length
@@ -512,7 +534,16 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       p.px = sx(p.x);
       p.py = sy(p.y);
     }
-    const ticks = (lo, hi, axis) => Array.from({length: 5}, (_, i) => { const v = lo + (hi - lo) * i / 4; return axis === 'x' ? `<line class="axis" x1="${sx(v)}" y1="${H-B}" x2="${sx(v)}" y2="${H-B+4}"/><text class="tick" text-anchor="middle" x="${sx(v)}" y="${H-B+19}">${axisFormat(v, axes.x)}</text>` : `<line class="axis" x1="${L-4}" y1="${sy(v)}" x2="${L}" y2="${sy(v)}"/><text class="tick" text-anchor="end" x="${L-8}" y="${sy(v)+4}">${axisFormat(v, axes.y)}</text>`; }).join('');
+    // Ticks sit at round values (1, 2 or 5 × 10^k apart, about five) inside the fitted range, which stays data-driven.
+    const roundTicks = (lo, hi) => {
+      const raw = (hi - lo) / 5, mag = 10 ** Math.floor(Math.log10(raw)), f = raw / mag;
+      const step = (f >= Math.sqrt(50) ? 10 : f >= Math.sqrt(10) ? 5 : f >= Math.sqrt(2) ? 2 : 1) * mag;
+      const digits = (String(+step.toPrecision(12)).split('.')[1] || '').length, out = [];
+      for (let k = Math.ceil(lo / step - 1e-9); k * step <= hi + step * 1e-9; k++) out.push(+(k * step).toFixed(digits));
+      return {values: out, digits};
+    };
+    const tickLabel = (v, key, digits) => v.toLocaleString('en-US', {minimumFractionDigits: digits, maximumFractionDigits: digits}).replace('-', '−') + (['resolve_rate', 'coverage'].includes(key) ? '%' : '');
+    const ticks = (lo, hi, axis) => { const {values, digits} = roundTicks(lo, hi); return values.map(v => axis === 'x' ? `<line class="axis" x1="${sx(v)}" y1="${H-B}" x2="${sx(v)}" y2="${H-B+4}"/><text class="tick" text-anchor="middle" x="${sx(v)}" y="${H-B+19}">${tickLabel(v, axes.x, digits)}</text>` : `<line class="axis" x1="${L-4}" y1="${sy(v)}" x2="${L}" y2="${sy(v)}"/><text class="tick" text-anchor="end" x="${L-8}" y="${sy(v)+4}">${tickLabel(v, axes.y, digits)}</text>`).join(''); };
     const usesExternal = [axes.x, axes.y].some(k => k.startsWith('aa_'));
     const matchNote = p => usesExternal && p.match && p.match !== 'exact'
       ? {effort_unlabelled: 'Artificial Analysis entry has no effort label', undated_alias: 'undated model ID matched to the Artificial Analysis snapshot'}[p.match] : '';
@@ -540,7 +571,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const scale = ($('graph').clientWidth || W) / W;
     const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
     $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. All models are labelled; earlier generations are lighter. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. All models are labelled; earlier generations are lighter. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
       const show = event => {
         const p = points[Number(circle.dataset.point)];
