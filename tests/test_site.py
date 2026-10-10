@@ -19,11 +19,18 @@ class SiteTests(unittest.TestCase):
     def test_published_sources_counts_and_hashes(self):
         root = Path(__file__).resolve().parent.parent
         sources = published_sources('deepswe', root=root)
+        *sources, self_run = sources  # the owner-run pilot is listed last, never as a frozen board
         self.assertEqual([s['tasks'] for s in sources], [34, 5, 35, 34, 500, 300])
         self.assertEqual([s['population_per_model'] for s in sources], [136, 20, 140, 136, 500, 300])
         self.assertEqual([s['attempts_per_task'] for s in sources], [4, 4, 4, 4, 1, 1])
         self.assertEqual([s['board_url'] for s in sources],
                          ['index.html', 'javascript.html', 'typescript.html', 'go.html', 'verified.html', 'live.html'])
+        plan = (root / 'examples/self-run/plan.json').read_bytes()
+        self.assertTrue(self_run['self_run'])
+        self.assertFalse(self_run['active'])
+        self.assertEqual((self_run['tasks'], self_run['attempts_per_task'], self_run['population_per_model']), (10, 2, '6–20'))
+        self.assertEqual(self_run['manifest_sha256'], hashlib.sha256(plan).hexdigest())
+        self.assertEqual(self_run['deepswe_commit'], json.loads(plan)['deepswe_commit'])
         for source in sources:
             path = source['manifest_url'].split('/blob/main/')[1]
             raw = (root / path).read_bytes()

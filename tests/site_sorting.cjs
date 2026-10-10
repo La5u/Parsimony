@@ -418,7 +418,13 @@ const withSelfRun = structuredClone(data);
 withSelfRun.self_run_models = [{agent: 'self-run-v1_x', name: 'Delta (high)', company: 'OpenAI', self_run: true, latest: true,
   harness: 'pi', tasks: 2, attempts: 4, footprint_population_count: 20, measured_attempts: 4, measured_net_mean: -5,
   measured_churn_mean: 9, measured_solved_net_mean: null, resolve_rate: null}];
+withSelfRun.sources = [...data.sources, {name: 'Self-run pilot', benchmark: 'self-run', language: 'python', tasks: 10,
+  attempts_per_task: 2, population_per_model: '6–20', active: false, self_run: true, board_url: 'index.html',
+  report_url: 'https://example.org/self-run', manifest_url: 'https://example.org/plan', manifest_sha256: 'plan', deepswe_commit: 'abc'}];
 load(withSelfRun);
+assert.match(element('source-counts').innerHTML, /Self-run pilot<\/a> — Self-run by the owner, unverified; shown faded on the DeepSWE Python board, never ranked/);
+assert.match(element('source-counts').innerHTML, /up to 10 tasks · 2 attempts per task · 6–20 planned attempts\/model, by model/);
+assert.match(element('source-evidence').innerHTML, /Plan SHA-256: plan<br>DeepSWE commit: abc/);
 assert.doesNotMatch(graph(), /Delta/); // Not graded: no point on the Solved axis.
 axis('y', 'churn');
 assert.match(graph(), /<circle[^>]*data-model="Delta \(high\)"[^>]*class="all-point self-run"/);
