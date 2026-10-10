@@ -58,6 +58,20 @@ body { overflow-x: clip; }
 .source-row { margin-bottom: 16px; }
 #source-evidence { overflow-wrap: anywhere; }
 #graph .best-zone { fill: #16a34a; fill-opacity: 0.12; }
+#graph .bars { display: grid; grid-template-columns: minmax(6em, 15em) minmax(0, 1fr) auto; gap: 3px 10px; align-items: center; font: 12px system-ui, sans-serif; color: #000; }
+#graph .bar-row { display: contents; cursor: pointer; }
+@media (max-width: 600px) { #graph .bars { grid-template-columns: minmax(0, 8.5em) minmax(0, 1fr) auto; gap: 3px 6px; font-size: 11px; } }
+#graph .bar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+#graph .bar-track { position: relative; height: 14px; }
+#graph .bar { position: absolute; top: 0; bottom: 0; border-radius: 2px; }
+#graph .bar-zero { position: absolute; top: -2px; bottom: -2px; width: 1px; background: var(--muted); }
+#graph .bar-group { grid-column: 1 / -1; margin-top: 14px; padding-top: 8px; border-top: 1px solid var(--rule); color: var(--muted); }
+#graph .bar-value { font-variant-numeric: tabular-nums; text-align: right; }
+#graph .bar-row.older .bar { opacity: 0.7; }
+#graph .bar-row.older .bar-name, #graph .bar-row.older .bar-value { opacity: 0.75; }
+#graph .bar-row.self-run .bar { opacity: 0.35; }
+#graph .bar-row.self-run .bar-name, #graph .bar-row.self-run .bar-value { opacity: 0.45; }
+#graph .bar-row:focus-visible .bar-name { outline: 2px solid #000; outline-offset: 2px; }
 #company-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .company-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
 #graph-tooltip {
@@ -113,7 +127,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="small muted">Solved %: upstream pass rate. Footprint: mean net coding units, not a %. No correctness weighting.</p>
   <p class="small muted" id="external-note" hidden></p>
   <p class="small muted">Hover, focus or tap for values; all models are labelled.</p>
-  <p><label for="graph-x">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
+  <p><label for="chart-type">Chart</label> <select id="chart-type" aria-label="Chart type">
+       <option value="scatter">Scatter: compare two metrics</option><option value="bar">Bars: net units added</option></select></p>
+  <p id="axis-controls"><label for="graph-x">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
      <label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></p>
   <p class="small muted" id="graph-legend"></p>
   <div class="small" id="company-legend" aria-label="Model companies"></div>
@@ -270,7 +286,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const selfRunNote = m => `Self-run with ${m.harness}, unverified: not graded, ${m.tasks} of ${taskCount} tasks, ${m.measured_attempts}/${m.footprint_population_count} planned attempts measured`;
   if (selfRun.length) {
     $('self-run-note').hidden = false;
-    $('self-run-note').textContent = `Faded points and grey rows are self-run by the site owner (OpenAI models via pi, Anthropic models via Claude Code) on the first 3–10 of these tasks, without the task containers. They are unverified, not graded and never ranked; footprints cover a task subset, so compare them mainly with each other and with their published anchors (GPT-5.6 Sol, Claude Sonnet 5).`;
+    $('self-run-note').textContent = `Faded points and grey rows are self-run by the site owner (OpenAI models via pi, Anthropic models via Claude Code) on the first 3–10 of these tasks, without the task containers. They are unverified, not graded and never ranked; footprints cover a task subset, so compare them mainly with each other and with GPT-5.6 Sol, the one model run both ways (its self-run footprint was 0.88× its published one on the same tasks). Claude Code has no such anchor.`;
   }
   if (external) {
     $('external-note').hidden = $('external-help').hidden = false;
@@ -378,6 +394,19 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     axes[axis] = key;
     renderAxisControls(); renderGraph();
   });
+  // Chart type: the scatter, or bars of net units added; ?chart=bar opens the bars (shareable link).
+  let chartType = 'scatter';
+  try { if (new URLSearchParams(window.location.search).get('chart') === 'bar') chartType = 'bar'; } catch (e) {}
+  $('chart-type').value = chartType;
+  $('chart-type').addEventListener('change', e => {
+    chartType = e.target.value === 'bar' ? 'bar' : 'scatter';
+    try {
+      const url = new URL(window.location.href);
+      if (chartType === 'bar') url.searchParams.set('chart', 'bar'); else url.searchParams.delete('chart');
+      window.history.replaceState(null, '', url);
+    } catch (e) {}
+    renderGraph();
+  });
   const tooltip = $('graph-tooltip');
   function hideTooltip() { tooltip.hidden = true; tooltip.textContent = ''; }
   window.addEventListener('scroll', hideTooltip, true);
@@ -391,8 +420,54 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     else update();
   });
   const usesExternalAxis = () => !selected && [currentAxes().x, currentAxes().y].some(k => k.startsWith('aa_'));
+  function showTooltipAt(target, event, text) {
+    tooltip.textContent = text;
+    tooltip.hidden = false;
+    const rect = target.getBoundingClientRect();
+    const x = Number.isFinite(event?.clientX) ? event.clientX : rect.left + rect.width / 2;
+    const y = Number.isFinite(event?.clientY) ? event.clientY : rect.bottom;
+    const top = y + 14 + tooltip.offsetHeight > window.innerHeight - 8 ? y - tooltip.offsetHeight - 12 : y + 14;
+    tooltip.style.left = `${Math.max(8, Math.min(x + 12, window.innerWidth - tooltip.offsetWidth - 8))}px`;
+    tooltip.style.top = `${Math.max(8, Math.min(top, window.innerHeight - tooltip.offsetHeight - 8))}px`;
+  }
+  function renderBars() {
+    const units = v => (v < 0 ? '−' : '') + Math.abs(Math.round(v)).toLocaleString('en-US');
+    const rows = data.models.map((m, i) => ({m, i, v: metricValue(m, i, 'net'), latest: m.latest !== false}))
+      .concat(selected ? [] : selfRun.map(m => ({m, i: -1, v: m.measured_net_mean, latest: true, selfRun: true})))
+      .filter(r => Number.isFinite(r.v)).sort((a, b) => a.v - b.v || a.m.name.localeCompare(b.m.name));
+    // Self-run means cover only their own task subset, so they get their own group, never interleaved.
+    rows.sort((a, b) => !!a.selfRun - !!b.selfRun);
+    const firstSelfRun = rows.findIndex(r => r.selfRun);
+    const metric = selected ? 'Net units added in this attempt' : 'Net units added (mean per measured attempt)';
+    $('graph-legend').textContent = rows.length
+      ? `${metric}, smallest first. Failures included; not a ranking of coding ability. Company colors; earlier generations faded.`
+      : 'No measured values available for this view.';
+    $('company-legend').innerHTML = [...new Set(rows.map(r => r.m.company || 'Other'))].sort().map(company =>
+      `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
+    const lo = Math.min(0, ...rows.map(r => r.v)), hi = Math.max(0, ...rows.map(r => r.v));
+    const span = hi - lo || 1, pct = v => (v - lo) / span * 100;
+    const note = r => {
+      const m = r.m, total = m.footprint_population_count || data.population_count || data.task_count;
+      return `${m.name}${r.selfRun ? ' · self-run' : ''} (${m.company || 'Other'})\n${metric}: ${units(r.v)}` +
+        (selected ? '' : `\nMeasured ${m.measured_attempts}/${total} attempts`) + (r.selfRun ? '\n' + selfRunNote(m) : '');
+    };
+    $('graph').style.marginBottom = '0px';
+    $('graph').innerHTML = `<div class="bars" role="list" aria-label="${esc(metric)} per model, smallest first">` + rows.map((r, k) =>
+      (k === firstSelfRun ? `<div class="bar-group" role="presentation">Self-run pilot: run by the site owner on only the first 3–10 of these tasks, so not comparable with the bars above. Unverified and unranked.</div>` : '') +
+      `<div class="bar-row${r.latest ? '' : ' older'}${r.selfRun ? ' self-run' : ''}" role="listitem" tabindex="0" data-bar="${k}" aria-label="${esc(note(r).replace(/\n/g, '; '))}">` +
+      `<span class="bar-name">${esc(r.m.name)}</span>` +
+      `<span class="bar-track">${lo < 0 ? `<span class="bar-zero" style="left:${pct(0)}%"></span>` : ''}<span class="bar" style="left:${pct(Math.min(0, r.v))}%;width:${Math.abs(r.v) / span * 100}%;background:${companyColor(r.m.company || 'Other')}"></span></span>` +
+      `<span class="bar-value">${units(r.v)}</span></div>`).join('') + '</div>';
+    document.querySelectorAll('#graph [data-bar]').forEach(row => {
+      const show = event => showTooltipAt(row, event, note(rows[Number(row.dataset.bar)]));
+      ['mouseenter', 'mousemove', 'focus', 'click'].forEach(event => row.addEventListener(event, show));
+      ['mouseleave', 'blur'].forEach(event => row.addEventListener(event, hideTooltip));
+    });
+  }
   function renderGraph() {
     hideTooltip();
+    $('axis-controls').hidden = chartType === 'bar';
+    if (chartType === 'bar') return renderBars();
     const axes = currentAxes(), options = axisOptions();
     const xLabel = options.find(o => o.key === axes.x).label, yLabel = options.find(o => o.key === axes.y).label;
     const axisFormat = (value, key) => fmt(value) + (['resolve_rate', 'coverage'].includes(key) ? '%' : '');
@@ -468,13 +543,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       const show = event => {
         const p = points[Number(circle.dataset.point)];
         tooltip.textContent = `${p.name}${p.offscale ? ' (outside fitted axes, plotted to scale)' : ''}\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${matchNote(p) ? '\n' + matchNote(p) : ''}${p.selfRun ? '\n' + selfRunNote(p.m) : ''}${p.kind !== 'all' ? '\n' + p.kind + ' task attempt' : ''}`;
-        tooltip.hidden = false;
-        const rect = circle.getBoundingClientRect();
-        const x = Number.isFinite(event?.clientX) ? event.clientX : rect.left + rect.width / 2;
-        const y = Number.isFinite(event?.clientY) ? event.clientY : rect.bottom;
-        const top = y + 14 + tooltip.offsetHeight > window.innerHeight - 8 ? y - tooltip.offsetHeight - 12 : y + 14;
-        tooltip.style.left = `${Math.max(8, Math.min(x + 12, window.innerWidth - tooltip.offsetWidth - 8))}px`;
-        tooltip.style.top = `${Math.max(8, Math.min(top, window.innerHeight - tooltip.offsetHeight - 8))}px`;
+        showTooltipAt(circle, event, tooltip.textContent);
       };
       ['mouseenter', 'mousemove', 'focus', 'click'].forEach(event => circle.addEventListener(event, show));
       ['mouseleave', 'blur'].forEach(event => circle.addEventListener(event, hideTooltip));

@@ -44,7 +44,7 @@ function element(id) {
   return elements.get(id);
 }
 element('parsimony-data').textContent = JSON.stringify(data);
-let lastButtons, lastHeader, lastCircles, lastGraph;
+let lastButtons, lastHeader, lastCircles, lastGraph, lastBars, lastBarGraph;
 const doc = {
   getElementById: element,
   querySelector: element,
@@ -58,6 +58,16 @@ const doc = {
         getBoundingClientRect() { return {left: 100, width: 12, bottom: 200}; }
       }));
       return lastCircles;
+    }
+    if (selector === '#graph [data-bar]') {
+      const graph = element('graph').innerHTML;
+      if (lastBars && lastBarGraph === graph) return lastBars;
+      lastBarGraph = graph;
+      lastBars = [...graph.matchAll(/data-bar="(\d+)"/g)].map(match => ({
+        dataset: {bar: match[1]}, listeners: {}, addEventListener(event, fn) { this.listeners[event] = fn; },
+        getBoundingClientRect() { return {left: 100, width: 12, bottom: 200}; }
+      }));
+      return lastBars;
     }
     if (selector !== '#board button[data-sort]') return [];
     const head = element('#board thead').innerHTML;
@@ -436,4 +446,28 @@ assert.equal(element('self-run-note').hidden, false);
 task('org__repo-1');
 assert.doesNotMatch(graph(), /Delta/);
 assert.doesNotMatch(element('#board tbody').innerHTML, /Delta/);
-console.log('Palette, borderless markers, HTML labels, tooltips, outlier fitting, sorting, task switching, external axes and self-run points passed');
+// Bar view: net units only, smallest first, same colours and fading; self-run faded; task view uses the attempt.
+load(withSelfRun);
+assert.equal(element('chart-type').value, 'scatter');
+element('chart-type').listeners.change({target: {value: 'bar'}});
+assert.equal(element('axis-controls').hidden, true);
+const barNames = () => [...element('graph').innerHTML.matchAll(/<span class="bar-name">([^<]*)<\/span>/g)].map(m => m[1]);
+assert.deepEqual(barNames(), ['Alpha', 'Beta', 'Delta (high)']); // Gamma has no measurement; self-run listed after, never interleaved
+assert.match(element('graph').innerHTML, /data-bar="1"[\s\S]*?<div class="bar-group" role="presentation">Self-run pilot: run by the site owner on only the first 3–10 of these tasks, so not comparable with the bars above\. Unverified and unranked\.<\/div><div class="bar-row self-run"[^>]*data-bar="2"/);
+assert.match(element('graph').innerHTML, /class="bar-row self-run"[^>]*>[\s\S]*?background:#000000/);
+assert.match(element('graph').innerHTML, /class="bar-row older"[^>]*aria-label="Beta \(OpenAI\); Net units added \(mean per measured attempt\): 0; Measured 3\/4 attempts"/);
+assert.match(element('graph').innerHTML, /<span class="bar-zero" style="left:100%"><\/span>/);
+assert.match(element('graph').innerHTML, /<span class="bar-value">−5<\/span>/);
+assert.match(element('graph-legend').textContent, /smallest first\. Failures included; not a ranking of coding ability\./);
+doc.querySelectorAll('#graph [data-bar]')[2].listeners.focus({});
+assert.match(element('graph-tooltip').textContent, /^Delta \(high\) · self-run \(OpenAI\)\nNet units added \(mean per measured attempt\): −5\nMeasured 4\/20 attempts\nSelf-run with pi/);
+task('org__repo-1');
+assert.deepEqual(barNames(), ['Alpha', 'Beta', 'Gamma']); // a measured failed attempt still has a bar
+assert.match(element('graph').innerHTML, /<span class="bar-value">331<\/span>/);
+assert.match(element('graph-legend').textContent, /^Net units added in this attempt/);
+assert.doesNotMatch(element('graph').innerHTML, /Delta/);
+task('');
+element('chart-type').listeners.change({target: {value: 'scatter'}});
+assert.equal(element('axis-controls').hidden, false);
+assert.match(graph(), /<circle/);
+console.log('Palette, borderless markers, HTML labels, tooltips, outlier fitting, sorting, task switching, external axes, self-run points and bar view passed');
