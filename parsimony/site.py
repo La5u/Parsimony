@@ -74,7 +74,7 @@ def published_sources(benchmark, language='python', root=None):
         ('DeepSWE · Python', 'deepswe', 'python', 'deepswe-python', 'population.json', 'index.html'),
         ('DeepSWE · JavaScript', 'deepswe', 'javascript', 'deepswe-javascript', 'population.json', 'javascript.html'),
         ('DeepSWE · TypeScript', 'deepswe', 'typescript', 'deepswe-typescript', 'population.json', 'typescript.html'),
-        ('DeepSWE · Go', 'deepswe', 'go', 'deepswe-go', 'population.json', 'go.html'),
+        ('DeepSWE · Go', 'deepswe', 'go', 'deepswe-go-v2', 'population.json', 'go.html'),
         ('SWE-bench Verified', 'verified', 'python', 'mini-swe-agent-500', 'population.json', 'verified.html'),
         ('SWE-bench Live Lite', 'live', 'python', 'live-python', 'population-manifest.json', 'live.html'),
     ]

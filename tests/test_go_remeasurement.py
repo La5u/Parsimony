@@ -1,6 +1,9 @@
 """Safety controls for the static, frozen-input Go remeasurement driver."""
+import hashlib
 import importlib.util
+import io
 import json
+import tarfile
 from pathlib import Path
 import tempfile
 import unittest
@@ -11,6 +14,57 @@ PATH = Path(__file__).resolve().parents[1] / 'examples/benchmark-discovery/remea
 spec = importlib.util.spec_from_file_location('go_remeasurement', PATH)
 driver = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(driver)
+
+
+fetch_spec = importlib.util.spec_from_file_location('go_release_fetch', PATH.with_name('fetch-go-v2-release.py'))
+fetch = importlib.util.module_from_spec(fetch_spec)
+fetch_spec.loader.exec_module(fetch)
+
+
+class GoReleaseDownloadTests(unittest.TestCase):
+    def archive(self, members):
+        stream = io.BytesIO()
+        files = {}
+        with tarfile.open(fileobj=stream, mode='w:gz') as archive:
+            for name, data, kind in members:
+                member = tarfile.TarInfo(name)
+                member.size = len(data)
+                member.type = kind
+                archive.addfile(member, io.BytesIO(data))
+                files[name] = {'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+        raw = stream.getvalue()
+        return raw, {'archive_bytes': len(raw), 'archive_sha256': hashlib.sha256(raw).hexdigest(), 'files': files}
+
+    def test_verified_scalar_download_is_idempotent(self):
+        raw, manifest = self.archive([('model.jsonl', b'{}\n', tarfile.REGTYPE)])
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(fetch.unpack(raw, manifest, directory), 1)
+            self.assertEqual(fetch.unpack(raw, manifest, directory), 1)
+            self.assertEqual((Path(directory) / 'model.jsonl').read_bytes(), b'{}\n')
+            with self.assertRaisesRegex(ValueError, 'archive checksum'):
+                fetch.unpack(raw + b'x', manifest, directory)
+
+    def test_unsafe_members_and_incomplete_membership_are_rejected(self):
+        for name, kind in [('../escape', tarfile.REGTYPE), ('symlink', tarfile.SYMTYPE),
+                           ('directory', tarfile.DIRTYPE)]:
+            raw, manifest = self.archive([(name, b'', kind)])
+            with tempfile.TemporaryDirectory() as directory, self.assertRaisesRegex(ValueError, 'unsafe'):
+                fetch.unpack(raw, manifest, directory)
+        raw, manifest = self.archive([('a.json', b'{}', tarfile.REGTYPE)])
+        manifest['files']['missing.json'] = manifest['files']['a.json']
+        with tempfile.TemporaryDirectory() as directory, self.assertRaisesRegex(ValueError, 'membership'):
+            fetch.unpack(raw, manifest, directory)
+
+    def test_conflicts_are_detected_before_any_new_file_is_written(self):
+        raw, manifest = self.archive([('new.json', b'{}', tarfile.REGTYPE),
+                                      ('existing.json', b'{}', tarfile.REGTYPE)])
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / 'existing.json'
+            target.write_bytes(b'other')
+            with self.assertRaisesRegex(ValueError, 'existing file differs'):
+                fetch.unpack(raw, manifest, directory)
+            self.assertEqual(target.read_bytes(), b'other')
+            self.assertFalse((Path(directory) / 'new.json').exists())
 
 
 class GoRemeasurementTests(unittest.TestCase):

@@ -2,6 +2,20 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## 0.8.0-beta — source-pinned Go grammar and versioned EOF policy
+
+Go now uses `tree-sitter-go-units-v2`: Tree-sitter 0.26.0 plus immutable upstream PR #190 source (URL/SHA256 checked via installed archive metadata), and an explicit parsing-only final-LF policy. Stock grammar 0.25.0 is not accepted for v2 despite the source package retaining that version. Strict syntax-error rejection remains. An initial PR #193 candidate was rejected after full-cohort testing exposed a shadowed-`new` regression.
+
+Remeasured **26 configurations × 136 slots = 3,536 records** at clean `34d59ca`, Python 3.14.7, on the byte-identical frozen Go dataset and checksum-bound patches/outcomes/preimages. **Six parser-limited attempts recovered; one genuinely invalid Helm patch remains unmeasured.** All 3,502 common primary footprints and human net/churn values agree. Three structural-churn diagnostics change by +2; they do not set rank. All outcome/provenance bindings are unchanged, as are the historical Go artifacts.
+
+New named population, coverage, archived panel/scores/stability and Go page are published separately. Large scalar files are in the checksummed `deepswe-go-v0.8` release asset; raw source/patches are excluded. Other boards' measurements remain unchanged; Sources metadata links to the new Go manifest. See [Go release details](docs/go-parser-v2-release.md) and [release README](examples/deepswe-go-v2/README.md).
+
+## Website and maintenance — solved-only option and repository audit
+
+All six boards retain All measured as default and offer Count attempts: Solved only (`?attempts=solved`), updating footprint rank, means, coverage and task/chart views consistently. Failed/unknown attempts and ungraded self-runs are excluded in that view; upstream Solved %, external indices and archived diagnostics remain independent. Missing measurements are never zero-filled. Keyboard focus, tooltip dismissal, HTML structure and no-JavaScript behavior have regression coverage.
+
+Repository maintenance fixed iterator consumption, resume evidence loss, malformed input/provenance validation, parser-worker lifecycle, cache/snapshot inefficiencies and external-index redirect/size risks. Repeated task attempts remain clustered in sensitivity resampling. Expanded adversarial tests demonstrate compact validation removal and helper delegation; footprint does not certify maintainability. See [repository audit](docs/repository-audit.md), [site audit](docs/site-audit.md) and [adversarial validation](docs/adversarial-validation.md).
+
 ## Discovery: 12 more fresh-code configurations; Seed-OSS conflict — 2026-10-07
 
 Expanded the NONPUBLISHED LiveCodeBench pilot from six to **18 configurations**, adding GPT-4o, o3/o4-mini High, Grok 3 Mini High, Llama 3.3, Mistral Large, Codestral, QwQ, Qwen 2.5 Coder, DeepSeek V3 and Claude 4 Thinking variants. Clean `cbe8768` measured only new checksum-bound inputs; original six exports/metadata remain unchanged. Total **17,353 measurements / 18,990 retained task-attempt slots**; explicit missing states comprise 1,209 absent tasks, 43 absent code lists, 318 empty bodies and 67 parse errors. Exact subset-export bindings preserve the full frozen population; unknown outcomes stay unknown, with observed solve-fraction bounds. No board or model-quality ranking is implied.

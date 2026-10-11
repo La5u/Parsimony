@@ -126,7 +126,7 @@ Visible copy stays compact, with detailed caveats and archived-score explanation
 | Page | Data | Build flag |
 |---|---|---|
 | [`site/index.html`](site/index.html) (main) | [DeepSWE Python](examples/deepswe-python/README.md), 26 models | `--benchmark deepswe` |
-| `site/javascript.html`, `typescript.html`, `go.html` | DeepSWE [JavaScript](examples/deepswe-javascript/README.md), [TypeScript](examples/deepswe-typescript/README.md), [Go](examples/deepswe-go/README.md); separate pinned tracks with explicit coverage limits | `--benchmark deepswe` |
+| `site/javascript.html`, `typescript.html`, `go.html` | DeepSWE [JavaScript](examples/deepswe-javascript/README.md), [TypeScript](examples/deepswe-typescript/README.md), [Go v2](examples/deepswe-go-v2/README.md); separate pinned tracks with explicit coverage limits | `--benchmark deepswe` |
 | [`site/verified.html`](site/verified.html) | [SWE-bench Verified](examples/mini-swe-agent-500/README.md), 34 configurations | `--benchmark verified` |
 | `site/live.html` | [Live Lite Python](examples/live-python/README.md): DeepSeek V4.1 Flash, GPT-5.6 Sol, Claude Opus 4.8 and GPT-5.5 / agav0.2.0-beta.2 as source-declared model + agent configurations on all 300 tasks | `--benchmark live` |
 
@@ -147,7 +147,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). `python -m parsimony.contribute export` 
 | [deepswe-python](examples/deepswe-python/README.md) | 0.5.2-beta | 26 current models (2026) × 34 DeepSWE Python tasks × 4 attempts, one agent (mini-SWE-agent); imported with `python -m parsimony.deepswe` (the website's main board) |
 | [deepswe-javascript](examples/deepswe-javascript/README.md) | 0.7.0-beta | 26 models × 5 JS-labelled tasks × 4 attempts; all 5 tasks calibratable; official TypeScript parser, script kind by file extension |
 | [deepswe-typescript](examples/deepswe-typescript/README.md) | 0.7.0-beta | 26 models × 35 TS-labelled tasks × 4 attempts; official TypeScript parser; 33 tasks calibratable (5 analysis errors in 3,640 records), two upstream language-label mismatches documented |
-| [deepswe-go](examples/deepswe-go/README.md) | 0.6.0-beta | 26 models × 34 Go tasks × 4 attempts; all 34 tasks calibratable |
+| [deepswe-go-v2](examples/deepswe-go-v2/README.md) | 0.8.0-beta | 26 models × 34 Go tasks × 4 attempts; corrected grammar/EOF policy, 3,508 eligible footprints and one genuine syntax error; all 34 tasks calibratable; large scalar files in a checksummed release asset |
+| [deepswe-go](examples/deepswe-go/README.md) | 0.6.0-beta | Historical Go v1 cohort, retained unchanged; superseded by v2 |
 | [mini-swe-agent-500](examples/mini-swe-agent-500/README.md) | 0.5.2-beta | 34 configurations × all 500 tasks with failures, mini-SWE-agent v0.0.0–v2.4.2; Gemini 3.5 Flash added with 441 measured attempts and 59 explicit no-generation outcomes; frozen population, archived score diagnostics and agent-version checks |
 | [livecodebench-pilot](examples/livecodebench-pilot/README.md) | 0.7.0-beta units, separate complete-file scope | **NONPUBLISHED** fresh-code pilot: 18 configurations × 1,055 retained Python tasks; 17,353 measured attempts, fixed sample index 0, explicit partial-export/unknown/missing/failed states; original six snapshots preserved; provenance release review pending |
 | [ten-model-500](examples/ten-model-500/README.md) | 0.5.0-beta | Ten models (plus Claude Opus 4.5) × all 500 tasks, mini-SWE-agent v2.0.0 only; superseded as the website's data |
@@ -167,7 +168,7 @@ See the [repository audit and release-readiness review](docs/repository-audit.md
 
 **Code footprint is not technical debt.** Small code can be cryptic, incorrect beyond the benchmark tests, insecure or hard to maintain. Larger changes may add valuable validation. Human patches are a baseline, not an optimum. Net-weighted scores reward deletion, and SWE-bench tests do not protect untested code, so check the `net_floor` sensitivity variant.
 
-The existing Python boards measure Python only. Optional [JavaScript/TypeScript and Go tracks](docs/language-tracks.md) (analyzer 0.6.0; JavaScript/TypeScript moved to the official TypeScript parser in 0.7.0) are kept separate from Python and each other; raw counts are not cross-language comparable. Scope is unified text diffs only: binary/rename-only diffs and quoted paths are unsupported. There is no call-graph, runtime, maintainability or behavioral-equivalence modeling. Path and generated-file filters are heuristic. Interpreter tokenizer/AST changes (notably f-strings) change results. Coding units measure size and nesting, not readability: a test-specific hardcoded branch can cost fewer units than a general fix.
+The existing Python boards measure Python only. Optional [JavaScript/TypeScript and Go tracks](docs/language-tracks.md) (introduced in analyzer 0.6.0; JavaScript/TypeScript moved to the official TypeScript parser in 0.7.0, Go to a versioned corrected grammar/EOF policy in 0.8.0) are kept separate from Python and each other; raw counts are not cross-language comparable. Scope is unified text diffs only: binary/rename-only diffs and quoted paths are unsupported. There is no call-graph, runtime, maintainability or behavioral-equivalence modeling. Path and generated-file filters are heuristic. Interpreter tokenizer/AST changes (notably f-strings) change results. Coding units measure size and nesting, not readability: a test-specific hardcoded branch can cost fewer units than a general fix.
 
 ## Roadmap (priority order)
 

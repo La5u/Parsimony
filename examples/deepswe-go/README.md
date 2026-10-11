@@ -1,4 +1,6 @@
-# DeepSWE v1.1 — Go task track
+# DeepSWE v1.1 — historical Go v1 task track
+
+**Archived release.** The current [Go website](../../site/go.html) uses the separately versioned [Go v2 cohort](../deepswe-go-v2/README.md), remeasured with analyzer 0.8. This directory's v1 records, population, panel and diagnostics remain unchanged for reproducibility. The counts below describe v1, not the current board.
 
 **Beta research preview, not an official ranking.** 26 configurations (one per model), 34 upstream-Go-labelled tasks × four attempts; 3,536 records including failed and unavailable attempts. The [website board](../../site/go.html) ranks by plain mean net coding units added over all measured, in-scope attempts, including failures (`measured-net-mean-v1`), lowest first. Solved-only mean is a separate column and optional view; the 80/20 Score is an archived diagnostic, not the default rank. Language tracks have separate reference panels and syntax-unit definitions: do not pool them or compare raw counts across tracks.
 

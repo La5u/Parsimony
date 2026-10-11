@@ -23,6 +23,9 @@ class SiteTests(unittest.TestCase):
         self.assertEqual([s['tasks'] for s in sources], [34, 5, 35, 34, 500, 300])
         self.assertEqual([s['population_per_model'] for s in sources], [136, 20, 140, 136, 500, 300])
         self.assertEqual([s['attempts_per_task'] for s in sources], [4, 4, 4, 4, 1, 1])
+        self.assertIn('/examples/deepswe-go-v2/', sources[3]['manifest_url'])
+        go_population = json.loads((root / 'examples/deepswe-go-v2/population.json').read_bytes())
+        self.assertEqual(go_population['measurement_track']['unit_version'], 'tree-sitter-go-units-v2')
         self.assertEqual([s['board_url'] for s in sources],
                          ['index.html', 'javascript.html', 'typescript.html', 'go.html', 'verified.html', 'live.html'])
         plan = (root / 'examples/self-run/plan.json').read_bytes()

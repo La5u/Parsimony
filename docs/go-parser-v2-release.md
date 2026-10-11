@@ -14,7 +14,7 @@ This grammar is an **unmerged patch**, not an official upstream fixed release. I
 
 The grammar admits Go 1.26 expression operands to `new`. Before parsing, exactly one LF is appended to nonempty owned source bytes lacking a final LF. This makes the EOF semicolon policy explicit for grouped declarations. Downloaded files and patches, and all recorded source/patch hashes, remain unchanged. Any recovered/error-flagged tree is still rejected; the invalid Helm patch must remain unavailable. No official-parser fallback, ignored error flag, hunk-only estimate or missing-zero imputation is introduced.
 
-Synthetic controls cover literal/call/binary/type operands, **shadowed `new` and `make` identifiers**, grouped const/var/type EOF, newline-equivalent units/rows/end markers, malformed allocations/declarations and the misplaced-field failure. The initial PR #193 candidate was rejected after the first full-cohort pass exposed a regression on the previously accepted `wazero-multi-module-snapshots#1` Fable patch: indexing a variable named `new` produced an erroneous parser error. That interrupted run is not a release. PR #190 handles shadowing; its AST labels differ on some legacy syntax, which is why the entire cohort is remeasured under a new track instead of assuming count compatibility. JavaScript/Python unit semantics and footprint ranking are unchanged.
+Synthetic controls cover literal/call/binary/type operands, **shadowed `new` and `make` identifiers**, grouped const/var/type EOF, newline-equivalent units/rows/end markers, malformed allocations/declarations and the misplaced-field failure. The initial PR #193 candidate was rejected when the first configuration of the full-cohort run exposed a regression on the previously accepted `wazero-multi-module-snapshots#1` Fable patch: indexing a variable named `new` produced an erroneous parser error. That interrupted run is not a release. PR #190 handles shadowing; its AST labels differ on some legacy syntax, which is why the entire cohort is remeasured under a new track instead of assuming count compatibility. JavaScript/Python unit semantics and footprint ranking are unchanged.
 
 ## Full-cohort release gate
 
@@ -50,4 +50,22 @@ $PY /path/to/clean-worktree/examples/benchmark-discovery/remeasure-go.py measure
   --name deepswe-v1.1-go-v0.8
 ```
 
-Measurement and publication are separate gates. Do not describe preparation or synthetic tests as full-cohort validation. Full remeasurement results and publication status will be recorded here after the run, including all unexpected count/eligibility changes. Numerical scalar releases do not imply rights to redistribute raw source, patches or trajectories.
+## Full-cohort results and numerical release
+
+The complete cohort was remeasured offline at clean **`34d59ca8d5f06ffd7ec310dff74a9b8e7ea40cdc`**, analyzer source SHA256 **`14101e9b3d0fbb419be6744951bc58b2a5ca92ddf48750cc16ab38edbd0ccf9b`**, Python 3.14.7. All **3,536 records** retain their original task, outcome, resolve-total, patch and base bindings. Exact task/trial inputs, **3,509 patch hashes** and **388 in-scope preimage URLs** were verified before measurement. The dataset remains byte-identical to v1.
+
+| Status | Historical v1 | Go v2 |
+| --- | ---: | ---: |
+| Measured in-scope | 3,502 | **3,508** |
+| Analysis error | 7 | **1** |
+| Missing patch | 2 | 2 |
+| No-logs/unknown, unanalyzed | 25 | 25 |
+| Total slots | 3,536 | 3,536 |
+
+All **3,502 commonly measured attempts retain identical primary unit/token footprint values**; common human-reference net/churn also agree. Three identifier-insensitive structural-churn diagnostics increase by two because grammar labels change; they do not affect footprint ranking or the archived formula. Six formerly missing attempts are recovered (five upstream successes, one upstream failure). The single malformed Helm after-file remains unmeasured. No previously measured attempt loses eligibility. Five model means change only because their recovered attempts now enter the denominator/sum.
+
+The new population, coverage, pooled 136-slot reference panel, archived scores and stability diagnostics were regenerated separately. The Go website uses v2; historical JSON/JSONL artifacts remain unchanged. Other boards' measurement payloads are unchanged; their Sources metadata now links to the v2 Go manifest.
+
+See [release README](../examples/deepswe-go-v2/README.md), [validation summary](../examples/deepswe-go-v2/validation-summary.json) and [configuration comparison](../examples/deepswe-go-v2/comparison-summary.json). Large scalar record/panel/comparison files are in a checksummed [release asset](https://github.com/La5u/Parsimony/releases/tag/deepswe-go-v0.8); its [committed member bindings](../examples/deepswe-go-v2/release-assets.json) and downloader verify every byte before extraction. The archive contains no raw source, submitted patches, prompts, trajectories or dataset reference-patch text. Numerical scalar releases do not imply rights to redistribute those artifacts.
+
+Measurement integrity is not independent correctness/model/evaluator certification. Synthetic tests are not substituted for cohort validation; full-cohort measurements are not substituted for benchmark execution.

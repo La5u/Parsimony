@@ -46,7 +46,7 @@ Cloudflare Pages serves `site/` at <https://parsimony.lasu.dev>; a push to `main
 | DeepSWE Python (main) | `site/index.html` | `examples/deepswe-python/` | 26 | 34 tasks × 4 attempts | 0.5.2-beta |
 | DeepSWE JavaScript | `site/javascript.html` | `examples/deepswe-javascript/` | 26 | 5 × 4 | 0.7.0-beta @ `ca37c31` |
 | DeepSWE TypeScript | `site/typescript.html` | `examples/deepswe-typescript/` | 26 | 35 × 4 | 0.7.0-beta @ `ca37c31` |
-| DeepSWE Go | `site/go.html` | `examples/deepswe-go/` | 26 | 34 × 4 | 0.6.0-beta |
+| DeepSWE Go | `site/go.html` | `examples/deepswe-go-v2/` + checksum-bound release asset | 26 | 34 × 4 | 0.8.0-beta @ `34d59ca` |
 | SWE-bench Verified | `site/verified.html` | `examples/mini-swe-agent-500/` | 34 | 500 × 1 | 0.5.2-beta |
 | SWE-bench Live Lite Python | `site/live.html` | `examples/live-python/` | 4 configs | 300 × 1 | 0.6.0-beta @ `de63300` |
 
@@ -124,9 +124,9 @@ The parser problem is solved (0.7.0, 2026-10-01): JS/TS use the official TypeScr
 
 - Wrong-language TS metadata: `httpx-deterministic-cookie-store` has Python patches; `prometheus-transactional-reload-status` has Go patches. Correct only through an explicit versioned dataset change, never a silent move.
 - Effect's `dtslint/*.tst.ts` type tests and new root-level JS/TS scratch scripts currently count as implementation. Excluding them requires a versioned scope change and remeasurement; one invalid scratch script explains one remaining TS error.
-- All 7 Go analysis errors are classified: 5 Arcane `new(expression)` grammar gaps, 1 Scriggo grouped-declaration EOF/newline grammar gap, 1 genuinely invalid Helm after-file. Exact patches/base bindings and independent official Go syntax parsing are audited in `docs/go-parser-investigation.md` / `.json`. Leave all seven missing, not zero; approve a versioned Go grammar/backend approach before implementation and full-cohort remeasurement. No parser acceptance or metric changed.
+- Go parser fix is released separately in analyzer 0.8 / `tree-sitter-go-units-v2`. Full clean `34d59ca` remeasurement recovered the five Arcane `new(expression)` and one Scriggo EOF-limited attempts; invalid Helm remains unmeasured. All 3,502 common primary footprints agree and all 3,536 provenance/outcome bindings remain unchanged. Three structural-churn diagnostics change by +2. Current data: `examples/deepswe-go-v2/` + checksum-bound scalar asset; v1 JSON/JSONL files remain unchanged. See `docs/go-parser-v2-release.md`; PR193 was rejected for a shadowed-identifier regression, final grammar is immutable PR190.
 - SWE-Atlas Refactoring and SWE-bench Pro V2 remain blocked on public per-attempt patch exports, not importer code (`docs/swe-atlas-investigation.md`, `docs/pro-atlas-artifact-audit.md`). Java/Rust require new analyzers and separate tracks (`docs/language-expansion-opportunities.md`); defer until supported recent-model sources are exhausted or the owner reprioritizes.
-- Add durable real-browser smoke checks if changing UI again; Node tests mock the DOM. Pin CI `verify` from `'3.14'` to 3.14.7 for reproducibility. A blind reviewer study is optional later validation, not a gate for footprint reporting.
+- Real Firefox smoke checks are available in `tests/test_site_browser.py` (opt-in; ordinary offline suite skips them); Node tests still mock the DOM. CI networked `verify` now pins Python 3.14.7. Further screen-reader/contrast/mobile checks remain in TODO. A blind reviewer study is optional later validation, not a gate for footprint reporting.
 - Never contact upstream, file issues or launch paid evaluations without owner approval. Known Verified issues for an approved future report: Gemini 3 Pro (high) marks all tasks unresolved; some `metadata.yaml` point to wrong S3 folders.
 
 ## Code and data map
@@ -144,8 +144,8 @@ The parser problem is solved (0.7.0, 2026-10-01): JS/TS use the official TypeScr
 ## Measurement rules
 
 - Published Python records use **Python 3.14.7**; use it for comparable measurements. Scoring rejects mixed analyzer/Python versions.
-- Optional parser pins: JS/TS `typescript@5.9.3` via `npm ci` (Node.js; unit track `typescript-compiler-units-v1`); Go `tree-sitter==0.26.0`, `tree-sitter-go==0.25.0` via `.[languages]` (`tree-sitter-units-v1`). A measurement worktree needs its own `npm ci`; `node_modules/` is ignored, so the checkout stays clean.
-- DeepSWE JS/TS records were measured at clean `ca37c31` (0.7.0-beta), Go at clean `7705e8d` (0.6.0-beta); Python boards keep 0.5.2-beta. Never relabel. `deepswe panel` refuses to overwrite an existing panel: write to a new path, or delete the old file deliberately when replacing a track.
+- Optional parser pins: JS/TS `typescript@5.9.3` via `npm ci` (Node.js; unit track `typescript-compiler-units-v1`); current Go `tree-sitter==0.26.0` plus checksum-pinned PR190 grammar via `.[languages]` (`tree-sitter-go-units-v2`, explicit EOF policy). Its package reports 0.25.0, but stock 0.25.0 is rejected; source URL/hash metadata must match. Build needs a C compiler/Python headers. Historical v1 requires stock 0.25.0 at its old checkout. A measurement worktree needs its own `npm ci`; `node_modules/` is ignored, so the checkout stays clean.
+- DeepSWE JS/TS records were measured at clean `ca37c31` (0.7.0-beta), current Go at clean `34d59ca` (0.8.0-beta), historical Go at clean `7705e8d` (0.6.0-beta); Python boards keep 0.5.2-beta. Never relabel. `deepswe panel` refuses to overwrite an existing panel: write to a new path, or delete the old file deliberately when replacing a track.
 - Measure from a **clean committed checkout**, ideally a detached worktree with cache/output outside it. `analyzer_identity` hashes every `parsimony/*.py`, including `site.py`. `release freeze` refuses a dirty tree, and `.claude/` makes the main checkout dirty: use a worktree, don't delete `.claude/`.
 - The download cache is immutable by URL (`--cache` goes before the subcommand); use a fresh cache for mutable upstream metadata.
 - Missing artifact, unknown outcome and explicit failure are distinct. Never infer failure from absence or invent patches.
@@ -153,7 +153,7 @@ The parser problem is solved (0.7.0, 2026-10-01): JS/TS use the official TypeScr
 
 ## Commands
 
-Latest validation: 269 tests passed with Python 3.14.7 and the exact optional parser pins (16 LiveCodeBench pilot tests); the default Python suite skips Go tests without the languages extra. GPT-5.5/agav is integrated as the fourth Live Python configuration; its 300 rows, artifact/audit bindings and excluded-only semantics have regression coverage. All six Node page checks passed. Population/base/analyzer audit passed for all 500 Gemini records, all 33 archived score entries reproduce exactly, and existing raw records/panel/population/report files remain unchanged. External reproducible inventory/measurement data: `/tmp/parsimony-gemini-bound`; clean old analyzer: `/tmp/parsimony-verified-measure` (temporary paths, not durable publication inputs).
+Latest validation: **370 tests passed with 7 browser skips** using Python 3.14.7 and exact current optional parser/source pins; **7 opt-in real Firefox tests passed** separately. All six Node page checks and custom importer tests passed. Full 3,536-slot Go v2 population/provenance/comparison audit passed; public scalar download verified all 43 member hashes and reproduced new archived scores byte-for-byte. Historical ten-model and current Live score arithmetic also reproduce exactly. All historical Go JSON/JSONLs remain unchanged; the other five boards' embedded measurement payloads are identical except Sources metadata. Current reproducible Go scalars: checksummed `deepswe-go-v0.8` release asset with bindings in `examples/deepswe-go-v2/release-assets.json`; external raw/measurement cache `/tmp/parsimony-go-v2-release`, clean analyzer `/tmp/parsimony-go-v2-measure` (temporary paths, not durable publication inputs).
 
 ### Before every push
 
@@ -170,13 +170,15 @@ git diff --check
 
 ### Rebuild all six pages (offline, no remeasurement)
 
-This reproduces every committed page byte-for-byte; check with `git status` after running it.
+This reproduces every committed page byte-for-byte after fetching the checksum-bound scalar asset; check with `git status` after running it. Go asset files remain external rather than duplicated in Git.
 
 ```sh
+python examples/benchmark-discovery/fetch-go-v2-release.py --output /tmp/parsimony-go-v2-scalars
 NAV=(--nav 'DeepSWE Python=index.html' --nav 'DeepSWE JavaScript=javascript.html' --nav 'DeepSWE TypeScript=typescript.html'
      --nav 'DeepSWE Go=go.html' --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html')
 for lang in python javascript typescript go; do
   E=examples/deepswe-$lang; PAGE=$lang; [ "$lang" = python ] && PAGE=index
+  [ "$lang" = go ] && E=/tmp/parsimony-go-v2-scalars
   python -m parsimony.site "$E/score-panel.json" "$E/"*.jsonl \
     --sensitivity "$E/sensitivity.json" --benchmark deepswe "${NAV[@]}" --output "site/$PAGE.html" \
     --external examples/external/artificial-analysis-2026-10-08.json \
