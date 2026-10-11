@@ -251,6 +251,27 @@ if (!result.ok || result.units.length !== n * 4 || result.tokens.length !== n * 
 
 @unittest.skipUnless(HAS_GO, 'install parsimony-benchmark[languages] for Go grammar tests')
 class GoTreeSitterTests(unittest.TestCase):
+    def test_documented_new_expression_grammar_gap(self):
+        # Original synthetic case, not copied target source. Official go/parser
+        # accepts this; new(expression) is supported by Go 1.26. Keep strict
+        # rejection until a versioned backend/grammar change is authorized.
+        with self.assertRaisesRegex(ValueError, 'invalid or recovered go syntax'):
+            parse('package p\nvar ptr = new("sample")\n', 'x.go')
+        parse('package p\nvar ptr = new(string)\n', 'x.go')
+
+    def test_documented_grouped_declaration_eof_gap(self):
+        # Tree-sitter reports a root has_error with no ERROR/MISSING child when
+        # a grouped declaration ends at EOF. A newline is only an audit control,
+        # not a normalization applied by the analyzer.
+        source = 'package p\nconst (\n A = iota\n B\n)'
+        with self.assertRaisesRegex(ValueError, 'invalid or recovered go syntax'):
+            parse(source, 'x.go')
+        parse(source + '\n', 'x.go')
+
+    def test_misplaced_struct_field_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'invalid or recovered go syntax'):
+            parse('package p\ntype T struct {}\n Field []string\n', 'x.go')
+
     def test_track_identity(self):
         self.assertEqual(track("go"), {"language": "go", "unit_version": "tree-sitter-units-v1",
                                        "versions": {"tree-sitter": "0.26.0", "tree-sitter-go": "0.25.0"}})

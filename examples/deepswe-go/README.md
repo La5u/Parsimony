@@ -1,6 +1,6 @@
 # DeepSWE v1.1 — Go task track
 
-**Beta research preview, not an official ranking.** 26 configurations (one per model), 34 upstream-Go-labelled tasks × four attempts; 3,536 records including failed and unavailable attempts. The [website board](../../site/go.html) defaults to all-task score, not per-solve size. Language tracks have separate reference panels and syntax-unit definitions: do not pool them or compare raw counts across tracks.
+**Beta research preview, not an official ranking.** 26 configurations (one per model), 34 upstream-Go-labelled tasks × four attempts; 3,536 records including failed and unavailable attempts. The [website board](../../site/go.html) ranks by plain mean net coding units added over all measured, in-scope attempts, including failures (`measured-net-mean-v1`), lowest first. Solved-only mean is a separate column and optional view; the 80/20 Score is an archived diagnostic, not the default rank. Language tracks have separate reference panels and syntax-unit definitions: do not pool them or compare raw counts across tracks.
 
 ## Pinned inputs and analyzer
 
@@ -12,9 +12,11 @@
 
 ## Coverage before rankings
 
-The frozen population has **136 attempts per model**. The score panel can calibrate **34 of 34 tasks** (136 items): it needs at least one measured, in-scope passing reference per task. Scores, CIs, task selection and the plot's measured-attempt means (including failures) use this score panel; published resolve rate retains the entire population denominator. Attempts from uncalibrated tasks remain in the raw records and coverage report.
+The frozen population has **136 attempts per model**. The score panel can calibrate **34 of 34 tasks** (136 items): it needs at least one measured, in-scope passing reference per task. Archived scores and their CIs use this score panel; footprint ranking and task views use measured, in-scope attempts across the frozen population, including failures. Published resolve rate retains the entire population denominator. Attempts from uncalibrated tasks remain in the raw records and coverage report.
 
 Status totals: `error` 7, `missing_patch` 2, `not_resolved` 25, `ok` 3,502. A parser/analysis error means **unmeasured**, not benchmark failure or zero footprint. Missing measurements within the panel contribute score bounds. Upstream unknown outcomes remain unknown.
+
+[Static parser investigation](../../docs/go-parser-investigation.md) classifies all seven errors: **five Arcane attempts** hit Tree-sitter's unsupported Go 1.26 `new(expression)` construct (three in existing before/after files, two in new after-files); **one Scriggo attempt** hits grouped-declaration EOF handling without a final newline; **one Helm attempt** introduces fields outside a struct and is rejected by both parsers. Independent official Go syntax parsing accepts all present file-sides in the six grammar-limited attempts. All seven patch hashes and pinned base bindings were verified; no target code was executed. These remain missing measurements, not zeros. A grammar/backend fix requires a versioned analyzer/track and Go cohort revalidation; no fix or remeasurement is included here.
 
 | Model | Published solved | Measured passing | Measured failed | Analysis errors | Missing patches |
 |---|---:|---:|---:|---:|---:|
