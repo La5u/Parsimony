@@ -70,6 +70,8 @@ On Verified a few failed mass deletions decide the top ranks: Llama 4 Maverick i
 
 ## Next work, in priority order
 
+Keep actionable backlog in [TODO.md](TODO.md). Owner workflow: solve directly and push `main`; do not create GitHub issues or PRs without explicit approval.
+
 ### 1. Add newer models to the existing benchmark battery
 
 **Recommended direction: recent models on supported Python/JS/TS/Go tracks first, not another ranking redesign or Java/Rust expansion.** Start with public exports on an existing board's frozen population and, where possible, the same harness. Cross-harness Live additions remain model + agent configurations, not controlled model-only comparisons. This is a plan, not a claim that new exports have been found.
