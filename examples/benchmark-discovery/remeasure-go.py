@@ -160,6 +160,7 @@ def prepare(args):
     external(root, repo)
     root.mkdir(parents=True, exist_ok=True)
     Cache, read_tasks, dataset_rows, attempts = modules(repo)
+    from parsimony.analysis import implementation
     cache = cache_class(Cache)(root)
     source = repo / 'examples/deepswe-go'
     for path in sorted(source.iterdir()):
@@ -247,9 +248,15 @@ def prepare(args):
                 for entry in touched(patch):
                     url = None if entry['old'] == '/dev/null' else (
                         f"https://raw.githubusercontent.com/{prov['repo']}/{prov['base_commit']}/{quote(entry['old'], safe='/')}")
-                    if url:
+                    name_in_scope = entry['new'] if entry['new'] != '/dev/null' else entry['old']
+                    needs_base = bool(url and implementation(name_in_scope, 'go')
+                                      and implementation(entry['old'], 'go'))
+                    if needs_base:
                         base_jobs[url] = True
-                    touched_inventory.append({'file': name, 'task_id': task, 'kind': kind, **entry, 'base_url': url})
+                    # Inventory excluded paths too, but do not fetch their bases:
+                    # excluded metadata-only files need not exist at the base.
+                    touched_inventory.append({'file': name, 'task_id': task, 'kind': kind, **entry,
+                                              'base_url': url, 'requires_base_download': needs_base})
     dump(root / 'touched-files.json', touched_inventory)
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
         list(pool.map(cache.get, sorted(base_jobs)))
@@ -262,7 +269,7 @@ def prepare(args):
          'archive_sha256': digest(archive), 'members': task_inventory, 'dataset_sha256': DATASET_SHA})
     summary = {'state': 'prepared-not-measured-not-published', 'outcomes_source': 'exact pinned trials bytes; no reconstruction',
                'configs': len(old), 'records': len(bindings), 'attempts_per_config': 136, 'tasks': 34,
-               'patches': len(patch_jobs), 'base_files_all_scopes': len(base_jobs),
+               'patches': len(patch_jobs), 'base_files_in_scope': len(base_jobs),
                'touched_entries_with_repeated_reference_memberships': len(touched_inventory),
                'absent_before_sides': sum(e['base_url'] is None for e in touched_inventory),
                'statuses': dict(Counter(r['analysis_status'] for rows in old.values() for r in rows)),
