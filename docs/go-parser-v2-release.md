@@ -5,16 +5,16 @@
 The [seven-error investigation](go-parser-investigation.md) identified six parser-limited attempts and one invalid submitted patch in the frozen Go v1 cohort. Analyzer **0.8.0-beta** implements a distinct **`tree-sitter-go-units-v2`** track:
 
 - Runtime: `tree-sitter==0.26.0`.
-- Grammar: immutable upstream PR #193 source, `nvlbg/tree-sitter-go@5a6af13a0a5b45bc76cac289c783b315b2b74e13`.
-- Source URL: `https://codeload.github.com/nvlbg/tree-sitter-go/tar.gz/5a6af13a0a5b45bc76cac289c783b315b2b74e13`.
-- Archive SHA256: `3b0b0a55c6c8cd6671d813989b1f53af687c3b8afde3fb986ef767acbde0a017`.
+- Grammar: immutable upstream PR #190 source, `botanica-consulting/tree-sitter-go@97cacdcb9e1e699f7b3dfed21386da60ed6e63cd`.
+- Source URL: `https://codeload.github.com/botanica-consulting/tree-sitter-go/tar.gz/97cacdcb9e1e699f7b3dfed21386da60ed6e63cd`.
+- Archive SHA256: `c653dd381ce89f883393f6d4db7aa1f27772dad79cc932c0f3aff5b15dc9b588`.
 - Explicit EOF policy: `append-one-lf-if-nonempty-without-final-lf-v1`.
 
 This grammar is an **unmerged patch**, not an official upstream fixed release. It still reports package version 0.25.0, so the analyzer additionally verifies installed PEP 610 archive URL/checksum metadata. Stock 0.25.0 is rejected for v2. Source metadata is a reproducibility binding, not independent binary authenticity certification. The grammar hash and EOF policy are recorded in every measurement track.
 
 The grammar admits Go 1.26 expression operands to `new`. Before parsing, exactly one LF is appended to nonempty owned source bytes lacking a final LF. This makes the EOF semicolon policy explicit for grouped declarations. Downloaded files and patches, and all recorded source/patch hashes, remain unchanged. Any recovered/error-flagged tree is still rejected; the invalid Helm patch must remain unavailable. No official-parser fallback, ignored error flag, hunk-only estimate or missing-zero imputation is introduced.
 
-Synthetic controls cover literal/call/binary/type operands, grouped const/var/type EOF, newline-equivalent units/rows/end markers, malformed allocations/declarations and the misplaced-field failure. JavaScript/Python unit semantics and footprint ranking are unchanged.
+Synthetic controls cover literal/call/binary/type operands, **shadowed `new` and `make` identifiers**, grouped const/var/type EOF, newline-equivalent units/rows/end markers, malformed allocations/declarations and the misplaced-field failure. The initial PR #193 candidate was rejected after the first full-cohort pass exposed a regression on the previously accepted `wazero-multi-module-snapshots#1` Fable patch: indexing a variable named `new` produced an erroneous parser error. That interrupted run is not a release. PR #190 handles shadowing; its AST labels differ on some legacy syntax, which is why the entire cohort is remeasured under a new track instead of assuming count compatibility. JavaScript/Python unit semantics and footprint ranking are unchanged.
 
 ## Full-cohort release gate
 

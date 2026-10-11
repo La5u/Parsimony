@@ -81,10 +81,10 @@ class GoSourceBindingTests(unittest.TestCase):
                     patch.object(languages.metadata, 'version', side_effect=languages._PINS.get), \
                     patch.object(languages.metadata, 'distribution', return_value=dist), \
                     patch.dict('sys.modules', {'tree_sitter': None, 'tree_sitter_go': None}):
-                with self.assertRaisesRegex(ValueError, 'pinned PR193 archive source'):
+                with self.assertRaisesRegex(ValueError, 'pinned Go grammar archive source'):
                     track('go')
                 # Must fail before importing any parser, with no alternate backend.
-                with self.assertRaisesRegex(ValueError, 'pinned PR193 archive source'):
+                with self.assertRaisesRegex(ValueError, 'pinned Go grammar archive source'):
                     parse('package p\nvar x = new(1)', 'x.go')
 
 
@@ -298,6 +298,18 @@ class GoTreeSitterTests(unittest.TestCase):
                 self.assertFalse(parsed.tree.root_node.has_error)
                 self.assertTrue(unit_lines(parsed))
                 self.assertTrue(token_lines(parsed))
+
+    def test_shadowed_new_and_make_remain_identifiers(self):
+        # PR193 fixed new(expression) but rejected new[off] in a previously
+        # accepted frozen attempt. PR190 must preserve ordinary identifiers.
+        for source in ('package p\nfunc f(new []byte) { n := new[0]; _ = n }',
+                       'package p\nfunc f(make []byte) { n := make[0]; _ = n }',
+                       'package p\nfunc f(new func(int) int) int { return new(2) }',
+                       'package p\nfunc f(make func(int) int) int { return make(2) }'):
+            with self.subTest(source=source):
+                parsed = parse(source, 'x.go')
+                self.assertFalse(parsed.tree.root_node.has_error)
+                self.assertTrue(unit_lines(parsed))
 
     def test_eof_normalization_has_no_row_or_endblock_artifacts(self):
         sources = ['package p\nconst (\n A = iota\n B\n)',

@@ -18,8 +18,8 @@ from threading import Lock
 
 SUPPORTED = ("python", "javascript", "typescript", "go")
 UNIT_VERSION = "tree-sitter-go-units-v2"
-GO_GRAMMAR_URL = "https://codeload.github.com/nvlbg/tree-sitter-go/tar.gz/5a6af13a0a5b45bc76cac289c783b315b2b74e13"
-GO_GRAMMAR_SHA256 = "3b0b0a55c6c8cd6671d813989b1f53af687c3b8afde3fb986ef767acbde0a017"
+GO_GRAMMAR_URL = "https://codeload.github.com/botanica-consulting/tree-sitter-go/tar.gz/97cacdcb9e1e699f7b3dfed21386da60ed6e63cd"
+GO_GRAMMAR_SHA256 = "c653dd381ce89f883393f6d4db7aa1f27772dad79cc932c0f3aff5b15dc9b588"
 GO_EOF_POLICY = "append-one-lf-if-nonempty-without-final-lf-v1"
 TYPESCRIPT_UNIT_VERSION = "typescript-compiler-units-v1"
 _PINS = {
@@ -73,7 +73,7 @@ def _versions():
     wrong = [f"{name}=={_PINS[name]} (found {actual[name]})" for name in _PINS if actual[name] != _PINS[name]]
     if wrong:
         raise ValueError(f"Tree-sitter backend requires exact versions: {', '.join(wrong)}; install: {_install_help()}")
-    # PR193 retains the stock package version. Bind the installed distribution
+    # PR190 retains the stock package version. Bind the installed distribution
     # to the immutable archive, not merely its ambiguous version number (PEP 610).
     try:
         direct = json.loads(metadata.distribution("tree-sitter-go").read_text("direct_url.json") or "null")
@@ -84,7 +84,7 @@ def _versions():
     except (metadata.PackageNotFoundError, OSError, ValueError, TypeError, KeyError, AttributeError):
         bound = False
     if not bound:
-        raise ValueError(f"Tree-sitter Go requires the pinned PR193 archive source (URL and SHA256); "
+        raise ValueError(f"Tree-sitter Go requires the pinned Go grammar archive source (URL and SHA256); "
                          f"stock tree-sitter-go==0.25.0 is unsupported; install: {_install_help()}")
     return actual
 
