@@ -121,7 +121,7 @@ class SiteBrowserTests(unittest.TestCase):
             browser.execute_script('arguments[0].focus()', selector)
             selector.send_keys(Keys.HOME)
             self.assertEqual(browser.switch_to.active_element, selector)
-            self.assertEqual(browser.execute_script('return location.search'), '?keep=1&chart=bar')
+            self.assertEqual(browser.execute_script('return location.search'), '?attempts=all&keep=1&chart=bar')
             self.assertEqual(browser.execute_script('return location.hash'), '#board')
             self.assertEqual(len(browser.find_elements(By.CSS_SELECTOR, '#board tbody tr')), 2)
             self.assertEqual([p.text for p in browser.find_elements(By.CSS_SELECTOR, '.bar-name')], ['Beta', 'Alpha'])
@@ -130,7 +130,7 @@ class SiteBrowserTests(unittest.TestCase):
             browser.execute_script('arguments[0].focus()', selector)
             selector.send_keys(Keys.END)
             self.assertEqual(browser.switch_to.active_element, selector)
-            self.assertEqual(browser.execute_script('return new URLSearchParams(location.search).get("attempts")'), 'solved')
+            self.assertEqual(browser.execute_script('return new URLSearchParams(location.search).get("attempts")'), None)
             self.assertEqual(len(browser.find_elements(By.CSS_SELECTOR, '#graph circle[data-point]')), 1)
             browser.find_element(By.ID, 'task-reset').click()
             self.assertEqual(len(browser.find_elements(By.CSS_SELECTOR, '#board tbody tr')), 2)
@@ -147,7 +147,7 @@ class SiteBrowserTests(unittest.TestCase):
             for name, title in titles.items():
                 with self.subTest(board=name):
                     browser.get((root / (name + '.html')).as_uri())
-                    self.assertEqual(browser.title, 'Parsimony — ' + title)
+                    self.assertEqual(browser.title, 'Parsimony: which AI coding agent changes the least code?' if name == 'index' else 'Parsimony: ' + title)
                     self.assertTrue(browser.execute_script("return !!document.head.querySelector('title') && !!document.head.querySelector('style') && !document.body.querySelector('title, meta, style')"))
                     nav = browser.find_element(By.CSS_SELECTOR, 'nav[aria-label="Leaderboards"]')
                     self.assertTrue(nav.is_displayed())

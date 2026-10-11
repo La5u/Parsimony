@@ -2,7 +2,7 @@
 
 ## Scope and result
 
-Audited the current working-tree site after the existing fixes; this is not a review of a pristine release. The follow-up UI fixes touch `parsimony/site.py`, `site/template.html`, the six generated pages, relevant site tests and this note. No importer, measurement or ranking changes, and no commits.
+Audited the current working-tree site after the existing fixes; this is not a review of a pristine release. The follow-up UI fixes touch `parsimony/site.py`, `parsimony/template.html`, the six generated pages, relevant site tests and this note. No importer, measurement or ranking changes, and no commits.
 
 **Result:** local custom imports passed the tested injection, validation and lifecycle checks. Keyboard sort focus is retained, Escape dismisses chart tooltips, metadata is inside the document head, all six boards have distinct titles, leaderboard navigation is labelled, and a no-JavaScript explanation links to published data. The site is not yet ready for an accessibility-conformance claim: tooltip hover/persistence, narrow scatter discoverability and assistive-technology verification remain open. Graph geometry, ranking and the owner-required offscale extrapolation/mobile scatter policy are unchanged.
 

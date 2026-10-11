@@ -85,7 +85,10 @@ const doc = {
 };
 const browser = {innerWidth: 800, innerHeight: 600, listeners: {},
   addEventListener(event, fn) { this.listeners[event] = fn; }};
-vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc, window: browser});
+// Solved only is the default; most regressions below exercise the All measured view.
+browser.location = new URL('https://example.org/index.html?attempts=all');
+browser.history = {replaceState(state, title, next) { browser.location = new URL(next); }};
+vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc, window: browser, URL, URLSearchParams});
 const script = html.match(/<script>\n([\s\S]*?)<\/script>/)[1];
 assert(html.indexOf('id="task-search"') < html.indexOf('id="graph-x"'));
 assert(html.indexOf('id="graph"') < html.indexOf('id="board"'));
@@ -105,12 +108,12 @@ assert.equal(element('metric-source').textContent, `${data.benchmark?.name || 'S
 const savedSources = data.sources;
 delete data.sources;
 element('parsimony-data').textContent = JSON.stringify(data);
-vm.runInNewContext(script, {document: doc, window: browser});
+vm.runInNewContext(script, {document: doc, window: browser, URL, URLSearchParams});
 assert.equal(element('data-sources').hidden, true);
 assert.equal(element('source-counts').innerHTML, '');
 data.sources = savedSources;
 element('parsimony-data').textContent = JSON.stringify(data);
-vm.runInNewContext(script, {document: doc, window: browser});
+vm.runInNewContext(script, {document: doc, window: browser, URL, URLSearchParams});
 assert.match(html, /#graph \.point-label \{ position: absolute; font: 400 8px/);
 assert.match(html, /#graph circle \{ stroke: none/);
 assert.match(html, /circle:focus-visible \{ outline: 2px solid #000; outline-offset: 4px/);
@@ -123,7 +126,7 @@ assert.match(html, /<summary>How to read this<\/summary>/);
 assert.match(html, /id="units-definition"><b>Coding units<\/b> count syntax elements/);
 assert.match(html, /not lines or runtime complexity\. Net units = added − removed\./);
 assert(html.indexOf('id="units-definition"') < html.indexOf('<summary>How to read this</summary>'));
-assert.match(html, /Mean net units added, including failures\. Smaller footprint ≠ better coding\./);
+assert.match(html, /Mean net units added over measured solved attempts only\. Smaller footprint ≠ better coding\./);
 assert.doesNotMatch(html, /paint-order|box-shadow|text-shadow/);
 const tooltipCSS = html.match(/#graph-tooltip \{([\s\S]*?)\}/)[1];
 assert.match(tooltipCSS, /color: #000/);
@@ -333,7 +336,7 @@ const tied = structuredClone(data);
 tied.models[1].measured_net_mean = -2;
 tied.models[1].resolve_rate = 1; // Correctness must not break a footprint tie.
 element('parsimony-data').textContent = JSON.stringify(tied);
-vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc, window: browser});
+vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc, window: browser, URL, URLSearchParams});
 assert.deepEqual(names(), ['Alpha', 'Beta', 'Gamma']);
 assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Alpha/);
 assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Beta/);
@@ -342,7 +345,7 @@ assert.doesNotMatch(graph(), /<polyline/); // Earlier Beta dominates latest Alph
 axis('x', 'score'); axis('y', 'net');
 assert.doesNotMatch(graph(), /<polyline/); // Earlier Beta also dominates in a swapped mixed-direction view.
 assert.match(graph(), /<circle data-point="1" data-model="Beta" class="all-point older/);
-function load(fixture, url) {
+function load(fixture, url = 'https://example.org/index.html?attempts=all') {
   element('parsimony-data').textContent = JSON.stringify(fixture);
   if (url) {
     browser.location = new URL(url);
@@ -564,7 +567,7 @@ Object.assign(outcomes.models[2], {measured_net_mean: -100, measured_attempts: 3
 outcomes.footprint_tasks[0][2][1] = ['c', 221, 222, 20, 20, 20, 'u', true];
 outcomes.footprint_tasks[0][2][2] = ['f', 331, 332, 5, 5, 5, 'f', true];
 const attempts = value => element('attempts').listeners.change({target: {value}});
-load(outcomes, 'https://example.org/index.html?attempts=solved&keep=1#board');
+load(outcomes, 'https://example.org/index.html?keep=1#board');
 assert.equal(element('attempts').value, 'solved');
 assert.deepEqual(names(), ['Alpha', 'Beta', 'Gamma']);
 assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Alpha<\/td><td>7.0<\/td><td>−2.0<\/td>/);
@@ -594,7 +597,7 @@ element('chart-type').listeners.change({target: {value: 'scatter'}});
 assert.match(graph(), /data-model="Alpha"/);
 assert.doesNotMatch(graph(), /data-model="Beta"|data-model="Gamma"/);
 attempts('all');
-assert.equal(browser.location.search, '?keep=1');
+assert.equal(browser.location.search, '?keep=1&attempts=all');
 assert.equal(browser.location.hash, '#board');
 assert.deepEqual(names(), ['Alpha', 'Beta', 'Gamma']);
 assert.match(graph(), /unknown task attempt/);
@@ -604,13 +607,21 @@ assert.match(element('#board tbody').innerHTML, /4\/8<\/td>/);
 axis('x', 'net'); axis('y', 'churn');
 assert.match(graph(), /Delta/);
 attempts('solved');
-assert.equal(browser.location.search, '?keep=1&attempts=solved');
+assert.equal(browser.location.search, '?keep=1');
 assert.doesNotMatch(graph(), /Gamma|Delta/);
 // External and archived axes retain values but obey the same outcome membership.
+// Default (no query string) is Solved only; ?attempts=all opts into All measured.
+load(outcomes, 'https://example.org/index.html');
+assert.equal(element('attempts').value, 'solved');
+assert.deepEqual(names(), ['Alpha', 'Beta', 'Gamma']);
+assert.match(graph(), /measured 2\/6 upstream solved attempts/);
+load(outcomes, 'https://example.org/index.html?attempts=all');
+assert.equal(element('attempts').value, 'all');
+assert.match(element('#board tbody').innerHTML, /4\/8<\/td>/);
 const externalOutcomes = structuredClone(outcomes);
 externalOutcomes.external = structuredClone(withExternal.external);
 for (const m of externalOutcomes.models) Object.assign(m, {aa_intelligence: 50, aa_coding: 60});
-load(externalOutcomes, 'https://example.org/index.html?attempts=solved');
+load(externalOutcomes, 'https://example.org/index.html');
 assert.equal(element('graph-y').value, 'aa_intelligence');
 assert.doesNotMatch(graph(), /data-model="Gamma"|Delta/);
 axis('x', 'score'); axis('y', 'aa_coding');

@@ -3,8 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Parsimony — DeepSWE · JavaScript</title>
+<title>Parsimony: DeepSWE · JavaScript</title>
 <meta name="description" content="How much code do coding agents write to solve real software engineering tasks?">
+<link rel="canonical" href="https://parsimony.lasu.dev/javascript">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:title" content="Parsimony: DeepSWE · JavaScript">
+<meta property="og:description" content="How much code do coding agents write to solve real software engineering tasks?">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://parsimony.lasu.dev/javascript">
+<meta property="og:site_name" content="Parsimony">
+<meta name="twitter:card" content="summary">
 <style>
 :root {
   color-scheme: light;
@@ -48,7 +56,7 @@ input, select {
 }
 th button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 button { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 5px 9px; cursor: pointer; }
-#graph { position: relative; }
+#graph { position: relative; overflow-x: clip; }
 #graph svg { display: block; width: 100%; height: auto; overflow: visible; }
 body { overflow-x: clip; }
 #graph .axis { stroke: var(--muted); }
@@ -60,6 +68,7 @@ body { overflow-x: clip; }
 #graph .gen-lines line { stroke-width: 1; stroke-opacity: 0.55; stroke-dasharray: 4 3; }
 #graph .older { fill-opacity: 0.70; }
 #graph .point-label { position: absolute; font: 400 8px system-ui, sans-serif; color: #000; white-space: nowrap; pointer-events: none; transform: translate(10px,-50%); line-height: 10px; }
+#graph .point-label.flip { transform: translate(calc(-100% - 10px),-50%); }
 #graph .point-label.older-label { opacity: 0.75; }
 #graph .self-run { fill-opacity: 0.35; }
 #graph .point-label.self-run-label { opacity: 0.45; }
@@ -117,10 +126,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="small" id="units-definition"><b>Coding units</b> count syntax elements—statements, calls, comparisons, names and literals—not lines or runtime complexity. Net units = added − removed.</p>
   <details class="small muted"><summary>How to read this</summary>
   <p>We parse published <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a> patches and count syntax elements plus block-end markers. Formatting, comments and punctuation do not count. Python, JavaScript/TypeScript and Go use separate parser-specific tracks; raw unit counts are not comparable across them.</p>
-  <p>Default rank is by mean net units added, lowest first, across measured in-scope attempts—including failures. Count attempts: Solved only optionally ranks by the mean over measured upstream successes instead. The other footprint column always shows the alternative mean; sorting it does not change rank. Equal means tie; models with no measurements are unranked. Partial coverage can change the order, and a few very large deletions can dominate a mean. This is smallest measured footprint, not best coding ability.</p>
-  <p>Net units added means coding units added minus removed, not semantic complexity. Measured shows eligible footprints / published population. Missing or entirely excluded edits are not zero. Solved % comes from the upstream benchmark and is unchanged by the selector. Solved-only mode uses upstream outcomes to select measured successes, not as a correctness tie-break. A failed no-op or large deletion can rank first. Click headings to sort; missing values stay last.</p>
+  <p>Default rank is by mean net units added, lowest first, over measured upstream successes (Count attempts: Solved only). Count attempts: All measured instead ranks by the mean across all measured in-scope attempts, including failures. The other footprint column always shows the alternative mean; sorting it does not change rank. Equal means tie; models with no measurements are unranked. Partial coverage can change the order, and a few very large deletions can dominate a mean. This is smallest measured footprint, not best coding ability.</p>
+  <p>Net units added means coding units added minus removed, not semantic complexity. Measured shows eligible footprints / published population. Missing or entirely excluded edits are not zero. Solved % comes from the upstream benchmark and is unchanged by the selector. Solved-only mode (the default) uses upstream outcomes to select measured successes, not as a correctness tie-break. A failed no-op or large deletion can rank first. Click headings to sort; missing values stay last.</p>
   <p>Models missing either selected value have no point. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; percentage axes normally stay at 0–100%. Points outside fitted axes remain at their actual, true-scale positions.</p>
-  <p>Solved % = upstream resolved attempts / frozen attempt population × 100. Tests are not rerun by Parsimony. Footprint = sum of net coding units / N measured in-scope attempts: each attempt has equal weight 1/N, including failures by default, or successes only when explicitly selected. Missing measurements are not zero; Measured in solved-only mode is measured solved attempts / upstream resolved attempts (not unique tasks). Benchmarks and languages are not pooled and have no benchmark weights. Default footprint uses no correctness weight.</p>
+  <p>Solved % = upstream resolved attempts / frozen attempt population × 100. Tests are not rerun by Parsimony. Footprint = sum of net coding units / N measured in-scope attempts: each attempt has equal weight 1/N, over successes only by default, or including failures when All measured is selected. Missing measurements are not zero; Measured in the default solved-only mode is measured solved attempts / upstream resolved attempts (not unique tasks). Benchmarks and languages are not pooled and have no benchmark weights. Footprint uses no correctness weight beyond that success filter.</p>
   <p id="external-help" hidden>Artificial Analysis indices are external, model-level capability scores from a pinned snapshot, not results on this benchmark. They are matched to a configuration only for the same model and reasoning effort, or where Artificial Analysis lists a single unlabelled entry or resolves an undated model ID; these weaker matches are disclosed on hover. Configurations without a match have no value and no point. They never affect footprint rank.</p>
   <p id="self-run-help" hidden>Self-run models were run by the site owner on the first 3–10 DeepSWE Python tasks (OpenAI models via pi, Anthropic models via Claude Code), without the task containers. They are unverified, not graded and never ranked, and cover only a task subset, so compare them mainly with each other. GPT-5.6 Sol is the one model run both ways: its self-run footprint was 0.88× its published one on the same tasks. Claude Code has no such check.</p>
   </details>
@@ -166,7 +175,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       <tbody></tbody>
     </table>
   </div>
-  <p class="small muted" id="rank-note" style="margin-top:8px">Mean net units added, including failures. Smaller footprint ≠ better coding.</p>
+  <p class="small muted" id="rank-note" style="margin-top:8px">Mean net units added over measured solved attempts only. Smaller footprint ≠ better coding.</p>
   <p class="small" id="task-footer" hidden><a id="task-link" href="#">Maintainers' pull request</a></p>
 
   <section id="data-sources" aria-labelledby="sources-heading" hidden>
@@ -183,7 +192,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <h2 id="method">Method</h2>
   <ul>
     <li>Each patch is applied to the task's base commit and both versions of each changed file are parsed. Nothing is executed.</li>
-    <li>Footprint rank uses the arithmetic mean of net coding units added across all measured, in-scope attempts. Successful and failed attempts both count; passing references are not required. Count attempts can optionally restrict rank and footprint charts to measured successes. The second footprint column shows the alternative mean; equal means tie without a correctness tie-break.</li>
+    <li>Footprint rank uses the arithmetic mean of net coding units added across measured, in-scope successful attempts by default; passing references are not required. Count attempts: All measured instead counts successful and failed attempts equally. The second footprint column shows the alternative mean; equal means tie without a correctness tie-break.</li>
     <li>Correctness is reported separately by the upstream benchmark. Smaller failed or no-op attempts are not better solutions.</li>
     <li id="language-scope">Test, docs and generated files are excluded. Only Python is measured.</li>
   </ul>
@@ -431,7 +440,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   // Owner-run configurations: shown faded in the all-tasks view, never ranked and not graded.
   const selfRun = data.self_run_models || [];
   let showSelfRun = true;
-  let attempts = 'all';
+  let attempts = 'solved';
   const solvedOnly = () => attempts === 'solved';
   const activeSelfRun = () => showSelfRun && !solvedOnly() ? selfRun : [];
   const netMean = m => solvedOnly() ? m.measured_solved_net_mean : m.measured_net_mean;
@@ -556,7 +565,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   let chartType = 'scatter';
   try {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('attempts') === 'solved') attempts = 'solved';
+    if (params.get('attempts') === 'all') attempts = 'all';
     if (params.get('chart') === 'bar') chartType = 'bar';
     if (params.get('selfrun') === '0') showSelfRun = false;
   } catch (e) {}
@@ -578,7 +587,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   updateAttemptsNote();
   $('attempts').addEventListener('change', e => {
     attempts = e.target.value === 'solved' ? 'solved' : 'all';
-    setParam('attempts', solvedOnly() ? 'solved' : null);
+    setParam('attempts', solvedOnly() ? null : 'all');
     updateAttemptsNote();
     renderBoard(); renderAxisControls(); renderGraph();
   });
@@ -750,6 +759,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
     $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
     $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. All models are labelled; earlier generations are lighter. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}<g class="gen-lines"></g>${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    // Labels that would cross the right edge sit left of their point instead.
+    const graphWidth = $('graph').clientWidth;
+    document.querySelectorAll('#graph .point-label').forEach(label => {
+      if (graphWidth && label.offsetLeft + 10 + label.offsetWidth > graphWidth) label.classList.add('flip');
+    });
     // Hover/focus links a model to its generation (same company and version: GPT-6 Sol, Astra, Luna) and to the
     // adjacent versions of its own model line (GPT-6 Sol <-> GPT-6.1 Sol, Grok 4.5 <-> 4.6); effort is ignored.
     const versionOf = p => (p.name.match(/\d+(?:\.\d+)*/) || [null])[0];

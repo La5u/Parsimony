@@ -48,8 +48,8 @@ All 441 submitted attempts have eligible full-file footprints: **359 passing +
 82 failed**, mean net units added **36.6031746031746**. The 59 no-generation
 records retain their source outcome and have no footprint; they do not contribute
 zero. Upstream Solved remains **359/500 = 71.8%**, independently of footprint
-coverage **441/500**. Default rank uses all measured attempts, not the solved-only
-mean. No population filtering, trimming or correctness tie-break is introduced.
+coverage **441/500**. The site default now ranks by the solved-only mean (All measured, over all attempts, is selectable).
+No population filtering, trimming or correctness tie-break is introduced.
 
 ## Release and limitations
 

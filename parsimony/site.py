@@ -13,7 +13,9 @@ from .deepswe import display_name
 from .external import attach
 from .scoring import UNCALIBRATED, VERSION, measured, out_of_scope, quantile, score_records
 
-TEMPLATE = Path(__file__).resolve().parent.parent / 'site' / 'template.html'
+TEMPLATE = Path(__file__).resolve().parent / 'template.html'
+CUSTOM_JS = Path(__file__).resolve().parent.parent / 'site' / 'custom-benchmark.js'
+SITE_URL = 'https://parsimony.lasu.dev'
 PREFIX = re.compile(r'^\d{8}_mini-v[\d.]+[_-]')
 VERSION_OF = re.compile(r'^\d{8}_mini-(v[\d.]+)[_-]')
 NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude Sonnet 4.5 (high)',
@@ -54,8 +56,8 @@ BENCHMARKS = {
                  harness_note='These are model + agent configurations, not a controlled model-only comparison. '
                               'Harnesses, prompts and execution protocols differ; see the cohort report.',
                  notice='Model identity and pass/fail are source-reported; historical evaluator inputs and protocol '
-                        'compliance are not independently certified. Footprint rank uses all measured in-scope '
-                        'attempts, including failures; missing footprints are not zero. Passing references are not required.'),
+                        'compliance are not independently certified. Footprint rank uses measured in-scope '
+                        'solved attempts by default (All measured, including failures, is selectable); missing footprints are not zero. Passing references are not required.'),
     'polybench': dict(name='SWE-PolyBench Verified', url='https://amazon-science.github.io/SWE-PolyBench/',
                       reference="Maintainers' fix", task_url='https://github.com/{owner}/{repo}/pull/{number}',
                       task_link="Maintainers' pull request", results='public submitter evaluation reports', attempts=1,
@@ -355,17 +357,22 @@ def add_rank_ranges(models, sensitivity):
         model['rank_range'] = list(entry['rank_ci_95']) if entry else None
 
 
-def render(data, standalone=True):
+def render(data, standalone=True, page_name=None):
     # Escape '<' so no data string can close the embedding <script> element.
     payload = json.dumps(data, separators=(',', ':')).replace('<', '\\u003c')
-    custom_js = TEMPLATE.with_name('custom-benchmark.js').read_text()
+    custom_js = CUSTOM_JS.read_text()
     language = (data.get('measurement_track') or {}).get('language') or 'python'
     language_name = {'python': 'Python', 'javascript': 'JavaScript', 'typescript': 'TypeScript',
                      'go': 'Go'}.get(language, language)
     benchmark_name = (data.get('benchmark') or {}).get('name', 'SWE-bench Verified')
-    title = f'Parsimony — {benchmark_name} · {language_name}'
+    title = f'Parsimony: {benchmark_name} · {language_name}'
+    stem = Path(page_name).stem if page_name else None
+    if stem == 'index':
+        title = 'Parsimony: which AI coding agent changes the least code?'
+    url = SITE_URL + ('/' if stem in (None, 'index') else f'/{stem}')
     page = (TEMPLATE.read_text().replace('__CUSTOM_BENCHMARK_JS__', custom_js)
             .replace('__DOCUMENT_TITLE__', escape(title))
+            .replace('__PAGE_URL__', escape(url))
             .replace('__PARSIMONY_DATA__', payload))
     head, body = page.split('<!-- BODY -->', 1)
     if standalone:
@@ -416,7 +423,7 @@ def main():
             # Link only repository-relative reports; a local absolute path is never a GitHub URL.
             if not report.is_absolute() and '..' not in report.parts:
                 data['sensitivity_url'] = f'https://github.com/La5u/Parsimony/blob/main/{report.as_posix()}'
-        Path(args.output).write_text(render(data, not args.fragment))
+        Path(args.output).write_text(render(data, not args.fragment, args.output))
         if args.data:
             Path(args.data).write_text(json.dumps(data, indent=1) + '\n')
         print(f'Wrote {args.output} (offline; no patch analysis)')
