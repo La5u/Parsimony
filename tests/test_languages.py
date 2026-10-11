@@ -1,12 +1,16 @@
 import unittest
 import importlib.util
 import tempfile
+import json
+import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from importlib import metadata
 
 from parsimony.analysis import token_diff
+from parsimony import languages
 from parsimony.languages import extension_language, parse, structure, token_lines, track, unit_lines
 
 
@@ -43,6 +47,54 @@ class ExtensionTests(unittest.TestCase):
                                ("x.mts", "typescript"), ("x.cts", "typescript"), ("x.go", "go"), ("x.py", "python")):
             self.assertEqual(extension_language(path), language)
         self.assertIsNone(extension_language("x.rs"))
+
+
+class WorkerLifecycleTests(unittest.TestCase):
+    def worker(self, process):
+        process.stdout.readline.return_value = json.dumps({'typescript': '5.9.3'}) + '\n'
+        with patch('parsimony.languages.subprocess.Popen', return_value=process), \
+                patch.dict('os.environ', {'PARSIMONY_NODE': 'node'}):
+            return languages._TypeScriptWorker()
+
+    def test_launch_failure_has_install_guidance(self):
+        with patch('parsimony.languages.subprocess.Popen', side_effect=FileNotFoundError('node')), \
+                patch.dict('os.environ', {'PARSIMONY_NODE': 'missing-node'}):
+            with self.assertRaisesRegex(ValueError, 'Cannot start Node.js.*npm ci'):
+                languages._TypeScriptWorker()
+
+    def test_bad_header_closes_process(self):
+        process = Mock()
+        process.stdout.readline.return_value = 'not json\n'
+        with patch('parsimony.languages.subprocess.Popen', return_value=process), \
+                patch.dict('os.environ', {'PARSIMONY_NODE': 'node'}):
+            with self.assertRaises(json.JSONDecodeError):
+                languages._TypeScriptWorker()
+        process.stdin.close.assert_called_once()
+        process.wait.assert_called_once_with(timeout=10)
+        process.stdout.close.assert_called_once()
+        process.stderr.close.assert_called_once()
+
+    def test_close_is_idempotent_and_reaps_unresponsive_worker(self):
+        process = Mock()
+        worker = self.worker(process)
+        process.stdin.close.side_effect = BrokenPipeError()
+        process.wait.side_effect = [subprocess.TimeoutExpired('node', 10), 0]
+        worker.close()
+        worker.close()
+        process.kill.assert_called_once()
+        self.assertEqual(process.wait.call_count, 2)
+        process.stdout.close.assert_called_once()
+        process.stderr.close.assert_called_once()
+        with self.assertRaisesRegex(RuntimeError, 'closed'):
+            worker.request('x.ts', '')
+
+    def test_broken_pipe_is_worker_failure(self):
+        process = Mock()
+        worker = self.worker(process)
+        process.stdin.write.side_effect = BrokenPipeError()
+        with self.assertRaisesRegex(RuntimeError, 'exited unexpectedly'):
+            worker.request('x.ts', '')
+        worker.close()
 
 
 @unittest.skipUnless(HAS_TYPESCRIPT, 'run `npm ci` (Node.js + pinned typescript) for JavaScript/TypeScript tests')
@@ -163,6 +215,29 @@ class TypeScriptCompilerTests(unittest.TestCase):
         parsed = parse('const value = 1;\n' * 2000 + 'const s = ' + ' + '.join(['"a"'] * 5000) + ';\n', 'x.js')
         self.assertEqual(len(unit_lines(parsed)), 2001)
         self.assertEqual(len(token_lines(parsed)), 2001)
+
+    def test_wide_file_avoids_v8_argument_limit(self):
+        # A small V8 stack exposes spread-argument limits without a huge fixture.
+        script = '''
+const {analyze} = require(process.argv[1]);
+const n = 40000;
+const result = analyze('x.ts', 'const x = 1;\\n'.repeat(n));
+if (!result.ok || result.units.length !== n * 4 || result.tokens.length !== n * 4) {
+  throw new Error('unexpected wide-file counts');
+}
+'''
+        result = subprocess.run([languages._typescript().process.args[0], '--stack-size=256', '-e',
+                                 script, str(languages._WORKER)], capture_output=True, text=True, timeout=60)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_concurrent_requests_keep_responses_paired(self):
+        def check(i):
+            return labels(f'const name{i} = {i};', 'x.ts')
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            results = list(pool.map(check, range(40)))
+        for i, found in enumerate(results):
+            self.assertIn(f'Identifier:name{i}', found)
+            self.assertIn(f'NumericLiteral:{i}', found)
 
     def test_unicode_source(self):
         self.assertIn("StringLiteral:héllo ✓", labels("const s = 'héllo ✓';", "x.ts"))

@@ -59,6 +59,32 @@ class ResumeTests(unittest.TestCase):
             rows = [json.loads(line) for line in output.read_text().splitlines()]
             self.assertEqual([(r['task_id'], r['analysis_status']) for r in rows], [('a', 'ok'), ('b', 'ok')])
 
+    def test_resume_preserves_retry_evidence_on_load_or_binding_failure(self):
+        with tempfile.TemporaryDirectory() as temp:
+            dataset = Path(temp) / 'dataset.jsonl'
+            dataset.write_text(json.dumps({'instance_id': 'a', 'repo': 'org/repo',
+                                           'base_commit': 'abc'}) + '\n')
+            output = Path(temp) / 'results.jsonl'
+            previous = dict(agent='agent', task_id='a', analyzer_version=ANALYZER_VERSION,
+                            python_version=platform.python_version(), published_resolved_count=1,
+                            resolved=True, analysis_status='fetch_error',
+                            provenance={'ref': 'main', 'results_sha256': 'original'})
+            payload = json.dumps(previous) + '\n'
+            args = ['parsimony', 'analyze', 'example', '--dataset', str(dataset),
+                    '--resume', '--output', str(output)]
+            cases = [OSError('offline'),
+                     dict(agent='agent', resolved={'a'}, provenance={'results_sha256': 'changed'}),
+                     dict(agent='other', resolved={'a'}, provenance={'results_sha256': 'original'})]
+            for result in cases:
+                with self.subTest(result=result):
+                    output.write_text(payload)
+                    options = {'side_effect': result} if isinstance(result, Exception) else {'return_value': result}
+                    with patch('sys.argv', args), patch('parsimony.__main__.load_submission', **options), \
+                         patch('parsimony.__main__.analyze_submission') as analyze, self.assertRaises(SystemExit):
+                        main()
+                    analyze.assert_not_called()
+                    self.assertEqual(output.read_text(), payload)
+
     def test_resume_rejects_other_analyzer_source(self):
         with tempfile.TemporaryDirectory() as temp:
             dataset = Path(temp) / 'dataset.jsonl'

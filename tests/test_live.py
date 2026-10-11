@@ -47,6 +47,32 @@ class LargeDatasetTests(unittest.TestCase):
         self.assertEqual(source['dataset_file_url'], url)
 
 
+    def test_dataset_duplicate_fields_and_invalid_json_shapes_fail_closed(self):
+        import csv
+        before = csv.field_size_limit()
+        for filename, raw, message in (
+                ('tasks.jsonl', b'{"instance_id":"first","instance_id":"second"}', 'duplicate JSON key'),
+                ('tasks.json', b'[{"base_commit":"a","base_commit":"b"}]', 'duplicate JSON key'),
+                ('tasks.json', b'42', 'list of task objects'),
+                ('tasks.json', b'null', 'list of task objects'),
+                ('tasks.csv', b'instance_id,instance_id\nfirst,second\n', 'duplicate column')):
+            with self.subTest(filename=filename, raw=raw):
+                url = DATA.replace('tasks.jsonl', filename)
+                cache = FixtureCache({API: json.dumps({'sha': HF_REV}).encode(), url: raw})
+                with self.assertRaisesRegex(ValueError, message):
+                    fetch_hf_rows(cache, 'org/tasks', HF_REV, filename)
+                self.assertEqual(csv.field_size_limit(), before)
+
+    def test_dot_dataset_and_file_paths_are_rejected_without_requests(self):
+        cache = FixtureCache({})
+        for dataset, filename in (('../tasks', 'tasks.json'), ('org/..', 'tasks.json'),
+                                  ('org/tasks', ''), ('org/tasks', './tasks.json'),
+                                  ('org/tasks', 'dir/../tasks.json')):
+            with self.subTest(dataset=dataset, filename=filename), self.assertRaises(ValueError):
+                fetch_hf_rows(cache, dataset, HF_REV, filename)
+        self.assertEqual(cache.requested, [])
+
+
 class LiveImporterTests(unittest.TestCase):
     def setUp(self):
         result = dict(submitted=5, submitted_ids=['pass', 'fail', 'empty', 'err', 'todo'],
@@ -86,6 +112,39 @@ class LiveImporterTests(unittest.TestCase):
         self.assertEqual(run['rights_status'], 'unreviewed-do-not-publish')
         self.assertIn(API, self.cache.requested)
 
+    def test_url_paths_cannot_change_pinned_request_location(self):
+        for path in ('', '.', 'submissions/./demo', 'submissions/../demo'):
+            with self.subTest(path=path), self.assertRaisesRegex(ValueError, 'configuration path'):
+                self.run_import(config_path=path)
+        self.assertEqual(self.cache.requested, [])
+        path = 'submissions/demo?query#fragment'
+        encoded_root = ROOT.rsplit('/submissions/', 1)[0] + '/submissions/demo%3Fquery%23fragment'
+        for url, value in list(self.cache.values.items()):
+            if url.startswith(ROOT):
+                self.cache.values[encoded_root + url[len(ROOT):]] = value
+        run = self.run_import(config_path=path)
+        self.assertEqual(run['result_url'], encoded_root + '/result.json')
+        self.assertIn('demo%3Fquery%23fragment', run['records'][0]['provenance']['submission_url'])
+
+    def test_dot_task_ids_and_repository_components_fail_before_patch_fetch(self):
+        for field, value in (('instance_id', '.'), ('instance_id', '..'),
+                             ('repo', '../repo'), ('repo', 'org/..'), ('repo', './repo')):
+            with self.subTest(field=field, value=value):
+                self.setUp()
+                rows = [json.loads(line) for line in self.cache.values[DATA].splitlines()]
+                rows[0][field] = value
+                self.cache.values[DATA] = b'\n'.join(json.dumps(row).encode() for row in rows)
+                with self.assertRaisesRegex(ValueError, 'task IDs|safe owner/name'):
+                    self.run_import()
+                self.assertFalse(any(url.endswith('/patch.diff') for url in self.cache.requested))
+
+    def test_duplicate_result_keys_are_not_silently_overwritten(self):
+        raw = self.cache.values[ROOT + '/result.json']
+        self.cache.values[ROOT + '/result.json'] = raw[:-1] + b',"success":1}'
+        with self.assertRaisesRegex(ValueError, 'duplicate JSON key'):
+            self.run_import()
+        self.assertEqual(self.cache.requested, [ROOT + '/result.json'])
+
     def test_unavailable_patch_is_distinct_from_empty_and_failure(self):
         self.cache.values[ROOT + '/fail/patch.diff'] = HTTPError(ROOT, 404, 'missing', {}, None)
         run = self.run_import()
@@ -107,6 +166,33 @@ class LiveImporterTests(unittest.TestCase):
         self.assertEqual(records['todo']['analysis_status'], 'missing_patch')
         self.assertFalse(records['err']['resolved'])
         self.assertEqual(records['err']['evaluation_result'], 'unknown')
+
+    def test_standalone_patch_integrity_is_checked_before_measurement(self):
+        for tamper in ('patch', 'hash'):
+            with self.subTest(tamper=tamper):
+                run = self.run_import()
+                self.review(run)
+                source = next(r for r in run['records'] if r['task_id'] == 'pass')
+                if tamper == 'patch':
+                    source['patch'] += '\n'
+                else:
+                    source['provenance']['patch_sha256'] = '0' * 64
+                with patch('parsimony.benchmark.analyze_submission') as analyze, \
+                     self.assertRaisesRegex(ValueError, 'bound provenance checksums'):
+                    analyze_run(run, self.cache, agent='pilot')
+                analyze.assert_not_called()
+
+    def test_standalone_utf8_bom_preserves_raw_hash_and_analysis(self):
+        url = ROOT + '/pass/patch.diff'
+        self.cache.values[url] = b'\xef\xbb\xbf' + self.cache.values[url]
+        run = self.run_import()
+        self.review(run)
+        source = next(r for r in run['records'] if r['task_id'] == 'pass')
+        self.assertFalse(source['patch'].startswith('\ufeff'))
+        self.assertEqual(source['provenance']['patch_sha256'],
+                         hashlib.sha256(self.cache.values[url]).hexdigest())
+        records = {r['task_id']: r for r in analyze_run(run, self.cache, agent='pilot')}
+        self.assertEqual(records['pass']['analysis_status'], 'ok')
 
     def test_empty_only_submitted_ids_are_unknown_and_dataset_may_be_larger(self):
         result = json.loads(self.cache.values[ROOT + '/result.json'])

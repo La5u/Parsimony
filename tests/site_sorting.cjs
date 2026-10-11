@@ -76,7 +76,9 @@ const doc = {
     lastButtons = [...head.matchAll(/<th([^>]*)><button type="button" data-sort="([^"]+)"[^>]*>/g)].map(match => {
       const th = element('header-' + match[2]);
       th.attributes['aria-sort'] = match[1].match(/aria-sort="([^"]+)"/)?.[1];
-      return {dataset: {sort: match[2]}, parentElement: th, listeners: {}, addEventListener(event, fn) { this.listeners[event] = fn; }};
+      return {dataset: {sort: match[2]}, parentElement: th, listeners: {},
+        focus() { doc.activeElement = this; },
+        addEventListener(event, fn) { this.listeners[event] = fn; }};
     });
     return lastButtons;
   },
@@ -159,7 +161,9 @@ const colors = () => [...graph().matchAll(/<circle data-point="(\d+)"[^>]*fill="
 function click(key, expected, direction) {
   const button = doc.querySelectorAll('#board button[data-sort]').find(b => b.dataset.sort === key);
   assert(button, `missing sort button ${key}`);
+  button.focus();
   button.listeners.click();
+  assert.equal(doc.activeElement, doc.querySelectorAll('#board button[data-sort]').find(b => b.dataset.sort === key));
   assert.deepEqual(names(), expected);
   assert.equal(button.parentElement.attributes['aria-sort'], direction);
   for (const other of doc.querySelectorAll('#board button[data-sort]').filter(b => b.dataset.sort !== key)) {
@@ -329,9 +333,16 @@ assert.doesNotMatch(graph(), /<polyline/); // Earlier Beta dominates latest Alph
 axis('x', 'score'); axis('y', 'net');
 assert.doesNotMatch(graph(), /<polyline/); // Earlier Beta also dominates in a swapped mixed-direction view.
 assert.match(graph(), /<circle data-point="1" data-model="Beta" class="all-point older/);
-function load(fixture) {
+function load(fixture, url) {
   element('parsimony-data').textContent = JSON.stringify(fixture);
-  vm.runInNewContext(script, {document: doc, window: browser});
+  if (url) {
+    browser.location = new URL(url);
+    browser.history = {replaceState(state, title, next) { browser.location = new URL(next); }};
+  } else {
+    delete browser.location;
+    delete browser.history;
+  }
+  vm.runInNewContext(script, {document: doc, window: browser, URL, URLSearchParams});
 }
 const cropped = structuredClone(data);
 cropped.models[0].resolve_rate = .2;
@@ -464,12 +475,12 @@ const barNames = () => [...element('graph').innerHTML.matchAll(/<span class="bar
 assert.deepEqual(barNames(), ['Alpha', 'Beta', 'Delta (high)']); // Gamma has no measurement; self-run listed after, never interleaved
 assert.match(element('graph').innerHTML, /data-bar="1"[\s\S]*?<div class="bar-group" role="presentation">Self-run pilot: 3–10 tasks only, not comparable with the bars above<\/div><div class="bar-row self-run"[^>]*data-bar="2"/);
 assert.match(element('graph').innerHTML, /class="bar-row self-run"[^>]*>[\s\S]*?background:#000000/);
-assert.match(element('graph').innerHTML, /class="bar-row older"[^>]*aria-label="Beta \(OpenAI\); Mean net units added per attempt: 0; Measured 3\/4 attempts"/);
+assert.match(element('graph').innerHTML, /class="bar-row older"[^>]*aria-label="Beta \(OpenAI\); Mean net units added per attempt: 0; Measured 3\/4 population attempts"/);
 assert.match(element('graph').innerHTML, /<span class="bar-zero" style="left:100%"><\/span>/);
 assert.match(element('graph').innerHTML, /<span class="bar-value">−5<\/span>/);
 assert.equal(element('graph-legend').textContent, 'Mean net units added per attempt, failures included. Smaller ≠ better. Older generations faded.');
 doc.querySelectorAll('#graph [data-bar]')[2].listeners.focus({});
-assert.match(element('graph-tooltip').textContent, /^Delta \(high\) · self-run \(OpenAI\)\nMean net units added per attempt: −5\nMeasured 4\/20 attempts\nSelf-run with pi/);
+assert.match(element('graph-tooltip').textContent, /^Delta \(high\) · self-run \(OpenAI\)\nMean net units added per attempt: −5\nMeasured 4\/20 population attempts\nSelf-run with pi/);
 task('org__repo-1');
 assert.deepEqual(barNames(), ['Alpha', 'Beta', 'Gamma']); // a measured failed attempt still has a bar
 assert.match(element('graph').innerHTML, /<span class="bar-value">331<\/span>/);
@@ -496,4 +507,104 @@ assert.match(graph(), /data-model="Delta \(high\)"/);
 assert.equal(element('self-run-note').hidden, false);
 load(data); // no self-run models: no toggle
 assert.equal(element('self-run-toggle-label').hidden, true);
-console.log('Palette, borderless markers, HTML labels, tooltips, outlier fitting, sorting, task switching, external axes, self-run points, self-run toggle and bar view passed');
+// CSS must not override the hidden attribute on boards without a self-run pilot.
+assert.match(html, /#self-run-toggle-label:not\(\[hidden\]\)\s*\{\s*display: inline-flex/);
+const missingSolved = structuredClone(data);
+missingSolved.models[0].resolve_rate = null;
+missingSolved.models[1].resolve_rate = 0;
+load(missingSolved);
+assert.match(element('#board tbody').innerHTML, /Alpha<\/td><td>−2.0<\/td><td>7.0<\/td><td>—%<\/td>/);
+assert.match(element('#board tbody').innerHTML, /Beta<\/td><td>0.0<\/td><td>3.0<\/td><td>0.0%<\/td>/);
+click('resolve_rate', ['Gamma', 'Beta', 'Alpha'], 'descending');
+click('resolve_rate', ['Beta', 'Gamma', 'Alpha'], 'ascending');
+assert.doesNotMatch(graph(), /data-model="Alpha"/);
+const fractional = structuredClone(data);
+fractional.models[0].measured_net_mean = -0.4;
+fractional.models[1].measured_net_mean = 0.4;
+fractional.models[2].measured_net_mean = 1.6;
+load(fractional);
+element('chart-type').listeners.change({target: {value: 'bar'}});
+for (const value of ['−0.4', '0.4', '1.6']) assert.ok(graph().includes(`Mean net units added per attempt: ${value};`));
+doc.querySelectorAll('#graph [data-bar]')[0].listeners.focus({});
+assert.match(element('graph-tooltip').textContent, /Mean net units added per attempt: −0.4\n/);
+task('org__repo-1');
+assert.match(graph(), /Gamma[^"\n]*; failed task attempt/);
+doc.querySelectorAll('#graph [data-bar]')[2].listeners.focus({});
+assert.match(element('graph-tooltip').textContent, /\nfailed task attempt$/);
+assert.match(graph(), /Alpha[^"\n]*; solved task attempt/);
+task('uncalibrated');
+assert.match(graph(), /Alpha[^"\n]*; failed task attempt/);
+// An eligible footprint may have an explicitly unknown outcome.
+fractional.footprint_tasks[0][2][2] = ['c', 331, 332, null, -25, 100, 'u', true];
+load(fractional);
+element('chart-type').listeners.change({target: {value: 'bar'}});
+task('org__repo-1');
+assert.match(graph(), /Gamma[^"\n]*; unknown task attempt/);
+// Outcome selector: URL initialization, equal ranks, attempt denominators and chart membership.
+const outcomes = structuredClone(withSelfRun);
+outcomes.task_count = 2; // Neither coverage denominator may fall back to the number of tasks.
+outcomes.population_count = 8;
+Object.assign(outcomes.models[0], {measured_solved_net_mean: 7, measured_solved_churn_mean: 11,
+  measured_solved_attempts: 2, upstream_solved_attempts: 6, footprint_population_count: 8});
+Object.assign(outcomes.models[1], {measured_solved_net_mean: 7, measured_solved_churn_mean: 13,
+  measured_solved_attempts: 1, upstream_solved_attempts: 4, footprint_population_count: 8});
+Object.assign(outcomes.models[2], {measured_net_mean: -100, measured_attempts: 3,
+  measured_solved_net_mean: null, measured_solved_churn_mean: null,
+  measured_solved_attempts: 0, upstream_solved_attempts: 0});
+// Unknown and failed footprints are measured and eligible, but are not successes.
+outcomes.footprint_tasks[0][2][1] = ['c', 221, 222, 20, 20, 20, 'u', true];
+outcomes.footprint_tasks[0][2][2] = ['f', 331, 332, 5, 5, 5, 'f', true];
+const attempts = value => element('attempts').listeners.change({target: {value}});
+load(outcomes, 'https://example.org/index.html?attempts=solved&keep=1#board');
+assert.equal(element('attempts').value, 'solved');
+assert.deepEqual(names(), ['Alpha', 'Beta', 'Gamma']);
+assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Alpha<\/td><td>7.0<\/td><td>−2.0<\/td>/);
+assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Beta/);
+assert.match(element('#board tbody').innerHTML, /<td>—<\/td><td class="left">Gamma/);
+assert.match(element('#board tbody').innerHTML, /2\/6<\/td>/);
+assert.match(element('#board tbody').innerHTML, /1\/4<\/td>/);
+assert.doesNotMatch(element('#board tbody').innerHTML + graph(), /Delta/);
+assert.match(graph(), /measured 2\/6 upstream solved attempts/);
+axis('y', 'churn');
+assert.match(graph(), /Units changed, solved \(mean per attempt\): 11.0/);
+axis('x', 'coverage');
+assert.match(graph(), /Measured solved \/ upstream solved \(%\): 33.3%/);
+// Absence applies even when neither axis uses the footprint mean.
+for (const pair of [['score', 'ci'], ['resolve_rate', 'rank_low']]) {
+  axis('x', pair[0]); axis('y', pair[1]);
+  assert.doesNotMatch(graph(), /data-model="Gamma"|Delta/);
+  assert.match(graph(), /data-model="Alpha"/);
+}
+element('chart-type').listeners.change({target: {value: 'bar'}});
+assert.deepEqual(barNames(), ['Alpha', 'Beta']);
+assert.match(graph(), /Mean net units added per solved attempt: 7; Measured 2\/6 upstream solved attempts/);
+task('org__repo-1');
+assert.deepEqual(names(), ['Alpha']);
+assert.deepEqual(barNames(), ['Alpha']);
+element('chart-type').listeners.change({target: {value: 'scatter'}});
+assert.match(graph(), /data-model="Alpha"/);
+assert.doesNotMatch(graph(), /data-model="Beta"|data-model="Gamma"/);
+attempts('all');
+assert.equal(browser.location.search, '?keep=1');
+assert.equal(browser.location.hash, '#board');
+assert.deepEqual(names(), ['Alpha', 'Beta', 'Gamma']);
+assert.match(graph(), /unknown task attempt/);
+assert.match(graph(), /failed task attempt/);
+task('');
+assert.match(element('#board tbody').innerHTML, /4\/8<\/td>/);
+axis('x', 'net'); axis('y', 'churn');
+assert.match(graph(), /Delta/);
+attempts('solved');
+assert.equal(browser.location.search, '?keep=1&attempts=solved');
+assert.doesNotMatch(graph(), /Gamma|Delta/);
+// External and archived axes retain values but obey the same outcome membership.
+const externalOutcomes = structuredClone(outcomes);
+externalOutcomes.external = structuredClone(withExternal.external);
+for (const m of externalOutcomes.models) Object.assign(m, {aa_intelligence: 50, aa_coding: 60});
+load(externalOutcomes, 'https://example.org/index.html?attempts=solved');
+assert.equal(element('graph-y').value, 'aa_intelligence');
+assert.doesNotMatch(graph(), /data-model="Gamma"|Delta/);
+axis('x', 'score'); axis('y', 'aa_coding');
+assert.match(graph(), /Artificial Analysis Coding Index: 60.0/);
+assert.doesNotMatch(graph(), /data-model="Gamma"|Delta/);
+console.log('Sorting, chart views, task switching, external/self-run axes and outcome selector regressions passed');

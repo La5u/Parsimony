@@ -87,6 +87,19 @@ async function upload(value, size = 100) {
   assert.equal(elements['custom-results'].children.length, 0);
   assert.equal(elements['custom-status'].textContent, '');
   assert.equal(elements['custom-file'].value, '');
+  // A newer selection wins even when an older read finishes (or rejects) later.
+  for (const rejectOld of [false, true]) {
+    let resolveOld, reject;
+    elements['custom-file'].files = [{size: 1, text: () => new Promise((resolve, fail) => { resolveOld = resolve; reject = fail; })}];
+    const oldRead = elements['custom-file'].listeners.change();
+    await upload({...data(), benchmark: 'Newest selection'});
+    if (rejectOld) reject(new Error('stale read error'));
+    else resolveOld(JSON.stringify({...data(), benchmark: 'Stale selection'}));
+    await oldRead;
+    assert.match(text(elements['custom-results']), /Newest selection/);
+    assert.doesNotMatch(text(elements['custom-results']), /Stale selection/);
+    assert.match(elements['custom-status'].textContent, /^Loaded locally/);
+  }
   elements['custom-example'].listeners.click();
   validateBenchmark(JSON.parse(blob.parts.join('')));
   assert.equal(blob.options.type, 'application/json');

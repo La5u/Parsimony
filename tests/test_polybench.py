@@ -342,6 +342,30 @@ class PolyBenchTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             import_run(self.cache, run_name=ISWE, task_ids=[PASS])
 
+    def test_cli_rejects_duplicate_inventory_keys_before_analysis(self):
+        with tempfile.TemporaryDirectory() as directory:
+            inventory_path = Path(directory) / 'inventory.json'
+            output = Path(directory) / 'records.jsonl'
+            for raw in (b'{"records":[],"records":[{}]}', b'[]'):
+                with self.subTest(raw=raw):
+                    inventory_path.write_bytes(raw)
+                    args = ['polybench', '--cache', directory, 'analyze',
+                            str(inventory_path), '--output', str(output)]
+                    with patch('sys.argv', args), patch('sys.stderr'), \
+                         patch('parsimony.polybench.analyze_run') as analyze, \
+                         self.assertRaises(SystemExit) as caught:
+                        main()
+                    self.assertEqual(caught.exception.code, 1)
+                    analyze.assert_not_called()
+                    self.assertFalse(output.exists())
+
+    def test_shared_dataset_reader_rejects_duplicate_csv_headers(self):
+        self.fixture()
+        self.cache.values[HF_CSV] = b'instance_id,instance_id\nfirst,second\n'
+        with self.assertRaisesRegex(ValueError, 'duplicate column'):
+            self.inventory()
+        self.assertNotIn(self.root + '/all_preds.jsonl', self.cache.requested)
+
     def test_cli_inventory_fetch_and_offline_analysis(self):
         self.fixture()
         with tempfile.TemporaryDirectory() as directory:

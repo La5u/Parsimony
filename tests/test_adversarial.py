@@ -49,6 +49,12 @@ COUNTED = {
 
 
 class AdversarialTests(unittest.TestCase):
+    def test_orphan_no_newline_marker_is_a_validation_error(self):
+        patch = ('--- a/pkg/core.py\n+++ b/pkg/core.py\n'
+                 '@@ -0,0 +0,0 @@\n\\ No newline at end of file\n')
+        with self.assertRaisesRegex(ValueError, 'marker without a hunk line'):
+            measure(patch, lambda p: self.fail('malformed patch fetched'))
+
     def test_formatting_and_comments_are_free(self):
         for name, (before, after) in FREE.items():
             with self.subTest(name):
@@ -109,6 +115,39 @@ class AdversarialTests(unittest.TestCase):
         # and the net_floor=0 sensitivity variant removes the credit.
         result = run(BASE + UNUSED, BASE)
         self.assertEqual((result['net_units'], result['churn']), (-12, 12))
+
+    def test_known_limitation_removed_validation_earns_net_credit(self):
+        # Removing required rejection of negative dimensions is smaller, not correct.
+        result = run(GUARDED, BASE)
+        self.assertEqual((result['net_units'], result['churn']), (-14, 14))
+        self.assertEqual((result['net_tokens'], result['token_churn']), (-18, 18))
+        self.assertEqual(result['excluded_files'], [])
+        self.assertFalse(out_of_scope(result))
+
+    def test_known_limitation_removed_implementation_assert_earns_net_credit(self):
+        # This assert lives in implementation, not an excluded test file. Its
+        # deletion removes an invariant check when Python assertions are enabled.
+        checked = BASE.replace('    return',
+                               '    assert width >= 0 and height >= 0\n    return')
+        result = run(checked, BASE)
+        self.assertEqual((result['net_units'], result['churn']), (-8, 8))
+        self.assertEqual((result['net_tokens'], result['token_churn']), (-8, 8))
+        self.assertEqual(result['excluded_files'], [])
+        self.assertFalse(out_of_scope(result))
+
+    def test_known_limitation_delegation_to_existing_helper_is_smaller(self):
+        # The helper already exists in the same measured implementation file;
+        # no code is hidden in excluded paths or executed to claim equivalence.
+        helper = ('def validate_dimensions(width, height):\n'
+                  '    if width < 0 or height < 0:\n'
+                  '        raise ValueError(width, height)\n\n\n')
+        delegated = BASE.replace('    return',
+                                 '    validate_dimensions(width, height)\n    return')
+        result = run(helper + GUARDED, helper + delegated)
+        self.assertEqual((result['net_units'], result['churn']), (-10, 12))
+        self.assertEqual((result['net_tokens'], result['token_churn']), (-12, 14))
+        self.assertEqual(result['excluded_files'], [])
+        self.assertFalse(out_of_scope(result))
 
     def test_known_limitation_moved_code_counts_as_edits(self):
         before = 'def a():\n    return 1\n\n\ndef b():\n    return 2\n'

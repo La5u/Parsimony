@@ -394,7 +394,8 @@ def _legacy_failures(submission: dict[str, Any], cache: Cache, task_ids: list[st
         listed.update(str(x) for x in details.get(key) or [])
     candidates = sorted(set(submission["predictions"]) - listed)
     if task_ids is not None:
-        candidates = [t for t in candidates if t in set(task_ids)]
+        wanted = set(task_ids)
+        candidates = [t for t in candidates if t in wanted]
     unresolved, unreported = [], []
     for task in candidates:
         try:
@@ -514,6 +515,8 @@ def load_submission(submission: str, cache: Cache, ref: str = "main",
 def load_manifest(path: str | os.PathLike[str], cache: Cache) -> dict[str, Any]:
     """Load the explicit JSON manifest format described in this module."""
     manifest = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(manifest, dict):
+        raise ValueError("manifest must be a JSON object")
     required = ("prediction_url", "results_url")
     missing = [key for key in required if not isinstance(manifest.get(key), str)]
     if missing:

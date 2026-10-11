@@ -10,7 +10,9 @@ import argparse
 import hashlib
 import io
 import json
+import os
 import tarfile
+import tempfile
 from pathlib import Path
 from urllib.parse import quote
 
@@ -28,19 +30,25 @@ def key(url):
     return hashlib.sha256(url.encode('utf-8')).hexdigest()
 
 
-def cached_patch(record, cache_dir):
+def cached_patch(record, cache_dir, predictions_cache=None):
     """The record's patch text from the cache, or None."""
     location = record.get('provenance', {}).get('patch_location')
     if not location or cache_dir is None:
         return None
     url, _, task = location.partition('#instance_id=')
+    if task and predictions_cache is not None and url in predictions_cache:
+        return predictions_cache[url].get(task)
     path = Path(cache_dir) / key(url)
-    if not path.exists():
+    try:
+        data = path.read_bytes()
+    except FileNotFoundError:
         return None
-    data = path.read_bytes()
     if not task:
         return data.decode('utf-8', 'replace')
-    return _parse_predictions(data)[1].get(task)
+    predictions = _parse_predictions(data)[1]
+    if predictions_cache is not None:
+        predictions_cache[url] = predictions
+    return predictions.get(task)
 
 
 def referenced_urls(records, cache_dir=None):
@@ -51,6 +59,9 @@ def referenced_urls(records, cache_dir=None):
     are fetched by their old path.
     """
     urls = set(DATASET_URLS)
+    # Monolithic prediction exports can be large and shared by hundreds of records.
+    # Keep this memo local: a later call must see any changed cache contents.
+    predictions_cache = {}
     for r in records:
         p = r.get('provenance', {})
         for field in ('results_url', 'prediction_url', 'metadata_url'):
@@ -65,7 +76,7 @@ def referenced_urls(records, cache_dir=None):
         paths = {path for metrics in (r.get('metrics'), r.get('human_metrics'))
                  for path in (metrics or {}).get('touched_files', [])}
         try:
-            patch = cached_patch(r, cache_dir)
+            patch = cached_patch(r, cache_dir, predictions_cache)
             if patch:
                 paths.update(f.old for f in parse_patch(patch) if f.old != '/dev/null')
         except ValueError:
@@ -77,6 +88,7 @@ def referenced_urls(records, cache_dir=None):
 
 def create(result_paths, cache_dir, output):
     cache_dir = Path(cache_dir)
+    result_paths = list(result_paths)
     records = [r for path in result_paths for r in read_jsonl(path)]
     entries, missing = [], 0
     for url in sorted(referenced_urls(records, cache_dir)):
@@ -113,7 +125,12 @@ def restore(archive, cache_dir):
         restored = skipped = 0
         for entry in manifest['entries']:
             name = key(entry['url'])
-            data = tar.extractfile('cache/' + name).read()
+            member = tar.getmember('cache/' + name)
+            if not member.isfile():
+                raise ValueError(f"snapshot cache entry is not a regular file: {entry['url']}")
+            if member.size != entry['size']:
+                raise ValueError(f"snapshot size differs from manifest: {entry['url']}")
+            data = tar.extractfile(member).read()
             if hashlib.sha256(data).hexdigest() != entry['sha256']:
                 raise ValueError(f"snapshot content differs from manifest: {entry['url']}")
             target = cache_dir / name
@@ -122,9 +139,16 @@ def restore(archive, cache_dir):
                     raise ValueError(f"existing cache entry differs from snapshot: {entry['url']}")
                 skipped += 1
                 continue
-            tmp = target.with_suffix('.restoring')
-            tmp.write_bytes(data)
-            tmp.replace(target)
+            fd, tmp = tempfile.mkstemp(prefix=name + '.', dir=cache_dir)
+            try:
+                with os.fdopen(fd, 'wb') as stream:
+                    stream.write(data)
+                os.replace(tmp, target)
+            finally:
+                try:
+                    os.unlink(tmp)
+                except FileNotFoundError:
+                    pass
             restored += 1
     return dict(restored=restored, already_present=skipped)
 

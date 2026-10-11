@@ -1,8 +1,9 @@
+import copy
 import unittest
 
-from parsimony.scoring import freeze, score_records
+from parsimony.scoring import UNCALIBRATED, freeze, freeze_population, score_records
 from parsimony.stability import (analyze, bootstrap, common_tasks, dedup, drop_agent, group, matrix, render,
-                                 summarize, task_value)
+                                 pair_outcomes, summarize, task_value)
 from tests.test_scoring import record
 
 
@@ -118,6 +119,128 @@ class StabilityTests(unittest.TestCase):
         text = render(result, 'python -m parsimony.stability ...')
         self.assertTrue(text.startswith('# '))
         self.assertIn('**Verdict.**', text)
+
+    def test_iterators_match_lists(self):
+        records = cohort()
+        panel = freeze(records, 'p')
+        self.assertEqual(group(iter(records)), group(records))
+        self.assertEqual(analyze(panel, iter(records), draws=10), analyze(panel, records, draws=10))
+        values = matrix(panel, group(records), 0.8, 25)
+        tasks = list(panel['tasks'])
+        self.assertEqual(summarize(values, iter(tasks)), summarize(values, tasks))
+        self.assertEqual(bootstrap(values, iter(tasks), draws=10), bootstrap(values, tasks, draws=10))
+
+    def test_parameters_validated_even_for_unknown_tasks(self):
+        panel = freeze(cohort(), 'p')
+        for weight, cap, floor in ((-1, 25, None), (2, 25, None), (float('nan'), 25, None),
+                                   (0.8, float('inf'), None), (0.8, float('nan'), None),
+                                   (0.8, -1, None), (0.8, 25, float('inf')),
+                                   (True, 25, None), (0.8, 25, True)):
+            with self.subTest(weight=weight, cap=cap, floor=floor):
+                with self.assertRaisesRegex(ValueError, 'parameters'):
+                    task_value(None, [], weight, cap, floor)
+                with self.assertRaisesRegex(ValueError, 'parameters'):
+                    matrix(panel, group(cohort()), weight, cap, floor)
+        malformed = rec('a', 't1')
+        malformed['resolved'] = 1
+        with self.assertRaisesRegex(ValueError, 'boolean'):
+            task_value(malformed, panel['tasks']['t1'], 0.8, 25)
+        for draws in (0, -1, True, 1.5):
+            with self.subTest(draws=draws), self.assertRaisesRegex(ValueError, 'draws'):
+                analyze({}, [], draws=draws)
+
+    def test_matrix_rejects_invalid_references(self):
+        records = cohort()
+        original = freeze(records, 'p')
+        for kind in ('duplicate', 'metrics', 'base', 'scope', 'empty'):
+            panel = copy.deepcopy(original)
+            refs = panel['tasks']['t1']
+            if kind == 'duplicate':
+                refs.append(copy.deepcopy(refs[0]))
+            elif kind == 'metrics':
+                refs[0]['metrics']['churn'] += 1
+            elif kind == 'base':
+                refs[1]['provenance']['base_commit'] = 'different'
+            elif kind == 'scope':
+                refs[0]['metrics'].update(touched_files=['excluded'], excluded_files=['excluded'])
+            else:
+                refs.clear()
+            with self.subTest(kind=kind), self.assertRaises(ValueError):
+                matrix(panel, group(records), 0.8, 25)
+
+    def test_empty_missing_and_invalid_cells_fail_clearly(self):
+        point = (1, 1, 1)
+        invalid = [{}, {'a': {}}, {'a': {'t': point}, 'b': {}},
+                   {'a': {'t': (None, 10, 0)}}, {'a': {'t': (None, 0, float('inf'))}},
+                   {'a': {'t': (float('nan'), 0, 1)}}, {'a': {'t': (2, 0, 1)}}]
+        for values in invalid:
+            for fn in (summarize, lambda v: bootstrap(v, ['t'], draws=2)):
+                with self.subTest(values=values, fn=fn), self.assertRaises(ValueError):
+                    fn(values)
+        self.assertEqual(common_tasks({'a': {'t': point}, 'b': {}}), [])
+        with self.assertRaisesRegex(ValueError, 'candidate'):
+            common_tasks({})
+
+    def test_clustered_bootstrap_keeps_attempts_paired(self):
+        values = {'a': {'t#1': (10, 10, 10), 't#2': (90, 90, 90)},
+                  'b': {'t#1': (30, 30, 30), 't#2': (70, 70, 70)}}
+        result = bootstrap(values, ['t#1', 't#2'], draws=50)
+        self.assertEqual(result['models']['a']['score_ci_95'], [50, 50])
+        self.assertEqual(result['pairs']['a|b']['ci_95'], [0, 0])
+
+    def test_pair_outcomes_zero_top_and_no_common_points(self):
+        values = {'a': {'t': (10, 10, 10)}, 'b': {'t': (5, 5, 5)}}
+        groups = {'a': {'t': rec('a', 't')}, 'b': {'t': rec('b', 't')}}
+        result = pair_outcomes(values, groups, ['t'], 'a', 'b', top=0)
+        self.assertEqual(result['difference'], 5)
+        self.assertEqual(result['favoring_a'], [])
+        self.assertEqual(result['favoring_b'], [])
+        for top in (-1, True, 1.5):
+            with self.assertRaisesRegex(ValueError, 'top'):
+                pair_outcomes(values, groups, ['t'], 'a', 'b', top=top)
+        values['a']['t'] = (None, 1, 100)
+        self.assertEqual(pair_outcomes(values, groups, ['t'], 'a', 'b')['difference'], 0)
+
+    def test_bounded_population_survives_reference_removal(self):
+        records = [rec('a', 't1'), rec('b', 't1', resolved=False),
+                   rec('a', 't2'), rec('b', 't2', resolved=False)]
+        # Freeze from t1 only; t2 is an independently defined, uncalibrated task.
+        population = dict(format='parsimony-beta-population-v1', task_count=2,
+                          python_version=records[0]['python_version'], analyzer_commit=None,
+                          tasks={t: {k: records[0]['provenance'][k] for k in ('repo', 'base_commit')}
+                                 for t in ('t1', 't2')})
+        panel = freeze_population(records[:2], 'bounded', population)
+        result = analyze(panel, records, draws=20)
+        self.assertEqual(result['calibration_policy'], UNCALIBRATED)
+        self.assertEqual(result['task_count'], 2)
+        self.assertEqual(result['common_tasks'], 1)
+        self.assertEqual(result['bootstrap']['rank_policy'], 'bootstrap-score-bound-envelopes-v1')
+        self.assertEqual(result['leave_one_out']['a']['orphaned_tasks'], ['t1', 't2'])
+        reduced = result['scenarios']['panel_without=a']
+        self.assertEqual(reduced['task_count'], 2)
+        self.assertEqual(reduced['common_tasks'], 0)
+        self.assertIsNone(reduced['models']['a']['full_score'])
+        self.assertEqual(reduced['models']['a']['lower'], 1)
+        self.assertEqual(reduced['models']['a']['upper'], 100)
+        self.assertEqual(result['bootstrap']['models']['a']['rank_ci_95'], [1, 1])
+        self.assertEqual(result['bootstrap']['models']['b']['rank_ci_95'], [2, 2])
+
+    def test_overlapping_bounds_expand_bootstrap_rank_intervals(self):
+        values = {'a': {'t': (None, 1, 100)}, 'b': {'t': (50, 50, 50)}}
+        result = bootstrap(values, ['t'], draws=10, bound_ranks=True)
+        for agent in values:
+            self.assertEqual(result['models'][agent]['rank_ci_95'], [1, 2])
+        self.assertEqual(result['pairs']['a|b']['ci_95'], [-49, 50])
+
+    def test_report_labels_full_population_midpoints(self):
+        records = cohort()
+        panel = freeze(records, 'p')
+        records[0]['metrics'] = None
+        result = analyze(panel, records, draws=10)
+        text = render(result, 'command')
+        self.assertIn('Bound-midpoint score over all tasks', text)
+        self.assertIn('All tasks (4)', text)
+        self.assertNotIn('All common', text)
 
     def test_newcomer_is_scored_but_never_a_reference(self):
         panel_records = cohort()

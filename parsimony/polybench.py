@@ -361,7 +361,7 @@ def main() -> None:
             run = import_run(cache, run_name=args.run, language=args.language)
             text = json.dumps(run, sort_keys=True, indent=2) + '\n'
         else:
-            run = json.loads(Path(args.inventory).read_text())
+            run = _object(Path(args.inventory).read_bytes())
             text = ''.join(json.dumps(r, sort_keys=True) + '\n' for r in analyze_run(run, cache))
         Path(args.output).write_text(text)
         print(f'Wrote {args.output}; declared candidate, not publication-ready')

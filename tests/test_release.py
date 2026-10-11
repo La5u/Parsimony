@@ -57,6 +57,24 @@ class ReleaseTests(unittest.TestCase):
                                               'touched_files': ['a.py'], 'excluded_files': []}}
         self.assertEqual(audit(self.panel, [renamed])['agents'][0]['value_only_edit_records'], 1)
 
+    def test_rejects_invalid_totals_and_truthy_outcomes(self):
+        for update in ({'published_resolved_count': True}, {'published_resolved_count': -1},
+                       {'benchmark_tasks': True}, {'benchmark_tasks': 0},
+                       {'resolve_rate': True}, {'resolve_rate': float('nan')},
+                       {'resolve_rate': float('inf')}, {'resolved': 'false'}):
+            with self.subTest(update=update), self.assertRaises(ValueError):
+                audit(self.panel, [{**self.record, **update}])
+
+    def test_partial_records_must_be_compatible_with_published_total(self):
+        panel = {**self.panel, 'task_count': 2,
+                 'tasks': {**self.panel['tasks'], 'b': self.panel['tasks']['a']}}
+        row = {**self.record, 'benchmark_tasks': 2, 'resolve_rate': 0.5}
+        self.assertEqual(audit(panel, [row])['agents'][0]['missing_records'], 1)
+        with self.assertRaisesRegex(ValueError, 'totals disagree'):
+            audit(panel, [{**row, 'published_resolved_count': 0, 'resolve_rate': 0}])
+        with self.assertRaisesRegex(ValueError, 'totals disagree'):
+            audit(panel, [{**row, 'resolved': False, 'published_resolved_count': 2, 'resolve_rate': 1}])
+
     def test_dataset_population_is_unique(self):
         self.dataset.write_text(self.dataset.read_text() * 2)
         with self.assertRaisesRegex(ValueError, 'unique'):

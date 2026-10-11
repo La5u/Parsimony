@@ -1,6 +1,7 @@
 """Build the static results website from a frozen panel and measured JSONL (offline)."""
 import argparse
 import hashlib
+from html import escape
 import json
 import random
 import re
@@ -199,7 +200,7 @@ def bootstrap(board, draws, seed):
 
 
 def build(panel, records, draws=2000, seed=42):
-    # Rank by score, or by the midpoint of the possible range when some tasks are unscored.
+    # Archived score diagnostics only; footprint means below determine the published order.
     board = sorted(score_records(panel, records),
                    key=lambda e: -(e['score'] if e['score'] is not None else (e['lower'] + e['upper']) / 2))
     bounded = panel.get('calibration_policy') == UNCALIBRATED
@@ -221,6 +222,10 @@ def build(panel, records, draws=2000, seed=42):
                              and not out_of_scope(r['metrics'])]
         measured_metrics = [r['metrics'] for r in footprint_records]
         solved_footprints = [r['metrics']['net_units'] for r in footprint_records if r['resolved']]
+        # Upstream totals count attempt slots, not unique base task IDs (e.g. DeepSWE repeats).
+        reported_solved = [r['published_resolved_count'] for r in group.values()
+                           if r.get('published_resolved_count') is not None]
+        upstream_solved = max(reported_solved) if reported_solved else sum(r['resolved'] for r in group.values())
         # Failure penalty from the failures that could be measured; complete only when nothing is unscored.
         known_penalty = -sum(t['score'] for t in entry['tasks'].values()
                              if t['status'] == 'failed' and t['score'] is not None) / len(entry['tasks'])
@@ -232,6 +237,9 @@ def build(panel, records, draws=2000, seed=42):
             measured_net_mean=statistics.fmean(m['net_units'] for m in measured_metrics) if measured_metrics else None,
             # Same measured, in-scope population restricted to upstream-solved attempts.
             measured_solved_attempts=len(solved_footprints),
+            upstream_solved_attempts=upstream_solved,
+            measured_solved_churn_mean=statistics.fmean(r['metrics']['churn'] for r in footprint_records
+                                                       if r['resolved']) if solved_footprints else None,
             measured_solved_net_mean=statistics.fmean(solved_footprints) if solved_footprints else None,
             measured_churn_mean=statistics.fmean(m['churn'] for m in measured_metrics) if measured_metrics else None,
             lower=entry['lower'], upper=entry['upper'], ci=intervals[entry['agent']]['ci'],
@@ -255,13 +263,14 @@ def build(panel, records, draws=2000, seed=42):
     for m in models:
         m['latest'] = m['name'] in newest
     order = [m['agent'] for m in models]
+    scored_by_agent = {entry['agent']: entry['tasks'] for entry in board}
     tasks = []
     for task in panel['tasks']:
         cells = []
         human = None
         for agent in order:
             r = groups[agent].get(task)
-            scored = next(e for e in board if e['agent'] == agent)['tasks'][task]
+            scored = scored_by_agent[agent][task]
             m = (r or {}).get('metrics') or {}
             if r and r.get('human_metrics'):
                 human = r['human_metrics']['churn']
@@ -353,12 +362,21 @@ def render(data, standalone=True):
     # Escape '<' so no data string can close the embedding <script> element.
     payload = json.dumps(data, separators=(',', ':')).replace('<', '\\u003c')
     custom_js = TEMPLATE.with_name('custom-benchmark.js').read_text()
+    language = (data.get('measurement_track') or {}).get('language') or 'python'
+    language_name = {'python': 'Python', 'javascript': 'JavaScript', 'typescript': 'TypeScript',
+                     'go': 'Go'}.get(language, language)
+    benchmark_name = (data.get('benchmark') or {}).get('name', 'SWE-bench Verified')
+    title = f'Parsimony — {benchmark_name} · {language_name}'
     page = (TEMPLATE.read_text().replace('__CUSTOM_BENCHMARK_JS__', custom_js)
+            .replace('__DOCUMENT_TITLE__', escape(title))
             .replace('__PARSIMONY_DATA__', payload))
+    head, body = page.split('<!-- BODY -->', 1)
     if standalone:
         page = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
-                '<meta name="viewport" content="width=device-width, initial-scale=1">\n</head>\n<body>\n'
-                + page + '\n</body>\n</html>\n')
+                '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+                + head + '</head>\n<body>\n' + body + '\n</body>\n</html>\n')
+    else:
+        page = head + body
     return page
 
 

@@ -43,6 +43,27 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(leaderboard(records, True, ['a'])[0]['task_ids'], ['1', '2'])
         self.assertEqual(leaderboard(records, True, ['a', 'missing'])[0]['successful_tasks_analyzed'], 0)
 
+    def test_record_iterators_match_lists(self):
+        records = [record('a', '1', net=-2), record('a', '2', net=6),
+                   record('b', '2', net=3), record('b', '3', False, -999)]
+        for shared in (False, True):
+            for agents in (None, ['a'], ['a', 'missing']):
+                with self.subTest(shared=shared, agents=agents):
+                    self.assertEqual(leaderboard(iter(records), shared=shared, agents=agents),
+                                     leaderboard(records, shared=shared, agents=agents))
+        records[0]['metrics']['mode'] = 'patch_only'
+        self.assertEqual(leaderboard(iter(records), mode='patch_only'),
+                         leaderboard(records, mode='patch_only'))
+
+    def test_record_iterators_still_validate_duplicates_and_tracks(self):
+        r = record('a', '1')
+        with self.assertRaisesRegex(ValueError, 'duplicate agent/task'):
+            leaderboard(iter([r, copy.deepcopy(r)]))
+        other = record('b', '2')
+        other['measurement_track'] = {'language': 'go'}
+        with self.assertRaisesRegex(ValueError, 'mixed measurement tracks'):
+            leaderboard(iter([r, other]))
+
     def test_duplicates_rejected(self):
         r = record('a', '1')
         with self.assertRaises(ValueError):

@@ -163,7 +163,29 @@ class AnalysisTests(unittest.TestCase):
             blocks = myers_blocks(a, b)
             self.assertEqual(sum(a2 - a1 for a1, a2, _, _ in blocks), len(a) - common)
             self.assertEqual(sum(b2 - b1 for _, _, b1, b2 in blocks), len(b) - common)
+            distance = len(a) + len(b) - 2 * common
+            for budget in {-1, 0, distance - 1, distance, distance + 1}:
+                with self.subTest(a=a, b=b, budget=budget):
+                    expected = (len(b) - common, len(a) - common) if distance <= budget else None
+                    self.assertEqual(myers(a, b, max_d=budget), expected)
+                    self.assertEqual(myers_blocks(a, b, max_d=budget),
+                                     blocks if distance <= budget else None)
         self.assertIsNone(myers(list('ab'), list('cd'), max_d=3))
+
+    def test_large_one_sided_alignment(self):
+        # An empty side has only one possible alignment; tracing each edit
+        # would use quadratic time/memory despite this trivial answer.
+        sequence = ['x'] * 10000
+        self.assertEqual(myers([], sequence, max_d=10000), (10000, 0))
+        self.assertEqual(myers(sequence, [], max_d=10000), (0, 10000))
+        self.assertEqual(myers_blocks([], sequence, max_d=10000), [(0, 0, 0, 10000)])
+        self.assertEqual(myers_blocks(sequence, [], max_d=10000), [(0, 10000, 0, 0)])
+        for align in (myers, myers_blocks):
+            self.assertIsNone(align(['x'], sequence, max_d=500))
+            self.assertIsNone(align(sequence, ['x'], max_d=500))
+        # Preserve the approximation flag when the exact-diff budget is exceeded.
+        self.assertEqual(token_diff([], [('x',)] * 10000), (10000, 0, True))
+        self.assertEqual(token_diff([('x',)] * 10000, []), (0, 10000, True))
 
     def test_large_repetitive_file_is_fast(self):
         before = ''.join(f'def g{i}(x, y):\n    if x > {i}:\n        return x + y * {i}\n    return x\n'

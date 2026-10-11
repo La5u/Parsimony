@@ -82,6 +82,8 @@ def parse_patch(patch: str, language='python') -> list[FilePatch]:
                 b += line[0] in ' +'
                 i += 1
             if i < len(lines) and lines[i].startswith('\\ No newline'):
+                if not body:
+                    raise ValueError('no newline marker without a hunk line')
                 body[-1] = body[-1].rstrip('\r\n')
                 i += 1
             if (a, b) != (count, newcount):
@@ -295,8 +297,13 @@ def myers(a, b, max_d=MAX_EDIT_DISTANCE):
     how repetitive the sequences are (unlike difflib's quadratic worst case).
     """
     n, m = len(a), len(b)
+    # Length imbalance alone can exceed the budget; no alignment can repair it.
+    if abs(n - m) > max_d:
+        return None
+    if not n or not m:
+        return (m, n) if n + m <= max_d else None
     v = {1: 0}
-    for d in range(max_d + 1):
+    for d in range(min(max_d, n + m) + 1):
         for k in range(-d, d + 1, 2):
             x = v[k + 1] if k == -d or (k != d and v[k - 1] < v[k + 1]) else v[k - 1] + 1
             y = x - k
@@ -313,9 +320,15 @@ def myers(a, b, max_d=MAX_EDIT_DISTANCE):
 def myers_blocks(a, b, max_d=MAX_EDIT_DISTANCE):
     """Minimal alignment as a list of changed (a1, a2, b1, b2) blocks, or None."""
     n, m = len(a), len(b)
+    if abs(n - m) > max_d:
+        return None
+    if not n or not m:
+        if n + m > max_d:
+            return None
+        return [(0, n, 0, m)] if n or m else []
     v = {1: 0}
     trace = []
-    for d in range(max_d + 1):
+    for d in range(min(max_d, n + m) + 1):
         trace.append(dict(v))
         for k in range(-d, d + 1, 2):
             x = v[k + 1] if k == -d or (k != d and v[k - 1] < v[k + 1]) else v[k - 1] + 1

@@ -6,6 +6,7 @@ measurements and provenance visible before an experimental score is published.
 import argparse
 import hashlib
 import json
+import math
 import platform
 import re
 import subprocess
@@ -48,10 +49,17 @@ def audit(panel, records, dataset_path=None):
     if dataset_path and sha(dataset_path) != panel['dataset_sha256']:
         raise ValueError('dataset checksum differs from frozen population')
     ids = panel['tasks']
-    if len(ids) != panel['task_count']:
+    if not ids or type(panel['task_count']) is not int or len(ids) != panel['task_count']:
         raise ValueError('manifest task count mismatch')
     groups = {}
     for r in records:
+        if type(r['resolved']) is not bool:
+            raise ValueError('resolved must be boolean')
+        count, denominator, rate = r['published_resolved_count'], r['benchmark_tasks'], r['resolve_rate']
+        if (type(count) is not int or type(denominator) is not int or denominator <= 0
+                or not 0 <= count <= denominator or type(rate) not in (int, float)
+                or not math.isfinite(rate) or not 0 <= rate <= 1):
+            raise ValueError('invalid published totals')
         agent, task = r['agent'], r['task_id']
         if task not in ids:
             raise ValueError(f'task outside frozen population: {task}')
@@ -81,7 +89,7 @@ def audit(panel, records, dataset_path=None):
         if denominator != len(ids) or resolved_count / denominator != rate:
             raise ValueError(f'invalid published totals: {agent}')
         resolved = [r for r in group.values() if r['resolved']]
-        if len(group) == len(ids) and len(resolved) != resolved_count:
+        if not len(resolved) <= resolved_count <= len(resolved) + len(ids) - len(group):
             raise ValueError(f'published and recorded resolved totals disagree: {agent}')
         ok = [r for r in group.values() if r['analysis_status'] == 'ok' and (r.get('metrics') or {}).get('mode') == 'full_file']
         successful = [r for r in ok if r['resolved']]
@@ -139,7 +147,7 @@ def main():
             result['manifest_sha256'] = sha(args.manifest)
             result['records_sha256'] = {p: sha(p) for p in args.records}
         with Path(args.output).open('x' if args.command == 'freeze' else 'w') as stream:
-            json.dump(result, stream, indent=2, sort_keys=True)
+            json.dump(result, stream, indent=2, sort_keys=True, allow_nan=False)
             stream.write('\n')
     except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError) as exc:
         parser.exit(1, f'error: {exc}\n')

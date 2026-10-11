@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import math
 import statistics
 from pathlib import Path
 
@@ -17,10 +18,10 @@ def require(condition, message):
 
 
 def metrics(m):
-    require(m and m.get('mode') == 'full_file', 'full-file metrics required')
+    require(isinstance(m, dict) and m.get('mode') == 'full_file', 'full-file metrics required')
     for key in ('units_added', 'units_deleted', 'churn'):
-        require(type(m[key]) is int and m[key] >= 0, f'invalid {key}')
-    require(type(m['net_units']) is int, 'integer net delta required')
+        require(type(m.get(key)) is int and m[key] >= 0, f'invalid {key}')
+    require(type(m.get('net_units')) is int, 'integer net delta required')
     require(m['net_units'] == m['units_added'] - m['units_deleted'], 'net mismatch')
     require(m['churn'] == m['units_added'] + m['units_deleted'], 'churn mismatch')
     return m
@@ -33,7 +34,7 @@ def measured(r):
 
 def out_of_scope(m):
     """Every touched file was excluded: the fix is unmeasured, not a zero footprint."""
-    return bool(m.get('touched_files')) and len(m.get('excluded_files', [])) == len(m['touched_files'])
+    return bool(m.get('touched_files')) and set(m.get('excluded_files', [])) == set(m['touched_files'])
 
 
 def unique(records):
@@ -46,6 +47,7 @@ def unique(records):
 
 
 def freeze(records, name):
+    records = list(records)
     unique(records)
     require(bool(records), 'empty reference records')
     tracks = [r.get('measurement_track') for r in records]
@@ -79,6 +81,7 @@ def freeze_population(records, name, population):
     The successful/failed formulas are unchanged. This never creates reference
     measurements or selects task membership from candidate success.
     """
+    records = list(records)
     unique(records)
     require(bool(records), 'empty records')
     require(population.get('format') == 'parsimony-beta-population-v1', 'invalid frozen population')
@@ -165,6 +168,7 @@ def require_measurement_track(panel, record):
 
 
 def score_records(panel, records):
+    records = list(records)
     require(panel['score_version'] == VERSION, 'unsupported score version')
     require((panel['net_weight'], panel['churn_weight'], panel['failure_cap']) == (0.8, 0.2, 25),
             'weights differ from score version')
@@ -176,8 +180,11 @@ def score_records(panel, records):
     for task, refs in panel['tasks'].items():
         require(bool(refs) or bounded, 'empty reference panel for task')
         require(len({r['agent'] for r in refs}) == len(refs), 'duplicate reference agent')
+        bases = {(ref['provenance']['repo'], ref['provenance']['base_commit']) for ref in refs}
+        require(len(bases) <= 1, f'mixed reference base repositories/commits: {task}')
         for ref in refs:
             metrics(ref['metrics'])
+            require(not out_of_scope(ref['metrics']), 'out-of-scope reference')
             if bounded:
                 expected = panel['task_bases'][task]
                 require(not out_of_scope(ref['metrics']), 'out-of-scope reference')
@@ -202,6 +209,10 @@ def score_records(panel, records):
         n = len(tasks)
         known = [v['score'] for v in tasks.values() if v['score'] is not None]
         complete = len(known) == n
+        for r in group.values():
+            rate = r['resolve_rate']
+            require(type(rate) in (int, float) and math.isfinite(rate) and 0 <= rate <= 1,
+                    'invalid published resolve rate')
         rates = {r['resolve_rate'] for r in group.values()}
         require(len(rates) == 1, 'inconsistent published resolve rate')
         results.append(dict(agent=agent, score_version=VERSION, panel=panel['name'],

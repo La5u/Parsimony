@@ -132,8 +132,12 @@ def choose_configs(leaderboard, trials, available=lambda config: True):
 def attempts(trials, config, tasks):
     """{item: run} for one configuration; attempts are numbered by start time within each task."""
     by_task = defaultdict(list)
+    seen = set()
     for r in trials:
         if r['config'] == config and r['task_name'] in tasks:
+            if r['trial_name'] in seen:
+                raise ValueError(f'{config}: duplicate trial {r["trial_name"]}')
+            seen.add(r['trial_name'])
             by_task[r['task_name']].append(r)
     items = {}
     for task, runs in by_task.items():
@@ -179,7 +183,8 @@ def load_submission(config, trials, release, cache, task_names):
                                 layout='deepswe-trials-v1', release_id=release['release_id'], config=config,
                                 model=first.get('model'), reasoning_effort=first.get('reasoning_effort'),
                                 harness=first.get('harness'), prediction_sha256=None, reported_model=first.get('model', ''),
-                                trials_sha256=release.get('trials_sha256'), submission_url=f'{SITE}/{release["release_id"]}',
+                                trials_sha256=release.get('trials_sha256'), release_sha256=release.get('release_sha256'),
+                                submission_url=f'{SITE}/{release["release_id"]}',
                                 ref=release['release_id']))
 
 
@@ -188,6 +193,8 @@ def fetch_patch(cache, url, tries=4):
 
     Network errors are retried; persistent ones propagate so a run never silently loses patches.
     """
+    if tries < 1:
+        raise ValueError('tries must be positive')
     for attempt in range(tries):
         try:
             return cache.get(url).decode('utf-8')
@@ -223,6 +230,8 @@ def pooled_panel(records, name):
 
 def fetch_json(cache, url, tries=4):
     """Download (or read from the cache) one JSON artifact; large files are retried when cut off."""
+    if tries < 1:
+        raise ValueError('tries must be positive')
     for attempt in range(tries):
         try:
             raw = cache.get(url)

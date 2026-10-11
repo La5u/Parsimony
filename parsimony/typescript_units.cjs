@@ -115,7 +115,11 @@ function walk(sf) {
     }
     if (BLOCKS.has(node.kind)) stack.push({end_marker: true, row: row(node.end)});
     // A literal is one value-sensitive unit; its children (if any) are not separate units.
-    if (!VALUE_KINDS.has(node.kind)) stack.push(...children(node).reverse());
+    if (!VALUE_KINDS.has(node.kind)) {
+      const kids = children(node);
+      // Do not spread wide child lists into arguments: V8 has an argument-count limit.
+      for (let i = kids.length - 1; i >= 0; i--) stack.push(kids[i]);
+    }
   }
   return {units, plain, structure: [count, branches]};
 }
@@ -134,7 +138,7 @@ function tokens(sf) {
       }
       continue;
     }
-    stack.push(...kids.slice().reverse());
+    for (let i = kids.length - 1; i >= 0; i--) stack.push(kids[i]);
   }
   return out;
 }

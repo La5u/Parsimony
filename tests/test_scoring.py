@@ -23,6 +23,34 @@ class ScoringTests(unittest.TestCase):
         self.panel = freeze([record('a', net=5, churn=9), record('b'),
                              record('c', net=10, churn=30)], 'test-panel')
 
+    def test_iterators_match_lists(self):
+        rows = [record('a'), record('b')]
+        self.assertEqual(freeze(iter(rows), 'iterator'), freeze(rows, 'iterator'))
+        self.assertEqual(score_records(self.panel, iter(rows)), score_records(self.panel, rows))
+
+    def test_rejects_malformed_references_and_rates(self):
+        for rate in (True, float('nan'), float('inf'), -0.1, 1.1):
+            with self.subTest(rate=rate), self.assertRaisesRegex(ValueError, 'resolve rate'):
+                score_records(self.panel, [{**record(), 'resolve_rate': rate}])
+        for kind in ('base', 'scope', 'metrics'):
+            panel = copy.deepcopy(self.panel)
+            ref = panel['tasks']['task'][0]
+            if kind == 'base':
+                ref['provenance']['base_commit'] = 'other'
+            elif kind == 'scope':
+                ref['metrics'].update(touched_files=['a.py'], excluded_files=['a.py'])
+            else:
+                del ref['metrics']['churn']
+            with self.subTest(kind=kind), self.assertRaises(ValueError):
+                score_records(panel, [record()])
+
+    def test_scope_requires_matching_paths_not_lengths(self):
+        from parsimony.scoring import out_of_scope
+        self.assertFalse(out_of_scope({'touched_files': ['a.py'], 'excluded_files': ['b.py']}))
+        self.assertFalse(out_of_scope({'touched_files': ['a.py', 'b.py'],
+                                       'excluded_files': ['a.py', 'a.py']}))
+        self.assertTrue(out_of_scope({'touched_files': ['a.py'], 'excluded_files': ['a.py']}))
+
     def test_blend_and_rewrite_cost(self):
         refs = self.panel['tasks']['task']
         value = task_score(record('candidate', net=10, churn=20), refs)

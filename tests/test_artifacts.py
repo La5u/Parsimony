@@ -23,6 +23,17 @@ class ArtifactsTests(unittest.TestCase):
             self.assertEqual(loaded['predictions'], {'a': 'patch'})
             self.assertEqual(len(loaded['provenance']['results_sha256']), 64)
 
+    def test_manifest_requires_object(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = root / 'manifest.json'
+            cache = Cache(root / 'cache')
+            for value in (None, [], 'not an object', 42):
+                with self.subTest(value=value):
+                    manifest.write_text(json.dumps(value))
+                    with self.assertRaisesRegex(ValueError, 'manifest must be a JSON object'):
+                        load_manifest(manifest, cache)
+
     def test_duplicate_predictions_rejected(self):
         line = json.dumps({'instance_id': 'a', 'patch': ''}).encode() + b'\n'
         with self.assertRaises(ValueError):
@@ -346,6 +357,9 @@ class ArtifactsTests(unittest.TestCase):
             requested.clear()
             load_submission('demo', None, task_ids=['failed'], include_failed=True)
             self.assertEqual(requested, [f'{s3}/logs/failed/report.json'])
+            requested.clear()
+            load_submission('demo', None, task_ids=[], include_failed=True)
+            self.assertEqual(requested, [])
 
     def test_official_monolithic_assets_and_independent_refs(self):
         submission = 'https://github.com/SWE-bench/experiments/tree/abc123/evaluation/verified/demo'
@@ -382,6 +396,24 @@ class ArtifactsTests(unittest.TestCase):
                          {'repo': 'https://github.com/a/b'})
         with self.assertRaisesRegex(ValueError, 'duplicate assets'):
             _metadata_scalars(b'assets:\n  repo: https://github.com/a/b\n  repo: https://github.com/c/d\n')
+
+    def test_cache_replace_failure_cleans_temporary_file(self):
+        import io
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Cache(directory)
+            with patch('parsimony.artifacts.urlopen', return_value=io.BytesIO(b'hello')), \
+                    patch('parsimony.artifacts.os.replace', side_effect=OSError('failed')):
+                with self.assertRaisesRegex(OSError, 'failed'):
+                    cache.get('https://example.test/a')
+            self.assertEqual(list(Path(directory).iterdir()), [])
+
+    def test_cache_download_failure_creates_no_entry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Cache(directory)
+            with patch('parsimony.artifacts.urlopen', side_effect=OSError('offline')):
+                with self.assertRaisesRegex(OSError, 'offline'):
+                    cache.get('https://example.test/a')
+            self.assertEqual(list(Path(directory).iterdir()), [])
 
     def test_cache(self):
         import io

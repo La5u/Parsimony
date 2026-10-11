@@ -2,6 +2,18 @@
 
 This search inspected public artifacts only: no model calls, paid evaluations, upstream contact or target-code execution. Parsimony remains a delivered-code footprint benchmark. A separate verbosity/yap/token-generation study is deferred, not implemented.
 
+## 2026-10-10 existing-board refresh
+
+**No immediately releasable newer model identity was verified. One changed Live Python run merits review.** [Metadata-only census and request evidence](new-model-discovery-2026-10-10.json): 48 unauthenticated public GETs, 76,568,781 response bytes, no retries, maximum 50 requests and 180 MB total response budget. Raw responses remain external; no measurements, target execution, paid/model API calls, publication or commits.
+
+Live main advanced to `99bae66f923b3dfeab2d18366c0593929c5722de`. Complete old/new trees show 3,246 added, 3,003 removed and four changed blobs. This includes a **replacement TianxiCode Lite run**, not merely new directories: README, predictions and outcomes changed, with 3,000 added / 3,003 removed supporting blobs. Its README now claims TianxiCode **v0.1.486** and the routing alias `tianxi-agent-plan/deepseek-flash`; it does **not** establish a newer underlying DeepSeek identity. Predictions contain 300 nonempty patches, exactly matching the frozen Live Python 300 IDs; outcomes partition them into **213 success / 87 failure**, with no empty/error/incomplete IDs. Only **141/300 patch hashes match the published v0.1.423 run; 159 differ**. Existing preimage/release approval must not be inherited. Prioritize checksum-bound model/harness attribution, reset/preimage, evaluated-patch linkage and numerical-publication review; retain the old pinned release unchanged. If approved, this is a distinct configuration/run, not a silent replacement or model relabel.
+
+The two added run directories are **AMI v0.7.2 / Qwen 3.8-27B Live Go** and **Slingshot / GPT-5.6 Sol Live Java**. Go bodies contain 138 prediction records (132 nonempty), with **41 resolved / 91 unresolved / 6 empty**. The head commit title instead claims 79/138; use checksum-bound results, not the title. Its IDs have **zero overlap** with both published Live Python and DeepSWE Go tasks. Infrastructure retries are disclosed. Java bodies were not fetched: it is unsupported and outside the frozen boards. Neither is an existing-board addition; defer separate-population release work.
+
+DeepSWE's three complete metadata hashes are unchanged: **70 configs / 28 model labels**, no new configuration. A fresh first-declared-patch GET succeeded for **all 26 previously usable configurations**, reproducing the September 29 selection when the existing selector is restricted to those sampled configurations. Both Gemini 3.8 effort variants still returned **403** for a sampled success and failure (4/4); Astra still declares zero patches in each of five 452-trial configs. This is a baseline availability refresh, not exhaustive patch/preimage certification or a probe of every effort variant. Verified and PolyBench revisions remain unchanged; both requested GPT-5.2 Codex GitHub outcome files returned **404**. Broader global export absence is not established.
+
+**Recommendation:** review the changed TianxiCode Lite configuration first because its task membership matches an existing board, without claiming a new model or running analysis yet. Preserve the existing GPT-5.6 Sol JS/TS fallback, which requires official-parser remeasurement and separate Live language boards, not insertion into DeepSWE. Do not measure blocked or unverified candidates.
+
 ## Fresh DeepSWE check
 
 The complete `https://deepswe.datacurve.ai/artifacts/v1.1/trials.json` was retrieved externally: 51,023,870 bytes, 31,617 trials, 70 configurations, 28 source-reported model names. Metadata bytes match the stored census:
@@ -28,11 +40,11 @@ BigCodeBench v0.2.4's complete 94,704,640-byte archive was retrieved and all 327
 
 ## Existing-source revisions
 
-Fresh public revision checks still resolve to:
+The 2026-10-10 public revision checks resolve to (historical census pins remain unchanged in their reports):
 
 | Source | Revision |
 |---|---|
-| Live submission main | `cba8a6d3197cd53da09f8527cccbc689782302a6` |
+| Live submission main | `99bae66f923b3dfeab2d18366c0593929c5722de` |
 | Verified experiments main | `40f164d5b8f1d249bf95a6df8b74b577fd8e519d` |
 | PolyBench submission branch | `e7062f4a848ca7775bc1c1313f7aa419bd6a3ec1` |
 

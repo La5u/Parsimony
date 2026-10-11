@@ -42,7 +42,7 @@ def sha256(data: bytes) -> str:
 
 def _json(cache: Cache, url: str) -> tuple[dict, bytes]:
     raw = cache.get(url)
-    value = json.loads(raw)
+    value = json.loads(raw, object_pairs_hook=_unique_object)
     if not isinstance(value, dict):
         raise ValueError(f'expected JSON object at {url}')
     return value, raw
@@ -52,9 +52,11 @@ def fetch_hf_rows(cache: Cache, dataset: str, revision: str, file_path: str) -> 
     """Fetch JSON/JSONL/CSV from an exact HF commit; reject branch/tag aliases."""
     if not SHA.fullmatch(revision):
         raise ValueError('HF dataset revision must be a full 40-character commit SHA')
-    if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', dataset):
+    if (not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', dataset)
+            or any(part in ('.', '..') for part in dataset.split('/'))):
         raise ValueError('HF dataset id must be safe owner/name')
-    if file_path.startswith('/') or '..' in Path(file_path).parts:
+    if (not file_path or file_path.startswith('/')
+            or any(part in ('.', '..') for part in file_path.split('/'))):
         raise ValueError('invalid HF dataset file path')
     api = f'{HF}/api/datasets/{quote(dataset, safe="/")}/revision/{revision}'
     metadata, metadata_bytes = _json(cache, api)
@@ -72,11 +74,13 @@ def fetch_hf_rows(cache: Cache, dataset: str, revision: str, file_path: str) -> 
         rows = table.to_pylist()
     elif file_path.endswith('.jsonl') or file_path.endswith('.ndjson'):
         text = raw.decode('utf-8-sig')
-        rows = [json.loads(line) for line in text.splitlines() if line.strip()]
+        rows = [json.loads(line, object_pairs_hook=_unique_object)
+                for line in text.splitlines() if line.strip()]
     elif file_path.endswith('.json'):
         text = raw.decode('utf-8-sig')
-        data = json.loads(text)
-        rows = data if isinstance(data, list) else data.get('rows', data.get('data'))
+        data = json.loads(text, object_pairs_hook=_unique_object)
+        rows = (data if isinstance(data, list) else
+                data.get('rows', data.get('data')) if isinstance(data, dict) else None)
     elif file_path.endswith('.csv'):
         text = raw.decode('utf-8-sig')
         # Gold patches can exceed csv's 128 KiB default. Bound fields by the
@@ -85,7 +89,10 @@ def fetch_hf_rows(cache: Cache, dataset: str, revision: str, file_path: str) -> 
             previous_limit = csv.field_size_limit()
             try:
                 csv.field_size_limit(max(previous_limit, len(text)))
-                rows = list(csv.DictReader(io.StringIO(text)))
+                reader = csv.DictReader(io.StringIO(text))
+                if reader.fieldnames and len(reader.fieldnames) != len(set(reader.fieldnames)):
+                    raise ValueError('HF task CSV contains duplicate column names')
+                rows = list(reader)
             finally:
                 csv.field_size_limit(previous_limit)
     else:
@@ -261,9 +268,11 @@ def import_run(cache: Cache, *, submission_revision: str, config_path: str,
     """Inventory a run against explicitly mapped immutable dataset files."""
     if not SHA.fullmatch(submission_revision):
         raise ValueError('submission revision must be a full Git commit SHA')
-    if config_path.startswith('/') or '..' in Path(config_path).parts:
+    if (not config_path or config_path.startswith('/')
+            or any(part in ('.', '..') for part in config_path.split('/'))):
         raise ValueError('invalid submission configuration path')
-    base = f'https://raw.githubusercontent.com/SWE-bench-Live/submission/{submission_revision}/{config_path.strip("/")}'
+    encoded_config = quote(config_path.strip('/'), safe='/')
+    base = f'https://raw.githubusercontent.com/SWE-bench-Live/submission/{submission_revision}/{encoded_config}'
     result_url = base + '/result.json'
     try:
         result, result_bytes = _json(cache, result_url)
@@ -289,11 +298,14 @@ def import_run(cache: Cache, *, submission_revision: str, config_path: str,
                           dataset_file_sha256=provenance['dataset_file_sha256']))
         for row in task_rows:
             task_id = row.get('instance_id') or row.get('task_id')
-            if not isinstance(task_id, str) or task_id in by_id:
+            if (not isinstance(task_id, str) or not task_id or task_id in ('.', '..')
+                    or task_id in by_id):
                 raise ValueError('HF task dataset has missing or duplicate task IDs across files')
             repo = row.get('repo') or row.get('repository')
             base_commit = row.get('base_commit') or row.get('base_commit_hash')
-            if not isinstance(repo, str) or not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repo):
+            if (not isinstance(repo, str)
+                    or not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repo)
+                    or any(part in ('.', '..') for part in repo.split('/'))):
                 raise ValueError(f'{task_id}: repository must be safe owner/name')
             if not isinstance(base_commit, str) or not SHA.fullmatch(base_commit):
                 raise ValueError(f'{task_id}: base_commit must be a full 40-character SHA')
@@ -364,7 +376,7 @@ def import_run(cache: Cache, *, submission_revision: str, config_path: str,
         outcome = next((category for category in ('success', 'failure', 'error', 'incomplete')
                         if task_id in categories[category]), 'unknown')
         provenance = dict(submission_revision=submission_revision,
-                          submission_url=f'{GITHUB}/tree/{submission_revision}/{config_path}',
+                          submission_url=f'{GITHUB}/tree/{submission_revision}/{encoded_config}',
                           result_url=result_url, result_sha256=sha256(result_bytes),
                           patch_url=patch_url, patch_sha256=patch_digest,
                           dataset_file=meta['dataset_file'])
@@ -431,6 +443,15 @@ def analyze_run(run: dict, cache: Cache, *, agent: str, language: str = 'python'
         confirmations.get(r['task_id']) == r['base_commit'] or r['task_id'] in blocked
         for r in candidates)
     historical_verified = isinstance(review, dict) and review.get('historical_dataset_match') == 'verified'
+    # Standalone patch hashes cover raw bytes; import strips an optional UTF-8
+    # BOM for parsing. Prediction hashes always cover the string's UTF-8 bytes.
+    patches_bound = all(
+        isinstance(r.get('patch'), str)
+        and r['provenance'].get('patch_sha256') in (
+            (sha256(r['patch'].encode('utf-8')),)
+            if r['provenance'].get('prediction_url') else
+            (sha256(r['patch'].encode('utf-8')), sha256(r['patch'].encode('utf-8-sig'))))
+        for r in candidates)
     prediction_digest = run.get('prediction_sha256')
     prediction_bound = prediction_digest is None or (
         isinstance(prediction_digest, str) and re.fullmatch(r'[0-9a-f]{64}', prediction_digest)
@@ -447,7 +468,7 @@ def analyze_run(run: dict, cache: Cache, *, agent: str, language: str = 'python'
             or review.get('dataset_checksum') != aggregate
             or not isinstance(result_digest, str) or not re.fullmatch(r'[0-9a-f]{64}', result_digest)
             or review.get('result_sha256') != result_digest
-            or not prediction_bound
+            or not prediction_bound or not patches_bound
             or not isinstance(submission_sha, str) or not SHA.fullmatch(submission_sha)
             or review.get('submission_revision') != submission_sha
             or not (historical_verified or (candidates and confirmed))):
@@ -534,7 +555,7 @@ def main() -> None:
                          agent=args.agent, model=args.model)
         if args.review_manifest:
             review_bytes = Path(args.review_manifest).read_bytes()
-            review = json.loads(review_bytes)
+            review = json.loads(review_bytes, object_pairs_hook=_unique_object)
             if not isinstance(review, dict):
                 raise ValueError('review manifest must contain a JSON object')
             run['reviewed_manifest'] = dict(review, manifest_sha256=sha256(review_bytes))

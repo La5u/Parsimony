@@ -191,6 +191,8 @@ def analyze_submission(submission, cache, dataset=None, limit=None, patch_only=F
 
 
 def leaderboard(records, shared=False, agents=None, mode='full_file'):
+    # Track validation and aggregation both traverse the input; retain one-shot iterators.
+    records = list(records)
     tracks = {json.dumps(r.get('measurement_track'), sort_keys=True) for r in records}
     if len(tracks) > 1:
         raise ValueError('mixed measurement tracks')

@@ -35,6 +35,19 @@ jobs:
           npm ci
       - name: Unit tests including JavaScript, TypeScript and Go
         run: python -m unittest discover -s tests -q
+      - name: Check distributable package contents
+        run: |
+          python -m pip wheel . --no-deps --wheel-dir /tmp/parsimony-wheel
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          wheel, = Path('/tmp/parsimony-wheel').glob('*.whl')
+          with ZipFile(wheel) as archive:
+              names = archive.namelist()
+              assert 'parsimony/typescript_units.cjs' in names, 'Node parser worker missing from wheel'
+              assert 'parsimony/__main__.py' in names, 'CLI missing from wheel'
+              assert not any(name.startswith(('tests/', 'examples/', 'site/')) for name in names)
+          PY
       - name: Validate contributed result bundles (no downloads or analysis)
         run: python -m parsimony.contribute validate submissions
       - name: Reproduce cached experimental scores (arithmetic only)
@@ -64,7 +77,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: '3.14.7'
       - name: Download Verified metadata
         run: python -m parsimony dataset --output verified.jsonl
       - name: Re-verify contributed bundles

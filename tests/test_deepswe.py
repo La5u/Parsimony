@@ -1,10 +1,11 @@
+import http.client
 import tempfile
 import unittest
 from pathlib import Path
 from urllib.error import HTTPError
 
 from parsimony.deepswe import (attempts, blank_context, choose_configs, cluster, dataset_rows, display_name,
-                               fetch_patch, load_submission, pooled_panel, read_tasks)
+                               fetch_json, fetch_patch, load_submission, pooled_panel, read_tasks)
 from parsimony.scoring import score_records
 from parsimony.stability import bootstrap, clusters, drop_agent
 from tests.test_scoring import record
@@ -88,6 +89,27 @@ class DeepSWETests(unittest.TestCase):
                 return b'patch'
         self.assertEqual(fetch_patch(Flaky(), 'https://cdn.example/x'), 'patch')
 
+    def test_fetch_requires_at_least_one_attempt(self):
+        cache = FakeCache({})
+        for fetch in (fetch_patch, fetch_json):
+            for tries in (0, -1):
+                with self.subTest(fetch=fetch.__name__, tries=tries):
+                    with self.assertRaisesRegex(ValueError, 'tries must be positive'):
+                        fetch(cache, 'https://cdn.example/x', tries=tries)
+        self.assertEqual(cache.requested, [])
+
+    def test_persistent_network_errors_propagate(self):
+        class Broken:
+            calls = 0
+            def get(self, url):
+                self.calls += 1
+                raise http.client.IncompleteRead(b'partial')
+        for fetch in (fetch_patch, fetch_json):
+            cache = Broken()
+            with self.assertRaises(http.client.IncompleteRead):
+                fetch(cache, 'https://cdn.example/x', tries=2)
+            self.assertEqual(cache.calls, 2)
+
     def test_display_names(self):
         names = {'gpt_5_6_sol_max': 'GPT-5.6 Sol (max)', 'claude_opus_5_max': 'Claude Opus 5 (max)',
                  'glm_5_3_flash_max': 'GLM-5.3 Flash (max)', 'kimi_k2_7_code_default': 'Kimi K2.7 Code',
@@ -100,6 +122,19 @@ class DeepSWETests(unittest.TestCase):
                   trial('c', 'other', 'x'), trial('d', 't', 'y')]
         items = attempts(trials, 'c', {'t'})
         self.assertEqual({k: v['trial_name'] for k, v in items.items()}, {'t#1': 'early', 't#2': 'late'})
+
+    def test_duplicate_trials_cannot_become_separate_attempts(self):
+        for rows in ([trial('c', 't', 'same')] * 2,
+                     [trial('c', 't', 'same'), trial('c', 'u', 'same')]):
+            with self.subTest(rows=rows):
+                with self.assertRaisesRegex(ValueError, 'duplicate trial'):
+                    attempts(rows, 'c', {'t', 'u'})
+
+    def test_release_and_trials_checksums_retained_in_provenance(self):
+        release = dict(RELEASE, release_sha256='a' * 64, trials_sha256='b' * 64)
+        submission = load_submission('c', [], release, FakeCache({}), {'t'})
+        self.assertEqual(submission['provenance']['release_sha256'], 'a' * 64)
+        self.assertEqual(submission['provenance']['trials_sha256'], 'b' * 64)
 
     def test_load_submission_outcomes_and_missing_patches(self):
         base = 'https://cdn.example/v1.1/trial-artifacts'

@@ -1,4 +1,4 @@
-<title>Parsimony</title>
+<title>__DOCUMENT_TITLE__</title>
 <meta name="description" content="How much code do coding agents write to solve real software engineering tasks?">
 <style>
 :root {
@@ -60,7 +60,7 @@ body { overflow-x: clip; }
 #source-evidence { overflow-wrap: anywhere; }
 #graph .best-zone { fill: #16a34a; fill-opacity: 0.12; }
 #graph .bars { display: grid; grid-template-columns: minmax(6em, 15em) minmax(0, 1fr) auto; gap: 3px 10px; align-items: center; font: 12px system-ui, sans-serif; color: #000; }
-#graph .bar-row { display: contents; cursor: pointer; }
+#graph .bar-row { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; column-gap: inherit; cursor: pointer; }
 @media (max-width: 600px) { #graph .bars { grid-template-columns: minmax(0, 8.5em) minmax(0, 1fr) auto; gap: 3px 6px; font-size: 11px; } }
 #graph .bar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
 #graph .bar-track { position: relative; height: 14px; }
@@ -73,7 +73,7 @@ body { overflow-x: clip; }
 #graph .bar-row.self-run .bar { opacity: 0.35; }
 #graph .bar-row.self-run .bar-name, #graph .bar-row.self-run .bar-value { opacity: 0.45; }
 #graph .bar-row:focus-visible .bar-name { outline: 2px solid #000; outline-offset: 2px; }
-#self-run-toggle-label { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
+#self-run-toggle-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
 #self-run-toggle { width: auto; min-width: 0; padding: 0; margin: 0; border: initial; flex: none; }
 #company-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .company-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
@@ -95,19 +95,20 @@ pre { overflow-x: auto; font-size: 0.85rem; line-height: 1.6; }
 #custom-results p { font-size: 0.85rem; color: var(--muted); }
 footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule); }
 </style>
-
+<!-- BODY -->
 <main>
   <h1>Parsimony</h1>
   <p class="muted">How much code do coding agents write to fix real issues? Research preview.</p>
-  <p class="small" id="nav" hidden></p>
+  <nav class="small" id="nav" aria-label="Leaderboards" hidden></nav>
+  <noscript><p class="small">JavaScript is required for the interactive charts and leaderboard. Read the cohort reports and download the published JSON/JSONL data from <a href="https://github.com/La5u/Parsimony/tree/main/examples">the benchmark data directory</a>.</p></noscript>
 
   <p class="small" id="units-definition"><b>Coding units</b> count syntax elements—statements, calls, comparisons, names and literals—not lines or runtime complexity. Net units = added − removed.</p>
   <details class="small muted"><summary>How to read this</summary>
   <p>We parse published <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a> patches and count syntax elements plus block-end markers. Formatting, comments and punctuation do not count. Python, JavaScript/TypeScript and Go use separate parser-specific tracks; raw unit counts are not comparable across them.</p>
-  <p>Rank is by mean net units added, lowest first, across measured in-scope attempts—including failures. The solved column averages only attempts the upstream benchmark marks solved; click it to sort by it instead. Equal means tie; models with no measurements are unranked. Partial coverage can change the order, and a few very large deletions can dominate a mean. This is smallest measured footprint, not best coding ability.</p>
-  <p>Net units added means coding units added minus removed, not semantic complexity. Measured shows eligible footprints / published population. Missing or entirely excluded edits are not zero. Solved comes from the upstream benchmark and never affects footprint rank. A failed no-op or large deletion can rank first. Click headings to sort; missing values stay last.</p>
+  <p>Default rank is by mean net units added, lowest first, across measured in-scope attempts—including failures. Count attempts: Solved only optionally ranks by the mean over measured upstream successes instead. The other footprint column always shows the alternative mean; sorting it does not change rank. Equal means tie; models with no measurements are unranked. Partial coverage can change the order, and a few very large deletions can dominate a mean. This is smallest measured footprint, not best coding ability.</p>
+  <p>Net units added means coding units added minus removed, not semantic complexity. Measured shows eligible footprints / published population. Missing or entirely excluded edits are not zero. Solved % comes from the upstream benchmark and is unchanged by the selector. Solved-only mode uses upstream outcomes to select measured successes, not as a correctness tie-break. A failed no-op or large deletion can rank first. Click headings to sort; missing values stay last.</p>
   <p>Archived combined-score diagnostics use the midpoint when bounded; their CI and rank endpoints are labelled explicitly and do not affect footprint ranking. Models missing either selected value have no point. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; percentage axes normally stay at 0–100%. Points outside fitted axes remain at their actual, true-scale positions.</p>
-  <p>Solved % = upstream resolved attempts / frozen attempt population × 100. Tests are not rerun by Parsimony. Footprint = sum of net coding units / N measured in-scope attempts: each attempt has equal weight 1/N, including failures. Missing measurements are not zero; solved-only footprint is separate. Benchmarks and languages are not pooled and have no benchmark weights. Default footprint uses no correctness weight.</p>
+  <p>Solved % = upstream resolved attempts / frozen attempt population × 100. Tests are not rerun by Parsimony. Footprint = sum of net coding units / N measured in-scope attempts: each attempt has equal weight 1/N, including failures by default, or successes only when explicitly selected. Missing measurements are not zero; Measured in solved-only mode is measured solved attempts / upstream resolved attempts (not unique tasks). Benchmarks and languages are not pooled and have no benchmark weights. Default footprint uses no correctness weight.</p>
   <p id="score-help">Archived score only: passing results blend 80% net / 20% churn per-task percentiles; failed results use the same 80/20 weights in a bounded growth/churn penalty. It never affects footprint rank. <a href="https://github.com/La5u/Parsimony/blob/main/docs/scoring.md">Full formula</a>.</p>
   <p id="external-help" hidden>Artificial Analysis indices are external, model-level capability scores from a pinned snapshot, not results on this benchmark. They are matched to a configuration only for the same model and reasoning effort, or where Artificial Analysis lists a single unlabelled entry or resolves an undated model ID; these weaker matches are disclosed on hover. Configurations without a match have no value and no point. They never affect footprint rank.</p>
   <p id="self-run-help" hidden>Self-run models were run by the site owner on the first 3–10 DeepSWE Python tasks (OpenAI models via pi, Anthropic models via Claude Code), without the task containers. They are unverified, not graded and never ranked, and cover only a task subset, so compare them mainly with each other. GPT-5.6 Sol is the one model run both ways: its self-run footprint was 0.88× its published one on the same tasks. Claude Code has no such check.</p>
@@ -117,10 +118,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <h2 id="leaderboard">Leaderboard</h2>
   <p class="small muted" id="board-intro"></p>
   <p class="small muted" id="benchmark-notice" hidden></p>
-  <details class="small muted" id="coverage-note" hidden>
-    <summary id="coverage-summary">Population coverage</summary>
-    <p id="coverage-tasks"></p>
-  </details>
   <label for="task-search" class="small muted">Task</label><br>
   <input id="task-search" list="task-ids" autocomplete="off" spellcheck="false" placeholder="All tasks" aria-describedby="task-status">
   <button type="button" id="task-reset">All tasks</button>
@@ -129,6 +126,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <section aria-labelledby="complexity">
   <h2 id="complexity">Compare models</h2>
   <p class="small muted" id="external-note" hidden></p>
+  <p><label for="attempts">Count attempts</label> <select id="attempts" aria-describedby="attempts-note"><option value="all">All measured</option><option value="solved">Solved only</option></select></p>
+  <p class="small muted" id="attempts-note"></p>
   <p><label for="chart-type">Chart</label> <select id="chart-type" aria-label="Chart type">
        <option value="scatter">Scatter: compare two metrics</option><option value="bar">Bars: net units added</option></select>
      <label id="self-run-toggle-label" hidden><input type="checkbox" id="self-run-toggle" checked> Show self-run (unverified)</label></p>
@@ -146,7 +145,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     <table id="board">
       <thead>
         <tr>
-          <th id="rank-head" hidden>Rank</th>
+          <th>Rank</th>
           <th class="left">Model</th>
           <th aria-sort="ascending"><button type="button" data-sort="net">Net units added (mean)</button></th>
           <th aria-sort="none"><button type="button" data-sort="solved_net">Net units added, solved (mean)</button></th>
@@ -174,7 +173,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <h2 id="method">Method</h2>
   <ul>
     <li>Each patch is applied to the task's base commit and both versions of each changed file are parsed. Nothing is executed.</li>
-    <li>Footprint rank uses the arithmetic mean of net coding units added across all measured, in-scope attempts. Successful and failed attempts both count; passing references are not required. A second column gives the same mean over solved attempts only.</li>
+    <li>Footprint rank uses the arithmetic mean of net coding units added across all measured, in-scope attempts. Successful and failed attempts both count; passing references are not required. Count attempts can optionally restrict rank and footprint charts to measured successes. The second footprint column shows the alternative mean; equal means tie without a correctness tie-break.</li>
     <li>Correctness is reported separately by the upstream benchmark. Smaller failed or no-op attempts are not better solutions.</li>
     <li id="language-scope">Test, docs and generated files are excluded. Only Python is measured.</li>
   </ul>
@@ -258,7 +257,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const taskCount = new Set(displayedTasks.map((t) => t[0].split('#')[0])).size;
   const items = bench.attempts > 1 ? `${taskCount} ${bench.name} tasks (${data.population_count || data.task_count} attempts per model)` : `${data.population_count || data.task_count} ${bench.name} tasks`;
   $('board-intro').textContent = `${n} model + agent configurations on ${items}, ranked by measured footprint—not correctness.`;
-  $('coverage-note').hidden = true; // Passing-reference gaps no longer exclude footprint data.
   if (data.measurement_track) {
     const language = {javascript: 'JavaScript / JSX and TypeScript', typescript: 'TypeScript / TSX and JavaScript', go: 'Go'}[data.measurement_track.language];
     const parser = data.measurement_track.unit_version.startsWith('typescript-compiler')
@@ -284,7 +282,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   // Owner-run configurations: shown faded in the all-tasks view, never ranked and not graded.
   const selfRun = data.self_run_models || [];
   let showSelfRun = true;
-  const activeSelfRun = () => showSelfRun ? selfRun : [];
+  let attempts = 'all';
+  const solvedOnly = () => attempts === 'solved';
+  const activeSelfRun = () => showSelfRun && !solvedOnly() ? selfRun : [];
+  const netMean = m => solvedOnly() ? m.measured_solved_net_mean : m.measured_net_mean;
+  const measuredCount = m => solvedOnly() ? m.measured_solved_attempts : m.measured_attempts;
+  const denominator = m => solvedOnly() ? m.upstream_solved_attempts : (m.footprint_population_count || data.population_count || data.task_count);
+  const taskIncluded = i => !solvedOnly() || !selected || (selected[2][i][6] || selected[2][i][0]) === 'r';
+  const modelIncluded = (m, i) => selected ? taskIncluded(i) : !solvedOnly() || Number.isFinite(m.measured_solved_net_mean);
   const selfRunNote = m => `Self-run with ${m.harness}, unverified: not graded, ${m.tasks} of ${taskCount} tasks, ${m.measured_attempts}/${m.footprint_population_count} planned attempts measured`;
   if (selfRun.length) {
     $('self-run-note').hidden = false;
@@ -295,10 +300,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     $('external-note').hidden = $('external-help').hidden = false;
     $('external-note').innerHTML = `Y axis: <a href="${esc(external.attribution)}">Artificial Analysis</a> Intelligence Index, an external score (snapshot ${esc(external.fetched_at.slice(0, 10))}).`;
   }
-  $('rank-head').hidden = false;
-  const ranks = new Map(data.models.map(m => [m.agent || m.name,
-    Number.isFinite(m.measured_net_mean) ? 1 + data.models.filter(other =>
-      Number.isFinite(other.measured_net_mean) && other.measured_net_mean < m.measured_net_mean).length : null]));
+  const rankOf = m => Number.isFinite(netMean(m)) ? 1 + data.models.filter(other =>
+    Number.isFinite(netMean(other)) && netMean(other) < netMean(m)).length : null;
   const tasks = new Map(displayedTasks.map((t) => [t[0], t]));
   const labels = {r: 'solved', f: 'failed', u: 'unknown', m: 'not measured', n: 'no attempt', o: 'out of scope', c: 'no passing reference'};
   let selected = null, sortKey = 'net', ascending = true;
@@ -308,22 +311,27 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     if (!selected) {
       return {score: midpoint(model.score, model.lower, model.upper), ci: model.ci?.[0],
         ci_high: model.ci?.[1], resolve_rate: model.resolve_rate == null ? null : model.resolve_rate * 100,
-        coverage: model.measured_attempts / (model.footprint_population_count || data.population_count || data.task_count) * 100,
-        churn: model.measured_churn_mean,
-        net: model.measured_net_mean, solved_net: model.measured_solved_net_mean,
+        coverage: denominator(model) > 0 ? measuredCount(model) / denominator(model) * 100 : null,
+        churn: solvedOnly() ? model.measured_solved_churn_mean : model.measured_churn_mean,
+        net: netMean(model), solved_net: solvedOnly() ? model.measured_net_mean : model.measured_solved_net_mean,
         aa_coding: model.aa_coding, aa_intelligence: model.aa_intelligence, rank_low: model.rank_range?.[0], rank_high: model.rank_range?.[1]}[key];
     }
+    if (!taskIncluded(index)) return null;
     const cell = selected[2][index];
     const eligible = cell.length > 7 ? cell[7] : ['r', 'f', 'c'].includes(cell[0]);
     return {score: midpoint(cell[3], cell[4], cell[5]), net: eligible ? cell[1] : null,
       churn: eligible ? cell[2] : null}[key];
   }
   function renderBoard() {
+    // Only restore a sort button that actually held focus, never steal focus from search/reset.
+    const focusedSort = [...document.querySelectorAll('#board button[data-sort]')]
+      .find(button => button === document.activeElement)?.dataset.sort;
     const headers = selected
       ? [['Model', null], ['Result', null], ['Net units added', 'net']]
-      : [['Rank', null], ['Model', null], ['Net units added (mean)', 'net'], ['Net units added, solved (mean)', 'solved_net'], ['Solved', 'resolve_rate'], ...(external ? [['AA Intelligence Index', 'aa_intelligence']] : []), ['Measured', 'coverage']];
+      : [['Rank', null], ['Model', null], [solvedOnly() ? 'Net units added, solved (mean)' : 'Net units added (mean)', 'net'], [solvedOnly() ? 'Net units added, all measured (mean)' : 'Net units added, solved (mean)', 'solved_net'], ['Solved', 'resolve_rate'], ...(external ? [['AA Intelligence Index', 'aa_intelligence']] : []), [solvedOnly() ? 'Measured solved / upstream solved' : 'Measured', 'coverage']];
     document.querySelector('#board thead').innerHTML = '<tr>' + headers.map(([name, key]) => `<th${key ? ` aria-sort="${key === sortKey ? ascending ? 'ascending' : 'descending' : 'none'}"` : ''}${name === 'Model' ? ' class="left"' : ''}>${key ? `<button type="button" data-sort="${key}">${name}</button>` : name}</th>`).join('') + '</tr>';
     const buttons = [...document.querySelectorAll('#board button[data-sort]')];
+    if (focusedSort) buttons.find(button => button.dataset.sort === focusedSort)?.focus({preventScroll: true});
     buttons.forEach((button) => button.addEventListener('click', () => {
       const key = button.dataset.sort;
       ascending = key === sortKey ? !ascending : ['net', 'solved_net'].includes(key);
@@ -337,7 +345,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     };
     // Self-run rows cover a task subset: listed after the ranked rows, never interleaved.
     const extra = selected ? [] : activeSelfRun().map(m => ({m, i: -1})).sort(order);
-    const models = data.models.map((m, i) => ({m, i})).sort(order).concat(extra);
+    const models = data.models.map((m, i) => ({m, i})).filter(r => !selected || taskIncluded(r.i)).sort(order).concat(extra);
     document.querySelector('#board tbody').innerHTML = models.map(({m, i}, k) => (k === models.length - extra.length && extra.length
       ? `<tr class="self-run-head"><td colspan="${headers.length}">Self-run pilot · unranked, 3–10 tasks</td></tr>` : '') + (() => {
       if (selected) {
@@ -348,7 +356,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       }
       const denominator = m.footprint_population_count || data.population_count || data.task_count;
       if (m.self_run) return `<tr class="self-run" title="${esc(selfRunNote(m))}"><td>—</td><td class="left">${esc(m.name)}</td><td>${fmt(m.measured_net_mean)}</td><td>—</td><td>—</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${m.measured_attempts}/${denominator}</td></tr>`;
-      return `<tr><td>${ranks.get(m.agent || m.name) ?? '—'}</td><td class="left">${esc(m.name)}</td><td>${fmt(m.measured_net_mean)}</td><td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.resolve_rate * 100)}%</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${m.measured_attempts}/${denominator}</td></tr>`;
+      return `<tr><td>${rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td><td>${fmt(netMean(m))}</td><td>${fmt(solvedOnly() ? m.measured_net_mean : m.measured_solved_net_mean)}</td><td>${fmt(metricValue(m, i, 'resolve_rate'))}%</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${measuredCount(m) ?? 0}/${solvedOnly() ? m.upstream_solved_attempts ?? 0 : denominator}</td></tr>`;
     })()).join('');
   }
   function showTask(id) {
@@ -379,11 +387,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   function axisOptions() {
     if (selected) return [{key: 'net', label: 'Net units added'}, {key: 'churn', label: 'Units changed'},
       {key: 'score', label: 'Legacy combined task score (midpoint if bounded)'}];
-    return [{key: 'coverage', label: 'Measured coverage (%)'}, {key: 'churn', label: 'Units changed (mean per attempt)'},
+    return [{key: 'coverage', label: solvedOnly() ? 'Measured solved / upstream solved (%)' : 'Measured coverage (%)'}, {key: 'churn', label: solvedOnly() ? 'Units changed, solved (mean per attempt)' : 'Units changed (mean per attempt)' },
       {key: 'score', label: 'Legacy combined score (midpoint if bounded)' },
       {key: 'ci', label: 'Combined score 95% CI: lower bound'}, {key: 'ci_high', label: 'Combined score 95% CI: upper bound'},
-      {key: 'resolve_rate', label: 'Solved (%)'}, {key: 'net', label: 'Net units added (mean)'},
-      {key: 'solved_net', label: 'Net units added, solved tasks (mean)'},
+      {key: 'resolve_rate', label: 'Solved (%)'}, {key: 'net', label: solvedOnly() ? 'Net units added, solved (mean)' : 'Net units added (mean)'},
+      {key: 'solved_net', label: solvedOnly() ? 'Net units added, all measured (mean)' : 'Net units added, solved tasks (mean)' },
       ...(external ? [{key: 'aa_intelligence', label: 'Artificial Analysis Intelligence Index'},
         {key: 'aa_coding', label: 'Artificial Analysis Coding Index'}] : []),
       ...(ranked ? [{key: 'rank_low', label: 'Combined score rank: lower bound'}, {key: 'rank_high', label: 'Combined score rank: upper bound'}] : [])];
@@ -406,6 +414,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   let chartType = 'scatter';
   try {
     const params = new URLSearchParams(window.location.search);
+    if (params.get('attempts') === 'solved') attempts = 'solved';
     if (params.get('chart') === 'bar') chartType = 'bar';
     if (params.get('selfrun') === '0') showSelfRun = false;
   } catch (e) {}
@@ -416,6 +425,21 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       window.history.replaceState(null, '', url);
     } catch (e) {}
   };
+  function updateAttemptsNote() {
+    $('attempts-note').textContent = solvedOnly()
+      ? 'Solved only: equal-weight mean over measured successes; models without measured successes are unranked and absent from charts. Measured = measured solved / upstream solved attempts. Ungraded self-runs are absent. Solved %, external indices and archived diagnostics are unchanged, independent of this selector.'
+      : 'All measured: passing and failed attempts count equally. Missing measurements are never zero.';
+    $('rank-note').textContent = solvedOnly() ? 'Mean net units added over measured solved attempts only. Smaller footprint ≠ better coding.' : 'Mean net units added, including failures. Smaller footprint ≠ better coding.';
+    if (selfRun.length) $('self-run-note').hidden = !showSelfRun || solvedOnly();
+  }
+  $('attempts').value = attempts;
+  updateAttemptsNote();
+  $('attempts').addEventListener('change', e => {
+    attempts = e.target.value === 'solved' ? 'solved' : 'all';
+    setParam('attempts', solvedOnly() ? 'solved' : null);
+    updateAttemptsNote();
+    renderBoard(); renderAxisControls(); renderGraph();
+  });
   $('chart-type').value = chartType;
   $('chart-type').addEventListener('change', e => {
     chartType = e.target.value === 'bar' ? 'bar' : 'scatter';
@@ -424,15 +448,27 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   });
   $('self-run-toggle-label').hidden = selfRun.length === 0;
   $('self-run-toggle').checked = showSelfRun;
-  if (selfRun.length) $('self-run-note').hidden = !showSelfRun;
+  if (selfRun.length) $('self-run-note').hidden = !showSelfRun || solvedOnly();
   $('self-run-toggle').addEventListener('change', e => {
     showSelfRun = !!e.target.checked;
     setParam('selfrun', showSelfRun ? null : '0');
-    $('self-run-note').hidden = !showSelfRun;
+    $('self-run-note').hidden = !showSelfRun || solvedOnly();
     renderBoard(); renderGraph();
   });
   const tooltip = $('graph-tooltip');
-  function hideTooltip() { tooltip.hidden = true; tooltip.textContent = ''; }
+  let tooltipTarget = null, dismissedTooltipTarget = null;
+  function hideTooltip() {
+    tooltip.hidden = true; tooltip.textContent = '';
+    tooltipTarget = dismissedTooltipTarget = null;
+  }
+  window.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !tooltip.hidden) {
+      const target = tooltipTarget;
+      hideTooltip();
+      // Keep it dismissed during pointer movement until exit/blur or a redraw.
+      dismissedTooltipTarget = target;
+    }
+  });
   window.addEventListener('scroll', hideTooltip, true);
   let resizePending = false;
   window.addEventListener('resize', () => {
@@ -445,6 +481,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   });
   const usesExternalAxis = () => !selected && [currentAxes().x, currentAxes().y].some(k => k.startsWith('aa_'));
   function showTooltipAt(target, event, text) {
+    if (target === dismissedTooltipTarget) return;
+    tooltipTarget = target;
     tooltip.textContent = text;
     tooltip.hidden = false;
     const rect = target.getBoundingClientRect();
@@ -455,16 +493,16 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     tooltip.style.top = `${Math.max(8, Math.min(top, window.innerHeight - tooltip.offsetHeight - 8))}px`;
   }
   function renderBars() {
-    const units = v => (v < 0 ? '−' : '') + Math.abs(Math.round(v)).toLocaleString('en-US');
+    const units = v => v.toLocaleString('en-US', {maximumFractionDigits: 1}).replace('-', '−');
     const rows = data.models.map((m, i) => ({m, i, v: metricValue(m, i, 'net'), latest: m.latest !== false}))
       .concat(selected ? [] : activeSelfRun().map(m => ({m, i: -1, v: m.measured_net_mean, latest: true, selfRun: true})))
-      .filter(r => Number.isFinite(r.v)).sort((a, b) => a.v - b.v || a.m.name.localeCompare(b.m.name));
+      .filter(r => modelIncluded(r.m, r.i) && Number.isFinite(r.v)).sort((a, b) => a.v - b.v || a.m.name.localeCompare(b.m.name));
     // Self-run means cover only their own task subset, so they get their own group, never interleaved.
     rows.sort((a, b) => !!a.selfRun - !!b.selfRun);
     const firstSelfRun = rows.findIndex(r => r.selfRun);
-    const metric = selected ? 'Net units added in this attempt' : 'Mean net units added per attempt';
+    const metric = selected ? 'Net units added in this attempt' : solvedOnly() ? 'Mean net units added per solved attempt' : 'Mean net units added per attempt';
     $('graph-legend').textContent = rows.length
-      ? `${metric}${selected ? '' : ', failures included'}. Smaller ≠ better. Older generations faded.`
+      ? `${metric}${selected || solvedOnly() ? '' : ', failures included'}. Smaller ≠ better. Older generations faded.`
       : 'No measured values available for this view.';
     $('company-legend').innerHTML = [...new Set(rows.map(r => r.m.company || 'Other'))].sort().map(company =>
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
@@ -473,7 +511,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const note = r => {
       const m = r.m, total = m.footprint_population_count || data.population_count || data.task_count;
       return `${m.name}${r.selfRun ? ' · self-run' : ''} (${m.company || 'Other'})\n${metric}: ${units(r.v)}` +
-        (selected ? '' : `\nMeasured ${m.measured_attempts}/${total} attempts`) + (r.selfRun ? '\n' + selfRunNote(m) : '');
+        (selected ? `\n${labels[selected[2][r.i][6] || selected[2][r.i][0]] || 'unknown'} task attempt` : `\nMeasured ${measuredCount(m)}/${denominator(m)} ${solvedOnly() ? 'upstream solved' : 'population'} attempts`) + (r.selfRun ? '\n' + selfRunNote(m) : '');
     };
     $('graph').style.marginBottom = '0px';
     $('graph').innerHTML = `<div class="bars" role="list" aria-label="${esc(metric)} per model, smallest first">` + rows.map((r, k) =>
@@ -496,11 +534,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const xLabel = options.find(o => o.key === axes.x).label, yLabel = options.find(o => o.key === axes.y).label;
     const axisFormat = (value, key) => fmt(value) + (['resolve_rate', 'coverage'].includes(key) ? '%' : '');
     const points = data.models.map((m, i) => ({x: metricValue(m, i, axes.x), y: metricValue(m, i, axes.y),
-      name: m.name, company: m.company || 'Other', count: m.measured_attempts, match: m.aa_match, latest: m.latest !== false,
+      name: m.name, company: m.company || 'Other', count: measuredCount(m), match: m.aa_match, latest: m.latest !== false,
       kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : (selected[2][i][6] || selected[2][i][0]) === 'r' ? 'resolved' : 'unknown') : 'all', i, m}))
       .concat(selected ? [] : activeSelfRun().map(m => ({x: metricValue(m, -1, axes.x), y: metricValue(m, -1, axes.y), name: m.name,
         company: m.company || 'Other', count: m.measured_attempts, match: m.aa_match, latest: true, kind: 'all', i: -1, m, selfRun: true})))
-      .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
+      .filter(p => modelIncluded(p.m, p.i) && Number.isFinite(p.x) && Number.isFinite(p.y));
     $('graph-legend').textContent = points.length
       ? 'Older generations faded.' + (selected ? ' Status on hover.' : '')
       : 'No measured points available for this view.';
@@ -547,7 +585,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const usesExternal = [axes.x, axes.y].some(k => k.startsWith('aa_'));
     const matchNote = p => usesExternal && p.match && p.match !== 'exact'
       ? {effort_unlabelled: 'Artificial Analysis entry has no effort label', undated_alias: 'undated model ID matched to the Artificial Analysis snapshot'}[p.match] : '';
-    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; outside fitted axes, plotted to scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + p.count + '/' + (p.m.footprint_population_count || data.population_count || data.task_count) + ' population attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}`;
+    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; outside fitted axes, plotted to scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + p.count + '/' + denominator(p.m) + (solvedOnly() ? ' upstream solved attempts' : ' population attempts') : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}`;
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
     const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip"></circle>`).join('');
     // Green zone: the half of each axis that is better (lower footprint/rank, higher solved/score).
@@ -575,8 +613,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
       const show = event => {
         const p = points[Number(circle.dataset.point)];
-        tooltip.textContent = `${p.name}${p.offscale ? ' (outside fitted axes, plotted to scale)' : ''}\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${matchNote(p) ? '\n' + matchNote(p) : ''}${p.selfRun ? '\n' + selfRunNote(p.m) : ''}${p.kind !== 'all' ? '\n' + p.kind + ' task attempt' : ''}`;
-        showTooltipAt(circle, event, tooltip.textContent);
+        const text = `${p.name}${p.offscale ? ' (outside fitted axes, plotted to scale)' : ''}\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${matchNote(p) ? '\n' + matchNote(p) : ''}${p.selfRun ? '\n' + selfRunNote(p.m) : ''}${p.kind !== 'all' ? '\n' + p.kind + ' task attempt' : ''}`;
+        showTooltipAt(circle, event, text);
       };
       ['mouseenter', 'mousemove', 'focus', 'click'].forEach(event => circle.addEventListener(event, show));
       ['mouseleave', 'blur'].forEach(event => circle.addEventListener(event, hideTooltip));

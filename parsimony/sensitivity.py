@@ -1,6 +1,7 @@
 """Exploratory paired-task bootstrap and weight/cap sensitivity (not a score release)."""
 import argparse
 import json
+import math
 import random
 import statistics
 from pathlib import Path
@@ -12,7 +13,12 @@ from .scoring import (measured, metrics, out_of_scope, percentile, require,
 
 def contributions(panel, records, net_weight=0.8, failure_cap=25, net_floor=None):
     """Per-task scores; ``net_floor=0`` removes credit for net deletion (anti-deletion variant)."""
-    require(0 <= net_weight <= 1 and failure_cap >= 0, 'invalid sensitivity parameters')
+    require(all(type(x) in (int, float) and math.isfinite(x)
+                for x in (net_weight, failure_cap)) and
+            0 <= net_weight <= 1 and failure_cap >= 0 and
+            (net_floor is None or (type(net_floor) in (int, float) and math.isfinite(net_floor))),
+            'invalid sensitivity parameters')
+    records = list(records)
     def net(m):
         return m['net_units'] if net_floor is None else max(m['net_units'], net_floor)
     unique(records)
@@ -20,6 +26,14 @@ def contributions(panel, records, net_weight=0.8, failure_cap=25, net_floor=None
     for r in records:
         groups.setdefault(r['agent'], {})[r['task_id']] = r
     require(bool(groups) and bool(panel.get('tasks')), 'nonempty candidate and task sets required')
+    for task, refs in panel['tasks'].items():
+        require(bool(refs), f'uncalibrated task {task}; use bounded stability analysis')
+        require(len({ref['agent'] for ref in refs}) == len(refs), 'duplicate reference agent')
+        bases = set()
+        for ref in refs:
+            require(not out_of_scope(metrics(ref['metrics'])), 'out-of-scope reference')
+            bases.add((ref['provenance']['repo'], ref['provenance']['base_commit']))
+        require(len(bases) == 1, f'mixed reference bases on {task}')
     out = {}
     for agent, group in groups.items():
         values = {}
@@ -55,6 +69,7 @@ def contributions(panel, records, net_weight=0.8, failure_cap=25, net_floor=None
 
 def sensitivity(panel, records, draws=2000, seed=42):
     require(type(draws) is int and draws > 0, 'positive integer draws required')
+    records = list(records)
     scenarios = {}
     for weight, cap, floor in ((0.8, 25, None), (0.5, 25, None), (0.7, 25, None), (1.0, 25, None),
                                (0.8, 10, None), (0.8, 50, None), (0.8, 25, 0)):
@@ -65,11 +80,16 @@ def sensitivity(panel, records, draws=2000, seed=42):
                    key=lambda pair: -pair[1]))
     matrix = contributions(panel, records)
     tasks = list(panel['tasks'])
+    # Repeated attempts share a task and must remain paired within each resample.
+    clusters = {}
+    for task in tasks:
+        clusters.setdefault(task.split('#', 1)[0], []).append(task)
+    clusters = list(clusters.values())
     rng = random.Random(seed)
     samples = {agent: [] for agent in matrix}
     top = {agent: 0.0 for agent in matrix}
     for _ in range(draws):
-        drawn = rng.choices(tasks, k=len(tasks))
+        drawn = [task for cluster in rng.choices(clusters, k=len(clusters)) for task in cluster]
         scores = {agent: statistics.mean(values[t] for t in drawn) for agent, values in matrix.items()}
         best = max(scores.values())
         winners = [agent for agent, value in scores.items() if abs(value - best) < 1e-12]
@@ -77,8 +97,8 @@ def sensitivity(panel, records, draws=2000, seed=42):
             top[winner] += 1 / len(winners)
         for agent, value in scores.items():
             samples[agent].append(value)
-    def quantile(values, p):
-        ordered = sorted(values)
+    samples = {agent: sorted(values) for agent, values in samples.items()}
+    def quantile(ordered, p):
         return ordered[int(p * (len(ordered) - 1))]
     return dict(status='beta-exploratory-conditional-on-fixed-tasks-and-reference-panel',
                 task_count=len(tasks), draws=draws, seed=seed, scenario_scores=scenarios,
@@ -100,7 +120,7 @@ def main():
         records = [r for path in args.records for r in read_jsonl(path)]
         result = sensitivity(panel, records, args.draws, args.seed)
         with Path(args.output).open('w') as stream:
-            json.dump(result, stream, indent=2, sort_keys=True)
+            json.dump(result, stream, indent=2, sort_keys=True, allow_nan=False)
             stream.write('\n')
     except (OSError, ValueError, KeyError, TypeError) as exc:
         parser.exit(1, f'error: {exc}\n')

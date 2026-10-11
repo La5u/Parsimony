@@ -1,20 +1,21 @@
 """Ranking stability under panel, weight, failure-cap and task-mix changes (analysis, not a score release).
 
-Every variant is rescored from the frozen panel with a complete-data helper that tolerates unscored
-tasks: point estimates use the tasks where every model has a point score, and bounds over the whole
-panel show how far missing measurements could move each result.
+Every variant is rescored from the frozen panel with a helper that tolerates unscored tasks:
+rankings use bound midpoints over the whole panel, and bounds show how far missing measurements
+could move each result. These are archived combined-score diagnostics, not footprint ranks.
 """
 import argparse
 import hashlib
 import itertools
 import json
+import math
 import random
 import re
 import statistics
 from pathlib import Path
 
 from .benchmark import read_jsonl
-from .scoring import (UNCALIBRATED, metrics, percentile, require, require_measurement_track, score_records,
+from .scoring import (UNCALIBRATED, metrics, out_of_scope, percentile, require, require_measurement_track, score_records,
                       task_score, unique)
 from .deepswe import display_name
 
@@ -48,12 +49,23 @@ def label(agent):
     return NAMES.get(short, short)
 
 
+def validate_parameters(net_weight, failure_cap, net_floor=None):
+    require(all(type(x) in (int, float) and math.isfinite(x)
+                for x in (net_weight, failure_cap)) and
+            0 <= net_weight <= 1 and failure_cap >= 0 and
+            (net_floor is None or (type(net_floor) in (int, float) and math.isfinite(net_floor))),
+            'invalid parameters')
+
+
 def task_value(record, refs, net_weight, failure_cap, net_floor=None):
     """(score, lower, upper) for one task; score is None when only bounds are known.
 
     Classification and validation come from ``scoring.task_score``; the value is recomputed here so
     weights, cap and the net floor can vary.
     """
+    validate_parameters(net_weight, failure_cap, net_floor)
+    if record is not None:
+        require(type(record['resolved']) is bool, 'resolved must be boolean')
     status = task_score(record, refs)['status']
     if status == 'unknown':
         return None, -failure_cap, 100
@@ -77,6 +89,7 @@ def task_value(record, refs, net_weight, failure_cap, net_floor=None):
 
 
 def group(records):
+    records = list(records)
     unique(records)
     out = {}
     for r in records:
@@ -86,8 +99,17 @@ def group(records):
 
 def matrix(panel, groups, net_weight, failure_cap, net_floor=None):
     """{agent: {task: (score, lower, upper)}} over every panel task; absent records are unknown."""
-    require(0 <= net_weight <= 1 and failure_cap >= 0, 'invalid parameters')
+    validate_parameters(net_weight, failure_cap, net_floor)
     require(bool(groups) and bool(panel.get('tasks')), 'nonempty candidate and task sets required')
+    for task, refs in panel['tasks'].items():
+        require(bool(refs) or panel.get('calibration_policy') == UNCALIBRATED,
+                f'empty reference panel for task {task}')
+        require(len({ref['agent'] for ref in refs}) == len(refs), 'duplicate reference agent')
+        bases = set()
+        for ref in refs:
+            require(not out_of_scope(metrics(ref['metrics'])), 'out-of-scope reference')
+            bases.add((ref['provenance']['repo'], ref['provenance']['base_commit']))
+        require(len(bases) <= 1, f'mixed reference bases on {task}')
     for g in groups.values():
         for r in g.values():
             require_measurement_track(panel, r)
@@ -101,9 +123,28 @@ def matrix(panel, groups, net_weight, failure_cap, net_floor=None):
 
 
 def common_tasks(values, tasks=None):
+    require(bool(values), 'nonempty candidate set required')
     agents = list(values)
     tasks = list(values[agents[0]]) if tasks is None else tasks
-    return [t for t in tasks if t in values[agents[0]] and all(values[a][t][0] is not None for a in agents)]
+    return [t for t in tasks if all(t in values[a] and values[a][t][0] is not None for a in agents)]
+
+
+def selected_tasks(values, tasks):
+    """Validate the shared task matrix before averaging or resampling it."""
+    require(bool(values), 'nonempty candidate set required')
+    tasks = list(next(iter(values.values()))) if tasks is None else list(tasks)
+    require(bool(tasks), 'no tasks to summarize or resample')
+    for agent, cells in values.items():
+        for task in tasks:
+            require(task in cells, f'{agent}: missing task {task}')
+            cell = cells[task]
+            require(len(cell) == 3, 'invalid score cell')
+            point, low, high = cell
+            require(all(type(x) in (int, float) and math.isfinite(x) for x in (low, high)) and
+                    low <= high, 'invalid score bounds')
+            require(point is None or (type(point) in (int, float) and math.isfinite(point) and
+                                     low <= point <= high), 'invalid point score')
+    return tasks
 
 
 def summarize(values, tasks=None):
@@ -112,9 +153,8 @@ def summarize(values, tasks=None):
     Unscored tasks enter at their best and worst case, so no model loses tasks from the
     comparison. The midpoint equals the point score when every task has one.
     """
+    tasks = selected_tasks(values, tasks)
     agents = list(values)
-    tasks = list(values[agents[0]]) if tasks is None else list(tasks)
-    require(bool(tasks), 'no tasks to summarize')
     out = {}
     for a in agents:
         cells = [values[a][t] for t in tasks]
@@ -184,7 +224,7 @@ def bootstrap(values, tasks, draws=2000, seed=42, *, bound_ranks=False):
     the ordinary percentile bootstrap.
     """
     require(type(draws) is int and draws > 0, 'positive integer draws required')
-    require(bool(tasks), 'no tasks to resample')
+    tasks = selected_tasks(values, tasks)
     agents = sorted(values)
     rng = random.Random(seed)
     lows, highs = {a: [] for a in agents}, {a: [] for a in agents}
@@ -231,6 +271,7 @@ def outcome(record):
 
 def pair_outcomes(values, groups, tasks, a, b, top=5):
     """Decompose mean(a) - mean(b) over the tasks where both have a point score."""
+    require(type(top) is int and top >= 0, 'nonnegative integer top required')
     tasks = [t for t in tasks if values[a][t][0] is not None and values[b][t][0] is not None]
     n = len(tasks)
     by_kind, rows = {}, []
@@ -244,7 +285,7 @@ def pair_outcomes(values, groups, tasks, a, b, top=5):
     rows.sort(key=lambda r: (-r['contribution'], r['task']))
     return dict(a=a, b=b, difference=sum(r['contribution'] for r in rows),
                 by_outcome=dict(sorted(by_kind.items())), favoring_a=rows[:top],
-                favoring_b=sorted(rows[-top:], key=lambda r: (r['contribution'], r['task'])))
+                favoring_b=sorted(rows[-top:] if top else [], key=lambda r: (r['contribution'], r['task'])))
 
 
 def repo_of(refs):
@@ -252,6 +293,8 @@ def repo_of(refs):
 
 
 def analyze(panel, records, draws=2000, seed=42):
+    require(type(draws) is int and draws > 0, 'positive integer draws required')
+    records = list(records)
     groups = group(records)
     weight, cap = panel['net_weight'], panel['failure_cap']
     require(abs(weight + panel['churn_weight'] - 1) < 1e-9, 'panel weights must sum to one')
@@ -289,12 +332,14 @@ def analyze(panel, records, draws=2000, seed=42):
         repo = repo_of(refs) if refs else panel['task_bases'][task]['repo']
         repos.setdefault(repo, []).append(task)
     for repo, tasks in sorted(repos.items()):
-        rest = [t for t in panel['tasks'] if t not in set(tasks)]
+        excluded = set(tasks)
+        rest = [t for t in panel['tasks'] if t not in excluded]
         if rest:
             scenarios[f'without_repo={repo}'] = dict(family='task_mix', **summarize(base_values, rest))
 
     everyone = [t for t in panel['tasks'] if all(groups[a].get(t, {}).get('resolved') is True for a in groups)]
-    rest = [t for t in panel['tasks'] if t not in set(everyone)]
+    everyone_set = set(everyone)
+    rest = [t for t in panel['tasks'] if t not in everyone_set]
     strata = {k: summarize(base_values, ts) for k, ts in (('solved_by_all', everyone), ('solved_by_fewer', rest))
               if ts}
 
@@ -416,7 +461,7 @@ def render(result, command, data_filename='sensitivity.json'):
         out.append(f"| {label(p['a'])} > {label(p['b'])} | {fmt(p['difference'], 2)} | "
                    f"{fmt(p['ci_95'][0], 2)} to {fmt(p['ci_95'][1], 2)} | {p['p_greater']:.2f} | {flips} | "
                    f"{'yes' if p['bounds_separate'] else 'no'} |")
-    out += ['', '## Weights and failure cap', '', 'Score on the common tasks; rank in parentheses.', '']
+    out += ['', '## Weights and failure cap', '', 'Bound-midpoint score over all tasks; rank in parentheses.', '']
     names = [n for n, s in result['scenarios'].items() if s['family'] in ('baseline', 'weights', 'failure_cap')]
     out += scenario_table(result, names, order)
     orphan_policy = ('tasks that lose their reference remain in the full population with bounds. '
@@ -442,8 +487,8 @@ def render(result, command, data_filename='sensitivity.json'):
     for repo, n in result['repositories'].items():
         s = result['scenarios'].get(f'without_repo={repo}')
         out.append(f"| {repo} ({n}) | {changes(order, s['ranking']) if s else 'no tasks left'} |")
-    columns = [(f"All common ({result['common_tasks']})", base)] + [
-        (f"{'Solved by every model' if k == 'solved_by_all' else 'Solved by fewer'} ({s['common_tasks']})", s)
+    columns = [(f"All tasks ({result['task_count']})", base)] + [
+        (f"{'Solved by every model' if k == 'solved_by_all' else 'Solved by fewer'} ({s['task_count']})", s)
         for k, s in result['strata'].items()]
     out += ['', 'Difficulty strata. On tasks every model solved the score is pure footprint; on the rest it mixes '
             'correctness and footprint.', '',

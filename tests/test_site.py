@@ -84,6 +84,10 @@ class SiteTests(unittest.TestCase):
         self.assertEqual([t[0] for t in data['tasks']], ['t1', 't2'])
         self.assertEqual((data['references'], data['harness']), (2, ['v2.0.0']))
         self.assertEqual([cell[0] for cell in data['tasks'][1][2]], ['f', 'r'])
+        # Archived score order differs from footprint order; task cells must follow model order.
+        self.assertLess(opus['score'], data['models'][1]['score'])
+        self.assertEqual([cell[1] for cell in data['tasks'][0][2]], [5, 10])
+        self.assertEqual([cell[1] for cell in data['tasks'][1][2]], [0, 3])
         page = render(data)
         self.assertTrue(page.startswith('<!doctype html>'))
         embedded = page.split('type="application/json">')[1].split('</script>')[0]
@@ -91,6 +95,53 @@ class SiteTests(unittest.TestCase):
         self.assertFalse(render(data, standalone=False).startswith('<!doctype'))
         hostile = render({**data, 'panel': '</script><script>alert(1)</script>'})
         self.assertEqual(hostile.count('</script>'), page.count('</script>'))
+
+    def test_document_head_titles_navigation_and_fallback(self):
+        from html.parser import HTMLParser
+        from parsimony.site import BENCHMARKS
+
+        class Structure(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.in_head = False
+                self.metadata = []
+
+            def handle_starttag(self, tag, attrs):
+                if tag == 'head':
+                    self.in_head = True
+                if tag in {'title', 'meta', 'style'}:
+                    self.metadata.append((tag, self.in_head))
+
+            def handle_endtag(self, tag):
+                if tag == 'head':
+                    self.in_head = False
+
+        for benchmark, language, expected in [
+                ('deepswe', 'python', 'DeepSWE · Python'),
+                ('deepswe', 'javascript', 'DeepSWE · JavaScript'),
+                ('deepswe', 'typescript', 'DeepSWE · TypeScript'),
+                ('deepswe', 'go', 'DeepSWE · Go'),
+                ('verified', 'python', 'SWE-bench Verified · Python'),
+                ('live', 'python', 'SWE-bench Live Lite · Python')]:
+            data = dict(models=[], tasks=[], benchmark=BENCHMARKS[benchmark],
+                        measurement_track=dict(language=language))
+            page = render(data)
+            parser = Structure()
+            parser.feed(page)
+            self.assertEqual(parser.metadata, [('meta', True), ('meta', True), ('title', True),
+                                                ('meta', True), ('style', True)])
+            self.assertIn(f'<title>Parsimony — {expected}</title>', page)
+            self.assertIn('<nav class="small" id="nav" aria-label="Leaderboards"', page)
+            self.assertIn('<noscript>', page)
+            self.assertIn('download the published JSON/JSONL data', page)
+            fragment = render(data, standalone=False)
+            self.assertNotIn('<head>', fragment)
+            self.assertNotIn('<body>', fragment)
+            self.assertNotIn('<!-- BODY -->', fragment)
+            self.assertIn(f'<title>Parsimony — {expected}</title>', fragment)
+        hostile = render(dict(benchmark=dict(name='</title><script>bad</script>')))
+        self.assertIn('&lt;/title&gt;&lt;script&gt;bad&lt;/script&gt;', hostile)
+        self.assertEqual(hostile.count('</title>'), 1)
 
     def test_example_and_custom_importer_are_embedded(self):
         import html
@@ -100,6 +151,8 @@ class SiteTests(unittest.TestCase):
         self.assertNotIn('__CUSTOM_BENCHMARK_JS__', page)
         self.assertIn('id="custom-file"', page)
         self.assertIn('function validateBenchmark(data)', page)
+        self.assertNotIn('id="coverage-note"', page)
+        self.assertNotIn("$('rank-head')", page)
         examples = re.findall(r'<pre><code>(.*?)</code></pre>', page, re.S)
         self.assertEqual(len(examples), 2)
         functions = []
@@ -161,6 +214,31 @@ class SiteTests(unittest.TestCase):
         t1 = next(t for t in data['tasks'] if t[0] == 't1')
         self.assertEqual(t1[2][i][3:], [None, 1, 100])
 
+    def test_solved_footprint_counts_attempts_and_upstream_denominator(self):
+        records = [record('a', 'task#1', net=2, churn=4),
+                   record('a', 'task#2', net=8, churn=12),
+                   record('a', 'task#3', net=-90, churn=90, resolved=False),
+                   record('a', 'task#4', net=100, churn=100)]
+        records[-1].update(metrics=None, analysis_status='fetch_error')
+        refs = [record('reference', f'task#{i}') for i in range(1, 5)]
+        panel = freeze(refs, 'repeated-attempts')
+        data = build(panel, records, draws=20)
+        model = data['models'][0]
+        self.assertEqual(model['upstream_solved_attempts'], 3)
+        self.assertEqual(model['measured_solved_attempts'], 2)
+        self.assertEqual(model['measured_solved_net_mean'], 5)
+        self.assertEqual(model['measured_solved_churn_mean'], 8)
+        self.assertEqual(model['measured_attempts'], 3)
+        self.assertEqual(model['footprint_population_count'], 4)
+        # Published correctness counts cover attempts whose footprints are unavailable.
+        for r in records:
+            r.update(published_resolved_count=7, benchmark_tasks=12)
+        model = build(panel, records, draws=20)['models'][0]
+        self.assertEqual(model['upstream_solved_attempts'], 7)
+        self.assertEqual(model['footprint_population_count'], 12)
+        self.assertEqual(model['measured_solved_attempts'], 2)
+        self.assertEqual(model['measured_solved_churn_mean'], 8)
+
     def test_footprint_ranking_retains_missing_population_and_failed_noops(self):
         refs = [record('a', 't1', net=9, churn=9), record('a', 't2', net=8, churn=8)]
         panel = freeze(refs, 'missing-population')
@@ -172,6 +250,9 @@ class SiteTests(unittest.TestCase):
         self.assertEqual([m['measured_net_mean'] for m in data['models']], [0, 9, None])
         self.assertEqual([m['measured_solved_net_mean'] for m in data['models']], [None, 9, None])
         self.assertEqual([m['measured_attempts'] for m in data['models']], [1, 1, 0])
+        self.assertEqual([m['upstream_solved_attempts'] for m in data['models']], [0, 1, 1])
+        self.assertEqual([m['measured_solved_attempts'] for m in data['models']], [0, 1, 0])
+        self.assertEqual([m['measured_solved_churn_mean'] for m in data['models']], [None, 9, None])
         self.assertEqual([m['footprint_population_count'] for m in data['models']], [2, 2, 2])
         self.assertEqual([row[0] for row in data['footprint_tasks']], ['t1', 't2'])
         self.assertTrue(all(cell[7] is False for cell in data['footprint_tasks'][1][2]))

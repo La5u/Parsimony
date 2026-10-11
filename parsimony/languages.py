@@ -14,6 +14,7 @@ from bisect import bisect_right
 from dataclasses import dataclass
 from importlib import metadata
 from pathlib import Path
+from threading import Lock
 
 SUPPORTED = ("python", "javascript", "typescript", "go")
 UNIT_VERSION = "tree-sitter-units-v1"
@@ -87,41 +88,71 @@ class _TypeScriptWorker:
         node = os.environ.get("PARSIMONY_NODE") or shutil.which("node")
         if not node:
             raise ValueError(f"Node.js not found. {_TYPESCRIPT_HELP}")
-        self.process = subprocess.Popen([node, str(_WORKER)], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE, text=True, encoding="utf-8")
-        header = self.process.stdout.readline()
-        if not header:
-            error = self.process.stderr.read().strip().splitlines()
+        self._lock = Lock()
+        self._closed = False
+        try:
+            self.process = subprocess.Popen([node, str(_WORKER)], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE, text=True, encoding="utf-8")
+        except OSError as exc:
+            raise ValueError(f"Cannot start Node.js: {exc}. {_TYPESCRIPT_HELP}") from exc
+        try:
+            header = self.process.stdout.readline()
+            if not header:
+                error = self.process.stderr.read().strip().splitlines()
+                raise ValueError(f"TypeScript parser unavailable ({error[-1] if error else 'no output'}). {_TYPESCRIPT_HELP}")
+            self.version = json.loads(header)["typescript"]
+        except Exception:
             self.close()
-            raise ValueError(f"TypeScript parser unavailable ({error[-1] if error else 'no output'}). {_TYPESCRIPT_HELP}")
-        self.version = json.loads(header)["typescript"]
+            raise
 
     def request(self, path, source):
-        self.process.stdin.write(json.dumps({"path": path, "source": source}) + "\n")
-        self.process.stdin.flush()
-        line = self.process.stdout.readline()
-        if not line:
-            raise RuntimeError("TypeScript parser process exited unexpectedly")
-        response = json.loads(line)
-        if response.get("fatal"):
-            raise RuntimeError(f"TypeScript parser failed: {response['error']}")
-        return response
+        # A request and its response must remain paired when callers use threads.
+        with self._lock:
+            if self._closed:
+                raise RuntimeError("TypeScript parser process is closed")
+            try:
+                self.process.stdin.write(json.dumps({"path": path, "source": source}) + "\n")
+                self.process.stdin.flush()
+            except (BrokenPipeError, OSError) as exc:
+                raise RuntimeError("TypeScript parser process exited unexpectedly") from exc
+            line = self.process.stdout.readline()
+            if not line:
+                raise RuntimeError("TypeScript parser process exited unexpectedly")
+            response = json.loads(line)
+            if response.get("fatal"):
+                raise RuntimeError(f"TypeScript parser failed: {response['error']}")
+            return response
 
     def close(self):
-        self.process.stdin.close()
-        self.process.wait(timeout=10)
-        self.process.stdout.close()
-        self.process.stderr.close()
+        with self._lock:
+            if self._closed:
+                return
+            self._closed = True
+            try:
+                try:
+                    self.process.stdin.close()
+                except OSError:
+                    pass  # The worker may already have exited with pending buffered input.
+                try:
+                    self.process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait()
+            finally:
+                self.process.stdout.close()
+                self.process.stderr.close()
 
 
 _worker = None
+_worker_lock = Lock()
 
 
 def _typescript():
     global _worker
-    if _worker is None:
-        _worker = _TypeScriptWorker()
-        atexit.register(_worker.close)
+    with _worker_lock:
+        if _worker is None:
+            _worker = _TypeScriptWorker()
+            atexit.register(_worker.close)
     if _worker.version != TYPESCRIPT_PIN:
         raise ValueError(f"TypeScript parser requires typescript=={TYPESCRIPT_PIN} (found {_worker.version}). "
                          f"{_TYPESCRIPT_HELP}")

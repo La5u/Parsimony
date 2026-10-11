@@ -69,6 +69,9 @@ def check_records(records, agent):
             require(m['churn'] == m['units_added'] + m['units_deleted'], 'churn mismatch')
         require(provenance.get('base_commit') and provenance.get('repo') and provenance.get('patch_sha256'),
                 'full-file source and patch provenance required')
+        patch_digest = provenance['patch_sha256']
+        require(isinstance(patch_digest, str) and len(patch_digest) == 64
+                and all(c in '0123456789abcdef' for c in patch_digest), 'patch artifact SHA256 required')
         human = r.get('human_metrics')
         expected_ratio = m['churn'] / human['churn'] if human and human['churn'] and m['churn'] is not None else None
         require(r.get('model_human_ratio') == expected_ratio, 'model/human ratio mismatch')
@@ -122,6 +125,7 @@ def fetch_patch(record, cache):
     url, _, fragment = location.partition('#instance_id=')
     if not fragment:
         return _bytes(url, cache).decode('utf-8')
+    require(fragment == record['task_id'], 'prediction fragment differs from record task ID')
     _, predictions = _parse_predictions(_bytes(url, cache))
     require(fragment in predictions, f'{fragment} missing from {url}')
     return predictions[fragment]
@@ -129,7 +133,11 @@ def fetch_patch(record, cache):
 
 def verify(records, dataset, cache, sample=None, seed=0):
     """Re-fetch patches, check SHA256 and re-measure them (current analyzer only)."""
-    metadata = {row['instance_id']: row for row in dataset}
+    require(sample is None or (type(sample) is int and sample > 0), 'sample must be positive')
+    metadata = {}
+    for row in dataset:
+        require(row['instance_id'] not in metadata, 'duplicate dataset task ID')
+        metadata[row['instance_id']] = row
     measured = [r for r in records if r['analysis_status'] == 'ok']
     if sample is not None and sample < len(measured):
         measured = random.Random(seed).sample(measured, sample)

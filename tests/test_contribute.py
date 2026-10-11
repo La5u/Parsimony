@@ -7,7 +7,7 @@ import hashlib
 from unittest.mock import patch
 
 from parsimony.benchmark import ANALYZER_VERSION
-from parsimony.contribute import check_records, export, validate, verify
+from parsimony.contribute import check_records, export, fetch_patch, validate, verify
 
 
 class ContributionTests(unittest.TestCase):
@@ -59,6 +59,27 @@ class ContributionTests(unittest.TestCase):
             row = verify([old], [], Cache())['results'][0]
         self.assertIsNone(row['metrics_match'])
         self.assertFalse(row['patch_sha256_matches'])
+
+    def test_verify_rejects_nonpositive_samples_and_duplicate_metadata(self):
+        for sample in (0, -1, False):
+            with self.subTest(sample=sample), self.assertRaisesRegex(ValueError, 'sample must be positive'):
+                verify([], [], None, sample=sample)
+        with self.assertRaisesRegex(ValueError, 'duplicate dataset task ID'):
+            verify([], [{'instance_id': 't'}, {'instance_id': 't'}], None)
+
+    def test_prediction_fragment_must_match_record_task(self):
+        record = dict(task_id='a', provenance={'patch_location': 'https://x/preds#instance_id=b'})
+        with patch('parsimony.contribute._bytes') as download:
+            with self.assertRaisesRegex(ValueError, 'fragment differs'):
+                fetch_patch(record, None)
+            download.assert_not_called()
+
+    def test_patch_digest_must_be_sha256(self):
+        for digest in ('x', 'g' * 64, 123):
+            with self.subTest(digest=digest):
+                self.record['provenance']['patch_sha256'] = digest
+                with self.assertRaisesRegex(ValueError, 'patch artifact SHA256 required'):
+                    check_records([self.record], self.record['agent'])
 
     def test_invalid_churn_and_duplicate_tasks(self):
         with self.assertRaises(ValueError):

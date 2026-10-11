@@ -58,6 +58,7 @@ def main():
                 raise ValueError('dataset must use one language track')
             measurement_track = track(next(iter(languages)))
             prior = []
+            retry = []
             if args.resume:
                 if len(args.submissions) != 1 or args.manifest or args.limit or args.task or not metadata:
                     parser.error('--resume requires one submission and full metadata; no --limit, --task or manifest')
@@ -91,14 +92,8 @@ def main():
                         raise ValueError('resume file has failures skipped without --include-failed')
                 # Network failures are retryable: drop them so they are re-analyzed below.
                 retry = [r for r in prior if r['analysis_status'] == 'fetch_error']
-                if retry:
-                    prior = [r for r in prior if r['analysis_status'] != 'fetch_error']
-                    fd, tmp = tempfile.mkstemp(dir=Path(args.output).resolve().parent)
-                    with os.fdopen(fd, 'w') as stream:
-                        stream.writelines(json.dumps(r, sort_keys=True) + '\n' for r in prior)
-                    os.replace(tmp, args.output)
-                    print(f'Retrying {len(retry)} fetch_error records', file=sys.stderr)
-            remaining = ([m['instance_id'] for m in metadata if m['instance_id'] not in {r['task_id'] for r in prior}]
+            remaining = ([m['instance_id'] for m in metadata if m['instance_id'] not in
+                          {r['task_id'] for r in prior if r['analysis_status'] != 'fetch_error'}]
                          if args.resume else args.task)
             submissions = [load_submission(s, cache, args.ref, task_ids=remaining, limit=args.limit,
                                            include_failed=args.include_failed)
@@ -121,6 +116,20 @@ def main():
                        r['resolved'] != (r['task_id'] in current['resolved'])
                        for r in prior):
                     raise ValueError('resume file submission/results differ from existing records')
+            # Keep retry records until *all* prior rows have been bound to the
+            # fetched submission. A failed load or provenance check must not
+            # destroy the existing output (including fetch-error evidence).
+            if retry:
+                prior = [r for r in prior if r['analysis_status'] != 'fetch_error']
+                fd, tmp = tempfile.mkstemp(dir=Path(args.output).resolve().parent)
+                try:
+                    with os.fdopen(fd, 'w') as stream:
+                        stream.writelines(json.dumps(r, sort_keys=True) + '\n' for r in prior)
+                    os.replace(tmp, args.output)
+                finally:
+                    if os.path.exists(tmp):
+                        os.unlink(tmp)
+                print(f'Retrying {len(retry)} fetch_error records', file=sys.stderr)
             wanted = set(remaining or [])
             rows = (r for s in submissions for r in analyze_submission(
                 s, cache, metadata, args.limit, args.patch_only, task_ids=remaining,

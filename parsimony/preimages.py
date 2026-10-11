@@ -44,16 +44,27 @@ def audit_record(record: dict, cache: Cache) -> dict:
         # Associate index prefixes only with their own unambiguous diff block.
         indexes = {}
         for block in re.split(r'(?m)^diff --git ', patch)[1:]:
-            old = re.search(r'(?m)^--- a/(.+)$', block)
-            index = re.search(r'(?m)^index ([0-9a-f]+)\.\.([0-9a-f]+)(?: \d+)?$', block)
+            # Audit every block, including files outside measurement scope.
+            # Only metadata before the hunks may provide blob identity.
+            metadata = re.split(r'(?m)^@@ ', block, maxsplit=1)[0]
+            if not re.search(r'(?m)^--- ', metadata) or not re.search(r'(?m)^\+\+\+ ', metadata):
+                raise ValueError('nontext diff block unsupported for preimage audit')
+            old_headers = re.findall(r'(?m)^--- a/(.+)$', metadata)
+            index_headers = re.findall(r'(?m)^index ([0-9a-f]+)\.\.([0-9a-f]+)(?: \d+)?\r?$', metadata)
+            if len(old_headers) > 1 or len(index_headers) > 1:
+                raise ValueError('ambiguous diff block metadata')
+            old = old_headers[0] if old_headers else None
+            index = index_headers[0] if index_headers else None
             if old and index:
-                path = old[1].rstrip('\r')
+                path = old.rstrip('\r')
                 if path in indexes:
                     raise ValueError('duplicate diff block for old path')
-                indexes[path] = index[1]
+                indexes[path] = index[0]
         old_paths = set()
         all_blobs_match = True
         for file in files:
+            if not file.hunks:
+                raise ValueError('text diff contains no hunks')
             if file.old == '/dev/null':
                 apply_patch('', file)
                 continue
@@ -90,6 +101,9 @@ def audit_run(run: dict, cache: Cache, *, workers: int = 8) -> dict:
     """Retain every inventory record; concurrency changes neither scope nor outcomes."""
     if workers < 1:
         raise ValueError('workers must be positive')
+    task_ids = [record['task_id'] for record in run['records']]
+    if len(set(task_ids)) != len(task_ids):
+        raise ValueError('duplicate task IDs in preimage inventory')
     with ThreadPoolExecutor(max_workers=workers) as pool:
         records = list(pool.map(lambda r: audit_record(r, cache), run['records']))
     counts = {s: sum(r['status'] == s for r in records) for s in sorted({r['status'] for r in records})}

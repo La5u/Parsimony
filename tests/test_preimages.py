@@ -80,6 +80,43 @@ class PreimageTests(unittest.TestCase):
             result = audit_record(record(patch), Cache())
             self.assertFalse(result['accepted'])
 
+    def test_mixed_nontext_blocks_are_not_silently_omitted(self):
+        for block in ('diff --git a/logo.png b/logo.png\nBinary files differ\n',
+                      'diff --git a/README.md b/README.md\nold mode 100644\nnew mode 100755\n'):
+            with self.subTest(block=block):
+                cache = Cache()
+                result = audit_record(record(record()['patch'] + block), cache)
+                self.assertFalse(result['accepted'])
+                self.assertEqual(result['status'], 'unverified')
+                self.assertEqual(cache.urls, [])
+
+    def test_header_only_diffs_do_not_claim_hunk_verification(self):
+        for patch in (record()['patch'].split('@@')[0],
+                      'diff --git a/new.py b/new.py\n--- /dev/null\n+++ b/new.py\n'):
+            with self.subTest(patch=patch):
+                result = audit_record(record(patch), Cache())
+                self.assertFalse(result['accepted'])
+                self.assertIn('no hunks', result['error'])
+
+    def test_duplicate_index_metadata_is_ambiguous(self):
+        item = record()
+        item['patch'] = item['patch'].replace('--- a/', 'index 1234567..abcdef0 100644\n--- a/')
+        result = audit_record(item, Cache())
+        self.assertFalse(result['accepted'])
+        self.assertIn('ambiguous', result['error'])
+
+    def test_crlf_index_metadata_preserves_blob_check(self):
+        item = record()
+        item['patch'] = item['patch'].replace(' 100644\n', ' 100644\r\n')
+        self.assertTrue(audit_record(item, Cache())['accepted'])
+        self.assertFalse(audit_record(item, Cache(b'x = 2\n'))['accepted'])
+
+    def test_duplicate_task_ids_cannot_overwrite_confirmations(self):
+        cache = Cache()
+        with self.assertRaisesRegex(ValueError, 'duplicate task IDs'):
+            audit_run(dict(records=[record(), dict(record(), base_commit='b' * 40)]), cache)
+        self.assertEqual(cache.urls, [])
+
     def test_inventory_retained_and_review_bound_to_artifacts(self):
         item = record()
         missing = dict(item, task_id='missing', artifact_status='missing', patch=None)
