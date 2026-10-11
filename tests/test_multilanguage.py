@@ -78,7 +78,7 @@ class GoV2MeasurementTests(unittest.TestCase):
         with patch('parsimony.benchmark.base_source', return_value=lambda _: ''):
             record, = analyze_submission(submission, None, dataset)
         self.assertEqual(record['analysis_status'], 'ok')
-        self.assertEqual(record['analyzer_version'], '0.8.0-beta')
+        self.assertEqual(record['analyzer_version'], '0.9.0-beta')
         self.assertEqual(ANALYZER_VERSION, record['analyzer_version'])
         self.assertEqual(record['provenance']['patch_sha256'], hashlib.sha256(patch_text.encode()).hexdigest())
         self.assertEqual(record['provenance']['reference_patch_sha256'],

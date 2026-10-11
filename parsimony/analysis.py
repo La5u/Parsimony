@@ -34,10 +34,13 @@ def parse_patch(patch: str, language='python') -> list[FilePatch]:
         paths = header.split()
         if len(paths) != 2:
             raise ValueError('unsupported quoted/space-containing diff paths')
+        # Scope rules see repository paths, not git's a/ and b/ prefixes.
+        paths = [p[2:] if p.startswith(('a/', 'b/')) else p for p in paths]
         if any(implementation(p, language) for p in paths) and not re.search(r'(?m)^--- ', block):
             raise ValueError('implementation binary/rename/mode-only diff unsupported')
     lines = patch.splitlines(keepends=True)
     files = []
+    seen = set()
     i = 0
     while i < len(lines):
         if not lines[i].startswith('--- '):
@@ -55,6 +58,12 @@ def parse_patch(patch: str, language='python') -> list[FilePatch]:
                 raise ValueError('unsupported or unsafe patch path')
             return p
         f = FilePatch(path(old), path(new), [])
+        # Repeated sections for one implementation file would each apply to the
+        # same base and be counted twice; reject them instead.
+        sides = {p for p in (f.old, f.new) if p != '/dev/null' and implementation(p, language)}
+        if sides & seen:
+            raise ValueError('duplicate or conflicting file sections')
+        seen |= sides
         files.append(f)
         i += 1
         while i < len(lines):
@@ -62,6 +71,11 @@ def parse_patch(patch: str, language='python') -> list[FilePatch]:
                 break
             match = re.match(r'@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@', lines[i])
             if not match:
+                # Header/prose lines may sit between sections, but a malformed hunk
+                # header or surplus edit lines would silently drop edits.
+                if lines[i].startswith(('@@', '+')) or (
+                        lines[i].startswith('-') and lines[i].rstrip('\r\n') not in ('--', '-- ')):
+                    raise ValueError('malformed hunk header or surplus hunk lines')
                 i += 1
                 continue
             start, count, newstart, newcount = (int(v) if v is not None else 1 for v in match.groups())

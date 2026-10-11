@@ -5,10 +5,12 @@ downloads a sample of the recorded patches and re-measures them.
 """
 import argparse
 import hashlib
+import ipaddress
 import json
 import math
 import random
 from pathlib import Path
+from urllib.parse import urlparse
 
 from .analysis import measure
 from .artifacts import Cache, _bytes, _parse_predictions
@@ -21,6 +23,22 @@ FORMAT = 'successful-footprint-medians-v1'
 def require(condition, message):
     if not condition:
         raise ValueError(message)
+
+
+def public_url(value):
+    """HTTPS URL on a named public host; ``verify`` fetches these from CI runners."""
+    try:
+        parsed = urlparse(str(value))
+        host = parsed.hostname or ''
+    except ValueError:
+        return False
+    try:
+        ipaddress.ip_address(host)
+        return False  # IP literals could address internal or metadata services
+    except ValueError:
+        pass
+    return (parsed.scheme == 'https' and '.' in host and not host.endswith(('.localhost', '.local', '.internal'))
+            and parsed.username is None and parsed.password is None)
 
 
 def check_records(records, agent):
@@ -40,7 +58,7 @@ def check_records(records, agent):
         signatures.add((r['analyzer_version'], r['python_version'], count))
         provenance = r['provenance']
         for key in ('submission_url', 'results_url', 'patch_location'):
-            require(str(provenance.get(key, '')).startswith(('https://', 'http://')), f'public {key} required')
+            require(public_url(provenance.get(key, '')), f'public HTTPS {key} required')
         digest = provenance.get('results_sha256', '')
         require(isinstance(digest, str) and len(digest) == 64
                 and all(c in '0123456789abcdef' for c in digest), 'result artifact SHA256 required')

@@ -30,9 +30,11 @@ def freeze_dataset(path, name, analyzer_commit=None):
     if len(languages) != 1:
         raise ValueError('freeze one language track at a time')
     measurement_track = track(next(iter(languages)))
+    # Identify the analyzer checkout, not whatever repository the caller is in.
+    checkout = Path(__file__).resolve().parent.parent
     if not analyzer_commit:
-        analyzer_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
-        if subprocess.check_output(['git', 'status', '--porcelain'], text=True).strip():
+        analyzer_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True, cwd=checkout).strip()
+        if subprocess.check_output(['git', 'status', '--porcelain'], text=True, cwd=checkout).strip():
             raise ValueError('dirty checkout: specify an immutable analyzer commit after committing changes')
     if not re.fullmatch(r'[0-9a-fA-F]{40}', analyzer_commit):
         raise ValueError('analyzer commit must be a full 40-character Git SHA')
@@ -77,6 +79,11 @@ def audit(panel, records, dataset_path=None):
         provenance = r.get('provenance', {})
         if provenance.get('repo') != ids[task]['repo'] or provenance.get('base_commit') != ids[task]['base_commit']:
             raise ValueError(f'base commit mismatch: {agent} / {task}')
+    # One analyzer commit must mean one analyzer source; a differing hash means a dirty or
+    # mislabeled measurement that the commit check alone would accept.
+    sources = {r['analyzer_source_sha256'] for g in groups.values() for r in g.values() if 'analyzer_source_sha256' in r}
+    if len(sources) > 1:
+        raise ValueError('records carry different analyzer source hashes')
     agents = []
     for agent, group in sorted(groups.items()):
         versions = {r['analyzer_version'] for r in group.values()}

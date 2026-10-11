@@ -240,6 +240,7 @@ for (const event of ['mouseenter', 'mousemove', 'focus', 'click']) {
 firstCircle.listeners.mouseenter({clientX: 799, clientY: 599});
 assert.equal(tooltip.style.left, '632px');
 assert.equal(tooltip.style.top, '563px');
+assert.equal(element('#graph .gen-lines').innerHTML, ''); // No same-generation peers: nothing drawn.
 firstCircle.listeners.blur();
 assert.equal(tooltip.hidden, true);
 for (const event of ['scroll', 'resize']) {
@@ -247,8 +248,9 @@ for (const event of ['scroll', 'resize']) {
   browser.listeners[event]();
   assert.equal(tooltip.hidden, true);
 }
-// Numeric metrics remain selectable, including CI endpoints without a table column.
-const keys = ['score', 'ci', 'ci_high', 'resolve_rate', 'net', 'rank_low', 'rank_high', 'coverage', 'churn'];
+// Numeric metrics remain selectable; archived combined-score axes are gone.
+const keys = ['resolve_rate', 'net', 'coverage', 'churn'];
+for (const gone of ['score', 'ci', 'ci_high', 'rank_low', 'rank_high']) assert(!element('graph-x').innerHTML.includes(`value="${gone}"`));
 for (const key of keys) assert(element('graph-x').innerHTML.includes(`value="${key}"`));
 assert.doesNotMatch(element('graph-x').innerHTML, /solved_mean/i);
 for (const x of keys) for (const y of keys.filter(k => k !== x)) {
@@ -263,9 +265,8 @@ for (const x of keys) for (const y of keys.filter(k => k !== x)) {
   if (['resolve_rate', 'coverage'].includes(x)) assert.deepEqual(tickValues('x'), [0, 20, 40, 60, 80, 100]);
   if (['resolve_rate', 'coverage'].includes(y)) assert.deepEqual(tickValues('y'), [0, 20, 40, 60, 80, 100]);
 }
-axis('x', 'net'); axis('y', 'score');
-assert.match(graph(), /Beta \(OpenAI\).*combined score \(midpoint if bounded\): 20.0/);
-axis('x', 'score'); // Selecting the other axis's metric swaps, rather than duplicating, it.
+axis('x', 'net'); axis('y', 'resolve_rate');
+axis('x', 'resolve_rate'); // Selecting the other axis's metric swaps, rather than duplicating, it.
 assert.equal(element('graph-y').value, 'net');
 assert.doesNotMatch(graph(), /<polyline/);
 axis('y', 'resolve_rate');
@@ -274,24 +275,20 @@ assert.equal(element('graph-x').value, 'net');
 assert.equal(element('graph-y').value, 'churn');
 domainNear('x', 100, 342); // 111..331 with 5% padding, not anchored at zero.
 assert.deepEqual(tickValues('x'), [100, 150, 200, 250, 300]);
-assert.doesNotMatch(element('graph-x').innerHTML, /ci|resolve_rate|rank_low/);
+assert.doesNotMatch(element('graph-x').innerHTML, /score|resolve_rate|rank_low/);
 assert.match(element('#board tbody').innerHTML, /<td class="left">Alpha<\/td><td class="left r">solved<\/td><td>\+111<\/td><\/tr>/);
 assert.match(graph(), /Gamma \(Anthropic\): failed task attempt/);
 assert.equal(element('graph-legend').textContent, 'Older generations faded. Status on hover.');
 assert.doesNotMatch(graph(), /<polyline/); // Alpha dominates both task-footprint axes.
-axis('y', 'score');
-assert.doesNotMatch(graph(), /<polyline/);
-axis('y', 'churn');
 assert.deepEqual(colors(), [initialColors[0], initialColors[1], initialColors[0]]);
-assert.equal(element('ci-help').hidden, true);
 assert.equal(element('rank-note').hidden, true);
 click('net', ['Gamma', 'Beta', 'Alpha'], 'descending');
 click('net', ['Alpha', 'Beta', 'Gamma'], 'ascending');
-axis('x', 'score');
-assert.equal(element('graph-y').value, 'churn');
+axis('x', 'churn');
+assert.equal(element('graph-y').value, 'net');
+axis('x', 'net'); axis('y', 'churn');
 task('org__repo-2');
 assert.doesNotMatch(element('#board tbody').innerHTML, /−25.0–0.0/);
-assert.match(graph(), /combined task score \(midpoint if bounded\): −12.5/);
 task('not-a-task');
 assert.match(element('task-status').textContent, /Still showing org__repo-2/);
 task('org__repo-3');
@@ -313,7 +310,7 @@ for (const [id, low, high] of [['constant', 1140, 1260], ['single', 950, 1050],
   assert.doesNotMatch(graph(), /NaN|Infinity/);
 }
 element('task-reset').listeners.click();
-assert.equal(element('graph-x').value, 'score'); // All-task axis choices survive task browsing.
+assert.equal(element('graph-x').value, 'net'); // All-task axis choices survive task browsing.
 assert.equal(element('graph-y').value, 'resolve_rate');
 assert.equal(element('task-footer').hidden, true);
 assert.equal(element('ci-help').hidden, false);
@@ -427,7 +424,7 @@ assert.equal(element('graph-y').value, 'aa_intelligence');
 assert.match(element('graph-y').innerHTML, /Artificial Analysis Coding Index/);
 assert.match(element('graph-y').innerHTML, /value="resolve_rate"/);
 assert(rows().every(row => [...row.matchAll(/<td\b/g)].length === 7));
-assert.match(element('#board thead').innerHTML, /AA Intelligence Index/);
+assert.match(element('#board thead').innerHTML, /AA Intel\./);
 assert.match(element('external-note').innerHTML, /href="https:\/\/artificialanalysis.ai\/"/);
 assert.equal(element('external-help').hidden, false);
 assert.match(graph(), /Beta \(OpenAI\).*Artificial Analysis entry has no effort label/);

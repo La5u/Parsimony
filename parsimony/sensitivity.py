@@ -7,8 +7,8 @@ import statistics
 from pathlib import Path
 
 from .benchmark import read_jsonl
-from .scoring import (measured, metrics, out_of_scope, percentile, require,
-                      require_measurement_track, unique)
+from .scoring import (measured, metrics, out_of_scope, percentile, quantile, require,
+                      require_measurement_track, task_score, unique)
 
 
 def contributions(panel, records, net_weight=0.8, failure_cap=25, net_floor=None):
@@ -44,6 +44,9 @@ def contributions(panel, records, net_weight=0.8, failure_cap=25, net_floor=None
             require_measurement_track(panel, r)
             require((r['analyzer_version'], r['python_version']) ==
                     (panel['analyzer_version'], panel['python_version']), 'incompatible analyzer/Python version')
+            if task_score(r, refs)['status'] in ('no_attempt', 'empty_patch'):
+                values[task] = 0  # scored 0 by every variant, as in scoring and stability
+                continue
             require(measured(r),
                     f'{agent}: incomplete measurements for {task}')
             require((r['provenance'].get('repo'), r['provenance'].get('base_commit')) ==
@@ -98,8 +101,6 @@ def sensitivity(panel, records, draws=2000, seed=42):
         for agent, value in scores.items():
             samples[agent].append(value)
     samples = {agent: sorted(values) for agent, values in samples.items()}
-    def quantile(ordered, p):
-        return ordered[int(p * (len(ordered) - 1))]
     return dict(status='beta-exploratory-conditional-on-fixed-tasks-and-reference-panel',
                 task_count=len(tasks), draws=draws, seed=seed, scenario_scores=scenarios,
                 bootstrap={agent: {'score_ci_95': [quantile(values, 0.025), quantile(values, 0.975)],

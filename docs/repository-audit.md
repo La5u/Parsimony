@@ -20,12 +20,14 @@ The frozen measurement JSONLs, populations, reference panels, external snapshots
 
 Code changes alter the analyzer source identity even when counts are preserved. Do not relabel old records, resume old analyses with the changed checkout, or merge newly measured inputs into a frozen cohort without checking identity/compatibility. Measure from a clean committed, versioned checkout. This audit does not authorize raw-artifact redistribution.
 
+## 2026-10-12 follow-up
+
+Resolved in analyzer 0.9.0-beta: strict hunk-header/surplus-line rejection and duplicate implementation-section rejection (the former High findings), prefix-free binary/rename scope checks, spec-conformant `empty_patch` scoring, leaderboard out-of-scope exclusion, interpolated bootstrap quantiles, bounded downloads and snapshot restores, public-HTTPS contribution URLs, workflow input/SHA pinning, undrained worker stderr and mixed analyzer-source detection. A re-fetch of all 20,621 published Verified/Live patches found no newly rejected measurement. See the [changelog](../CHANGELOG.md). Still open: the items below, worker deadlines, and restoring snapshots only from trusted sources (manifest hashes prove self-consistency, not authenticity).
+
 ## Open findings and release gates
 
 | Priority | Finding | Required next step |
 | --- | --- | --- |
-| High | The general patch parser can skip malformed hunk headers/surplus edit lines after a valid hunk. | Add a strict state machine in a versioned analyzer change; test historical artifacts and report newly rejected inputs before release. |
-| High | Repeated file sections can be independently applied to the same base and counted twice. | Define duplicate/conflicting-path rejection, regression-test adversarial cases, and version/revalidate affected cohorts. Do not silently change old footprints. |
 | Medium | Deep valid Python expressions can exceed recursive `ast.unparse` limits. | Establish explicit unavailable/resource statuses; never substitute a different metric silently. |
 | Medium | Approximate `SequenceMatcher(autojunk=False)` retains quadratic worst cases; worker reads have no deadline. | Define reproducible size/time budgets and explicit missing outcomes before enforcing limits; assess count compatibility separately. |
 | Medium | Removing all passing references can empty a legacy leave-one-out panel. | Define the resulting unavailable/bounded diagnostic policy rather than inventing references or dropping population tasks. |
@@ -53,7 +55,7 @@ cmp examples/ten-model-scores.json /tmp/parsimony-scores.json
 git diff --check
 ```
 
-Final local validation: **345 Python tests collected, passing with 6 opt-in browser skips** in the pinned-parser environment; **6 real Firefox tests passed** separately; all six Node page checks and importer checks passed. Wheel contents were verified, contribution validation found zero bundles, and both the historical ten-model and current Live score files reproduced byte-for-byte. `git diff --check` passed. HTTP-error fixture/driver cleanup emitted resource warnings, not test failures. The CI matrix itself was not run locally.
+Validation at the original audit: **345 Python tests collected, passing with 6 opt-in browser skips** in the pinned-parser environment; **6 real Firefox tests passed** separately; all six Node page checks and importer checks passed. Wheel contents were verified, contribution validation found zero bundles, and both the historical ten-model and current Live score files reproduced byte-for-byte. `git diff --check` passed. HTTP-error fixture/driver cleanup emitted resource warnings, not test failures. The CI matrix itself was not run locally.
 
 Real Firefox checks are opt-in (`PARSIMONY_BROWSER_TESTS=1`) and require Selenium, Firefox and geckodriver; see `tests/test_site_browser.py` and the browser audit for the tested versions. They are not a WCAG conformance test. Offline integrity tests and published arithmetic comparisons do not authenticate upstream correctness claims.
 

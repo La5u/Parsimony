@@ -10,6 +10,7 @@ import json
 import os
 import shutil
 import subprocess
+import tempfile
 from bisect import bisect_right
 from dataclasses import dataclass
 from importlib import metadata
@@ -106,15 +107,21 @@ class _TypeScriptWorker:
             raise ValueError(f"Node.js not found. {_TYPESCRIPT_HELP}")
         self._lock = Lock()
         self._closed = False
+        # stderr goes to a file, not a pipe nobody drains: a chatty worker would otherwise
+        # block once the pipe buffer fills and deadlock the next readline().
+        self._stderr = tempfile.TemporaryFile(mode="w+", encoding="utf-8")
         try:
             self.process = subprocess.Popen([node, str(_WORKER)], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                            stderr=subprocess.PIPE, text=True, encoding="utf-8")
+                                            stderr=self._stderr, text=True, encoding="utf-8")
         except OSError as exc:
+            self._stderr.close()
             raise ValueError(f"Cannot start Node.js: {exc}. {_TYPESCRIPT_HELP}") from exc
         try:
             header = self.process.stdout.readline()
             if not header:
-                error = self.process.stderr.read().strip().splitlines()
+                self.process.wait(timeout=10)
+                self._stderr.seek(0)
+                error = self._stderr.read().strip().splitlines()
                 raise ValueError(f"TypeScript parser unavailable ({error[-1] if error else 'no output'}). {_TYPESCRIPT_HELP}")
             self.version = json.loads(header)["typescript"]
         except Exception:
@@ -156,7 +163,7 @@ class _TypeScriptWorker:
                     self.process.wait()
             finally:
                 self.process.stdout.close()
-                self.process.stderr.close()
+                self._stderr.close()
 
 
 _worker = None

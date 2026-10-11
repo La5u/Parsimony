@@ -20,13 +20,13 @@ jobs:
         # (tokenization differs across versions).
         python-version: ['3.12', '3.13', '3.14']
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Standard-library unit tests
         run: python -m unittest discover -s tests -q
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
       - name: Install pinned optional language parsers
@@ -59,6 +59,29 @@ jobs:
             examples/live-python/claude-opus-4.8.jsonl examples/live-python/gpt-5.5-agav.jsonl \
             --output /tmp/live-scores.json
           cmp examples/live-python/scores.json /tmp/live-scores.json
+      - name: Rebuild offline website pages and compare with committed copies
+        # Go needs the external scalar asset (networked); see HANDOFF.md for the full rebuild.
+        if: matrix.python-version == '3.14'
+        run: |
+          NAV=(--nav 'DeepSWE Python=index.html' --nav 'DeepSWE JavaScript=javascript.html' --nav 'DeepSWE TypeScript=typescript.html'
+               --nav 'DeepSWE Go=go.html' --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html')
+          mkdir -p /tmp/site
+          for lang in python javascript typescript; do
+            E=examples/deepswe-$lang; PAGE=$lang; [ "$lang" = python ] && PAGE=index
+            python -m parsimony.site "$E/score-panel.json" "$E/"*.jsonl --sensitivity "$E/sensitivity.json" \
+              --benchmark deepswe "${NAV[@]}" --output "/tmp/site/$PAGE.html" \
+              --external examples/external/artificial-analysis-2026-10-08.json \
+              $([ "$lang" = python ] && echo --self-run examples/self-run/results/*.jsonl)
+          done
+          V=examples/mini-swe-agent-500
+          python -m parsimony.site "$V/score-panel.json" "$V/"*.jsonl --sensitivity "$V/sensitivity-34.json" \
+            --benchmark verified "${NAV[@]}" --output /tmp/site/verified.html
+          L=examples/live-python
+          python -m parsimony.site "$L/score-panel.json" "$L/deepseek-v4.1-flash.jsonl" "$L/gpt-5.6-sol.jsonl" \
+            "$L/claude-opus-4.8.jsonl" "$L/gpt-5.5-agav.jsonl" --sensitivity "$L/stability.json" --benchmark live \
+            "${NAV[@]}" --output /tmp/site/live.html --data /tmp/site/live-data.json
+          for page in index javascript typescript verified live; do cmp "site/$page.html" "/tmp/site/$page.html"; done
+          cmp "$L/site-data.json" /tmp/site/live-data.json
       - name: Static website regression checks
         run: |
           node tests/custom_benchmark.cjs
@@ -74,17 +97,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.14.7'
       - name: Download Verified metadata
         run: python -m parsimony dataset --output verified.jsonl
       - name: Re-verify contributed bundles
+        env:
+          # Never interpolate inputs into the script itself (shell injection).
+          SAMPLE: ${{ inputs.sample }}
         run: |
           if find submissions -mindepth 2 -name records.jsonl | grep -q .; then
             python -m parsimony.contribute verify submissions --dataset verified.jsonl \
-              --sample "${{ inputs.sample }}" --output verify.json
+              --sample "$SAMPLE" --output verify.json
           else
             echo 'No contributed bundles to verify'
           fi

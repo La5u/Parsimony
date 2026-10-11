@@ -104,14 +104,15 @@ class WorkerLifecycleTests(unittest.TestCase):
     def test_bad_header_closes_process(self):
         process = Mock()
         process.stdout.readline.return_value = 'not json\n'
-        with patch('parsimony.languages.subprocess.Popen', return_value=process), \
+        with patch('parsimony.languages.subprocess.Popen', return_value=process) as Popen, \
                 patch.dict('os.environ', {'PARSIMONY_NODE': 'node'}):
             with self.assertRaises(json.JSONDecodeError):
                 languages._TypeScriptWorker()
         process.stdin.close.assert_called_once()
         process.wait.assert_called_once_with(timeout=10)
         process.stdout.close.assert_called_once()
-        process.stderr.close.assert_called_once()
+        # stderr is a temporary file (never an undrained pipe); it is closed with the worker.
+        self.assertTrue(Popen.call_args.kwargs['stderr'].closed)
 
     def test_close_is_idempotent_and_reaps_unresponsive_worker(self):
         process = Mock()
@@ -123,7 +124,7 @@ class WorkerLifecycleTests(unittest.TestCase):
         process.kill.assert_called_once()
         self.assertEqual(process.wait.call_count, 2)
         process.stdout.close.assert_called_once()
-        process.stderr.close.assert_called_once()
+        self.assertTrue(worker._stderr.closed)
         with self.assertRaisesRegex(RuntimeError, 'closed'):
             worker.request('x.ts', '')
 

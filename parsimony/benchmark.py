@@ -13,7 +13,7 @@ from urllib.parse import quote
 
 from .analysis import measure
 
-ANALYZER_VERSION = '0.8.0-beta'
+ANALYZER_VERSION = '0.9.0-beta'
 FAILED_CATEGORIES = {'unresolved', 'failed', 'not_resolved'}
 
 
@@ -85,7 +85,8 @@ def base_source(cache, meta):
 
 
 def read_jsonl(path):
-    return [json.loads(line) for line in Path(path).read_text().splitlines() if line.strip()]
+    # JSONL separates records with '\n' only; str.splitlines() would also split on U+2028 etc.
+    return [json.loads(line) for line in Path(path).read_text().split('\n') if line.strip()]
 
 
 def analyze_submission(submission, cache, dataset=None, limit=None, patch_only=False, task_ids=None,
@@ -205,8 +206,12 @@ def leaderboard(records, shared=False, agents=None, mode='full_file'):
         if r['task_id'] in group:
             raise ValueError(f"duplicate agent/task: {r['agent']} / {r['task_id']}")
         group[r['task_id']] = r
+    # Out-of-scope fixes (every touched file excluded) and unparsed records are unmeasured,
+    # not zero footprints; like scoring, keep them out of medians and the shared set.
+    from .scoring import out_of_scope
     eligible = {a: {t for t, r in group.items() if r['resolved'] and r['analysis_status'] == 'ok'
-                    and r['metrics']['mode'] == mode} for a, group in by_agent.items()}
+                    and r['metrics']['mode'] == mode and r['metrics'].get('net_units') is not None
+                    and not out_of_scope(r['metrics'])} for a, group in by_agent.items()}
     common = set.intersection(*eligible.values()) if eligible else set()
     rows = []
     for agent, group in by_agent.items():

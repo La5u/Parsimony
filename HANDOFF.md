@@ -153,13 +153,13 @@ The parser problem is solved (0.7.0, 2026-10-01): JS/TS use the official TypeScr
 
 ## Commands
 
-Latest validation: **370 tests passed with 7 browser skips** using Python 3.14.7 and exact current optional parser/source pins; **7 opt-in real Firefox tests passed** separately. All six Node page checks and custom importer tests passed. Full 3,536-slot Go v2 population/provenance/comparison audit passed; public scalar download verified all 43 member hashes and reproduced new archived scores byte-for-byte. Historical ten-model and current Live score arithmetic also reproduce exactly. All historical Go JSON/JSONLs remain unchanged; the other five boards' embedded measurement payloads are identical except Sources metadata. Current reproducible Go scalars: checksummed `deepswe-go-v0.8` release asset with bindings in `examples/deepswe-go-v2/release-assets.json`; external raw/measurement cache `/tmp/parsimony-go-v2-release`, clean analyzer `/tmp/parsimony-go-v2-measure` (temporary paths, not durable publication inputs).
+Latest validation (2026-10-12, 0.9.0-beta): **381 tests passed** on Python 3.14.8 without the Go extra (16 Go-grammar and 7 opt-in browser skips); all six pages rebuilt and passed the Node checks. Earlier validation: **370 tests passed with 7 browser skips** using Python 3.14.7 and exact current optional parser/source pins; **7 opt-in real Firefox tests passed** separately. All six Node page checks and custom importer tests passed. Full 3,536-slot Go v2 population/provenance/comparison audit passed; public scalar download verified all 43 member hashes and reproduced new archived scores byte-for-byte. Historical ten-model and current Live score arithmetic also reproduce exactly. All historical Go JSON/JSONLs remain unchanged; the other five boards' embedded measurement payloads are identical except Sources metadata. Current reproducible Go scalars: checksummed `deepswe-go-v0.8` release asset with bindings in `examples/deepswe-go-v2/release-assets.json`; external raw/measurement cache `/tmp/parsimony-go-v2-release`, clean analyzer `/tmp/parsimony-go-v2-measure` (temporary paths, not durable publication inputs).
 
 ### Before every push
 
 ```sh
 npm ci                                            # pinned TypeScript parser for JS/TS tests
-python -m unittest discover -s tests -q          # 269 tests collected; Go tests skip without the languages extra
+python -m unittest discover -s tests -q          # 370 tests; 16 Go-grammar and 7 opt-in browser tests skip without extras
 python -m parsimony.contribute validate submissions
 uv venv --python 3.14.7 /tmp/parsimony-checks
 uv pip install --python /tmp/parsimony-checks/bin/python '.[languages]'
@@ -181,6 +181,7 @@ for lang in python javascript typescript go; do
   [ "$lang" = go ] && E=/tmp/parsimony-go-v2-scalars
   python -m parsimony.site "$E/score-panel.json" "$E/"*.jsonl \
     --sensitivity "$E/sensitivity.json" --benchmark deepswe "${NAV[@]}" --output "site/$PAGE.html" \
+    $([ "$lang" = go ] && echo --sensitivity-report examples/deepswe-go-v2/sensitivity.md) \
     --external examples/external/artificial-analysis-2026-10-08.json \
     $([ "$lang" = python ] && echo --self-run examples/self-run/results/*.jsonl)
 done

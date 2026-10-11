@@ -17,10 +17,12 @@ from pathlib import Path
 from urllib.parse import quote
 
 from .analysis import parse_patch
-from .artifacts import _parse_predictions
+from .artifacts import MAX_DOWNLOAD_BYTES, _parse_predictions
 from .benchmark import read_jsonl
 
 FORMAT = 'parsimony-cache-snapshot-v1'
+MAX_MANIFEST_BYTES = 256 * 1024 * 1024
+MAX_SNAPSHOT_BYTES = 64 * 1024 * 1024 * 1024
 DATASET_URLS = [('https://datasets-server.huggingface.co/rows?dataset=princeton-nlp%2F'
                  f'SWE-bench_Verified&config=default&split=test&offset={offset}&length=100')
                 for offset in range(0, 500, 100)]
@@ -119,9 +121,19 @@ def restore(archive, cache_dir):
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
     with tarfile.open(archive, 'r:gz') as tar:
-        manifest = json.load(tar.extractfile('manifest.json'))
+        # Sizes come from the (untrusted) archive itself: bound them before reading so a
+        # compressed bomb cannot exhaust memory or disk. Hashes in the manifest only prove
+        # self-consistency; restore snapshots only from sources you trust.
+        info = tar.getmember('manifest.json')
+        if not info.isfile() or info.size > MAX_MANIFEST_BYTES:
+            raise ValueError('snapshot manifest missing or too large')
+        manifest = json.load(tar.extractfile(info))
         if manifest.get('format') != FORMAT:
             raise ValueError('unsupported snapshot format')
+        sizes = [entry.get('size') for entry in manifest['entries']]
+        if not all(type(size) is int and 0 <= size <= MAX_DOWNLOAD_BYTES for size in sizes) \
+                or sum(sizes) > MAX_SNAPSHOT_BYTES:
+            raise ValueError('snapshot entry sizes invalid or over the restore limit')
         restored = skipped = 0
         for entry in manifest['entries']:
             name = key(entry['url'])

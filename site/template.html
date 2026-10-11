@@ -25,13 +25,16 @@ p { margin: 0 0 10px; }
 a { color: var(--link); }
 .scroll { overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; font-size: 0.93rem; font-variant-numeric: tabular-nums; }
-th, td { padding: 7px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--rule); }
-th { font-weight: 600; color: var(--muted); font-size: 0.8rem; }
+th, td { padding: 7px 8px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--rule); }
+th { font-weight: 600; color: var(--muted); font-size: 0.8rem; white-space: normal; vertical-align: bottom; line-height: 1.25; }
+th button { text-align: inherit; }
+td.left, th.left { white-space: normal; overflow-wrap: break-word; }
+@media (max-width: 700px) { #board { font-size: 0.74rem; } #board th, #board td { padding: 5px 3px; } #board th { font-size: 0.68rem; } #board td.left, #board th.left { min-width: 6.5em; } }
 th:first-child, td:first-child, .left { text-align: left; }
 .range { color: var(--muted); font-size: 0.8rem; }
 .r { color: var(--good); }
 .f { color: var(--bad); }
-.u, .m, .n, .o { color: var(--muted); }
+.u, .m, .n, .e, .o { color: var(--muted); }
 ul { margin: 0; padding-left: 20px; }
 li { margin-bottom: 6px; }
 input, select {
@@ -48,6 +51,8 @@ body { overflow-x: clip; }
 #graph-legend, #company-legend { color: #000; }
 #graph .tick { fill: #000; font: 12px system-ui, sans-serif; }
 #graph circle { stroke: none; cursor: pointer; }
+#graph .gen-lines { pointer-events: none; }
+#graph .gen-lines line { stroke-width: 1; stroke-opacity: 0.55; stroke-dasharray: 4 3; }
 #graph .older { fill-opacity: 0.70; }
 #graph .point-label { position: absolute; font: 400 8px system-ui, sans-serif; color: #000; white-space: nowrap; pointer-events: none; transform: translate(10px,-50%); line-height: 10px; }
 #graph .point-label.older-label { opacity: 0.75; }
@@ -107,12 +112,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p>We parse published <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a> patches and count syntax elements plus block-end markers. Formatting, comments and punctuation do not count. Python, JavaScript/TypeScript and Go use separate parser-specific tracks; raw unit counts are not comparable across them.</p>
   <p>Default rank is by mean net units added, lowest first, across measured in-scope attempts—including failures. Count attempts: Solved only optionally ranks by the mean over measured upstream successes instead. The other footprint column always shows the alternative mean; sorting it does not change rank. Equal means tie; models with no measurements are unranked. Partial coverage can change the order, and a few very large deletions can dominate a mean. This is smallest measured footprint, not best coding ability.</p>
   <p>Net units added means coding units added minus removed, not semantic complexity. Measured shows eligible footprints / published population. Missing or entirely excluded edits are not zero. Solved % comes from the upstream benchmark and is unchanged by the selector. Solved-only mode uses upstream outcomes to select measured successes, not as a correctness tie-break. A failed no-op or large deletion can rank first. Click headings to sort; missing values stay last.</p>
-  <p>Archived combined-score diagnostics use the midpoint when bounded; their CI and rank endpoints are labelled explicitly and do not affect footprint ranking. Models missing either selected value have no point. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; percentage axes normally stay at 0–100%. Points outside fitted axes remain at their actual, true-scale positions.</p>
+  <p>Models missing either selected value have no point. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; percentage axes normally stay at 0–100%. Points outside fitted axes remain at their actual, true-scale positions.</p>
   <p>Solved % = upstream resolved attempts / frozen attempt population × 100. Tests are not rerun by Parsimony. Footprint = sum of net coding units / N measured in-scope attempts: each attempt has equal weight 1/N, including failures by default, or successes only when explicitly selected. Missing measurements are not zero; Measured in solved-only mode is measured solved attempts / upstream resolved attempts (not unique tasks). Benchmarks and languages are not pooled and have no benchmark weights. Default footprint uses no correctness weight.</p>
-  <p id="score-help">Archived score only: passing results blend 80% net / 20% churn per-task percentiles; failed results use the same 80/20 weights in a bounded growth/churn penalty. It never affects footprint rank. <a href="https://github.com/La5u/Parsimony/blob/main/docs/scoring.md">Full formula</a>.</p>
   <p id="external-help" hidden>Artificial Analysis indices are external, model-level capability scores from a pinned snapshot, not results on this benchmark. They are matched to a configuration only for the same model and reasoning effort, or where Artificial Analysis lists a single unlabelled entry or resolves an undated model ID; these weaker matches are disclosed on hover. Configurations without a match have no value and no point. They never affect footprint rank.</p>
   <p id="self-run-help" hidden>Self-run models were run by the site owner on the first 3–10 DeepSWE Python tasks (OpenAI models via pi, Anthropic models via Claude Code), without the task containers. They are unverified, not graded and never ranked, and cover only a task subset, so compare them mainly with each other. GPT-5.6 Sol is the one model run both ways: its self-run footprint was 0.88× its published one on the same tasks. Claude Code has no such check.</p>
-  <p id="ci-help">Combined-score CI endpoints are not net-unit uncertainty or inputs to footprint rank.</p>
   </details>
 
   <h2 id="leaderboard">Leaderboard</h2>
@@ -238,13 +241,15 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const trackName = {python: 'Python', javascript: 'JavaScript', typescript: 'TypeScript', go: 'Go'}[data.measurement_track?.language || 'python'];
   $('leaderboard').textContent = `${bench.name} — ${trackName}`;
   $('bench-link').textContent = bench.name;
-  $('bench-link').href = bench.url;
+  // Only http(s) or same-site relative URLs may reach an href.
+  const safeUrl = u => /^(https?:\/\/[^\s]|\.{0,2}\/(?!\/)|[^:/?#\s]+(?:[/?#]|$))/i.test(String(u || '')) ? String(u) : '#';
+  $('bench-link').href = safeUrl(bench.url);
   $('results-limit').textContent = `Pass/fail comes from ${bench.results}; tests are not rerun.`;
   $('metric-source').textContent = `${bench.name}: ${bench.results}`;
   const sources = data.sources || [];
   $('data-sources').hidden = sources.length === 0;
   const maxTasks = Math.max(1, ...sources.map(s => s.tasks));
-  const sourceLink = (url, label) => /^(https?:\/\/|\.?\.?\/|[^:/?#]+\.html(?:[?#]|$))/.test(String(url || ''))
+  const sourceLink = (url, label) => /^(https?:\/\/|\.{0,2}\/(?!\/)|[^:/?#]+\.html(?:[?#]|$))/.test(String(url || ''))
     ? `<a href="${esc(url)}">${esc(label)}</a>` : esc(label);
   $('source-counts').innerHTML = sources.map(s => `<div class="source-row">${sourceLink(s.board_url, s.name)}${s.self_run ? ' — Self-run by the owner, unverified; shown faded on the DeepSWE Python board, never ranked' : s.active ? ' — Current board' : ' — Separate board'}<div class="source-bar" style="width:${Number.isFinite(s.tasks) && s.tasks >= 0 ? s.tasks / maxTasks * 100 : 0}%" aria-hidden="true"></div><span>${s.self_run ? `up to ${esc(s.tasks)} tasks · ${esc(s.attempts_per_task)} attempt${s.attempts_per_task === 1 ? '' : 's'} per task · ${esc(s.population_per_model)} planned attempts/model, by model` : `${esc(s.tasks)} tasks · ${esc(s.attempts_per_task)} attempt${s.attempts_per_task === 1 ? '' : 's'} per task · ${esc(s.population_per_model)} total planned attempts/model`}</span></div>`).join('');
   $('source-evidence').innerHTML = sources.map(s => `<p>${esc(s.name)}: ${sourceLink(s.report_url, 'Report')} · ${sourceLink(s.manifest_url, 'Manifest')}<br>${s.self_run ? 'Plan' : 'Manifest'} SHA-256: ${esc(s.manifest_sha256)}<br>${s.self_run ? `DeepSWE commit: ${esc(s.deepswe_commit)}` : `Dataset SHA-256: ${esc(s.dataset_sha256)}`}</p>`).join('');
@@ -275,9 +280,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   } else if (versions.length === 1) {
     $('harness-limit').textContent = `Scores are relative to the reference models, which all use the same agent harness (mini-SWE-agent ${versions[0]}).`;
   }
-  // Combined-score rank diagnostics are retained, but never used as footprint ranks.
   $('harness-limit').textContent = $('harness-limit').textContent.replace('Scores are relative to the reference models', 'Footprints depend on the agent configuration');
-  const ranked = data.models.some((m) => m.rank_range != null);
   const external = data.external || null;
   // Owner-run configurations: shown faded in the all-tasks view, never ranked and not graded.
   const selfRun = data.self_run_models || [];
@@ -303,23 +306,21 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const rankOf = m => Number.isFinite(netMean(m)) ? 1 + data.models.filter(other =>
     Number.isFinite(netMean(other)) && netMean(other) < netMean(m)).length : null;
   const tasks = new Map(displayedTasks.map((t) => [t[0], t]));
-  const labels = {r: 'solved', f: 'failed', u: 'unknown', m: 'not measured', n: 'no attempt', o: 'out of scope', c: 'no passing reference'};
+  const labels = {r: 'solved', f: 'failed', u: 'unknown', m: 'not measured', n: 'no attempt', e: 'empty patch', o: 'out of scope', c: 'no passing reference'};
   let selected = null, sortKey = 'net', ascending = true;
   $('task-ids').innerHTML = displayedTasks.map((t) => `<option value="${esc(t[0])}">`).join('');
-  const midpoint = (value, low, high) => value ?? (low != null && high != null ? (low + high) / 2 : null);
   function metricValue(model, index, key) {
     if (!selected) {
-      return {score: midpoint(model.score, model.lower, model.upper), ci: model.ci?.[0],
-        ci_high: model.ci?.[1], resolve_rate: model.resolve_rate == null ? null : model.resolve_rate * 100,
+      return {resolve_rate: model.resolve_rate == null ? null : model.resolve_rate * 100,
         coverage: denominator(model) > 0 ? measuredCount(model) / denominator(model) * 100 : null,
         churn: solvedOnly() ? model.measured_solved_churn_mean : model.measured_churn_mean,
         net: netMean(model), solved_net: solvedOnly() ? model.measured_net_mean : model.measured_solved_net_mean,
-        aa_coding: model.aa_coding, aa_intelligence: model.aa_intelligence, rank_low: model.rank_range?.[0], rank_high: model.rank_range?.[1]}[key];
+        aa_coding: model.aa_coding, aa_intelligence: model.aa_intelligence}[key];
     }
     if (!taskIncluded(index)) return null;
     const cell = selected[2][index];
     const eligible = cell.length > 7 ? cell[7] : ['r', 'f', 'c'].includes(cell[0]);
-    return {score: midpoint(cell[3], cell[4], cell[5]), net: eligible ? cell[1] : null,
+    return {net: eligible ? cell[1] : null,
       churn: eligible ? cell[2] : null}[key];
   }
   function renderBoard() {
@@ -327,8 +328,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const focusedSort = [...document.querySelectorAll('#board button[data-sort]')]
       .find(button => button === document.activeElement)?.dataset.sort;
     const headers = selected
-      ? [['Model', null], ['Result', null], ['Net units added', 'net']]
-      : [['Rank', null], ['Model', null], [solvedOnly() ? 'Net units added, solved (mean)' : 'Net units added (mean)', 'net'], [solvedOnly() ? 'Net units added, all measured (mean)' : 'Net units added, solved (mean)', 'solved_net'], ['Solved', 'resolve_rate'], ...(external ? [['AA Intelligence Index', 'aa_intelligence']] : []), [solvedOnly() ? 'Measured solved / upstream solved' : 'Measured', 'coverage']];
+      ? [['Model', null], ['Result', null], ['Net units', 'net']]
+      : [['#', null], ['Model', null], [solvedOnly() ? 'Net units, solved (mean)' : 'Net units (mean)', 'net'], [solvedOnly() ? 'Net units, all measured (mean)' : 'Net units, solved (mean)', 'solved_net'], ['Solved', 'resolve_rate'], ...(external ? [['AA Intel.', 'aa_intelligence']] : []), [solvedOnly() ? 'Measured solved / upstream' : 'Measured', 'coverage']];
     document.querySelector('#board thead').innerHTML = '<tr>' + headers.map(([name, key]) => `<th${key ? ` aria-sort="${key === sortKey ? ascending ? 'ascending' : 'descending' : 'none'}"` : ''}${name === 'Model' ? ' class="left"' : ''}>${key ? `<button type="button" data-sort="${key}">${name}</button>` : name}</th>`).join('') + '</tr>';
     const buttons = [...document.querySelectorAll('#board button[data-sort]')];
     if (focusedSort) buttons.find(button => button.dataset.sort === focusedSort)?.focus({preventScroll: true});
@@ -367,11 +368,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     $('task-search').value = selected ? selected[0] : '';
     $('task-footer').hidden = !selected;
     $('rank-note').hidden = !!selected;
-    $('score-help').hidden = $('ci-help').hidden = !!selected;
     if (selected) {
       const task = selected[0], m = task.match(/^(.+?)__(.+)-(\d+)$/);
       $('task-link').textContent = bench.task_link;
-      $('task-link').href = bench.task_url.includes('{task}') ? bench.task_url.replace('{task}', task.split('#')[0]) : m ? bench.task_url.replace('{owner}', m[1]).replace('{repo}', m[2]).replace('{number}', m[3]) : '#';
+      $('task-link').href = safeUrl(bench.task_url.includes('{task}') ? bench.task_url.replace('{task}', encodeURIComponent(task.split('#')[0])) : m ? bench.task_url.replace('{owner}', m[1]).replace('{repo}', m[2]).replace('{number}', m[3]) : '#');
     }
     renderBoard(); renderAxisControls(); renderGraph();
   }
@@ -385,16 +385,12 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const graphAxes = {all: {x: 'net', y: external ? 'aa_intelligence' : 'resolve_rate'}, task: {x: 'net', y: 'churn'}};
   const currentAxes = () => graphAxes[selected ? 'task' : 'all'];
   function axisOptions() {
-    if (selected) return [{key: 'net', label: 'Net units added'}, {key: 'churn', label: 'Units changed'},
-      {key: 'score', label: 'Legacy combined task score (midpoint if bounded)'}];
+    if (selected) return [{key: 'net', label: 'Net units added'}, {key: 'churn', label: 'Units changed'}];
     return [{key: 'coverage', label: solvedOnly() ? 'Measured solved / upstream solved (%)' : 'Measured coverage (%)'}, {key: 'churn', label: solvedOnly() ? 'Units changed, solved (mean per attempt)' : 'Units changed (mean per attempt)' },
-      {key: 'score', label: 'Legacy combined score (midpoint if bounded)' },
-      {key: 'ci', label: 'Combined score 95% CI: lower bound'}, {key: 'ci_high', label: 'Combined score 95% CI: upper bound'},
       {key: 'resolve_rate', label: 'Solved (%)'}, {key: 'net', label: solvedOnly() ? 'Net units added, solved (mean)' : 'Net units added (mean)'},
       {key: 'solved_net', label: solvedOnly() ? 'Net units added, all measured (mean)' : 'Net units added, solved tasks (mean)' },
       ...(external ? [{key: 'aa_intelligence', label: 'Artificial Analysis Intelligence Index'},
-        {key: 'aa_coding', label: 'Artificial Analysis Coding Index'}] : []),
-      ...(ranked ? [{key: 'rank_low', label: 'Combined score rank: lower bound'}, {key: 'rank_high', label: 'Combined score rank: upper bound'}] : [])];
+        {key: 'aa_coding', label: 'Artificial Analysis Coding Index'}] : [])];
   }
   function renderAxisControls() {
     for (const axis of ['x', 'y']) {
@@ -588,8 +584,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; outside fitted axes, plotted to scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + p.count + '/' + denominator(p.m) + (solvedOnly() ? ' upstream solved attempts' : ' population attempts') : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}`;
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
     const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip"></circle>`).join('');
-    // Green zone: the half of each axis that is better (lower footprint/rank, higher solved/score).
-    const better = {net: -1, solved_net: -1, churn: -1, rank_low: -1, rank_high: -1, resolve_rate: 1, score: 1, ci: 1, ci_high: 1, aa_coding: 1, aa_intelligence: 1};
+    // Green zone: the half of each axis that is better (lower footprint, higher solved/index).
+    const better = {net: -1, solved_net: -1, churn: -1, resolve_rate: 1, aa_coding: 1, aa_intelligence: 1};
     const bx = better[axes.x], by = better[axes.y];
     let zone = '';
     if (bx && by && points.length) {
@@ -609,8 +605,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const scale = ($('graph').clientWidth || W) / W;
     const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
     $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. All models are labelled; earlier generations are lighter. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. All models are labelled; earlier generations are lighter. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}<g class="gen-lines"></g>${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    // Same generation = same company and first version number in the name; hover/focus draws thin lines to its peers.
+    const genOf = p => { const v = p.name.match(/\d+(?:\.\d+)*/); return v ? p.company + '|' + v[0] : null; };
+    const genLines = document.querySelector('#graph .gen-lines');
+    const drawGen = p => { const g = genOf(p); genLines.innerHTML = g ? points.filter(q => q !== p && genOf(q) === g).map(q => `<line x1="${p.px}" y1="${p.py}" x2="${q.px}" y2="${q.py}" stroke="${companyColor(p.company)}"/>`).join('') : ''; };
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
+      ['mouseenter', 'focus', 'click'].forEach(event => circle.addEventListener(event, () => drawGen(points[Number(circle.dataset.point)])));
+      ['mouseleave', 'blur'].forEach(event => circle.addEventListener(event, () => { genLines.innerHTML = ''; }));
       const show = event => {
         const p = points[Number(circle.dataset.point)];
         const text = `${p.name}${p.offscale ? ' (outside fitted axes, plotted to scale)' : ''}\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${matchNote(p) ? '\n' + matchNote(p) : ''}${p.selfRun ? '\n' + selfRunNote(p.m) : ''}${p.kind !== 'all' ? '\n' + p.kind + ' task attempt' : ''}`;

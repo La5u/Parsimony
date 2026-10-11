@@ -11,7 +11,7 @@ from pathlib import Path
 from .benchmark import read_jsonl
 from .deepswe import display_name
 from .external import attach
-from .scoring import UNCALIBRATED, VERSION, measured, out_of_scope, score_records
+from .scoring import UNCALIBRATED, VERSION, measured, out_of_scope, quantile, score_records
 
 TEMPLATE = Path(__file__).resolve().parent.parent / 'site' / 'template.html'
 PREFIX = re.compile(r'^\d{8}_mini-v[\d.]+[_-]')
@@ -192,9 +192,6 @@ def bootstrap(board, draws, seed):
             lows[agent].append(low[agent])
             highs[agent].append(high[agent])
             top[agent] += (agent in winners) / len(winners)
-    def quantile(values, p):
-        ordered = sorted(values)
-        return ordered[int(p * (len(ordered) - 1))]
     return len(tasks), {a: dict(ci=[quantile(lows[a], 0.025), quantile(highs[a], 0.975)], top=top[a] / draws)
                         for a in lows}
 
@@ -387,6 +384,8 @@ def main():
     parser.add_argument('--output', default='site/index.html')
     parser.add_argument('--data', help='also write the page data as JSON here')
     parser.add_argument('--sensitivity', help='sensitivity.json from parsimony.stability; adds rank ranges')
+    parser.add_argument('--sensitivity-report', help='repository path of the published report when the '
+                        'sensitivity input lives outside the repository (e.g. an external release asset)')
     parser.add_argument('--fragment', action='store_true', help='omit the <html>/<head> wrapper')
     parser.add_argument('--benchmark', choices=sorted(BENCHMARKS), default='verified')
     parser.add_argument('--nav', action='append', default=[], metavar='LABEL=URL', help='link to another board')
@@ -413,8 +412,10 @@ def main():
             add_rank_ranges(data['models'], sensitivity)
             if sensitivity['bootstrap'].get('rank_policy'):
                 data['rank_policy'] = sensitivity['bootstrap']['rank_policy']
-            report = Path(args.sensitivity).with_suffix('.md').as_posix()
-            data['sensitivity_url'] = f'https://github.com/La5u/Parsimony/blob/main/{report}'
+            report = Path(args.sensitivity_report or Path(args.sensitivity).with_suffix('.md'))
+            # Link only repository-relative reports; a local absolute path is never a GitHub URL.
+            if not report.is_absolute() and '..' not in report.parts:
+                data['sensitivity_url'] = f'https://github.com/La5u/Parsimony/blob/main/{report.as_posix()}'
         Path(args.output).write_text(render(data, not args.fragment))
         if args.data:
             Path(args.data).write_text(json.dumps(data, indent=1) + '\n')

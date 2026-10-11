@@ -2,6 +2,18 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## 0.9.0-beta — strict patch parsing, scoring/spec fixes and site cleanup — 2026-10-12
+
+**Analyzer.** The shared patch parser now rejects malformed `@@` hunk headers, surplus `+`/`-` lines after a hunk and repeated sections for one implementation file (previously skipped or applied twice to the same base). The binary/rename guard checks repository paths without git's `a/`/`b/` prefixes, so top-level `testing/` and Django migrations-core paths follow the documented scope rules. Unit definitions are unchanged. All 20,621 published SWE-bench Verified (34 configurations) and Live (4) patches were re-fetched, matched their recorded SHA-256 and re-parsed: **no previously measured patch is newly rejected**; all 489 rejections were already analysis errors. The 1,000 Verified gold/test patches and 116 self-run patches also parse. Historical records keep their 0.8 identity; DeepSWE cohorts were not re-surveyed.
+
+**Scoring (v0.5, now matching docs/scoring.md section 6).** An explicitly empty failed patch (`empty_patch`) scores 0 instead of an unknown −25…100 bound; resolved records carrying failure/no-attempt categories are rejected; complete scores use the same arithmetic as their bounds (last-digit changes only). Regenerated `examples/live-python/scores.json` (GPT-5.5 agav bounds 21.6–40.4 → 24.0–30.7; Claude Opus 4.8 7.9–16.5 → 8.0–16.1; order unchanged) and `examples/ten-model-scores.json` (two last-digit changes). Other historical score files are kept; they reproduce to within 1e-14. Bootstrap CIs (site, sensitivity, stability) now use interpolated quantiles instead of index flooring, so page CIs shift slightly. `sensitivity` scores no-attempt/empty records as 0 instead of failing.
+
+**Leaderboard CLI.** Out-of-scope successes (every touched file excluded) and unparsed records no longer enter medians or the `--shared` set as zero footprints, matching scoring and the site.
+
+**Security.** Workflow-dispatch input is passed via the environment, not interpolated into shell; actions are pinned to commit SHAs. Downloads are capped (1 GiB); contributed bundle URLs must be public HTTPS hosts (no IP literals, localhost or credentials); snapshot restore bounds manifest/entry/total sizes before reading. The Node parser's stderr goes to a temporary file rather than an undrained pipe. `release audit` rejects mixed analyzer source hashes; `freeze` runs git in the Parsimony checkout. Site links pass a scheme allowlist.
+
+**Website.** Removed the archived combined-score, CI and rank-bound axis options. Leaderboard headers and model names wrap so the table fits the page (and a 390px phone). Hovering or focusing a scatter point draws dashed lines to the same company's same-version models (e.g. GPT-6 Sol ↔ Astra ↔ Luna, not 6.1). Empty patches show as such in task views. The Go page's report link no longer points at a local path (`site --sensitivity-report`). CI rebuilds the five offline pages and compares them byte-for-byte.
+
 ## 0.8.0-beta — source-pinned Go grammar and versioned EOF policy
 
 Go now uses `tree-sitter-go-units-v2`: Tree-sitter 0.26.0 plus immutable upstream PR #190 source (URL/SHA256 checked via installed archive metadata), and an explicit parsing-only final-LF policy. Stock grammar 0.25.0 is not accepted for v2 despite the source package retaining that version. Strict syntax-error rejection remains. An initial PR #193 candidate was rejected after full-cohort testing exposed a shadowed-`new` regression.

@@ -24,11 +24,18 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 
+# Bound downloads (memory and disk): the largest public prediction/release artifacts
+# are far smaller, so hitting this means a misbehaving or hostile server.
+MAX_DOWNLOAD_BYTES = 1024 * 1024 * 1024
+
+
 class Cache:
     """Small URL -> bytes cache. Files are named by SHA256(URL)."""
-    def __init__(self, cache_dir: str | os.PathLike[str], timeout: float = 30.0):
+    def __init__(self, cache_dir: str | os.PathLike[str], timeout: float = 30.0,
+                 max_bytes: int = MAX_DOWNLOAD_BYTES):
         self.cache_dir = Path(cache_dir)
         self.timeout = timeout
+        self.max_bytes = max_bytes
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def get(self, url: str) -> bytes:
@@ -40,7 +47,9 @@ class Cache:
             pass
         request = Request(url, headers={"User-Agent": "parsimony-artifacts/1"})
         with urlopen(request, timeout=self.timeout) as response:
-            data = response.read()
+            data = response.read(self.max_bytes + 1)
+        if len(data) > self.max_bytes:
+            raise ValueError(f"download exceeds {self.max_bytes} bytes: {url}")
         # A named temporary file plus replace prevents partial cache entries.
         fd, tmp = tempfile.mkstemp(prefix=name + ".", dir=self.cache_dir)
         try:

@@ -15,7 +15,7 @@ import statistics
 from pathlib import Path
 
 from .benchmark import read_jsonl
-from .scoring import (UNCALIBRATED, metrics, out_of_scope, percentile, require, require_measurement_track, score_records,
+from .scoring import (UNCALIBRATED, metrics, out_of_scope, percentile, quantile, require, require_measurement_track, score_records,
                       task_score, unique)
 from .deepswe import display_name
 
@@ -69,7 +69,7 @@ def task_value(record, refs, net_weight, failure_cap, net_floor=None):
     status = task_score(record, refs)['status']
     if status == 'unknown':
         return None, -failure_cap, 100
-    if status == 'no_attempt':
+    if status in ('no_attempt', 'empty_patch'):
         return 0, 0, 0
     if status in ('missing_metrics', 'out_of_scope', 'uncalibrated'):
         return (None, 1, 100) if record['resolved'] else (None, -failure_cap, 0)
@@ -199,11 +199,6 @@ def dedup(panel):
         removed += len(refs) - len(kept)
         tasks[task] = kept
     return dict(panel, name=f"{panel['name']}-dedup", tasks=tasks), removed
-
-
-def quantile(values, p):
-    ordered = sorted(values)
-    return ordered[int(p * (len(ordered) - 1))]
 
 
 def clusters(tasks):

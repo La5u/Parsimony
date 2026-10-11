@@ -111,6 +111,15 @@ def freeze_population(records, name, population):
     return panel
 
 
+def quantile(values, p):
+    """Linearly interpolated sample quantile (numpy's default); index flooring biased upper bounds low."""
+    ordered = sorted(values)
+    position = p * (len(ordered) - 1)
+    low = int(position)
+    high = min(low + 1, len(ordered) - 1)
+    return ordered[low] + (ordered[high] - ordered[low]) * (position - low)
+
+
 def percentile(value, references):
     return sum((value < ref) + 0.5 * (value == ref) for ref in references) / len(references)
 
@@ -122,14 +131,17 @@ def task_score(record, refs):
     resolved = record['resolved']
     categories = set(record.get('published_result_categories', []))
     no_attempt = bool(categories & {'no_generation', 'no_submission'})
+    empty = 'empty_patch' in categories
     failed = bool(categories & {'unresolved', 'failed', 'not_resolved'})
-    if not resolved and no_attempt:
-        # Do not grant a zero penalty to a nonempty attempted patch mislabeled no_generation.
+    require(not (resolved and (no_attempt or empty or failed)), 'resolved record carries a failure/no-attempt category')
+    if not resolved and (no_attempt or empty):
+        # Do not grant a zero penalty to a nonempty attempted patch mislabeled no_generation/empty_patch.
         empty_hash = hashlib.sha256(b'').hexdigest()
         patch_hash = record.get('provenance', {}).get('patch_sha256')
-        require(patch_hash in (None, empty_hash), 'no-attempt record contains a nonempty patch')
-        require(record.get('metrics') is None, 'no-attempt record unexpectedly carries metrics')
-        return dict(status='no_attempt', score=0, lower=0, upper=0)
+        require(patch_hash in (None, empty_hash), 'no-attempt/empty record contains a nonempty patch')
+        require(record.get('metrics') is None, 'no-attempt/empty record unexpectedly carries metrics')
+        # Spec section 6: an explicitly empty failed patch scores 0, like no attempt.
+        return dict(status='no_attempt' if no_attempt else 'empty_patch', score=0, lower=0, upper=0)
     if not resolved and (not failed or 'no_logs' in categories):
         return dict(status='unknown', score=None, lower=-25, upper=100)
     if not measured(record):
@@ -216,7 +228,7 @@ def score_records(panel, records):
         rates = {r['resolve_rate'] for r in group.values()}
         require(len(rates) == 1, 'inconsistent published resolve rate')
         results.append(dict(agent=agent, score_version=VERSION, panel=panel['name'],
-                            score=statistics.mean(known) if complete else None,
+                            score=sum(known) / n if complete else None,  # same arithmetic as the bounds
                             lower=sum(t['lower'] for t in tasks.values()) / n,
                             upper=sum(t['upper'] for t in tasks.values()) / n,
                             success_credit=sum(max(v, 0) for v in known) / n if complete else None,
