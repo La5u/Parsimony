@@ -282,7 +282,9 @@ class PilotTests(unittest.TestCase):
         with patch.object(pilot.sys, 'version_info', (3, 14, 6)):
             with self.assertRaisesRegex(ValueError, '3.14.7'):
                 pilot.analyzer_identity()
-        with patch.object(pilot.subprocess, 'check_output', return_value=' M parsimony/analysis.py'):
+        # Reach the checkout guard on every interpreter in the CI matrix.
+        with patch.object(pilot.sys, 'version_info', (3, 14, 7)), \
+                patch.object(pilot.subprocess, 'check_output', return_value=' M parsimony/analysis.py'):
             with self.assertRaisesRegex(ValueError, 'dirty'):
                 pilot.analyzer_identity()
 
