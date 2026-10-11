@@ -241,6 +241,18 @@ firstCircle.listeners.mouseenter({clientX: 799, clientY: 599});
 assert.equal(tooltip.style.left, '632px');
 assert.equal(tooltip.style.top, '563px');
 assert.equal(element('#graph .gen-lines').innerHTML, ''); // No same-generation peers: nothing drawn.
+// Hover links: same company and version, plus adjacent versions of the same model line (effort ignored).
+{
+  const block = html.slice(html.indexOf('const versionOf'), html.indexOf('const genLines'));
+  const points = ['GPT-6 Sol (high)', 'GPT-6 Astra (high)', 'GPT-6.1 Sol (high)', 'GPT-5.6 Sol (max)', 'GPT-5.4 (xhigh)',
+    'Grok 4.5 (high)', 'Grok 4.6 (medium)'].map(name => ({name, company: name.startsWith('Grok') ? 'xAI' : 'OpenAI'}));
+  const peersOf = new Function('points', block + 'return peersOf;')(points);
+  const peers = name => peersOf(points.find(p => p.name === name)).map(p => p.name).sort();
+  assert.deepEqual(peers('GPT-6 Sol (high)'), ['GPT-5.6 Sol (max)', 'GPT-6 Astra (high)', 'GPT-6.1 Sol (high)']);
+  assert.deepEqual(peers('GPT-6.1 Sol (high)'), ['GPT-6 Sol (high)']);
+  assert.deepEqual(peers('GPT-6 Astra (high)'), ['GPT-6 Sol (high)']);
+  assert.deepEqual(peers('Grok 4.5 (high)'), ['Grok 4.6 (medium)']);
+}
 firstCircle.listeners.blur();
 assert.equal(tooltip.hidden, true);
 for (const event of ['scroll', 'resize']) {
@@ -362,7 +374,7 @@ assert(coordinates()[0] < 90 && coordinates()[1] > 388);
 assert(Number.parseFloat(element('graph').style.marginBottom) > coordinates()[1] - 440);
 assert.match(html, /height: auto; overflow: visible/);
 assert.doesNotMatch(graph(), /marker|third quadrant/i);
-assert.match(graph(), /<span class="point-label older-label"[^>]*>Gemini 3.1 Pro \(off-scale\)<\/span>/);
+assert.match(graph(), /<span class="point-label older-label"[^>]*>Gemini 3.1 Pro \(high\) \(off-scale\)<\/span>/); // labels keep the effort
 const outlier = doc.querySelectorAll('#graph circle[data-point]').find(c => c.dataset.point === '2');
 outlier.listeners.focus();
 assert.match(tooltip.textContent, /outside fitted axes, plotted to scale.*\nNet units added \(mean\): −500.0\nSolved \(%\): 8.0%/);

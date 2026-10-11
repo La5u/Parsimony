@@ -740,22 +740,33 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     }
     // All labels share a fixed CSS-pixel offset from the actual point.
     const overlays = [];
-    // Drop the effort suffix unless two labelled models would then share a name.
-    const strip = name => name.replace(/ \([^)]*\)$/, '');
-    const shortName = name => points.filter(p => strip(p.name) === strip(name)).length > 1 ? name : strip(name);
     const labelled = points;
     labelled.forEach(p => {
-      const text = shortName(p.name) + (p.offscale ? ' (off-scale)' : '');
+      // Full names keep the reasoning effort, e.g. 'GPT-6 Sol (high)'.
+      const text = p.name + (p.offscale ? ' (off-scale)' : '');
       overlays.push(`<span class="point-label${p.latest ? '' : ' older-label'}${p.selfRun ? ' self-run-label' : ''}" data-point="${points.indexOf(p)}" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(text)}</span>`);
     });
     const scale = ($('graph').clientWidth || W) / W;
     const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
     $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
     $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. All models are labelled; earlier generations are lighter. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}<g class="gen-lines"></g>${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
-    // Same generation = same company and first version number in the name; hover/focus draws thin lines to its peers.
-    const genOf = p => { const v = p.name.match(/\d+(?:\.\d+)*/); return v ? p.company + '|' + v[0] : null; };
+    // Hover/focus links a model to its generation (same company and version: GPT-6 Sol, Astra, Luna) and to the
+    // adjacent versions of its own model line (GPT-6 Sol <-> GPT-6.1 Sol, Grok 4.5 <-> 4.6); effort is ignored.
+    const versionOf = p => (p.name.match(/\d+(?:\.\d+)*/) || [null])[0];
+    const lineOf = p => p.company + '|' + p.name.replace(/ \([^)]*\)$/, '').replace(/\d+(?:\.\d+)*/, '#');
+    const compareVersions = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number);
+      for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0);
+      return 0; };
+    const peersOf = p => {
+      const v = versionOf(p);
+      if (!v) return [];
+      const generation = points.filter(q => q !== p && q.company === p.company && versionOf(q) === v);
+      const versions = [...new Set(points.filter(q => lineOf(q) === lineOf(p) && versionOf(q)).map(versionOf))].sort(compareVersions);
+      const k = versions.indexOf(v), adjacent = [versions[k - 1], versions[k + 1]].filter(Boolean);
+      return [...new Set([...generation, ...points.filter(q => lineOf(q) === lineOf(p) && adjacent.includes(versionOf(q)))])];
+    };
     const genLines = document.querySelector('#graph .gen-lines');
-    const drawGen = p => { const g = genOf(p); genLines.innerHTML = g ? points.filter(q => q !== p && genOf(q) === g).map(q => `<line x1="${p.px}" y1="${p.py}" x2="${q.px}" y2="${q.py}" stroke="${companyColor(p.company)}"/>`).join('') : ''; };
+    const drawGen = p => { genLines.innerHTML = peersOf(p).map(q => `<line x1="${p.px}" y1="${p.py}" x2="${q.px}" y2="${q.py}" stroke="${companyColor(p.company)}"/>`).join(''); };
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
       ['mouseenter', 'focus', 'click'].forEach(event => circle.addEventListener(event, () => drawGen(points[Number(circle.dataset.point)])));
       ['mouseleave', 'blur'].forEach(event => circle.addEventListener(event, () => { genLines.innerHTML = ''; }));
