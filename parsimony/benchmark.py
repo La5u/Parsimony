@@ -13,7 +13,7 @@ from urllib.parse import quote
 
 from .analysis import measure
 
-ANALYZER_VERSION = '0.7.0-beta'
+ANALYZER_VERSION = '0.8.0-beta'
 FAILED_CATEGORIES = {'unresolved', 'failed', 'not_resolved'}
 
 

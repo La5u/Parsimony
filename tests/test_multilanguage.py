@@ -1,10 +1,12 @@
 import difflib
+import hashlib
 import unittest
 from unittest.mock import patch
 
 from parsimony.analysis import generated, implementation, measure, parse_patch
-from parsimony.benchmark import analyze_submission, leaderboard
-from tests.test_languages import HAS_LANGUAGES
+from parsimony.benchmark import ANALYZER_VERSION, analyze_submission, leaderboard
+from parsimony.languages import track
+from tests.test_languages import HAS_GO, HAS_LANGUAGES
 
 
 def diff(before, after, path):
@@ -46,6 +48,46 @@ class LanguageScopeTests(unittest.TestCase):
                                                dict(instance_id='b', language='go')]))
         with self.assertRaisesRegex(ValueError, 'mixed measurement tracks'):
             leaderboard([{'measurement_track': None}, {'measurement_track': {'language': 'go'}}])
+
+
+@unittest.skipUnless(HAS_GO, 'optional Go grammar dependencies not installed')
+class GoV2MeasurementTests(unittest.TestCase):
+    def test_eof_only_change_has_zero_churn(self):
+        before = 'package p\nfunc f() {\n println("hello")\n}'
+        patch_text = ('--- a/main.go\n+++ b/main.go\n@@ -1,4 +1,4 @@\n'
+                      ' package p\n func f() {\n  println("hello")\n-}\n'
+                      '\\ No newline at end of file\n+}\n')
+        m = measure(patch_text, lambda _: before, language='go')
+        for key in ('churn', 'token_churn', 'structural_churn', 'files_changed',
+                    'ast_delta', 'complexity_delta'):
+            self.assertEqual(m[key], 0, key)
+        self.assertEqual(m['measurement_track'], track('go'))
+
+    def test_grouped_eof_and_new_expression_keep_original_provenance_hashes(self):
+        source = 'package p\nvar (\n ptr = new("sample")\n)'
+        patch_text = diff('', source + '\n', 'main.go') + '\\ No newline at end of file\n'
+        m = measure(patch_text, lambda _: '', language='go')
+        with_newline = measure(diff('', source + '\n', 'main.go'), lambda _: '', language='go')
+        self.assertEqual(m, with_newline)
+        submission = dict(agent='model', predictions={'task': patch_text}, resolved={'task'},
+                          evaluated={'task'}, result_details={},
+                          provenance={'prediction_url': 'https://example.org/'})
+        reference = patch_text + '\n'
+        dataset = [dict(instance_id='task', repo='org/repo', base_commit='abc',
+                        patch=reference, language='go')]
+        with patch('parsimony.benchmark.base_source', return_value=lambda _: ''):
+            record, = analyze_submission(submission, None, dataset)
+        self.assertEqual(record['analysis_status'], 'ok')
+        self.assertEqual(record['analyzer_version'], '0.8.0-beta')
+        self.assertEqual(ANALYZER_VERSION, record['analyzer_version'])
+        self.assertEqual(record['provenance']['patch_sha256'], hashlib.sha256(patch_text.encode()).hexdigest())
+        self.assertEqual(record['provenance']['reference_patch_sha256'],
+                         hashlib.sha256(reference.encode()).hexdigest())
+        self.assertEqual(record['measurement_track'], track('go'))
+        old = {'language': 'go', 'unit_version': 'tree-sitter-units-v1',
+               'versions': {'tree-sitter': '0.26.0', 'tree-sitter-go': '0.25.0'}}
+        with self.assertRaisesRegex(ValueError, 'mixed measurement tracks'):
+            leaderboard([{'measurement_track': old}, {'measurement_track': track('go')}])
 
 
 @unittest.skipUnless(HAS_LANGUAGES, 'optional grammar dependencies not installed')

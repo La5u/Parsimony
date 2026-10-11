@@ -2,6 +2,8 @@
 
 ## Result and release decision
 
+This document preserves the **v1 investigation**. A subsequently implemented, separately versioned correction and full-cohort validation status are documented in [Go parser v2](go-parser-v2-release.md). Use the original stock grammar/environment to reproduce this investigation, not the new same-version-number source package.
+
 The frozen **3,536 records (26 configurations × 136 attempts)** contain exactly
 seven `analysis_status=error` records. Static inspection of every in-scope touched
 file classifies **six as pinned Tree-sitter limitations and one as invalid

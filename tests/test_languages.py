@@ -49,6 +49,45 @@ class ExtensionTests(unittest.TestCase):
         self.assertIsNone(extension_language("x.rs"))
 
 
+class GoSourceBindingTests(unittest.TestCase):
+    def direct_url(self):
+        return {'url': languages.GO_GRAMMAR_URL,
+                'archive_info': {'hashes': {'sha256': languages.GO_GRAMMAR_SHA256}}}
+
+    def test_pinned_source_and_legacy_pep610_hash_are_accepted(self):
+        direct = self.direct_url()
+        legacy = {'url': languages.GO_GRAMMAR_URL,
+                  'archive_info': {'hash': 'sha256=' + languages.GO_GRAMMAR_SHA256}}
+        for value in (direct, legacy):
+            dist = Mock()
+            dist.read_text.return_value = json.dumps(value)
+            with patch.object(languages.metadata, 'version', side_effect=languages._PINS.get), \
+                    patch.object(languages.metadata, 'distribution', return_value=dist):
+                self.assertEqual(languages._versions(), languages._PINS)
+            dist.read_text.assert_called_once_with('direct_url.json')
+
+    def test_stock_and_mismatched_metadata_are_rejected_without_fallback(self):
+        wrong_url = self.direct_url()
+        wrong_url['url'] = 'https://example.org/stock.tar.gz'
+        wrong_hash = self.direct_url()
+        wrong_hash['archive_info']['hashes']['sha256'] = '0' * 64
+        values = [None, '', 'not json', 'null', '[]', '{}', json.dumps(wrong_url),
+                  json.dumps(wrong_hash), json.dumps({'url': languages.GO_GRAMMAR_URL,
+                                                     'dir_info': {'editable': True}})]
+        for value in values:
+            dist = Mock()
+            dist.read_text.return_value = value
+            with self.subTest(metadata=value), \
+                    patch.object(languages.metadata, 'version', side_effect=languages._PINS.get), \
+                    patch.object(languages.metadata, 'distribution', return_value=dist), \
+                    patch.dict('sys.modules', {'tree_sitter': None, 'tree_sitter_go': None}):
+                with self.assertRaisesRegex(ValueError, 'pinned PR193 archive source'):
+                    track('go')
+                # Must fail before importing any parser, with no alternate backend.
+                with self.assertRaisesRegex(ValueError, 'pinned PR193 archive source'):
+                    parse('package p\nvar x = new(1)', 'x.go')
+
+
 class WorkerLifecycleTests(unittest.TestCase):
     def worker(self, process):
         process.stdout.readline.return_value = json.dumps({'typescript': '5.9.3'}) + '\n'
@@ -251,30 +290,51 @@ if (!result.ok || result.units.length !== n * 4 || result.tokens.length !== n * 
 
 @unittest.skipUnless(HAS_GO, 'install parsimony-benchmark[languages] for Go grammar tests')
 class GoTreeSitterTests(unittest.TestCase):
-    def test_documented_new_expression_grammar_gap(self):
-        # Original synthetic case, not copied target source. Official go/parser
-        # accepts this; new(expression) is supported by Go 1.26. Keep strict
-        # rejection until a versioned backend/grammar change is authorized.
-        with self.assertRaisesRegex(ValueError, 'invalid or recovered go syntax'):
-            parse('package p\nvar ptr = new("sample")\n', 'x.go')
-        parse('package p\nvar ptr = new(string)\n', 'x.go')
+    def test_new_expressions_and_traditional_type_allocation(self):
+        for expression in ('new("sample")', 'new(42)', 'new(true)', 'new(f())',
+                           'new(a + b)', 'new(string)', 'new([]int)', 'new(T)'):
+            with self.subTest(expression=expression):
+                parsed = parse(f'package p\nvar ptr = {expression}', 'x.go')
+                self.assertFalse(parsed.tree.root_node.has_error)
+                self.assertTrue(unit_lines(parsed))
+                self.assertTrue(token_lines(parsed))
 
-    def test_documented_grouped_declaration_eof_gap(self):
-        # Tree-sitter reports a root has_error with no ERROR/MISSING child when
-        # a grouped declaration ends at EOF. A newline is only an audit control,
-        # not a normalization applied by the analyzer.
-        source = 'package p\nconst (\n A = iota\n B\n)'
-        with self.assertRaisesRegex(ValueError, 'invalid or recovered go syntax'):
-            parse(source, 'x.go')
-        parse(source + '\n', 'x.go')
+    def test_eof_normalization_has_no_row_or_endblock_artifacts(self):
+        sources = ['package p\nconst (\n A = iota\n B\n)',
+                   'package p\nvar (\n A = 1\n B = 2\n)',
+                   'package p\ntype (\n A int\n B string\n)',
+                   'package p\nfunc f() {\n if true {\n println("héllo")\n }\n}',
+                   'package p\nfunc f() {}', 'package p\n// trailing comment']
+        for source in sources:
+            with self.subTest(source=source):
+                a, b = parse(source, 'x.go'), parse(source + '\n', 'x.go')
+                self.assertEqual(a.source, (source + '\n').encode())
+                self.assertEqual(a.source, b.source)
+                self.assertEqual(a.line_starts, b.line_starts)
+                self.assertFalse(a.tree.root_node.has_error)
+                self.assertEqual(unit_lines(a), unit_lines(b))
+                self.assertEqual(unit_lines(a, False), unit_lines(b, False))
+                self.assertEqual(token_lines(a), token_lines(b))
+                self.assertEqual(structure(a), structure(b))
+                self.assertEqual(token_diff(unit_lines(a), unit_lines(b)), (0, 0, False))
+        self.assertEqual(labels(sources[3], 'x.go').count('EndBlock'), 2)
+        for source in (b'', b'package p\n', b'package p\n\n', b'package p\r\n'):
+            self.assertEqual(parse(source, 'x.go').source, source)
+        self.assertEqual(parse(b'package p', 'x.go').source, b'package p\n')
 
     def test_misplaced_struct_field_is_rejected(self):
         with self.assertRaisesRegex(ValueError, 'invalid or recovered go syntax'):
             parse('package p\ntype T struct {}\n Field []string\n', 'x.go')
 
     def test_track_identity(self):
-        self.assertEqual(track("go"), {"language": "go", "unit_version": "tree-sitter-units-v1",
-                                       "versions": {"tree-sitter": "0.26.0", "tree-sitter-go": "0.25.0"}})
+        identity = track('go')
+        self.assertEqual(identity, {'language': 'go', 'unit_version': 'tree-sitter-go-units-v2',
+                                   'versions': {'tree-sitter': '0.26.0', 'tree-sitter-go': '0.25.0'},
+                                   'grammar_sha256': languages.GO_GRAMMAR_SHA256,
+                                   'eof_policy': 'append-one-lf-if-nonempty-without-final-lf-v1'})
+        old = {'language': 'go', 'unit_version': 'tree-sitter-units-v1',
+               'versions': identity['versions']}
+        self.assertNotEqual(identity, old)
 
     def test_formatting_and_comments_are_no_diff(self):
         before, after = "package p\nfunc f(){x:=1;println(x)}\n", "package p\n// note\nfunc f() { x := 1; println(x) }\n"
@@ -305,6 +365,20 @@ class GoTreeSitterTests(unittest.TestCase):
         with patch("parsimony.languages.metadata.version", side_effect=wrong):
             with self.assertRaisesRegex(ValueError, "tree-sitter-go==0.25.0"):
                 track("go")
+
+    def test_invalid_syntax_stays_strict(self):
+        for source in ('package p\nvar x = {{ .Values.name }}',
+                       'package p\nfunc f() { x := new( }',
+                       'package p\nvar x = new(a +)',
+                       'package p\nconst (\n A =\n)',
+                       'package p\nvar (\n A =\n)',
+                       'package p\ntype (\n A\n)',
+                       'package p\nfunc f() {',
+                       'package p\nvar x = "unterminated'):
+            for suffix in ('', '\n'):
+                with self.subTest(source=source, suffix=suffix), self.assertRaisesRegex(
+                        ValueError, 'invalid or recovered go syntax'):
+                    parse(source + suffix, 'x.go')
 
     def test_large_tree_empty_and_invalid(self):
         # More than 256 rows exercises native binding object lifetimes on Python 3.14.

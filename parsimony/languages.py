@@ -17,7 +17,10 @@ from pathlib import Path
 from threading import Lock
 
 SUPPORTED = ("python", "javascript", "typescript", "go")
-UNIT_VERSION = "tree-sitter-units-v1"
+UNIT_VERSION = "tree-sitter-go-units-v2"
+GO_GRAMMAR_URL = "https://codeload.github.com/nvlbg/tree-sitter-go/tar.gz/5a6af13a0a5b45bc76cac289c783b315b2b74e13"
+GO_GRAMMAR_SHA256 = "3b0b0a55c6c8cd6671d813989b1f53af687c3b8afde3fb986ef767acbde0a017"
+GO_EOF_POLICY = "append-one-lf-if-nonempty-without-final-lf-v1"
 TYPESCRIPT_UNIT_VERSION = "typescript-compiler-units-v1"
 _PINS = {
     "tree-sitter": "0.26.0",
@@ -70,11 +73,24 @@ def _versions():
     wrong = [f"{name}=={_PINS[name]} (found {actual[name]})" for name in _PINS if actual[name] != _PINS[name]]
     if wrong:
         raise ValueError(f"Tree-sitter backend requires exact versions: {', '.join(wrong)}; install: {_install_help()}")
+    # PR193 retains the stock package version. Bind the installed distribution
+    # to the immutable archive, not merely its ambiguous version number (PEP 610).
+    try:
+        direct = json.loads(metadata.distribution("tree-sitter-go").read_text("direct_url.json") or "null")
+        archive = direct["archive_info"]
+        hashes = archive.get("hashes", {})
+        sha256 = hashes.get("sha256") or archive.get("hash", "").removeprefix("sha256=")
+        bound = direct["url"] == GO_GRAMMAR_URL and sha256 == GO_GRAMMAR_SHA256
+    except (metadata.PackageNotFoundError, OSError, ValueError, TypeError, KeyError, AttributeError):
+        bound = False
+    if not bound:
+        raise ValueError(f"Tree-sitter Go requires the pinned PR193 archive source (URL and SHA256); "
+                         f"stock tree-sitter-go==0.25.0 is unsupported; install: {_install_help()}")
     return actual
 
 
 def _install_help():
-    return "python -m pip install tree-sitter==0.26.0 tree-sitter-go==0.25.0"
+    return f'python -m pip install tree-sitter==0.26.0 "tree-sitter-go @ {GO_GRAMMAR_URL}#sha256={GO_GRAMMAR_SHA256}"'
 
 
 _TYPESCRIPT_HELP = ("JavaScript/TypeScript tracks need Node.js and the pinned parser: run `npm ci` in the "
@@ -169,11 +185,13 @@ def track(language):
         _typescript()
         return {"language": language, "unit_version": TYPESCRIPT_UNIT_VERSION,
                 "versions": {"typescript": TYPESCRIPT_PIN}}
-    return {"language": language, "unit_version": UNIT_VERSION, "versions": _versions()}
+    return {"language": language, "unit_version": UNIT_VERSION, "versions": _versions(),
+            "grammar_sha256": GO_GRAMMAR_SHA256, "eof_policy": GO_EOF_POLICY}
 
 
 @dataclass
 class Parsed:
+    """Go tree and owned normalized parsing bytes (not original provenance bytes)."""
     language: str
     tree: object
     source: bytes
@@ -217,6 +235,10 @@ def parse(source, path):
     import tree_sitter_go as grammar
     parser = Parser(Language(grammar.language()))
     data = source.encode("utf-8") if isinstance(source, str) else bytes(source)
+    # Go's implicit EOF semicolon needs a final LF in this grammar. Normalize
+    # only these owned parsing bytes; callers retain original source/hash input.
+    if data and not data.endswith(b"\n"):
+        data += b"\n"
     tree = parser.parse(data)
     if tree.root_node.has_error:
         raise ValueError(f"invalid or recovered {language} syntax")

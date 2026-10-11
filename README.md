@@ -8,7 +8,7 @@ Parsimony imports public **SWE-bench Verified** predictions and published evalua
 
 ## Quick start
 
-Python 3.12+, **no runtime dependencies for Python analysis**. Optional tracks: JavaScript/TypeScript use Node.js and the official TypeScript parser (`npm ci` installs the pinned `typescript`), Go uses `pip install '.[languages]'`; see [language tracks](docs/language-tracks.md) for pinned parsers, scope and reproducible commands. Run from this checkout (`pip install -e .` is optional). Measurements depend on the interpreter's tokenizer, so use one pinned Python version for anything you compare.
+Python 3.12+, **no runtime dependencies for Python analysis**. Optional tracks: JavaScript/TypeScript use Node.js and the official TypeScript parser (`npm ci` installs the pinned `typescript`), Go uses `pip install '.[languages]'` (the current checksum-pinned grammar builds from source, requiring a C compiler and Python development headers); see [language tracks](docs/language-tracks.md) for pinned parsers, scope and reproducible commands. Analyzer 0.8 introduces a versioned Go grammar/EOF fix; published historical cohorts keep their recorded analyzer identities. Run from this checkout (`pip install -e .` is optional). Measurements depend on the interpreter's tokenizer, so use one pinned Python version for anything you compare.
 
 ```sh
 # Metadata, base commits and human patches for all 500 Verified tasks.
