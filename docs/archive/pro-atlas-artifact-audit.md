@@ -1,6 +1,6 @@
 # SWE-bench Pro V2 and SWE-Atlas Refactoring artifact audit
 
-Audit performed 2026-09-29; request timestamps in UTC. This was a read-only discovery audit using pinned public GitHub content and anonymous public S3 HTTP requests. No credentials, model APIs, evaluations, target-code execution, upstream contacts, or modifications to upstream sources were used. Machine-readable request evidence and checksums: [`examples/benchmark-discovery/pro-atlas-artifact-audit.json`](../examples/benchmark-discovery/pro-atlas-artifact-audit.json).
+Audit performed 2026-09-29; request timestamps in UTC. This was a read-only discovery audit using pinned public GitHub content and anonymous public S3 HTTP requests. No credentials, model APIs, evaluations, target-code execution, upstream contacts, or modifications to upstream sources were used. Machine-readable request evidence and checksums: [`examples/benchmark-discovery/pro-atlas-artifact-audit.json`](../../examples/benchmark-discovery/pro-atlas-artifact-audit.json).
 
 ## Findings
 

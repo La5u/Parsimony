@@ -22,7 +22,7 @@ Code changes alter the analyzer source identity even when counts are preserved. 
 
 ## 2026-10-12 follow-up
 
-Resolved in analyzer 0.9.0-beta: strict hunk-header/surplus-line rejection and duplicate implementation-section rejection (the former High findings), prefix-free binary/rename scope checks, spec-conformant `empty_patch` scoring, leaderboard out-of-scope exclusion, interpolated bootstrap quantiles, bounded downloads and snapshot restores, public-HTTPS contribution URLs, workflow input/SHA pinning, undrained worker stderr and mixed analyzer-source detection. A re-fetch of all 20,621 published Verified/Live patches found no newly rejected measurement. See the [changelog](../CHANGELOG.md). Still open: the items below, worker deadlines, and restoring snapshots only from trusted sources (manifest hashes prove self-consistency, not authenticity).
+Resolved in analyzer 0.9.0-beta: strict hunk-header/surplus-line rejection and duplicate implementation-section rejection (the former High findings), prefix-free binary/rename scope checks, spec-conformant `empty_patch` scoring, leaderboard out-of-scope exclusion, interpolated bootstrap quantiles, bounded downloads and snapshot restores, public-HTTPS contribution URLs, workflow input/SHA pinning, undrained worker stderr and mixed analyzer-source detection. A re-fetch of all 20,621 published Verified/Live patches found no newly rejected measurement. See the [changelog](../../CHANGELOG.md). Still open: the items below, worker deadlines, and restoring snapshots only from trusted sources (manifest hashes prove self-consistency, not authenticity).
 
 ## Open findings and release gates
 

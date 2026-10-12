@@ -32,7 +32,7 @@ results, byte offsets, line numbers and classifications, not patches or source.
 
 ## Evidence binding and method
 
-Read the handoff, [language rules](language-tracks.md), [scoring policy](scoring.md)
+Read the handoff, [language rules](language-tracks.md), [scoring policy](archive/scoring.md)
 and [Go release README](../examples/deepswe-go/README.md) before auditing.
 
 - Frozen analyzer: `7705e8de13343bbafbfe5bccba665dd2bab8b24a`, 0.6.0-beta,

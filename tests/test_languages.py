@@ -207,7 +207,7 @@ class TypeScriptCompilerTests(unittest.TestCase):
 
     def test_modern_typescript_rejected_by_the_old_grammar(self):
         # Valid constructs that tree-sitter-typescript 0.23.2 rejected, all from published
-        # DeepSWE base files or patches (docs/typescript-parser-investigation.md).
+        # DeepSWE base files or patches (docs/archive/typescript-parser-investigation.md).
         fixtures = {
             # vitest 647e6ade packages/vitest/src/public/node.ts:209; meriyah src/meriyah.ts:36
             'type-only namespace re-export': 'export type * as Vite from "vite";\n',

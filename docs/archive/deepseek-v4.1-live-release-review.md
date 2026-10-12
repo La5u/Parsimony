@@ -3,7 +3,7 @@
 Review date: **2026-09-30**. Scope: public TianxiCode 0.1.423 / source-declared
 DeepSeek V4.1 Flash, SWE-bench Live Lite **Python, all 300 tasks**.
 
-Publication follow-up: [the final Live Python board](../examples/live-python/README.md)
+Publication follow-up: [the final Live Python board](../../examples/live-python/README.md)
 now retains all 300 tasks with explicit uncalibrated-task bounds and conservative
 rank uncertainty. It publishes numerical data only, not raw artifacts. The review
 below records the findings before that bounded-score implementation; missing
@@ -54,7 +54,7 @@ old-file bytes against patch Git blob prefixes and strict hunks for 295 patches.
 A blob prefix is not a full cryptographic identification of the historical object.
 The original historical HF input manifest and image digests remain unverified.
 
-[Machine-readable evidence](../examples/priority-live/deepseek-publication-evidence.json)
+[Machine-readable evidence](../../examples/priority-live/deepseek-publication-evidence.json)
 contains URLs, byte lengths, SHA-256 hashes and check results only. It binds the
 archived clean-checkout measurement digest and retains all 300 IDs. Reproduce:
 

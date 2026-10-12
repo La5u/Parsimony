@@ -1,91 +1,79 @@
 # Contributing
 
+Issues and pull requests are welcome, including critiques of the method.
+
 ## Ways to help
 
-- **Point to a public patch export.** New models can only be added when a benchmark publishes per-attempt patches and outcomes. If you find one (for example GPT-6, Claude 5.5 or Gemini 4 runs on DeepSWE, SWE-bench Verified or SWE-bench Live), open an issue with the link and revision. Model names in listings are not enough; the patches must be downloadable.
-- **Compare your own measurements.** Every page has *Add your own benchmark*: load a JSON of per-task code amounts and compare locally. Nothing is uploaded. See [the format](docs/custom-benchmarks.md).
-- **Submit a result bundle** measured from public artifacts (below).
-- **Improve the analyzer.** Java and Rust have no analyzer yet, and the Go track has 7 unclassified parse errors. See [language tracks](docs/language-tracks.md) and [expansion notes](docs/language-expansion-opportunities.md).
-- **Critique the method.** Issues questioning the unit, scope rules or ranking rule are welcome.
+- **Point to a public patch export.** A model can only be added when a benchmark publishes its per-attempt patches and pass/fail outcomes (for example newer models on DeepSWE, SWE-bench Verified or SWE-bench Live). Open an issue with the link and the exact revision. A leaderboard row or aggregate score is not enough; the patches must be downloadable.
+- **Question the method.** Is a unit counted wrong? Is a scope rule unfair? Open an issue with a small patch that shows it; [docs/adversarial-validation.md](docs/adversarial-validation.md) has the existing cases.
+- **Add a language.** Java and Rust have no analyzer yet. See [docs/language-tracks.md](docs/language-tracks.md).
+- **Compare your own numbers.** Every page has *Add your own benchmark*: load a JSON file of per-task code amounts and compare locally. Nothing is uploaded. See [docs/custom-benchmarks.md](docs/custom-benchmarks.md).
+- **Submit a result bundle** measured from public SWE-bench Verified artifacts (below).
 
-Contributions must come from **public artifacts**: do not call an LLM or rerun a benchmark to produce a contribution, because others cannot verify it. The site's **self-run pilot** (`examples/self-run/`) is the owner's labelled exception, shown faded and never ranked; it is not a template for contributed data.
+Everything must come from **public artifacts**: do not call a model or rerun a benchmark to produce a contribution, because nobody else could verify it. The [self-run pilot](examples/self-run/README.md) is the maintainer's labelled exception and is never ranked.
+
+## Setup
+
+```sh
+git clone --depth 1 https://github.com/La5u/Parsimony && cd Parsimony
+scripts/check.sh    # Python tests, page checks, bundle validation (about a minute, offline)
+```
+
+Python 3.12 or newer is enough for the Python analyzer. JavaScript/TypeScript tests need Node.js and `npm ci`; Go tests need `pip install '.[languages]'` and a C compiler. Missing extras skip their tests.
+
+Where things live:
+
+- Counting rules: `parsimony/analysis.py` (Python) and `parsimony/languages.py` with `typescript_units.cjs` (other languages).
+- Importers: `parsimony/deepswe.py`, `live.py`, `polybench.py`; the Verified importer is in `benchmark.py` and `artifacts.py`.
+- Website: `parsimony/template.html` (layout, copy, chart) and `parsimony/site.py` (page data). After changing either, run `scripts/rebuild-site.sh` and commit the regenerated `site/` pages.
+
+## Rules for changes
+
+- **Published data is frozen.** Never edit records in `examples/`. A measurement change needs a new analyzer version and a fresh, separately labelled measurement.
+- **Missing is not zero.** Unknown outcomes, missing patches and unparseable files stay unknown; never fill them with zeros or failures.
+- **Keep boards separate.** Never pool units across languages, benchmarks or analyzer versions.
+- Run `scripts/check.sh` before opening a pull request.
 
 ## Result bundles
 
-Use pull requests to add or update **reproducible result bundles**, not hand-edited scores. All tools use the Python standard library. We welcome small samples when they are clearly labeled.
-
-**Current bundle format:** successful-solution footprint medians, resolve rate and per-task measurements. This generated summary is for bundle validation only. The website ranks differently: by the mean net units over **all** measured in-scope attempts, failures included, on a frozen population built by maintainers. A merged bundle does not by itself add a row to a website board. The [80/20 signed-score calculator](docs/scoring.md) is experimental and separate from bundle validation; do not substitute scalar scores for the generated median summary. You may include a reproducible scalar-score command and frozen panel hash in the PR description. Records from `analyze --include-failed` may be exported: failed-patch measurements need an explicit failed category (`unresolved`/`failed`/`not_resolved`) and never enter the median summary. Existing bundles and sample scores do not contain them.
-
-## Fast path: existing analysis, no heavy computation
-
-From the checkout, export one agent from an existing Parsimony JSONL file:
+A bundle is a checksummed copy of measured records for one SWE-bench Verified submission. Export one from an existing results file:
 
 ```sh
-python -m parsimony.contribute export examples/ten-model-results.jsonl \
-  --agent 20260217_mini-v2.0.0_claude-4-6-opus \
-  --output submissions/20260217-mini-opus46-ten-task-sample
-
+python -m parsimony.contribute export examples/mini-swe-agent-500/gemini-3-5-flash.jsonl \
+  --agent 20260901_mini-v2.4.2_gemini-3-5-flash --output submissions/your-submission-name
 python -m parsimony.contribute validate submissions
 ```
 
-This only reads JSON and recomputes aggregates. It makes no network requests, runs no patches, and performs no token/AST analysis. Choose a unique descriptive directory name. Export overwrites that directory's three generated files:
+This reads JSON only: no network, no patches, no analysis. It writes three files; regenerate them instead of editing them:
 
 ```text
 submissions/<submission-and-cohort>/
-  manifest.json       # format, agent, task IDs, coverage, records checksum
-  records.jsonl       # task measurements and public artifact provenance
-  leaderboard.json   # generated summary; never edit this by hand
+  manifest.json      # agent, task IDs, coverage, records checksum
+  records.jsonl      # per-task measurements and public artifact provenance
+  leaderboard.json   # generated summary
 ```
 
-Use `sample` results to demonstrate a pipeline or extend coverage—not to claim a full-benchmark score. `complete-record-set` only means 500 task records are present; inspect analysis coverage separately. Comparing different task sets is not a fair head-to-head ranking.
-
-To update a bundle, regenerate it with the same command from the new JSONL. Explain changed task coverage, artifacts, interpreter/analyzer version or bug fixes in the PR. Do not silently relabel an older submission as a newer model. For a new source submission or materially different cohort, use a new directory.
-
-## New artifacts or new tasks
-
-This step is optional and can be CPU/network intensive. Do it on your own machine when appropriate; PR checks never rerun it.
+To measure a submission that is not in the repository yet (network and CPU heavy, run on your machine):
 
 ```sh
 python -m parsimony dataset --output verified.jsonl
-python -m parsimony analyze PUBLIC_SUBMISSION_NAME \
-  --ref EXPERIMENTS_COMMIT_SHA --dataset verified.jsonl \
-  --task TASK_ID_1 --task TASK_ID_2 --output results.jsonl
-
-python -m parsimony.contribute export results.jsonl \
-  --agent PUBLIC_SUBMISSION_NAME --output submissions/your-submission-and-cohort
+python -m parsimony analyze PUBLIC_SUBMISSION_NAME --ref EXPERIMENTS_COMMIT_SHA \
+  --dataset verified.jsonl --include-failed --output results.jsonl
+python -m parsimony.contribute export results.jsonl --agent PUBLIC_SUBMISSION_NAME \
+  --output submissions/your-submission-and-cohort
 ```
 
-Use all 500 metadata rows even for a small sample, preserving the Verified resolve-rate denominator. Pin upstream revisions where possible and keep the cached artifact bytes locally. Public results, patch locations, hashes and base commits must be preserved in records. Never upload credentials, private patches, the download cache or entire target repositories.
+Keep all 500 metadata rows even for a small sample, so the solve-rate denominator stays right. Commit the analyzer before measuring so records carry an `analyzer_commit`. Never upload credentials, the download cache or target repositories.
 
-If you introduce a new layout, add a small adapter and mocked tests. Do not call an LLM or rerun SWE-bench to produce a contribution to this public-artifact benchmark.
-
-## PR checklist and review
-
-- Identify the public submission, exact revision/artifact hashes, agent/model and harness.
-- Include the analysis/export commands, Python version, analyzer commit and dataset revision/checksum in the PR description.
-- Explain task selection **before** discussing the resulting rank. Disclose missing/failed analyses and exclusions.
-- Commit all three generated bundle files; regenerate summaries instead of editing them.
-- Run `python -m unittest discover -s tests -q` and the offline validator. Commit the analyzer first so records carry an `analyzer_commit`.
-- Include before/after summaries and the reason for a score update. Do not conflate analyzer corrections with improved model behavior.
-
-GitHub Actions runs offline unit tests and bundle validation on every PR. It checks checksums, task uniqueness, basic metric identities, resolve totals, scope labels and recomputed summaries. A checksum detects changed bytes, not fabricated data. Offline validation therefore **cannot prove that contributed measurements match the remote patches**.
-
-Maintainers re-verify a random sample before merging, either with the manual `verify` workflow (Actions → Offline checks → Run workflow) or locally:
+**What happens next.** A merged bundle does not add a row to the website by itself: boards use frozen task populations that the maintainer builds from complete, audited sources. Offline checks verify checksums, task uniqueness and recomputed summaries, but cannot prove the measurements match the remote patches, so before merging the maintainer re-downloads and re-measures a random sample:
 
 ```sh
 python -m parsimony.contribute verify submissions/your-bundle --dataset verified.jsonl --sample 25
 ```
 
-This re-downloads each sampled patch from its recorded `patch_location` and checks its SHA256. For records made with the current analyzer version, it also re-measures the patch at the recorded base commit and requires identical metrics. Older-version records get a hash check only. Neither check proves that the upstream published results are authentic.
+## Pull request checklist
 
-Successful patches only are eligible for today's efficiency metrics. The experimental scalar calculator supports bounded failure penalties, but auditing failed-patch coverage and approving an official fixed benchmark/reference panel remain release work. Contributions do not automatically change the frozen sample panel or establish an official benchmark release.
-
-For matched comparisons after merging multiple bundles:
-
-```sh
-python -m parsimony leaderboard \
-  submissions/agent-a-cohort/records.jsonl \
-  submissions/agent-b-cohort/records.jsonl --shared
-```
-
-Pass only one record per agent/task. Different analyzer/Python versions are not comparable; the exporter rejects mixed versions within a bundle, but reviewers must also check compatibility across bundles. Keep exploratory samples separate from official benchmark releases.
+- What changed, and why.
+- For data: the public submission URL and pinned revision, model and harness, analyzer commit, Python version, and the commands you ran.
+- How tasks were selected, stated before any result, plus missing or excluded analyses.
+- `scripts/check.sh` passes.

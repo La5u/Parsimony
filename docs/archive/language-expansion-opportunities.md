@@ -38,7 +38,7 @@ For GPT-5.2 Codex, exact `resolved: true/false` task outcomes exist in `per_inst
 - TypeScript: `vuejs__core-11589` success **200**; `vuejs__core-11739` explicit-failure patch **403** (unavailable, not empty).
 - Rust: `astral-sh__ruff-15330` success **200**; `astral-sh__ruff-15309` explicit failure **200**.
 
-These illustrate repository-language opportunities, not a frozen dataset classification. Exact bytes/checksums and candidate metadata are in [multilingual-expansion-census.json](../examples/benchmark-discovery/multilingual-expansion-census.json). No source patch was executed or newly measured. Seven successful downloads do not prove every artifact is available. Historical dataset/repo bases, full scope, harness protocol, complete missingness and reuse rights remain gates.
+These illustrate repository-language opportunities, not a frozen dataset classification. Exact bytes/checksums and candidate metadata are in [multilingual-expansion-census.json](../../examples/benchmark-discovery/multilingual-expansion-census.json). No source patch was executed or newly measured. Seven successful downloads do not prove every artifact is available. Historical dataset/repo bases, full scope, harness protocol, complete missingness and reuse rights remain gates.
 
 ## Recommended implementation order
 

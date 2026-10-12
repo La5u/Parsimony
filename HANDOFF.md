@@ -5,7 +5,7 @@ Current-state snapshot only. History lives in [CHANGELOG.md](CHANGELOG.md) and `
 ## Start of session
 
 1. `git pull --ff-only`, `git status --short`, read this file.
-2. Before measurement or scoring changes, read `docs/language-tracks.md`, `docs/scoring.md` and the relevant example README.
+2. Before measurement or scoring changes, read `docs/language-tracks.md`, `docs/archive/scoring.md` and the relevant example README.
 3. Commit and push directly to **`main`** (owner preference; no branches/PRs).
 4. The untracked `.claude/` directory (other worktrees) is unrelated: never add, delete or clean it.
 
@@ -13,7 +13,7 @@ Current-state snapshot only. History lives in [CHANGELOG.md](CHANGELOG.md) and `
 
 Website ranking and columns:
 
-- All six boards rank by a **footprint statistic over measured, in-scope passing AND failed attempts** across the whole frozen population, lowest first, irrespective of passing-reference availability. The statistic is the **plain mean of net units added** (`ranking_metric: measured-net-mean-v1`). A second column and chart metric, **net units added over solved attempts only (mean)** (`measured_solved_net_mean`), is sortable but does not set rank. **No trimmed mean:** the owner tried a 10% trimmed mean on 2026-10-01 and had it removed the same day; do not reintroduce it or another robust statistic without being asked. No coverage gate.
+- All six boards rank by the **mean net units added over measured, in-scope solved attempts** (`ranking_metric: measured-solved-net-mean-v1`), lowest first, irrespective of passing-reference availability. The **all-measured mean, including failures** (`measured_net_mean`), is the second column and a chart metric; it does not set rank. **No trimmed mean:** the owner tried a 10% trimmed mean on 2026-10-01 and had it removed the same day; do not reintroduce it or another robust statistic without being asked. No coverage gate.
 - Rank is fixed to the **solved-only mean** (`measured_solved_net_mean`); there is no correctness tie-break. **No mode selector** (the owner removed "Count attempts" on 2026-10-13 as redundant): the all-measured mean, including failures, is the second table column and a chart metric instead. Measured is measured successes / upstream resolved attempt slots, not unique tasks. Task views show every attempt of the task with its outcome. Self-runs (`examples/self-run/grade.py` self-grades them) appear faded and unranked. Solved %, external indices and archived diagnostics do not change. Equal values tie; models with no eligible measurements stay unranked. This is not a shared-solved-task comparison.
 - Visible columns: **Rank, Net units, solved (mean), Net units, all measured (mean), Solved, Measured** (measured solved / upstream solved). Solved % is upstream resolved / full frozen population, context only. Footprint is raw mean coding units, **not %**, with equal 1/N weight for each measured in-scope attempt, including failures; no correctness weighting. Exclude missing measurements, never zero-fill them.
 - Describe the ranking as *smallest measured footprint*, never *best coding model*. Negative deletions and failed no-ops may rank first; say so.
@@ -51,8 +51,8 @@ Cloudflare Pages serves `site/` at <https://parsimony.lasu.dev>; a push to `main
 | SWE-bench Live Lite Python | `site/live.html` | `examples/live-python/` | 4 configs | 300 × 1 | 0.6.0-beta @ `de63300` |
 
 - Each example directory holds measured JSONL, `population.json`, `coverage.json`, `score-panel.json`, `scores.json`, sensitivity/stability reports and a README. Large JSON files are tens of MB: summarise them with Python rather than dumping them into context.
-- Live Python: four model + agent configurations (DeepSeek V4.1 Flash · TianxiCode, GPT-5.6 Sol · Slingshot 3.4.0, Claude Opus 4.8 · AiWork, GPT-5.5 · agav 0.2.0-beta.2). The agav addition has 262 eligible footprints / 300 (271 completed analyses, 9 excluded-only), 186 source-reported successes, 85 failures, 29 empty-only unknowns; eligible mean net 50.38549618320611. All 271 nonempty patches have matching old-blob/hunk preimages. See `docs/agav-gpt55-live-release-review.md`; historical measurement authorization is not external board certification. 238/300 tasks calibrated, 62 uncalibrated under opt-in `full-population-uncalibrated-bounds-v1`. Records publish scalars and hashes only, not patches; raw-artifact redistribution remains uncleared (`docs/deepseek-v4.1-live-release-review.md`, `docs/priority-live-provenance.md`). The JSONLs are byte-identical to clean `de63300` measurements; never relabel them.
-- Verified now includes **Gemini 3.5 Flash / mini-SWE-agent 2.4.2**: 441 eligible attempts (359 passing, 82 failed), 59 explicit aggregate `no_generation`, all 500 retained. Source-reported Solved 71.8%, measured mean net +36.6031746031746. All 441 separate patches agree with pinned predictions. Measurement commit/source hash exactly match existing Verified 0.5.2; human-reference comparison is intentionally uncomputed. See `docs/gemini-3.5-verified-release.md` and `examples/benchmark-discovery/add-gemini-verified.py`. Old 33-model records, population/panel and reports stay unchanged; current reports use `coverage-34.json`, `scores-34.json`, `sensitivity-34.json`.
+- Live Python: four model + agent configurations (DeepSeek V4.1 Flash · TianxiCode, GPT-5.6 Sol · Slingshot 3.4.0, Claude Opus 4.8 · AiWork, GPT-5.5 · agav 0.2.0-beta.2). The agav addition has 262 eligible footprints / 300 (271 completed analyses, 9 excluded-only), 186 source-reported successes, 85 failures, 29 empty-only unknowns; eligible mean net 50.38549618320611. All 271 nonempty patches have matching old-blob/hunk preimages. See `docs/archive/agav-gpt55-live-release-review.md`; historical measurement authorization is not external board certification. 238/300 tasks calibrated, 62 uncalibrated under opt-in `full-population-uncalibrated-bounds-v1`. Records publish scalars and hashes only, not patches; raw-artifact redistribution remains uncleared (`docs/archive/deepseek-v4.1-live-release-review.md`, `docs/archive/priority-live-provenance.md`). The JSONLs are byte-identical to clean `de63300` measurements; never relabel them.
+- Verified now includes **Gemini 3.5 Flash / mini-SWE-agent 2.4.2**: 441 eligible attempts (359 passing, 82 failed), 59 explicit aggregate `no_generation`, all 500 retained. Source-reported Solved 71.8%, measured mean net +36.6031746031746. All 441 separate patches agree with pinned predictions. Measurement commit/source hash exactly match existing Verified 0.5.2; human-reference comparison is intentionally uncomputed. See `docs/archive/gemini-3.5-verified-release.md` and `examples/benchmark-discovery/add-gemini-verified.py`. Old 33-model records, population/panel and reports stay unchanged; current reports use `coverage-34.json`, `scores-34.json`, `sensitivity-34.json`.
 - Measured but **not published**: GPT-5.6 Sol JS 101/108 and TS 99/111, PolyBench Opus 4.8 Python 111/113 (metadata/hashes in `examples/priority-live/`; full footprints external). GPT-5.4 PolyBench measurements are withheld (hunk-only corroboration, no usable old-blob prefixes).
 - `ten-model-500`, `beta-500-*` and root `ten-model-*` files are historical; never mix them with current cohorts.
 - There are zero contributed submission bundles.
@@ -66,7 +66,7 @@ Cloudflare Pages serves `site/` at <https://parsimony.lasu.dev>; a push to `main
 
 ## Known property of the mean ranking
 
-On Verified a few failed mass deletions decide the top ranks: Llama 4 Maverick is #1 at −244 with a solved-only mean of +10 and a median of +4. The owner knows this and chose the plain mean plus the solved-only column anyway. Smaller footprint also correlates with lower solve rate on every board (Spearman −0.25 to −0.57); failed attempts are not systematically smaller than passing ones, so this is a real model-level tendency.
+Under the old all-measured ranking a few failed mass deletions decided Verified's top ranks (Llama 4 Maverick at −244 overall, +10 over solved attempts); the solved-only rank removes that. Smaller footprint still goes with lower solve rate: Spearman 0.33–0.60 between the solved-only footprint and Solved on every board with 26+ models (2026-10-13), stated under Limits on the site.
 
 ## Next work, in priority order
 
@@ -80,7 +80,7 @@ Latest discovery: **2026-10-07** complete GitHub trees for Live, PolyBench and V
 
 New benchmark feasibility: **18 LiveCodeBench Python configurations × 1,055 retained tasks** (2023-05-07–2025-04-06), with **17,353 measured footprints / 18,990 task-attempt slots**. `examples/livecodebench-pilot/population-18.json` versions exact source-export bindings and fixed sample index 0 while preserving original `population.json` / `measurement-summary.json`. Clean `cbe8768` / Python 3.14.7 measured only the 12 new inputs; `measurement-summary-18.json` reuses the original six metadata records unchanged from `2645271`. Source hash and unit definition match. Five exports have 713/880 records and missing-task outcomes stay unknown; missing footprints comprise 1,209 absent tasks, 43 absent code lists, 318 empty bodies and 67 parse errors, never zeros. Observed solved / 1,055 is a lower bound for partial exports. Source labels span OpenAI, xAI, Meta, Mistral, Qwen, DeepSeek, Anthropic, Google and EXAONE; do not call these newly released 2026 frontier models. This is **NONPUBLISHED**, not a seventh website board: pinned benchmark-dataset corroboration, rights/numerical-publication review and configuration evidence remain blockers. Raw code and scalar rows stay external. Evidence: `examples/benchmark-discovery/livecodebench-expansion-2026-10-07.json` and the initial fresh-code census.
 
-Seed-OSS Live Python is now explicitly **withheld**: 291 submitted / 300 (60 success, 211 failure, 20 error, 9 unknown) and 271 candidate preimages pass, but 238 separate rollout patches differ from aggregate predictions. Four match, one lacks a prediction; strict diagnostic comparison finds 226 divergent results/scopes and 12 unsupported nontext changes. Evaluated-patch linkage is unproven; do not measure/publish by silently choosing a patch representation. See `docs/seedoss-live-candidate-review.md` and its numerical/hash census.
+Seed-OSS Live Python is now explicitly **withheld**: 291 submitted / 300 (60 success, 211 failure, 20 error, 9 unknown) and 271 candidate preimages pass, but 238 separate rollout patches differ from aggregate predictions. Four match, one lacks a prediction; strict diagnostic comparison finds 226 divergent results/scopes and 12 unsupported nontext changes. Evaluated-patch linkage is unproven; do not measure/publish by silently choosing a patch representation. See `docs/archive/seedoss-live-candidate-review.md` and its numerical/hash census.
 
 All 327 BigCodeBench sample exports were body-inspected but have no paired outcomes. Further official public outcome search found aggregate-only results and a 401 requests-dataset blocker, not global absence proof. Evidence: `examples/benchmark-discovery/bigcode-outcomes-search-2026-10-07.json`.
 
@@ -109,7 +109,7 @@ Passing references are needed only for archived combined-score diagnostics, **no
 
 - Pin upstream submission/dataset revisions, full task/attempt membership, patch and outcome checksums, model/harness attribution and language mapping. Preserve submitted versus placeholder/missing distinctions. Corroborate touched-file preimages; do not claim full-checkout, evaluator or model-backend certification from that evidence.
 - Use a clean committed analyzer worktree with external cache/raw storage and Python 3.14.7. A same-board comparison must use compatible analyzer/track identities: use the existing identity where operationally possible, otherwise remeasure the comparison cohort and version the release. Never relabel old records or pool incompatible versions. JS/TS worktrees require their own pinned `npm ci`.
-- Retain the entire predefined population. Report eligible/population coverage plus source-reported outcomes and exclusion/error reasons. Rank by the plain mean over all measured in-scope attempts, including failures; preserve the separate solved-only mean column. No trimming, correctness tie-break, coverage gate or missing-zero imputation.
+- Retain the entire predefined population. Report eligible/population coverage plus source-reported outcomes and exclusion/error reasons. Rank by the mean over measured in-scope solved attempts; preserve the all-measured mean column. No trimming, correctness tie-break, coverage gate or missing-zero imputation.
 - Review numerical publication separately from raw-artifact redistribution. Publish attributed scalars/hashes, coverage and reproduction metadata; do not assume an output ownership clause grants rights to another submitter's artifacts. Keep raw patches/source/prompts/trajectories external unless separately cleared.
 - Freeze/version population, numerical exports and diagnostics; update the example README, board navigation and Published state table. Rebuild all affected pages with the shared template, run the full pinned-parser suite and Node checks, reproduce archived score arithmetic, then commit/push `main`. Verify deployment if accessible; report access failures rather than claiming a push proves deployment.
 
@@ -118,14 +118,14 @@ Before a large import, resolve storage growth: `examples/` is ~250 MB working-tr
 ### 4. Maintenance and secondary expansion
 
 - Owner direction: Parsimony stays focused on delivered implementation footprint. A separate verbosity/yap/output-token/reasoning-expenditure benchmark is **noted for later only**; do not implement it or mix generation tokens into Parsimony ranking. Continue prioritizing model additions.
-- Fresh bounded discovery: DeepSWE's complete 31,617-trial export matches the stored SHA256; GPT-6 Astra has zero declared patches across five configs, and sampled Astra/Gemini 3.8 patch GETs returned HTTP 403. Live/Verified/PolyBench submission revisions remain at their stored pins. See `docs/new-model-discovery.md`.
+- Fresh bounded discovery: DeepSWE's complete 31,617-trial export matches the stored SHA256; GPT-6 Astra has zero declared patches across five configs, and sampled Astra/Gemini 3.8 patch GETs returned HTTP 403. Live/Verified/PolyBench submission revisions remain at their stored pins. See `docs/archive/new-model-discovery.md`.
 
-The parser problem is solved (0.7.0, 2026-10-01): JS/TS use the official TypeScript parser, TS errors fell from 323 to 5 of 3,640 records and 33/35 TS tasks calibrate. Do not let residual cleanup displace newer-model additions. See `docs/typescript-parser-investigation.md`:
+The parser problem is solved (0.7.0, 2026-10-01): JS/TS use the official TypeScript parser, TS errors fell from 323 to 5 of 3,640 records and 33/35 TS tasks calibrate. Do not let residual cleanup displace newer-model additions. See `docs/archive/typescript-parser-investigation.md`:
 
 - Wrong-language TS metadata: `httpx-deterministic-cookie-store` has Python patches; `prometheus-transactional-reload-status` has Go patches. Correct only through an explicit versioned dataset change, never a silent move.
 - Effect's `dtslint/*.tst.ts` type tests and new root-level JS/TS scratch scripts currently count as implementation. Excluding them requires a versioned scope change and remeasurement; one invalid scratch script explains one remaining TS error.
 - Go parser fix is released separately in analyzer 0.8 / `tree-sitter-go-units-v2`. Full clean `34d59ca` remeasurement recovered the five Arcane `new(expression)` and one Scriggo EOF-limited attempts; invalid Helm remains unmeasured. All 3,502 common primary footprints agree and all 3,536 provenance/outcome bindings remain unchanged. Three structural-churn diagnostics change by +2. Current data: `examples/deepswe-go-v2/` + checksum-bound scalar asset; v1 JSON/JSONL files remain unchanged. See `docs/go-parser-v2-release.md`; PR193 was rejected for a shadowed-identifier regression, final grammar is immutable PR190.
-- SWE-Atlas Refactoring and SWE-bench Pro V2 remain blocked on public per-attempt patch exports, not importer code (`docs/swe-atlas-investigation.md`, `docs/pro-atlas-artifact-audit.md`). Java/Rust require new analyzers and separate tracks (`docs/language-expansion-opportunities.md`); defer until supported recent-model sources are exhausted or the owner reprioritizes.
+- SWE-Atlas Refactoring and SWE-bench Pro V2 remain blocked on public per-attempt patch exports, not importer code (`docs/archive/swe-atlas-investigation.md`, `docs/archive/pro-atlas-artifact-audit.md`). Java/Rust require new analyzers and separate tracks (`docs/archive/language-expansion-opportunities.md`); defer until supported recent-model sources are exhausted or the owner reprioritizes.
 - Real Firefox smoke checks are available in `tests/test_site_browser.py` (opt-in; ordinary offline suite skips them); Node tests still mock the DOM. CI networked `verify` now pins Python 3.14.7. Further screen-reader/contrast/mobile checks remain in TODO. A blind reviewer study is optional later validation, not a gate for footprint reporting.
 - Never contact upstream, file issues or launch paid evaluations without owner approval. Known Verified issues for an approved future report: Gemini 3 Pro (high) marks all tasks unresolved; some `metadata.yaml` point to wrong S3 folders.
 
@@ -153,46 +153,21 @@ The parser problem is solved (0.7.0, 2026-10-01): JS/TS use the official TypeScr
 
 ## Commands
 
-Latest validation (2026-10-12, 0.9.0-beta): **381 tests passed** on Python 3.14.8 without the Go extra (16 Go-grammar and 7 opt-in browser skips); all six pages rebuilt and passed the Node checks. Earlier validation: **370 tests passed with 7 browser skips** using Python 3.14.7 and exact current optional parser/source pins; **7 opt-in real Firefox tests passed** separately. All six Node page checks and custom importer tests passed. Full 3,536-slot Go v2 population/provenance/comparison audit passed; public scalar download verified all 43 member hashes and reproduced new archived scores byte-for-byte. Historical ten-model and current Live score arithmetic also reproduce exactly. All historical Go JSON/JSONLs remain unchanged; the other five boards' embedded measurement payloads are identical except Sources metadata. Current reproducible Go scalars: checksummed `deepswe-go-v0.8` release asset with bindings in `examples/deepswe-go-v2/release-assets.json`; external raw/measurement cache `/tmp/parsimony-go-v2-release`, clean analyzer `/tmp/parsimony-go-v2-measure` (temporary paths, not durable publication inputs).
+Latest validation (2026-10-13, 0.9.0-beta): **382 tests passed** on Python 3.14.8 without the Go extra (16 Go-grammar and 7 opt-in browser skips); all six pages rebuilt and passed the Node checks. Earlier validation (2026-10-11): **370 tests passed with 7 browser skips** using Python 3.14.7 and exact current optional parser/source pins; **7 opt-in real Firefox tests passed** separately. All six Node page checks and custom importer tests passed. Full 3,536-slot Go v2 population/provenance/comparison audit passed; public scalar download verified all 43 member hashes and reproduced new archived scores byte-for-byte. Historical ten-model and current Live score arithmetic also reproduce exactly. All historical Go JSON/JSONLs remain unchanged; the other five boards' embedded measurement payloads are identical except Sources metadata. Current reproducible Go scalars: checksummed `deepswe-go-v0.8` release asset with bindings in `examples/deepswe-go-v2/release-assets.json`; external raw/measurement cache `/tmp/parsimony-go-v2-release`, clean analyzer `/tmp/parsimony-go-v2-measure` (temporary paths, not durable publication inputs).
 
 ### Before every push
 
 ```sh
 npm ci                                            # pinned TypeScript parser for JS/TS tests
-python -m unittest discover -s tests -q          # 370 tests; 16 Go-grammar and 7 opt-in browser tests skip without extras
-python -m parsimony.contribute validate submissions
-uv venv --python 3.14.7 /tmp/parsimony-checks
+scripts/check.sh                                  # Python tests (382; Go and opt-in browser tests skip without extras), page checks, bundles
+uv venv --python 3.14.7 /tmp/parsimony-checks     # full check with the Go grammar, as in CI
 uv pip install --python /tmp/parsimony-checks/bin/python '.[languages]'
 /tmp/parsimony-checks/bin/python -m unittest discover -s tests -q
-for page in index javascript typescript go verified live; do node tests/site_sorting.cjs "site/$page.html"; done
-git diff --check
 ```
 
 ### Rebuild all six pages (offline, no remeasurement)
 
-This reproduces every committed page byte-for-byte after fetching the checksum-bound scalar asset; check with `git status` after running it. Go asset files remain external rather than duplicated in Git.
-
-```sh
-python examples/benchmark-discovery/fetch-go-v2-release.py --output /tmp/parsimony-go-v2-scalars
-NAV=(--nav 'DeepSWE Python=index.html' --nav 'DeepSWE JavaScript=javascript.html' --nav 'DeepSWE TypeScript=typescript.html'
-     --nav 'DeepSWE Go=go.html' --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html')
-for lang in python javascript typescript go; do
-  E=examples/deepswe-$lang; PAGE=$lang; [ "$lang" = python ] && PAGE=index
-  [ "$lang" = go ] && E=/tmp/parsimony-go-v2-scalars
-  python -m parsimony.site "$E/score-panel.json" "$E/"*.jsonl \
-    --sensitivity "$E/sensitivity.json" --benchmark deepswe "${NAV[@]}" --output "site/$PAGE.html" \
-    $([ "$lang" = go ] && echo --sensitivity-report examples/deepswe-go-v2/sensitivity.md) \
-    --external examples/external/artificial-analysis-2026-10-08.json \
-    $([ "$lang" = python ] && echo --self-run examples/self-run/results/*.jsonl)
-done
-V=examples/mini-swe-agent-500
-python -m parsimony.site "$V/score-panel.json" "$V/"*.jsonl \
-  --sensitivity "$V/sensitivity-34.json" --benchmark verified "${NAV[@]}" --output site/verified.html
-L=examples/live-python
-python -m parsimony.site "$L/score-panel.json" "$L/deepseek-v4.1-flash.jsonl" "$L/gpt-5.6-sol.jsonl" "$L/claude-opus-4.8.jsonl" "$L/gpt-5.5-agav.jsonl" \
-  --sensitivity "$L/stability.json" --benchmark live "${NAV[@]}" --output site/live.html \
-  --data "$L/site-data.json"   # tests require the committed copy to match the page
-```
+`scripts/rebuild-site.sh` reproduces every committed page byte-for-byte (it downloads the checksum-bound Go scalar asset; `--offline` skips the Go page, as CI does). Check with `git status` afterwards. Go asset files remain external rather than duplicated in Git.
 
 ### Inputs
 

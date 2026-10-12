@@ -26,8 +26,8 @@ The five `*.preimages.json` files contain metadata/hashes only, not source code,
 patches, prompts or trajectories. They bind Live dataset/result/prediction checksums
 and independently fetched old-file bytes. Their `base_commit_confirmations` are
 **touched-file compatibility approvals**, not full operational-checkout evidence.
-See [the full audit](../../docs/priority-live-static-import.md) and
-[the broader source/protocol/terms report](../../docs/priority-live-provenance.md).
+See [the full audit](../../docs/archive/priority-live-static-import.md) and
+[the broader source/protocol/terms report](../../docs/archive/priority-live-provenance.md).
 
 ## Coverage exceptions
 
@@ -53,7 +53,7 @@ now publishes the three Python configurations' numerical data on all 300 tasks,
 using explicit uncalibrated-reference bounds and widened rank uncertainty. No
 raw artifacts are released; JS/TS/PolyBench remain outside this website release.
 The targeted
-[DeepSeek release review](../../docs/deepseek-v4.1-live-release-review.md) recommends
+[DeepSeek release review](../../docs/archive/deepseek-v4.1-live-release-review.md) recommends
 an attributed numerical preview, not raw artifact reuse or certified results.
 It freshly corroborates all 300 separate patches/metadata/grader reports and
 identifies a concrete scoring gap: only 238/300 tasks have usable passing

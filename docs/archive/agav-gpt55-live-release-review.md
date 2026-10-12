@@ -4,7 +4,7 @@
 
 Add **source-declared GPT-5.5 / agav 0.2.0-beta.2** to the existing 300-task Live Lite Python footprint board. This is a repository-level numerical reporting decision following artifact, population, touched-file preimage and static-measurement review; **not independent evaluator certification, provider authentication, legal clearance or submitter consent**.
 
-Publish numerical measurements, source links and integrity metadata only. Do not redistribute patches, target source, prompts, trajectories or grader output. The submission repository does not supply a blanket output-redistribution grant; public availability, agent licensing and provider/customer output ownership are not sublicences to Parsimony. Numerical factual reporting follows the same limited scope as the existing [Live release](../examples/live-python/README.md).
+Publish numerical measurements, source links and integrity metadata only. Do not redistribute patches, target source, prompts, trajectories or grader output. The submission repository does not supply a blanket output-redistribution grant; public availability, agent licensing and provider/customer output ownership are not sublicences to Parsimony. Numerical factual reporting follows the same limited scope as the existing [Live release](../../examples/live-python/README.md).
 
 The measurement records remain byte-identical to the clean external analyzer export. Their embedded manifest's `approval_scope=external-static-measurement-only`, `board_release_status=not-approved` and `review_url_status=forthcoming` describe authorization **at measurement time**, not this later reporting decision. The local manifest is not an independent external approval. Its `manifest_sha256` binds the published preimage audit, not its own serialized bytes. Do not relabel analyzer identities or rewrite these historical fields to imply broader certification.
 
@@ -46,9 +46,9 @@ These are model + agent configurations, not a controlled model-only experiment. 
 
 ## Durable evidence and reproduction
 
-- [Numerical release metadata](../examples/benchmark-discovery/agav-gpt55-release.json).
-- [Full touched-file audit metadata](../examples/benchmark-discovery/agav-gpt55-preimages.json): hashes, paths and source URLs only.
-- [Measurement authorization metadata](../examples/benchmark-discovery/agav-gpt55-measurement-review.json): historical static-analysis scope only.
-- [Measured records](../examples/live-python/gpt-5.5-agav.jsonl).
+- [Numerical release metadata](../../examples/benchmark-discovery/agav-gpt55-release.json).
+- [Full touched-file audit metadata](../../examples/benchmark-discovery/agav-gpt55-preimages.json): hashes, paths and source URLs only.
+- [Measurement authorization metadata](../../examples/benchmark-discovery/agav-gpt55-measurement-review.json): historical static-analysis scope only.
+- [Measured records](../../examples/live-python/gpt-5.5-agav.jsonl).
 
-Reproduction uses the pinned prediction/result and immutable dataset URLs above, external raw storage, `parsimony.live.import_run`, `parsimony.preimages.audit_run`, and `parsimony.live.analyze_run` from the clean analyzer commit. Reconstruct the inventory with config `submissions/lite/agav/gpt-5.5`, agent `agav`, model `GPT-5.5`; analyze with record agent `live-lite-gpt-5.5-agav-0.2.0-beta.2` and language `python`. Verify artifact hashes before using the measurement authorization. Never place the raw cache or imported patch inventory in this repository. The existing [offline rebuild commands](../examples/live-python/README.md#rebuild-offline) require no downloads or remeasurement.
+Reproduction uses the pinned prediction/result and immutable dataset URLs above, external raw storage, `parsimony.live.import_run`, `parsimony.preimages.audit_run`, and `parsimony.live.analyze_run` from the clean analyzer commit. Reconstruct the inventory with config `submissions/lite/agav/gpt-5.5`, agent `agav`, model `GPT-5.5`; analyze with record agent `live-lite-gpt-5.5-agav-0.2.0-beta.2` and language `python`. Verify artifact hashes before using the measurement authorization. Never place the raw cache or imported patch inventory in this repository. The existing [offline rebuild commands](../../examples/live-python/README.md#rebuild-offline) require no downloads or remeasurement.

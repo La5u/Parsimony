@@ -2,7 +2,7 @@
 
 Analyzer **0.9.0-beta** (stricter shared patch parsing; units unchanged since 0.8) measures JavaScript and TypeScript with the **official TypeScript parser** and Go with a source-pinned Tree-sitter grammar. The 0.8 Go track is **`tree-sitter-go-units-v2`**; frozen 0.6 Go measurements remain historical `tree-sitter-units-v1` records until replaced by a separately validated full-cohort release. Python still uses the standard-library AST and needs no runtime dependencies. The scoring formula is unchanged: footprint credit for passing patches and footprint penalties for explicitly failed patches, averaged over the frozen score-panel tasks; unavailable measurements remain bounds.
 
-Analyzer 0.6.0 used Tree-sitter for JavaScript/TypeScript as well (`tree-sitter-units-v1`, `tree-sitter-typescript==0.23.2`). That grammar is unmaintained upstream and rejected valid modern TypeScript; 319 of the 322 TypeScript syntax errors in the 0.6.0 DeepSWE records were valid code ([investigation](typescript-parser-investigation.md)). The 0.6.0 records remain in git history; never pool them with 0.7.0 records.
+Analyzer 0.6.0 used Tree-sitter for JavaScript/TypeScript as well (`tree-sitter-units-v1`, `tree-sitter-typescript==0.23.2`). That grammar is unmaintained upstream and rejected valid modern TypeScript; 319 of the 322 TypeScript syntax errors in the 0.6.0 DeepSWE records were valid code ([investigation](archive/typescript-parser-investigation.md)). The 0.6.0 records remain in git history; never pool them with 0.7.0 records.
 
 ## Install
 

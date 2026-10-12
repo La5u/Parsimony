@@ -1,6 +1,6 @@
 # Verified mini-run exclusions: artifact availability (2026-09-29)
 
-This is an availability audit, not a remeasurement. The pinned experiments revision remains `40f164d5b8f1d249bf95a6df8b74b577fd8e519d`. See [`examples/benchmark-discovery/verified-exclusions-2026-09-29.json`](../examples/benchmark-discovery/verified-exclusions-2026-09-29.json) for raw URLs, fresh no-cache HTTP statuses, SHA-256 values, and representative patch probes. No models were run and no cohorts were measured.
+This is an availability audit, not a remeasurement. The pinned experiments revision remains `40f164d5b8f1d249bf95a6df8b74b577fd8e519d`. See [`examples/benchmark-discovery/verified-exclusions-2026-09-29.json`](../../examples/benchmark-discovery/verified-exclusions-2026-09-29.json) for raw URLs, fresh no-cache HTTP statuses, SHA-256 values, and representative patch probes. No models were run and no cohorts were measured.
 
 **2026-10-02 follow-up:** Gemini 3.5 Flash is now measured and published on the 34-configuration Verified board. All 441 separate pinned patches agree with predictions; aggregate results explicitly identify the other 59 tasks as no generation. See [release and reproduction](gemini-3.5-verified-release.md). The dated audit below remains a historical availability snapshot, not the current blocker list. GPT-5.2 Codex's two outcome probes still returned 404 in the fresh check.
 

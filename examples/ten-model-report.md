@@ -59,7 +59,7 @@ The ranking change reflects **both** adding churn and replacing a median raw-tok
 
 Moving from the 70/30 weights (`parsimony-70-30-v0.4`) to 80/20 changes no rank; the gap between Kimi and GLM-5 widens from 0.54 to 0.70 points. Compared with the 70/30 scores under the 0.4.0 token analyzer, GLM-5 and Opus swapped second and third, Sonnet and Haiku swapped fourth and fifth, and Kimi and the bottom five kept their ranks. Paired-task bootstrap 95% intervals (`python -m parsimony.sensitivity`) span roughly 16 to 28 points per model and overlap across the top six. No model is the top scorer in more than 31% of resamples, and the `net_floor=0` anti-deletion variant changes no rank.
 
-See `ten-model-score-panel.json`, `ten-model-scores.json`, and [the scoring specification](../docs/scoring.md).
+See `ten-model-score-panel.json`, `ten-model-scores.json`, and [the scoring specification](../docs/archive/scoring.md).
 
 ## Interpretation and limitations
 

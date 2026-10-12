@@ -8,7 +8,7 @@ The initial four-workstream audit was not exhaustive. A broader search on 2026-0
 
 ## Execution update
 
-All four recommended workstreams were investigated on 2026-09-29. Live now has [import tooling and a clean four-task static pilot](swe-bench-live-investigation.md); its full-cohort historical provenance/rights still block a board. [Fresh DeepSWE evidence](../examples/deepswe-python/refresh-2026-09-29.json) has unchanged metadata hashes and 26 usable configurations. [Verified audit](verified-refresh-investigation.md) confirms unchanged experiments revision and rechecks exclusions, including partial Gemini 3.5 coverage. [Pro/Atlas audit](pro-atlas-artifact-audit.md) found anonymously readable legacy Pro S3 artifacts but no identified V2 or Atlas model-attempt export. No new published models/scores are claimed on the strength of this tooling/pilot.
+All four recommended workstreams were investigated on 2026-09-29. Live now has [import tooling and a clean four-task static pilot](swe-bench-live-investigation.md); its full-cohort historical provenance/rights still block a board. [Fresh DeepSWE evidence](../../examples/deepswe-python/refresh-2026-09-29.json) has unchanged metadata hashes and 26 usable configurations. [Verified audit](verified-refresh-investigation.md) confirms unchanged experiments revision and rechecks exclusions, including partial Gemini 3.5 coverage. [Pro/Atlas audit](pro-atlas-artifact-audit.md) found anonymously readable legacy Pro S3 artifacts but no identified V2 or Atlas model-attempt export. No new published models/scores are claimed on the strength of this tooling/pilot.
 
 ## Priority
 

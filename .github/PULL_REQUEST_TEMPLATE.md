@@ -1,22 +1,14 @@
-## What changed?
-<!-- New public submission, additional tasks, artifact update, analyzer fix, or docs/code? -->
+## What changed and why
 
-## Result contributions
-<!-- Delete this section for unrelated code/docs changes. -->
+## For data contributions
+<!-- Delete for code/docs changes. -->
 - Public submission URL and pinned revision:
-- Agent/model and harness:
-- Dataset revision/checksum:
+- Model and harness:
 - Analyzer commit and Python version:
-- Analysis/export commands:
-- Task selection rule and task count:
-- Missing analyses/excluded changes:
-- For updates: reason and before/after summary:
+- Commands run:
+- Task selection (stated before results) and missing/excluded analyses:
 
-### Checks
-- [ ] Summary regenerated from JSONL, not hand-edited.
-- [ ] Public patch/result provenance and hashes retained; no secrets/cache committed.
-- [ ] Sample vs complete record coverage labeled correctly.
-- [ ] `python -m parsimony.contribute validate submissions` passes.
-- [ ] Records carry an `analyzer_commit` (analyzer committed before analysis).
-- [ ] `python -m unittest discover -s tests -q` passes.
-- [ ] Scalar scores, if discussed, include their frozen panel hash and command and are labeled experimental; the bundle summary remains the generated conventional metrics.
+## Checks
+- [ ] `scripts/check.sh` passes.
+- [ ] Generated files (bundles, `site/` pages) were regenerated, not hand-edited.
+- [ ] No published record in `examples/` was edited.

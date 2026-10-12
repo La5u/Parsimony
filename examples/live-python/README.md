@@ -111,10 +111,10 @@ Specific caveats retained from the source review:
   unknown, not failed no-ops. The targeted release review does not establish that
   every detailed report was audited or certify historical protocol compliance.
 
-Detailed evidence: [targeted GPT-5.5 / agav review](../../docs/agav-gpt55-live-release-review.md),
+Detailed evidence: [targeted GPT-5.5 / agav review](../../docs/archive/agav-gpt55-live-release-review.md),
 [agav discovery metadata](../benchmark-discovery/agav-gpt55-release.json),
-[targeted DeepSeek review](../../docs/deepseek-v4.1-live-release-review.md),
-[full source/protocol/terms audit](../../docs/priority-live-provenance.md),
+[targeted DeepSeek review](../../docs/archive/deepseek-v4.1-live-release-review.md),
+[full source/protocol/terms audit](../../docs/archive/priority-live-provenance.md),
 [preimage/coverage archive](../priority-live/README.md),
 [coverage audit](coverage.json), [sensitivity](stability.md).
 

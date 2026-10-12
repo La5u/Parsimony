@@ -1,6 +1,6 @@
 # Priority current Live runs: practical import provenance
 
-Audit: **2026-09-30 UTC**. Companion: [priority-live-provenance.json](../examples/benchmark-discovery/priority-live-provenance.json). This supersedes the priority-run *inspection depth*, not the published measurements or populations, of [expanded-live-census.md](expanded-live-census.md). Only these two new evidence/documentation files are added. No model calls, contact, paid access, target-code/test execution, patch application, measurements, scores or commits were made. Raw research downloads remain outside Parsimony.
+Audit: **2026-09-30 UTC**. Companion: [priority-live-provenance.json](../../examples/benchmark-discovery/priority-live-provenance.json). This supersedes the priority-run *inspection depth*, not the published measurements or populations, of [expanded-live-census.md](expanded-live-census.md). Only these two new evidence/documentation files are added. No model calls, contact, paid access, target-code/test execution, patch application, measurements, scores or commits were made. Raw research downloads remain outside Parsimony.
 
 Later follow-up: [DeepSeek V4.1 targeted release review](deepseek-v4.1-live-release-review.md)
 freshly checks all 300 separate patches/metadata/grader reports, retrieves both

@@ -1,6 +1,6 @@
 # Expanded public SWE-bench Live artifact census
 
-Audit date: **2026-09-29 (UTC)**. This is a public-artifact census and provenance review, **not a benchmark release or a model ranking**. No model API, paid evaluation, submitted/target code, target tests, or dataset commands were executed; no upstream contact was made. Only data downloads and static inspection were performed. Only this document and its [small evidence manifest](../examples/benchmark-discovery/expanded-live-census.json) are added to Parsimony.
+Audit date: **2026-09-29 (UTC)**. This is a public-artifact census and provenance review, **not a benchmark release or a model ranking**. No model API, paid evaluation, submitted/target code, target tests, or dataset commands were executed; no upstream contact was made. Only data downloads and static inspection were performed. Only this document and its [small evidence manifest](../../examples/benchmark-discovery/expanded-live-census.json) are added to Parsimony.
 
 ## What the broader search adds
 
@@ -11,7 +11,7 @@ Fresh GitHub `main` still resolves to **`cba8a6d3197cd53da09f8527cccbc689782302a
 - **Five model names absent from both currently published Parsimony cohorts:** Seed-OSS-36B-Instruct, DeepSeek V3.1 Terminus, DeepSeek V4.1 Flash, Claude Sonnet 3.7, GPT-4.1. The last two were already investigated but excluded from the current Verified board; they are not newly released models. The first two are also older, not evidence of frontier recency. **DeepSeek V4.1 Flash is the clear recent new-model opportunity** (source-labelled run September 21–22, submission documentation September 28).
 - GPT-5.5, GPT-5.6 Sol, Claude Opus 4.8, Gemini 3.6 Flash, etc. add newer-than-Verified coverage, but **are already present in DeepSWE**. Different scaffolds, budgets/reasoning settings, retry policies, benchmark populations, and agent versions are configurations/data, not additional unique models. Live contains no inspected GPT-6 Astra, Claude Opus 5, or other model later than those names merely because the census is fresh.
 
-Comparison baseline: [DeepSWE fresh discovery](../examples/deepswe-python/refresh-2026-09-29.json), 26 usable configurations, and [current Verified cohort](../examples/mini-swe-agent-500/README.md), 33 published entries. Those are board/configuration denominators, not a promise of 59 different underlying model identities.
+Comparison baseline: [DeepSWE fresh discovery](../../examples/deepswe-python/refresh-2026-09-29.json), 26 usable configurations, and [current Verified cohort](../../examples/mini-swe-agent-500/README.md), 33 published entries. Those are board/configuration denominators, not a promise of 59 different underlying model identities.
 
 | Normalized model | DeepSWE published | Verified published | What Live adds |
 |---|---|---|---|

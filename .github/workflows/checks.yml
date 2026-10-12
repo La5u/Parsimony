@@ -60,28 +60,12 @@ jobs:
             --output /tmp/live-scores.json
           cmp examples/live-python/scores.json /tmp/live-scores.json
       - name: Rebuild offline website pages and compare with committed copies
-        # Go needs the external scalar asset (networked); see HANDOFF.md for the full rebuild.
+        # The Go page needs a networked release asset; scripts/rebuild-site.sh without --offline builds it.
         if: matrix.python-version == '3.14'
         run: |
-          NAV=(--nav 'DeepSWE Python=index.html' --nav 'DeepSWE JavaScript=javascript.html' --nav 'DeepSWE TypeScript=typescript.html'
-               --nav 'DeepSWE Go=go.html' --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html')
-          mkdir -p /tmp/site
-          for lang in python javascript typescript; do
-            E=examples/deepswe-$lang; PAGE=$lang; [ "$lang" = python ] && PAGE=index
-            python -m parsimony.site "$E/score-panel.json" "$E/"*.jsonl --sensitivity "$E/sensitivity.json" \
-              --benchmark deepswe "${NAV[@]}" --output "/tmp/site/$PAGE.html" \
-              --external examples/external/artificial-analysis-2026-10-08.json \
-              $([ "$lang" = python ] && echo --self-run examples/self-run/results/*.jsonl)
-          done
-          V=examples/mini-swe-agent-500
-          python -m parsimony.site "$V/score-panel.json" "$V/"*.jsonl --sensitivity "$V/sensitivity-34.json" \
-            --benchmark verified "${NAV[@]}" --output /tmp/site/verified.html
-          L=examples/live-python
-          python -m parsimony.site "$L/score-panel.json" "$L/deepseek-v4.1-flash.jsonl" "$L/gpt-5.6-sol.jsonl" \
-            "$L/claude-opus-4.8.jsonl" "$L/gpt-5.5-agav.jsonl" --sensitivity "$L/stability.json" --benchmark live \
-            "${NAV[@]}" --output /tmp/site/live.html --data /tmp/site/live-data.json
+          scripts/rebuild-site.sh /tmp/site --offline
           for page in index javascript typescript verified live; do cmp "site/$page.html" "/tmp/site/$page.html"; done
-          cmp "$L/site-data.json" /tmp/site/live-data.json
+          cmp examples/live-python/site-data.json /tmp/site/live-data.json
       - name: Static website regression checks
         run: |
           node tests/custom_benchmark.cjs

@@ -42,13 +42,13 @@ Four patches were statically measured from clean commit `9b287263b3d167eecc546e2
 | JavaScript | `codeceptjs__CodeceptJS-5106` | success | 90 | 100 |
 | JavaScript | `sveltejs__svelte-16666` | failure | 11 | 11 |
 
-This validates importer/analyzer mechanics for one success and one explicit failure per track, **not model rankings, full-cohort coverage or benchmark correctness**. The inventoried 230 records were retained; other patches were not measured. No target code or tests ran. Only [summary metrics/provenance](../examples/benchmark-discovery/live-pilot-summary.json) are committed, not raw model patches/trajectories. Do not splice these pilot records into existing language panels.
+This validates importer/analyzer mechanics for one success and one explicit failure per track, **not model rankings, full-cohort coverage or benchmark correctness**. The inventoried 230 records were retained; other patches were not measured. No target code or tests ran. Only [summary metrics/provenance](../../examples/benchmark-discovery/live-pilot-summary.json) are committed, not raw model patches/trajectories. Do not splice these pilot records into existing language panels.
 
 ## Evidence and outstanding gates
 
 - Submission commit `cba8a6d3197cd53da09f8527cccbc689782302a6` exposes `result.json` and task-level `patch.diff` / `trajectory.txt`. GPT-5.5 medium declares 230 submitted IDs: 105 successes, 120 failures and five empty-only IDs; errors/incomplete counts are zero.
 - Both documented HF IDs are public: `SWE-bench-Live/MultiLang` and the separate Python `SWE-bench-Live/SWE-bench-Live`. A prior guessed ID's HTTP 401 was not evidence that these are inaccessible.
-- Direct immutable Parquet reads confirmed all 230 submitted IDs in candidate MultiLang revision `62dc0745…`, with four Go/JS bases independently corroborated against raw trajectories. See [provenance audit](live-provenance-audit.md) and [immutable-file evidence](../examples/benchmark-discovery/live-immutable-audit.json). Dataset-server `revision` query parameters alone are not reliable pinning evidence.
+- Direct immutable Parquet reads confirmed all 230 submitted IDs in candidate MultiLang revision `62dc0745…`, with four Go/JS bases independently corroborated against raw trajectories. See [provenance audit](live-provenance-audit.md) and [immutable-file evidence](../../examples/benchmark-discovery/live-immutable-audit.json). Dataset-server `revision` query parameters alone are not reliable pinning evidence.
 - The candidate upload is August 2026, **later** than May–June trajectories. No explicit run manifest naming its dataset revision was found. Four corroborated bases do not establish full-cohort historical revision/selection semantics.
 - Dataset metadata declares MIT, but the submission repository has no inspected root license or blanket artifact redistribution grant. Third-party source and artifact rights need separate review. No raw patches/trajectories are added to this repository by this investigation.
 

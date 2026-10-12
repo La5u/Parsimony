@@ -2,7 +2,7 @@
 
 Audit: 2026-09-29 UTC. Read `HANDOFF.md`, the [prior Pro/Atlas audit](pro-atlas-artifact-audit.md), and its evidence first. This is anonymous discovery through Python `urllib`, not a model evaluation. No credentials, paid evaluation, target-code execution, patch application, contacts, measurements, or existing-file changes.
 
-**Evidence:** [expanded-artifact-search.json](../examples/benchmark-discovery/expanded-artifact-search.json) records 234 exact request URLs, UTC timestamps, HTTP status, byte lengths and SHA-256 hashes, pinned revisions, range headers, artifact examples and blockers. Hashes refer to raw downloaded bytes; patch-field hashes explicitly refer to UTF-8 field contents. Transient signed public-download redirect queries are omitted, not used as source pins.
+**Evidence:** [expanded-artifact-search.json](../../examples/benchmark-discovery/expanded-artifact-search.json) records 234 exact request URLs, UTC timestamps, HTTP status, byte lengths and SHA-256 hashes, pinned revisions, range headers, artifact examples and blockers. Hashes refer to raw downloaded bytes; patch-field hashes explicitly refer to UTF-8 field contents. Transient signed public-download redirect queries are omitted, not used as source pins.
 
 ## What actually expands usable artifact coverage
 

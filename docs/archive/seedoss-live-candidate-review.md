@@ -24,4 +24,4 @@ The cached README and result categories do not establish which exact patch repre
 
 **Withhold footprint publication and outcome-linked static measurements** until public evidence binds the evaluator input to an exact canonical patch. Source-reported 60 successes / 300 frozen tasks (20%) can be described with attribution, but is not independently verified. Do not invent footprint zeros for errors/missing tasks or promote this candidate to the Live leaderboard.
 
-Metadata-only evidence and hashes: [`seedoss-candidate-review-2026-10-07.json`](../examples/benchmark-discovery/seedoss-candidate-review-2026-10-07.json). Raw predictions, rollout patches, base source and detailed audit caches remain external; redistribution is uncleared. No upstream contact or paid evaluation is authorized by this review.
+Metadata-only evidence and hashes: [`seedoss-candidate-review-2026-10-07.json`](../../examples/benchmark-discovery/seedoss-candidate-review-2026-10-07.json). Raw predictions, rollout patches, base source and detailed audit caches remain external; redistribution is uncleared. No upstream contact or paid evaluation is authorized by this review.
