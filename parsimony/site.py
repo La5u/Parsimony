@@ -215,7 +215,7 @@ def build(panel, records, draws=2000, seed=42):
         statuses = [t['status'] for t in entry['tasks'].values()]
         solved_scores = [t['score'] for t in entry['tasks'].values() if t['status'] == 'resolved']
         solved_metrics = [r['metrics'] for r in ok]
-        # Footprint ranking does not depend on correctness or reference coverage.
+        # Footprints do not depend on reference coverage; the rank uses the solved subset below.
         footprint_records = [r for r in group.values() if measured(r)
                              and r['metrics'].get('mode') == 'full_file'
                              and not out_of_scope(r['metrics'])]
@@ -255,8 +255,8 @@ def build(panel, records, draws=2000, seed=42):
             churn=median(r['metrics']['churn'] for r in ok),
             token_churn=median(r['metrics'].get('token_churn') for r in ok),
             human_ratio=median(r.get('model_human_ratio') for r in ok)))
-    models.sort(key=lambda m: (m['measured_net_mean'] is None,
-                               m['measured_net_mean'] if m['measured_net_mean'] is not None else 0, m['name']))
+    # Rank order: mean net units added over measured solved attempts; unmeasured models last.
+    models.sort(key=lambda m: (m['measured_solved_net_mean'] is None, m['measured_solved_net_mean'] or 0, m['name']))
     # Chart emphasis only: older generations and their labels are slightly lighter; rank ignores this.
     newest = newest_generation([m['name'] for m in models])
     for m in models:
@@ -309,7 +309,7 @@ def build(panel, records, draws=2000, seed=42):
     return dict(**(dict(calibration_policy=UNCALIBRATED,
                         uncalibrated_tasks=[t for t, refs in panel['tasks'].items() if not refs]) if bounded else {}),
                 measurement_track=panel.get('measurement_track'),
-                ranking_metric='measured-net-mean-v1', footprint_tasks=footprint_tasks,
+                ranking_metric='measured-solved-net-mean-v1', footprint_tasks=footprint_tasks,
                 score_version=VERSION, panel=panel['name'], references=len(references), harness=versions, analyzer_version=panel['analyzer_version'],
                 python_version=panel['python_version'], task_count=len(panel['tasks']),
                 population_count=max(len(footprint_tasks), max((r.get('benchmark_tasks', len(footprint_tasks)) for r in records),

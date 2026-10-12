@@ -257,28 +257,28 @@ class SiteTests(unittest.TestCase):
         missing = record('c', 't1')
         missing.update(metrics=None, analysis_status='fetch_error')
         data = build(panel, [refs[0], record('b', 't1', net=0, churn=0, resolved=False), missing], draws=20)
-        self.assertEqual(data['ranking_metric'], 'measured-net-mean-v1')
-        self.assertEqual([m['agent'] for m in data['models']], ['b', 'a', 'c'])
-        self.assertEqual([m['measured_net_mean'] for m in data['models']], [0, 9, None])
-        self.assertEqual([m['measured_solved_net_mean'] for m in data['models']], [None, 9, None])
+        self.assertEqual(data['ranking_metric'], 'measured-solved-net-mean-v1')
+        self.assertEqual([m['agent'] for m in data['models']], ['a', 'b', 'c'])  # rank order: solved mean, unmeasured last
+        self.assertEqual([m['measured_net_mean'] for m in data['models']], [9, 0, None])  # the failed no-op is kept
+        self.assertEqual([m['measured_solved_net_mean'] for m in data['models']], [9, None, None])
         self.assertEqual([m['measured_attempts'] for m in data['models']], [1, 1, 0])
-        self.assertEqual([m['upstream_solved_attempts'] for m in data['models']], [0, 1, 1])
-        self.assertEqual([m['measured_solved_attempts'] for m in data['models']], [0, 1, 0])
-        self.assertEqual([m['measured_solved_churn_mean'] for m in data['models']], [None, 9, None])
+        self.assertEqual([m['upstream_solved_attempts'] for m in data['models']], [1, 0, 1])
+        self.assertEqual([m['measured_solved_attempts'] for m in data['models']], [1, 0, 0])
+        self.assertEqual([m['measured_solved_churn_mean'] for m in data['models']], [9, None, None])
         self.assertEqual([m['footprint_population_count'] for m in data['models']], [2, 2, 2])
         self.assertEqual([row[0] for row in data['footprint_tasks']], ['t1', 't2'])
         self.assertTrue(all(cell[7] is False for cell in data['footprint_tasks'][1][2]))
 
-    def test_rank_uses_plain_mean_and_reports_solved_only_mean(self):
+    def test_rank_uses_solved_mean_and_reports_all_measured_mean(self):
         tasks = [f't{i:02}' for i in range(20)]
         steady = [record('steady', t, net=5, churn=5) for t in tasks]
-        # One failed mass deletion pulls the all-attempt mean down; the solved-only mean ignores it.
+        # One failed mass deletion pulls the all-measured mean down; the solved-only rank ignores it.
         deleter = [record('deleter', t, net=20, churn=20) for t in tasks[1:]]
         deleter.append(record('deleter', tasks[0], net=-5000, churn=5000, resolved=False))
         data = build(freeze(steady, 'means'), steady + deleter, draws=20)
-        self.assertEqual(data['ranking_metric'], 'measured-net-mean-v1')
-        self.assertEqual([m['agent'] for m in data['models']], ['deleter', 'steady'])
-        deleter_row, steady_row = data['models']
+        self.assertEqual(data['ranking_metric'], 'measured-solved-net-mean-v1')
+        self.assertEqual([m['agent'] for m in data['models']], ['steady', 'deleter'])
+        steady_row, deleter_row = data['models']
         self.assertEqual(deleter_row['measured_net_mean'], (19 * 20 - 5000) / 20)
         self.assertEqual((deleter_row['measured_solved_net_mean'], deleter_row['measured_solved_attempts']), (20, 19))
         self.assertEqual((steady_row['measured_solved_net_mean'], steady_row['measured_solved_attempts']), (5, 20))

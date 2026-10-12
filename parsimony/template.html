@@ -119,8 +119,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="small" id="units-definition"><b>Coding units</b> count syntax elements—statements, calls, comparisons, names and literals—not lines or runtime complexity. Net units = added − removed.</p>
   <details class="small muted"><summary>How to read this</summary>
   <p>We parse published <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a> patches and count syntax elements plus block-end markers. Formatting, comments and punctuation do not count. Python, JavaScript/TypeScript and Go use separate parser-specific tracks; raw unit counts are not comparable across them.</p>
-  <p>Rank is by mean net units added, lowest first, over measured upstream successes. The all-measured column is the mean over all measured in-scope attempts, including failures; sorting it does not change rank. Equal means tie; models with no measurements are unranked. Partial coverage can change the order, and a few very large deletions can dominate a mean. This is smallest measured footprint, not best coding ability.</p>
-  <p>Net units added means coding units added minus removed, not semantic complexity. Measured shows measured solved attempts / upstream solved attempts (not unique tasks). Missing or entirely excluded edits are not zero. Solved % comes from the upstream benchmark. The rank uses upstream outcomes to select measured successes, not as a correctness tie-break. A failed no-op or large deletion can rank first. Click headings to sort; missing values stay last.</p>
+  <p>Rank is by mean net units added, lowest first, over measured upstream successes. The all-measured column is the mean over all measured in-scope attempts, including failures; sorting it does not change rank. Equal means tie; models with no measurements are unranked. Partial coverage can change the order, and a few very large solved attempts or deletions can dominate a mean. This is smallest measured footprint, not best coding ability.</p>
+  <p>Net units added means coding units added minus removed, not semantic complexity. Measured shows measured solved attempts / upstream solved attempts (not unique tasks). Missing or entirely excluded edits are not zero. Solved % comes from the upstream benchmark. The rank uses upstream outcomes to select measured successes, not as a correctness tie-break. A model whose solved attempts mostly delete code can rank first. Click headings to sort; missing values stay last.</p>
   <p>Pick any two metrics for the scatter, or one for the bars. Models missing a selected value have no point or bar. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; percentage axes normally stay at 0–100%. Points outside fitted axes remain at their actual, true-scale positions.</p>
   <p>Solved % = upstream resolved attempts / frozen attempt population × 100. Tests are not rerun by Parsimony. Footprint = sum of net coding units / N measured in-scope attempts: each attempt has equal weight 1/N, over successes for the rank and the solved columns, including failures for the all-measured ones. Missing measurements are not zero. Benchmarks and languages are not pooled and have no benchmark weights. Footprint uses no correctness weight beyond that success filter.</p>
   <p id="external-help" hidden>Artificial Analysis indices are external, model-level capability scores from a pinned snapshot, not results on this benchmark. They are matched to a configuration only for the same model and reasoning effort, or where Artificial Analysis lists a single unlabelled entry or resolves an undated model ID; these weaker matches are disclosed on hover. Configurations without a match have no value and no point. They never affect footprint rank.</p>
@@ -191,7 +191,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <h2 id="limits">Limits</h2>
   <ul>
     <li>Smaller is not always better. Units measure size, not readability or design.</li>
-    <li id="harness-limit">Scores are relative to the reference models, which all use the same agent harness (mini-SWE-agent).</li>
+    <li>Models that write more code also tend to solve more tasks: on every board with 26 or more models, the Spearman correlation between the solved-only footprint and Solved is 0.33–0.60.</li>
+    <li id="harness-limit">Footprints depend on the agent configuration, which here is the same harness (mini-SWE-agent) for every model.</li>
     <li id="results-limit">Pass/fail comes from SWE-bench's published results; tests are not rerun.</li>
   </ul>
 
@@ -283,11 +284,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   if (bench.harness_note) {
     $('harness-limit').textContent = bench.harness_note;
   } else if (versions.length > 1) {
-    $('harness-limit').textContent = `Scores are relative to the reference models. All use the mini-SWE-agent harness, but versions ${versions[0]} to ${versions[versions.length - 1]}, so part of a gap between models can come from the harness version.`;
+    $('harness-limit').textContent = `Footprints depend on the agent configuration. All use the mini-SWE-agent harness, but versions ${versions[0]} to ${versions[versions.length - 1]}, so part of a gap between models can come from the harness version.`;
   } else if (versions.length === 1) {
-    $('harness-limit').textContent = `Scores are relative to the reference models, which all use the same agent harness (mini-SWE-agent ${versions[0]}).`;
+    $('harness-limit').textContent = `Footprints depend on the agent configuration, which here is the same harness (mini-SWE-agent ${versions[0]}) for every model.`;
   }
-  $('harness-limit').textContent = $('harness-limit').textContent.replace('Scores are relative to the reference models', 'Footprints depend on the agent configuration');
   const external = data.external || null;
   // Owner-run configurations: shown faded in the all-tasks view, never ranked.
   const selfRun = data.self_run_models || [];
