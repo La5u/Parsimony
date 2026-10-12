@@ -1,9 +1,10 @@
-"""Measure self-run diffs with a pinned analyzer checkout; outcomes stay not_graded.
+"""Measure self-run diffs with a pinned analyzer checkout; outcomes are written not_graded.
 
 Uses the analyzer from ANALYZER_CHECKOUT (a clean worktree of the commit that measured the published
 board, so units are comparable) and the DeepSWE reference solutions as the human patch. One JSONL per
 configuration, containing every finished attempt; unfinished planned attempts are simply absent and
-counted against the planned population on the page, never as zero.
+counted against the planned population on the page, never as zero. Afterwards run
+``grade.py --apply`` to restore the self-graded outcomes.
 
     python examples/self-run/measure.py ANALYZER_CHECKOUT DEEPSWE_CHECKOUT --cache DIR
 """

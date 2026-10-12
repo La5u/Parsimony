@@ -21,8 +21,8 @@ Differences from DeepSWE, all identical across self-run configurations:
   only (no later history, no remote). No task Docker image, no project dependencies.
 - Network is not blocked, because the harness calls its API. The prompt forbids network use;
   `meta.json` lists any shell commands that look like network use.
-- Outcomes are **not graded** (`outcome: not_graded`). Footprint is measured from the final diff
-  exactly like published patches.
+- Footprint is measured from the final diff exactly like published patches. Outcomes are
+  **self-graded** afterwards (see Grading); `meta.json` keeps the run-time `outcome: not_graded`.
 
 The sandbox can write only the task directory and the harness credential store. It hides the
 DeepSWE checkout (reference solutions), this repository, the download cache and agent transcripts.
@@ -41,6 +41,40 @@ Runs are resumable: finished items are skipped. Usage-limit errors pause that ha
 minutes and retry the same item; they are never recorded as results. Each finished item writes
 `runs/<config>/<task>__<attempt>/patch.diff` and `meta.json`; transcripts stay in the scratch
 directory.
+
+## Grading (2026-10-12)
+
+`grade.py` grades every diff with the task's own DeepSWE verifier (`tests/test.sh`, hidden tests,
+pass only if every new and existing listed test passes), offline, with `task.toml`'s CPU and memory
+limits. DeepSWE's task images are amd64-only, so they are rebuilt natively for arm64 from each task's
+`environment/Dockerfile`; the one change is a pin `llvmlite==0.46.0` for numba, whose Dockerfile
+installs the latest llvmlite but patches numba for 0.46.0 (recorded in each `grade.json`). Before
+grading, every task's reference solution passed and every unpatched base failed in these images.
+
+A test suite that hangs is an unknown outcome (`timeout`), like DeepSWE's errored runs: not solved,
+still measured. Five hangs ran to DeepSWE's 30-minute limit; the last two items used a 5-minute cap
+(the reference suites finish in under 3 minutes), recorded as `timeout_sec`. All seven are gql or
+kombu attempts.
+
+```sh
+python examples/self-run/grade.py ~/parsimony-self-run/deep-swe --scratch ~/parsimony-self-run --build
+python examples/self-run/grade.py ~/parsimony-self-run/deep-swe --scratch ~/parsimony-self-run --reference
+python examples/self-run/grade.py ~/parsimony-self-run/deep-swe --scratch ~/parsimony-self-run
+python examples/self-run/grade.py --apply   # copy outcomes into results/*.jsonl
+```
+
+| Configuration | Solved | Timeouts | Net units added, solved (mean) | Net units added (mean) |
+|---|---:|---:|---:|---:|
+| Claude Haiku 5.5 (high) | 9/20 | 0 | 1,501 | 1,449 |
+| Claude Opus 5.5 (high) | 6/10 | 1 | 2,137 | 1,949 |
+| Claude Sonnet 5.5 (high) | 6/10 | 1 | 1,974 | 1,779 |
+| GPT-5.6 Sol (high) | 4/10 | 1 | 1,660 | 1,725 |
+| GPT-6.1 Sol (high) | 10/20 | 0 | 1,356 | 1,395 |
+| GPT-6 Astra (high) | 4/6 | 1 | 1,103 | 1,256 |
+| GPT-6 Luna (high) | 3/20 | 0 | 1,076 | 857 |
+| GPT-6 Sol (high) | 7/20 | 3 | 1,354 | 1,116 |
+
+On the site, graded self-runs also appear in the default Solved-only view, still faded and unranked.
 
 ## Anchor check (2026-10-09)
 

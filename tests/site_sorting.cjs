@@ -478,6 +478,19 @@ assert.equal(element('self-run-note').hidden, false);
 task('org__repo-1');
 assert.doesNotMatch(graph(), /Delta/);
 assert.doesNotMatch(element('#board tbody').innerHTML, /Delta/);
+// Self-graded self-runs also appear in the default Solved-only view, with Solved and the solved-only mean.
+const gradedSelfRun = structuredClone(withSelfRun);
+Object.assign(gradedSelfRun.self_run_models[0], {graded: true, upstream_solved_attempts: 2, measured_solved_attempts: 2,
+  measured_solved_net_mean: 12, measured_solved_churn_mean: 14, resolve_rate: 0.5});
+load(gradedSelfRun);
+element('attempts').listeners.change({target: {value: 'solved'}});
+assert.match(graph(), /<circle[^>]*data-model="Delta \(high\)"[^>]*class="all-point self-run"/);
+assert.match(graph(), /Self-run with pi, unverified: self-graded, 2 solved, 2 of \d+ tasks/);
+assert.match(element('#board tbody').innerHTML, /<tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta \(high\)<\/td><td>12.0<\/td><td>−5.0<\/td><td>50.0%<\/td><td>2\/2<\/td>/);
+assert.match(element('self-run-note').textContent, /Unverified, self-graded, unranked/);
+assert.equal(element('self-run-note').hidden, false);
+element('attempts').listeners.change({target: {value: 'all'}});
+assert.match(element('#board tbody').innerHTML, /<td class="left">Delta \(high\)<\/td><td>−5.0<\/td><td>12.0<\/td><td>50.0%<\/td><td>4\/20<\/td>/);
 // Bar view: net units only, smallest first, same colours and fading; self-run faded; task view uses the attempt.
 load(withSelfRun);
 assert.equal(element('chart-type').value, 'scatter');

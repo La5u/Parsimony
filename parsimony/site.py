@@ -326,7 +326,10 @@ HARNESSES = {'pi': 'pi', 'claude-code': 'Claude Code'}
 
 
 def self_run_models(records):
-    """Unranked, ungraded owner-run configurations, summarised like measured board models."""
+    """Unranked owner-run configurations, summarised like measured board models.
+
+    Self-graded configurations (every record has an outcome from examples/self-run/grade.py) also get
+    Solved and the solved-only mean; ungraded ones leave both empty."""
     groups = {}
     for r in records:
         if not r.get('self_run'):
@@ -335,8 +338,11 @@ def self_run_models(records):
     models = []
     for agent, group in sorted(groups.items()):
         provenance = group[0]['provenance']
-        eligible = [r['metrics'] for r in group if measured(r) and r['metrics'].get('mode') == 'full_file'
+        eligible = [r for r in group if measured(r) and r['metrics'].get('mode') == 'full_file'
                     and not out_of_scope(r['metrics'])]
+        graded = all(r['evaluation_result'] != 'not_graded' for r in group)
+        solved = [r['metrics'] for r in eligible if r['resolved']] if graded else []
+        eligible = [r['metrics'] for r in eligible]
         name = f"{SELF_RUN_MODELS.get(provenance['model'], provenance['model'])} ({provenance['reasoning_effort']})"
         models.append(dict(
             agent=agent, name=name, company=company(name), self_run=True, latest=True,
@@ -345,7 +351,11 @@ def self_run_models(records):
             footprint_population_count=group[0]['benchmark_tasks'], measured_attempts=len(eligible),
             measured_net_mean=statistics.fmean(m['net_units'] for m in eligible) if eligible else None,
             measured_churn_mean=statistics.fmean(m['churn'] for m in eligible) if eligible else None,
-            measured_solved_net_mean=None, resolve_rate=None))
+            graded=graded, upstream_solved_attempts=sum(r['resolved'] for r in group) if graded else None,
+            measured_solved_attempts=len(solved) if graded else None,
+            measured_solved_net_mean=statistics.fmean(m['net_units'] for m in solved) if solved else None,
+            measured_solved_churn_mean=statistics.fmean(m['churn'] for m in solved) if solved else None,
+            resolve_rate=sum(r['resolved'] for r in group) / group[0]['benchmark_tasks'] if graded else None))
     return models
 
 

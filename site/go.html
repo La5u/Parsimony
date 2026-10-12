@@ -131,7 +131,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p>Models missing either selected value have no point. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; percentage axes normally stay at 0–100%. Points outside fitted axes remain at their actual, true-scale positions.</p>
   <p>Solved % = upstream resolved attempts / frozen attempt population × 100. Tests are not rerun by Parsimony. Footprint = sum of net coding units / N measured in-scope attempts: each attempt has equal weight 1/N, over successes only by default, or including failures when All measured is selected. Missing measurements are not zero; Measured in the default solved-only mode is measured solved attempts / upstream resolved attempts (not unique tasks). Benchmarks and languages are not pooled and have no benchmark weights. Footprint uses no correctness weight beyond that success filter.</p>
   <p id="external-help" hidden>Artificial Analysis indices are external, model-level capability scores from a pinned snapshot, not results on this benchmark. They are matched to a configuration only for the same model and reasoning effort, or where Artificial Analysis lists a single unlabelled entry or resolves an undated model ID; these weaker matches are disclosed on hover. Configurations without a match have no value and no point. They never affect footprint rank.</p>
-  <p id="self-run-help" hidden>Self-run models were run by the site owner on the first 3–10 DeepSWE Python tasks (OpenAI models via pi, Anthropic models via Claude Code), without the task containers. They are unverified, not graded and never ranked, and cover only a task subset, so compare them mainly with each other. GPT-5.6 Sol is the one model run both ways: its self-run footprint was 0.88× its published one on the same tasks. Claude Code has no such check.</p>
+  <p id="self-run-help" hidden>Self-run models were run by the site owner on the first 3–10 DeepSWE Python tasks (OpenAI models via pi, Anthropic models via Claude Code), without the task containers. Their patches were then graded with each task's own DeepSWE tests in task containers rebuilt by the owner (every reference solution passes there; a hung test suite counts as unknown, not solved). They are unverified and never ranked, and cover only a task subset, so compare them mainly with each other. GPT-5.6 Sol is the one model run both ways: its self-run footprint was 0.88× its published one on the same tasks. Claude Code has no such check.</p>
   </details>
 
   <h2 id="leaderboard">Leaderboard</h2>
@@ -437,22 +437,22 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   }
   $('harness-limit').textContent = $('harness-limit').textContent.replace('Scores are relative to the reference models', 'Footprints depend on the agent configuration');
   const external = data.external || null;
-  // Owner-run configurations: shown faded in the all-tasks view, never ranked and not graded.
+  // Owner-run configurations: shown faded in the all-tasks view and never ranked; graded ones also in Solved only.
   const selfRun = data.self_run_models || [];
   let showSelfRun = true;
   let attempts = 'solved';
   const solvedOnly = () => attempts === 'solved';
-  const activeSelfRun = () => showSelfRun && !solvedOnly() ? selfRun : [];
+  const activeSelfRun = () => showSelfRun ? selfRun.filter(m => m.graded || !solvedOnly()) : [];
   const netMean = m => solvedOnly() ? m.measured_solved_net_mean : m.measured_net_mean;
   const measuredCount = m => solvedOnly() ? m.measured_solved_attempts : m.measured_attempts;
   const denominator = m => solvedOnly() ? m.upstream_solved_attempts : (m.footprint_population_count || data.population_count || data.task_count);
   const taskIncluded = i => !solvedOnly() || !selected || (selected[2][i][6] || selected[2][i][0]) === 'r';
   const modelIncluded = (m, i) => selected ? taskIncluded(i) : !solvedOnly() || Number.isFinite(m.measured_solved_net_mean);
-  const selfRunNote = m => `Self-run with ${m.harness}, unverified: not graded, ${m.tasks} of ${taskCount} tasks, ${m.measured_attempts}/${m.footprint_population_count} planned attempts measured`;
+  const selfRunNote = m => `Self-run with ${m.harness}, unverified: ${m.graded ? `self-graded, ${m.upstream_solved_attempts} solved` : 'not graded'}, ${m.tasks} of ${taskCount} tasks, ${m.measured_attempts}/${m.footprint_population_count} planned attempts measured`;
   if (selfRun.length) {
     $('self-run-note').hidden = false;
     $('self-run-help').hidden = false;
-    $('self-run-note').textContent = 'Faded: self-run by the site owner on 3–10 of these tasks. Unverified, ungraded, unranked; details under How to read this.';
+    $('self-run-note').textContent = `Faded: self-run by the site owner on 3–10 of these tasks. Unverified, ${selfRun.every(m => m.graded) ? 'self-graded' : 'ungraded'}, unranked; details under How to read this.`;
   }
   if (external) {
     $('external-note').hidden = $('external-help').hidden = false;
@@ -511,7 +511,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         return `<tr><td class="left">${esc(m.name)}</td><td class="left ${esc(c[6] || c[0])}">${esc(result)}</td><td>${signed(metricValue(m, i, 'net'))}</td></tr>`;
       }
       const denominator = m.footprint_population_count || data.population_count || data.task_count;
-      if (m.self_run) return `<tr class="self-run" title="${esc(selfRunNote(m))}"><td>—</td><td class="left">${esc(m.name)}</td><td>${fmt(m.measured_net_mean)}</td><td>—</td><td>—</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${m.measured_attempts}/${denominator}</td></tr>`;
+      if (m.self_run) return m.graded
+        ? `<tr class="self-run" title="${esc(selfRunNote(m))}"><td>—</td><td class="left">${esc(m.name)}</td><td>${fmt(netMean(m))}</td><td>${fmt(solvedOnly() ? m.measured_net_mean : m.measured_solved_net_mean)}</td><td>${fmt(metricValue(m, -1, 'resolve_rate'))}%</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${measuredCount(m) ?? 0}/${solvedOnly() ? m.upstream_solved_attempts ?? 0 : denominator}</td></tr>`
+        : `<tr class="self-run" title="${esc(selfRunNote(m))}"><td>—</td><td class="left">${esc(m.name)}</td><td>${fmt(m.measured_net_mean)}</td><td>—</td><td>—</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${m.measured_attempts}/${denominator}</td></tr>`;
       return `<tr><td>${rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td><td>${fmt(netMean(m))}</td><td>${fmt(solvedOnly() ? m.measured_net_mean : m.measured_solved_net_mean)}</td><td>${fmt(metricValue(m, i, 'resolve_rate'))}%</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${measuredCount(m) ?? 0}/${solvedOnly() ? m.upstream_solved_attempts ?? 0 : denominator}</td></tr>`;
     })()).join('');
   }
@@ -581,7 +583,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       ? 'Solved only: equal-weight mean over measured successes; models without measured successes are unranked and absent from charts. Measured = measured solved / upstream solved attempts. Ungraded self-runs are absent. Solved %, external indices and archived diagnostics are unchanged, independent of this selector.'
       : 'All measured: passing and failed attempts count equally. Missing measurements are never zero.';
     $('rank-note').textContent = solvedOnly() ? 'Mean net units added over measured solved attempts only. Smaller footprint ≠ better coding.' : 'Mean net units added, including failures. Smaller footprint ≠ better coding.';
-    if (selfRun.length) $('self-run-note').hidden = !showSelfRun || solvedOnly();
+    if (selfRun.length) $('self-run-note').hidden = !activeSelfRun().length;
   }
   $('attempts').value = attempts;
   updateAttemptsNote();
@@ -599,11 +601,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   });
   $('self-run-toggle-label').hidden = selfRun.length === 0;
   $('self-run-toggle').checked = showSelfRun;
-  if (selfRun.length) $('self-run-note').hidden = !showSelfRun || solvedOnly();
+  if (selfRun.length) $('self-run-note').hidden = !activeSelfRun().length;
   $('self-run-toggle').addEventListener('change', e => {
     showSelfRun = !!e.target.checked;
     setParam('selfrun', showSelfRun ? null : '0');
-    $('self-run-note').hidden = !showSelfRun || solvedOnly();
+    $('self-run-note').hidden = !activeSelfRun().length;
     renderBoard(); renderGraph();
   });
   const tooltip = $('graph-tooltip');
@@ -646,7 +648,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   function renderBars() {
     const units = v => v.toLocaleString('en-US', {maximumFractionDigits: 1}).replace('-', '−');
     const rows = data.models.map((m, i) => ({m, i, v: metricValue(m, i, 'net'), latest: m.latest !== false}))
-      .concat(selected ? [] : activeSelfRun().map(m => ({m, i: -1, v: m.measured_net_mean, latest: true, selfRun: true})))
+      .concat(selected ? [] : activeSelfRun().map(m => ({m, i: -1, v: netMean(m), latest: true, selfRun: true})))
       .filter(r => modelIncluded(r.m, r.i) && Number.isFinite(r.v)).sort((a, b) => a.v - b.v || a.m.name.localeCompare(b.m.name));
     // Self-run means cover only their own task subset, so they get their own group, never interleaved.
     rows.sort((a, b) => !!a.selfRun - !!b.selfRun);
@@ -688,7 +690,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       name: m.name, company: m.company || 'Other', count: measuredCount(m), match: m.aa_match, latest: m.latest !== false,
       kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : (selected[2][i][6] || selected[2][i][0]) === 'r' ? 'resolved' : 'unknown') : 'all', i, m}))
       .concat(selected ? [] : activeSelfRun().map(m => ({x: metricValue(m, -1, axes.x), y: metricValue(m, -1, axes.y), name: m.name,
-        company: m.company || 'Other', count: m.measured_attempts, match: m.aa_match, latest: true, kind: 'all', i: -1, m, selfRun: true})))
+        company: m.company || 'Other', count: measuredCount(m), match: m.aa_match, latest: true, kind: 'all', i: -1, m, selfRun: true})))
       .filter(p => modelIncluded(p.m, p.i) && Number.isFinite(p.x) && Number.isFinite(p.y));
     $('graph-legend').textContent = points.length
       ? 'Older generations faded.' + (selected ? ' Status on hover.' : '')
