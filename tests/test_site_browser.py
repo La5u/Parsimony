@@ -97,44 +97,50 @@ class SiteBrowserTests(unittest.TestCase):
             reset.send_keys(Keys.ENTER)
             self.assertEqual(browser.switch_to.active_element, reset)
 
-    def test_outcome_selector_url_focus_table_and_charts(self):
+    def test_fixed_metrics_table_task_and_charts(self):
         from selenium.webdriver.common.by import By
-        from selenium.webdriver.common.keys import Keys
         from selenium.webdriver.support.ui import Select
 
         with self.rendered_browser() as (browser, directory):
-            browser.get((directory / 'index.html').as_uri() + '?attempts=solved&keep=1#board')
-            selector = browser.find_element(By.ID, 'attempts')
-            self.assertEqual(Select(selector).first_selected_option.get_attribute('value'), 'solved')
+            browser.get((directory / 'index.html').as_uri() + '?keep=1#board')
             rows = browser.find_elements(By.CSS_SELECTOR, '#board tbody tr')
             self.assertEqual([row.find_elements(By.TAG_NAME, 'td')[1].text for row in rows], ['Alpha', 'Beta'])
             self.assertEqual(rows[0].find_elements(By.TAG_NAME, 'td')[0].text, '1')
             self.assertEqual(rows[1].find_elements(By.TAG_NAME, 'td')[0].text, '—')
-            self.assertIn('Measured solved / upstream solved', browser.find_element(By.CSS_SELECTOR, '#board thead').text)
+            self.assertEqual([cell.text for cell in rows[0].find_elements(By.TAG_NAME, 'td')[2:]],
+                             ['1.0', '1.0', '100.0%', '1/1'])
+            self.assertEqual([cell.text for cell in rows[1].find_elements(By.TAG_NAME, 'td')[2:]],
+                             ['—', '−2.0', '0.0%', '0/0'])
+            self.assertIn('Measured solved / upstream', browser.find_element(By.CSS_SELECTOR, '#board thead').text)
+            x = Select(browser.find_element(By.ID, 'graph-x'))
+            self.assertEqual(x.first_selected_option.get_attribute('value'), 'solved_net')
             self.assertEqual([p.get_attribute('data-model') for p in browser.find_elements(By.CSS_SELECTOR, '#graph circle[data-point]')], ['Alpha'])
             Select(browser.find_element(By.ID, 'chart-type')).select_by_value('bar')
             self.assertEqual([p.text for p in browser.find_elements(By.CSS_SELECTOR, '.bar-name')], ['Alpha'])
-            self.assertIn('per solved attempt', browser.find_element(By.ID, 'graph-legend').text)
-            browser.find_element(By.ID, 'task-search').send_keys('task')
-            self.assertEqual(len(browser.find_elements(By.CSS_SELECTOR, '#board tbody tr')), 1)
-            self.assertEqual([p.text for p in browser.find_elements(By.CSS_SELECTOR, '.bar-name')], ['Alpha'])
-            browser.execute_script('arguments[0].focus()', selector)
-            selector.send_keys(Keys.HOME)
-            self.assertEqual(browser.switch_to.active_element, selector)
-            self.assertEqual(browser.execute_script('return location.search'), '?attempts=all&keep=1&chart=bar')
+            self.assertEqual(browser.find_element(By.ID, 'graph-x-label').text, 'Metric')
+            self.assertFalse(browser.find_element(By.ID, 'graph-y-control').is_displayed())
+            self.assertIn('Net units added, solved (mean)', browser.find_element(By.ID, 'graph-legend').text)
+            x.select_by_value('net')
+            self.assertEqual([p.text for p in browser.find_elements(By.CSS_SELECTOR, '.bar-name')], ['Beta', 'Alpha'])
+            x.select_by_value('resolve_rate')
+            self.assertEqual([p.text for p in browser.find_elements(By.CSS_SELECTOR, '.bar-name')], ['Alpha', 'Beta'])
+            self.assertEqual([p.text for p in browser.find_elements(By.CSS_SELECTOR, '.bar-value')], ['100%', '0%'])
+            self.assertEqual(browser.find_element(By.ID, 'graph-legend').text, 'Solved (%). Older generations faded.')
+            self.assertEqual(browser.execute_script('return location.search'), '?keep=1&chart=bar')
             self.assertEqual(browser.execute_script('return location.hash'), '#board')
+            browser.find_element(By.ID, 'task-search').send_keys('task')
             self.assertEqual(len(browser.find_elements(By.CSS_SELECTOR, '#board tbody tr')), 2)
             self.assertEqual([p.text for p in browser.find_elements(By.CSS_SELECTOR, '.bar-name')], ['Beta', 'Alpha'])
+            self.assertEqual(Select(browser.find_element(By.ID, 'graph-x')).first_selected_option.get_attribute('value'), 'net')
             Select(browser.find_element(By.ID, 'chart-type')).select_by_value('scatter')
             self.assertEqual(len(browser.find_elements(By.CSS_SELECTOR, '#graph circle[data-point]')), 2)
-            browser.execute_script('arguments[0].focus()', selector)
-            selector.send_keys(Keys.END)
-            self.assertEqual(browser.switch_to.active_element, selector)
-            self.assertEqual(browser.execute_script('return new URLSearchParams(location.search).get("attempts")'), None)
-            self.assertEqual(len(browser.find_elements(By.CSS_SELECTOR, '#graph circle[data-point]')), 1)
+            self.assertTrue(browser.find_element(By.ID, 'graph-y-control').is_displayed())
             browser.find_element(By.ID, 'task-reset').click()
             self.assertEqual(len(browser.find_elements(By.CSS_SELECTOR, '#board tbody tr')), 2)
-            self.assertEqual(len(browser.find_elements(By.CSS_SELECTOR, '#graph circle[data-point]')), 1)
+            self.assertEqual(Select(browser.find_element(By.ID, 'graph-x')).first_selected_option.get_attribute('value'), 'resolve_rate')
+            # Swapping to the all-measured footprint shows the failed model too.
+            Select(browser.find_element(By.ID, 'graph-y')).select_by_value('net')
+            self.assertEqual(len(browser.find_elements(By.CSS_SELECTOR, '#graph circle[data-point]')), 2)
 
     def test_published_structure_titles_and_disabled_javascript_fallback(self):
         from selenium.webdriver.common.by import By
@@ -262,7 +268,9 @@ class SiteBrowserTests(unittest.TestCase):
             browser.execute_script("document.querySelector('iframe').style.width = '320px'")
             browser.switch_to.frame(browser.find_element(By.TAG_NAME, 'iframe'))
             WebDriverWait(browser, 5).until(lambda b: not tooltip.is_displayed())
-            self.assertFalse(browser.find_element(By.ID, 'axis-controls').is_displayed())
+            self.assertTrue(browser.find_element(By.ID, 'axis-controls').is_displayed())
+            self.assertFalse(browser.find_element(By.ID, 'graph-y-control').is_displayed())
+            self.assertEqual(browser.find_element(By.ID, 'graph-x-label').text, 'Metric')
             self.assertEqual(browser.execute_script('return document.documentElement.lang'), 'en')
             self.assertEqual(browser.find_element(By.ID, 'custom-status').get_attribute('aria-live'), 'polite')
 
@@ -307,7 +315,7 @@ class SiteBrowserTests(unittest.TestCase):
             self.assertEqual(browser.execute_script('return arguments[0].getClientRects().length', toggle), 0)
             alpha = next(row for row in browser.find_elements(By.CSS_SELECTOR, '#board tbody tr')
                          if row.find_elements(By.TAG_NAME, 'td')[1].text == 'Alpha')
-            self.assertEqual(alpha.find_elements(By.TAG_NAME, 'td')[4].text, '—%')
+            self.assertEqual(alpha.find_elements(By.TAG_NAME, 'td')[4].text, '—')
             Select(browser.find_element(By.ID, 'chart-type')).select_by_value('bar')
             browser.execute_script("""
                 const input = document.getElementById('task-search');
@@ -333,11 +341,12 @@ class SiteBrowserTests(unittest.TestCase):
                                           measured_churn_mean=1, resolve_rate=None)]
             page.write_text(render(data))
             browser.refresh()
+            Select(browser.find_element(By.ID, 'graph-x')).select_by_value('net')
             self.assertTrue(browser.find_element(By.ID, 'self-run-toggle-label').is_displayed())
             Select(browser.find_element(By.ID, 'chart-type')).select_by_value('bar')
             owner = next(row for row in browser.find_elements(By.CSS_SELECTOR, '[data-bar]')
                          if 'Owner' in row.get_attribute('aria-label'))
-            self.assertIn('Mean net units added per attempt: 0.4', owner.get_attribute('aria-label'))
+            self.assertIn('Net units added, all measured (mean): 0.4', owner.get_attribute('aria-label'))
             self.assertGreater(owner.rect['width'], 0)
             browser.execute_async_script('''
                 const row = arguments[0], done = arguments[1];
@@ -345,5 +354,5 @@ class SiteBrowserTests(unittest.TestCase):
                 requestAnimationFrame(() => requestAnimationFrame(done));
             ''', owner)
             browser.execute_script('arguments[0].focus({preventScroll: true})', owner)
-            self.assertIn('Mean net units added per attempt: 0.4',
+            self.assertIn('Net units added, all measured (mean): 0.4',
                           browser.find_element(By.ID, 'graph-tooltip').text)

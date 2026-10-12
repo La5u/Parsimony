@@ -119,10 +119,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="small" id="units-definition"><b>Coding units</b> count syntax elements—statements, calls, comparisons, names and literals—not lines or runtime complexity. Net units = added − removed.</p>
   <details class="small muted"><summary>How to read this</summary>
   <p>We parse published <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a> patches and count syntax elements plus block-end markers. Formatting, comments and punctuation do not count. Python, JavaScript/TypeScript and Go use separate parser-specific tracks; raw unit counts are not comparable across them.</p>
-  <p>Default rank is by mean net units added, lowest first, over measured upstream successes (Count attempts: Solved only). Count attempts: All measured instead ranks by the mean across all measured in-scope attempts, including failures. The other footprint column always shows the alternative mean; sorting it does not change rank. Equal means tie; models with no measurements are unranked. Partial coverage can change the order, and a few very large deletions can dominate a mean. This is smallest measured footprint, not best coding ability.</p>
-  <p>Net units added means coding units added minus removed, not semantic complexity. Measured shows eligible footprints / published population. Missing or entirely excluded edits are not zero. Solved % comes from the upstream benchmark and is unchanged by the selector. Solved-only mode (the default) uses upstream outcomes to select measured successes, not as a correctness tie-break. A failed no-op or large deletion can rank first. Click headings to sort; missing values stay last.</p>
-  <p>Models missing either selected value have no point. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; percentage axes normally stay at 0–100%. Points outside fitted axes remain at their actual, true-scale positions.</p>
-  <p>Solved % = upstream resolved attempts / frozen attempt population × 100. Tests are not rerun by Parsimony. Footprint = sum of net coding units / N measured in-scope attempts: each attempt has equal weight 1/N, over successes only by default, or including failures when All measured is selected. Missing measurements are not zero; Measured in the default solved-only mode is measured solved attempts / upstream resolved attempts (not unique tasks). Benchmarks and languages are not pooled and have no benchmark weights. Footprint uses no correctness weight beyond that success filter.</p>
+  <p>Rank is by mean net units added, lowest first, over measured upstream successes. The all-measured column is the mean over all measured in-scope attempts, including failures; sorting it does not change rank. Equal means tie; models with no measurements are unranked. Partial coverage can change the order, and a few very large deletions can dominate a mean. This is smallest measured footprint, not best coding ability.</p>
+  <p>Net units added means coding units added minus removed, not semantic complexity. Measured shows measured solved attempts / upstream solved attempts (not unique tasks). Missing or entirely excluded edits are not zero. Solved % comes from the upstream benchmark. The rank uses upstream outcomes to select measured successes, not as a correctness tie-break. A failed no-op or large deletion can rank first. Click headings to sort; missing values stay last.</p>
+  <p>Pick any two metrics for the scatter, or one for the bars. Models missing a selected value have no point or bar. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; percentage axes normally stay at 0–100%. Points outside fitted axes remain at their actual, true-scale positions.</p>
+  <p>Solved % = upstream resolved attempts / frozen attempt population × 100. Tests are not rerun by Parsimony. Footprint = sum of net coding units / N measured in-scope attempts: each attempt has equal weight 1/N, over successes for the rank and the solved columns, including failures for the all-measured ones. Missing measurements are not zero. Benchmarks and languages are not pooled and have no benchmark weights. Footprint uses no correctness weight beyond that success filter.</p>
   <p id="external-help" hidden>Artificial Analysis indices are external, model-level capability scores from a pinned snapshot, not results on this benchmark. They are matched to a configuration only for the same model and reasoning effort, or where Artificial Analysis lists a single unlabelled entry or resolves an undated model ID; these weaker matches are disclosed on hover. Configurations without a match have no value and no point. They never affect footprint rank.</p>
   <p id="self-run-help" hidden>Self-run models were run by the site owner on the first 3–10 DeepSWE Python tasks (OpenAI models via pi, Anthropic models via Claude Code), without the task containers. Their patches were then graded with each task's own DeepSWE tests in task containers rebuilt by the owner (every reference solution passes there; a hung test suite counts as unknown, not solved). They are unverified and never ranked, and cover only a task subset, so compare them mainly with each other. GPT-5.6 Sol is the one model run both ways: its self-run footprint was 0.88× its published one on the same tasks. Claude Code has no such check.</p>
   </details>
@@ -138,13 +138,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <section aria-labelledby="complexity">
   <h2 id="complexity">Compare models</h2>
   <p class="small muted" id="external-note" hidden></p>
-  <p><label for="attempts">Count attempts</label> <select id="attempts" aria-describedby="attempts-note"><option value="all">All measured</option><option value="solved">Solved only</option></select></p>
-  <p class="small muted" id="attempts-note"></p>
   <p><label for="chart-type">Chart</label> <select id="chart-type" aria-label="Chart type">
-       <option value="scatter">Scatter: compare two metrics</option><option value="bar">Bars: net units added</option></select>
+       <option value="scatter">Scatter: compare two metrics</option><option value="bar">Bars: one metric</option></select>
      <label id="self-run-toggle-label" hidden><input type="checkbox" id="self-run-toggle" checked> Show self-run (unverified)</label></p>
-  <p id="axis-controls"><label for="graph-x">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
-     <label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></p>
+  <p id="axis-controls"><label for="graph-x" id="graph-x-label">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
+     <span id="graph-y-control"><label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></span></p>
   <p class="small muted" id="graph-legend"></p>
   <div class="small" id="company-legend" aria-label="Model companies"></div>
   <div id="graph" aria-label="Comparison of selected metrics per model"></div>
@@ -185,7 +183,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <h2 id="method">Method</h2>
   <ul>
     <li>Each patch is applied to the task's base commit and both versions of each changed file are parsed. Nothing is executed.</li>
-    <li>Footprint rank uses the arithmetic mean of net coding units added across measured, in-scope successful attempts by default; passing references are not required. Count attempts: All measured instead counts successful and failed attempts equally. The second footprint column shows the alternative mean; equal means tie without a correctness tie-break.</li>
+    <li>Footprint rank uses the arithmetic mean of net coding units added across measured, in-scope successful attempts; passing references are not required. The second footprint column counts successful and failed attempts equally; equal means tie without a correctness tie-break.</li>
     <li>Correctness is reported separately by the upstream benchmark. Smaller failed or no-op attempts are not better solutions.</li>
     <li id="language-scope">Test, docs and generated files are excluded. Only Python is measured.</li>
   </ul>
@@ -291,17 +289,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   }
   $('harness-limit').textContent = $('harness-limit').textContent.replace('Scores are relative to the reference models', 'Footprints depend on the agent configuration');
   const external = data.external || null;
-  // Owner-run configurations: shown faded in the all-tasks view and never ranked; graded ones also in Solved only.
+  // Owner-run configurations: shown faded in the all-tasks view, never ranked.
   const selfRun = data.self_run_models || [];
   let showSelfRun = true;
-  let attempts = 'solved';
-  const solvedOnly = () => attempts === 'solved';
-  const activeSelfRun = () => showSelfRun ? selfRun.filter(m => m.graded || !solvedOnly()) : [];
-  const netMean = m => solvedOnly() ? m.measured_solved_net_mean : m.measured_net_mean;
-  const measuredCount = m => solvedOnly() ? m.measured_solved_attempts : m.measured_attempts;
-  const denominator = m => solvedOnly() ? m.upstream_solved_attempts : (m.footprint_population_count || data.population_count || data.task_count);
-  const taskIncluded = i => !solvedOnly() || !selected || (selected[2][i][6] || selected[2][i][0]) === 'r';
-  const modelIncluded = (m, i) => selected ? taskIncluded(i) : !solvedOnly() || Number.isFinite(m.measured_solved_net_mean);
+  const activeSelfRun = () => showSelfRun ? selfRun : [];
+  // Rank: mean net units added over measured solved attempts. Measured = measured solved / upstream solved.
+  const netMean = m => m.measured_solved_net_mean;
+  const measuredCount = m => m.measured_solved_attempts;
+  const denominator = m => m.upstream_solved_attempts;
   const selfRunNote = m => `Self-run with ${m.harness}, unverified: ${m.graded ? `self-graded, ${m.upstream_solved_attempts} solved` : 'not graded'}, ${m.tasks} of ${taskCount} tasks, ${m.measured_attempts}/${m.footprint_population_count} planned attempts measured`;
   if (selfRun.length) {
     $('self-run-note').hidden = false;
@@ -316,17 +311,15 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     Number.isFinite(netMean(other)) && netMean(other) < netMean(m)).length : null;
   const tasks = new Map(displayedTasks.map((t) => [t[0], t]));
   const labels = {r: 'solved', f: 'failed', u: 'unknown', m: 'not measured', n: 'no attempt', e: 'empty patch', o: 'out of scope', c: 'no passing reference'};
-  let selected = null, sortKey = 'net', ascending = true;
+  let selected = null, sortKey = 'solved_net', ascending = true;
   $('task-ids').innerHTML = displayedTasks.map((t) => `<option value="${esc(t[0])}">`).join('');
   function metricValue(model, index, key) {
     if (!selected) {
       return {resolve_rate: model.resolve_rate == null ? null : model.resolve_rate * 100,
         coverage: denominator(model) > 0 ? measuredCount(model) / denominator(model) * 100 : null,
-        churn: solvedOnly() ? model.measured_solved_churn_mean : model.measured_churn_mean,
-        net: netMean(model), solved_net: solvedOnly() ? model.measured_net_mean : model.measured_solved_net_mean,
+        churn: model.measured_churn_mean, net: model.measured_net_mean, solved_net: model.measured_solved_net_mean,
         aa_coding: model.aa_coding, aa_intelligence: model.aa_intelligence}[key];
     }
-    if (!taskIncluded(index)) return null;
     const cell = selected[2][index];
     const eligible = cell.length > 7 ? cell[7] : ['r', 'f', 'c'].includes(cell[0]);
     return {net: eligible ? cell[1] : null,
@@ -338,7 +331,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       .find(button => button === document.activeElement)?.dataset.sort;
     const headers = selected
       ? [['Model', null], ['Result', null], ['Net units', 'net']]
-      : [['#', null], ['Model', null], [solvedOnly() ? 'Net units, solved (mean)' : 'Net units (mean)', 'net'], [solvedOnly() ? 'Net units, all measured (mean)' : 'Net units, solved (mean)', 'solved_net'], ['Solved', 'resolve_rate'], ...(external ? [['AA Intel.', 'aa_intelligence']] : []), [solvedOnly() ? 'Measured solved / upstream' : 'Measured', 'coverage']];
+      : [['#', null], ['Model', null], ['Net units, solved (mean)', 'solved_net'], ['Net units, all measured (mean)', 'net'], ['Solved', 'resolve_rate'], ...(external ? [['AA Intel.', 'aa_intelligence']] : []), ['Measured solved / upstream', 'coverage']];
     document.querySelector('#board thead').innerHTML = '<tr>' + headers.map(([name, key]) => `<th${key ? ` aria-sort="${key === sortKey ? ascending ? 'ascending' : 'descending' : 'none'}"` : ''}${name === 'Model' ? ' class="left"' : ''}>${key ? `<button type="button" data-sort="${key}">${name}</button>` : name}</th>`).join('') + '</tr>';
     const buttons = [...document.querySelectorAll('#board button[data-sort]')];
     if (focusedSort) buttons.find(button => button.dataset.sort === focusedSort)?.focus({preventScroll: true});
@@ -355,7 +348,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     };
     // Self-run rows cover a task subset: listed after the ranked rows, never interleaved.
     const extra = selected ? [] : activeSelfRun().map(m => ({m, i: -1})).sort(order);
-    const models = data.models.map((m, i) => ({m, i})).filter(r => !selected || taskIncluded(r.i)).sort(order).concat(extra);
+    const models = data.models.map((m, i) => ({m, i})).sort(order).concat(extra);
     document.querySelector('#board tbody').innerHTML = models.map(({m, i}, k) => (k === models.length - extra.length && extra.length
       ? `<tr class="self-run-head"><td colspan="${headers.length}">Self-run pilot · unranked, 3–10 tasks</td></tr>` : '') + (() => {
       if (selected) {
@@ -364,16 +357,13 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         const result = metricValue(m, i, 'net') == null ? `${outcome} · not measured` : outcome;
         return `<tr><td class="left">${esc(m.name)}</td><td class="left ${esc(c[6] || c[0])}">${esc(result)}</td><td>${signed(metricValue(m, i, 'net'))}</td></tr>`;
       }
-      const denominator = m.footprint_population_count || data.population_count || data.task_count;
-      if (m.self_run) return m.graded
-        ? `<tr class="self-run" title="${esc(selfRunNote(m))}"><td>—</td><td class="left">${esc(m.name)}</td><td>${fmt(netMean(m))}</td><td>${fmt(solvedOnly() ? m.measured_net_mean : m.measured_solved_net_mean)}</td><td>${fmt(metricValue(m, -1, 'resolve_rate'))}%</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${measuredCount(m) ?? 0}/${solvedOnly() ? m.upstream_solved_attempts ?? 0 : denominator}</td></tr>`
-        : `<tr class="self-run" title="${esc(selfRunNote(m))}"><td>—</td><td class="left">${esc(m.name)}</td><td>${fmt(m.measured_net_mean)}</td><td>—</td><td>—</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${m.measured_attempts}/${denominator}</td></tr>`;
-      return `<tr><td>${rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td><td>${fmt(netMean(m))}</td><td>${fmt(solvedOnly() ? m.measured_net_mean : m.measured_solved_net_mean)}</td><td>${fmt(metricValue(m, i, 'resolve_rate'))}%</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${measuredCount(m) ?? 0}/${solvedOnly() ? m.upstream_solved_attempts ?? 0 : denominator}</td></tr>`;
+      const solved = metricValue(m, i, 'resolve_rate');
+      return `<tr${m.self_run ? ` class="self-run" title="${esc(selfRunNote(m))}"` : ''}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td><td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.measured_net_mean)}</td><td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
     })()).join('');
   }
   function showTask(id) {
     if (id && !tasks.has(id)) { $('task-status').textContent = `No task matches “${id}”. Still showing ${selected ? selected[0] : 'all tasks'}.`; return; }
-    if (!!selected !== !!id) { sortKey = 'net'; ascending = true; }
+    if (!!selected !== !!id) { sortKey = id ? 'net' : 'solved_net'; ascending = true; }
     selected = id ? tasks.get(id) : null;
     $('task-status').textContent = selected ? `Selected task: ${selected[0]}` : 'Showing all tasks.';
     $('task-search').value = selected ? selected[0] : '';
@@ -393,13 +383,13 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   };
   const companyColor = company => companyColors[company] || companyColors.Other;
   // External capability indices replace Solved as the default Y axis when a pinned snapshot is present.
-  const graphAxes = {all: {x: 'net', y: external ? 'aa_intelligence' : 'resolve_rate'}, task: {x: 'net', y: 'churn'}};
+  const graphAxes = {all: {x: 'solved_net', y: external ? 'aa_intelligence' : 'resolve_rate'}, task: {x: 'net', y: 'churn'}};
   const currentAxes = () => graphAxes[selected ? 'task' : 'all'];
   function axisOptions() {
     if (selected) return [{key: 'net', label: 'Net units added'}, {key: 'churn', label: 'Units changed'}];
-    return [{key: 'coverage', label: solvedOnly() ? 'Measured solved / upstream solved (%)' : 'Measured coverage (%)'}, {key: 'churn', label: solvedOnly() ? 'Units changed, solved (mean per attempt)' : 'Units changed (mean per attempt)' },
-      {key: 'resolve_rate', label: 'Solved (%)'}, {key: 'net', label: solvedOnly() ? 'Net units added, solved (mean)' : 'Net units added (mean)'},
-      {key: 'solved_net', label: solvedOnly() ? 'Net units added, all measured (mean)' : 'Net units added, solved tasks (mean)' },
+    return [{key: 'solved_net', label: 'Net units added, solved (mean)'}, {key: 'net', label: 'Net units added, all measured (mean)'},
+      {key: 'churn', label: 'Units changed, all measured (mean)'}, {key: 'resolve_rate', label: 'Solved (%)'},
+      {key: 'coverage', label: 'Measured solved / upstream solved (%)'},
       ...(external ? [{key: 'aa_intelligence', label: 'Artificial Analysis Intelligence Index'},
         {key: 'aa_coding', label: 'Artificial Analysis Coding Index'}] : [])];
   }
@@ -416,12 +406,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     axes[axis] = key;
     renderAxisControls(); renderGraph();
   });
-  // Chart type: the scatter, or bars of net units added; ?chart=bar opens the bars (shareable link).
+  // Chart type: the scatter, or bars of the X-axis metric; ?chart=bar opens the bars (shareable link).
   // ?selfrun=0 hides the self-run models from the chart and table (shareable link).
   let chartType = 'scatter';
   try {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('attempts') === 'all') attempts = 'all';
     if (params.get('chart') === 'bar') chartType = 'bar';
     if (params.get('selfrun') === '0') showSelfRun = false;
   } catch (e) {}
@@ -432,34 +421,19 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       window.history.replaceState(null, '', url);
     } catch (e) {}
   };
-  function updateAttemptsNote() {
-    $('attempts-note').textContent = solvedOnly()
-      ? 'Solved only: equal-weight mean over measured successes; models without measured successes are unranked and absent from charts. Measured = measured solved / upstream solved attempts. Ungraded self-runs are absent. Solved %, external indices and archived diagnostics are unchanged, independent of this selector.'
-      : 'All measured: passing and failed attempts count equally. Missing measurements are never zero.';
-    $('rank-note').textContent = solvedOnly() ? 'Mean net units added over measured solved attempts only. Smaller footprint ≠ better coding.' : 'Mean net units added, including failures. Smaller footprint ≠ better coding.';
-    if (selfRun.length) $('self-run-note').hidden = !activeSelfRun().length;
-  }
-  $('attempts').value = attempts;
-  updateAttemptsNote();
-  $('attempts').addEventListener('change', e => {
-    attempts = e.target.value === 'solved' ? 'solved' : 'all';
-    setParam('attempts', solvedOnly() ? null : 'all');
-    updateAttemptsNote();
-    renderBoard(); renderAxisControls(); renderGraph();
-  });
   $('chart-type').value = chartType;
   $('chart-type').addEventListener('change', e => {
     chartType = e.target.value === 'bar' ? 'bar' : 'scatter';
     setParam('chart', chartType === 'bar' ? 'bar' : null);
-    renderGraph();
+    renderAxisControls(); renderGraph();
   });
   $('self-run-toggle-label').hidden = selfRun.length === 0;
   $('self-run-toggle').checked = showSelfRun;
-  if (selfRun.length) $('self-run-note').hidden = !activeSelfRun().length;
+  if (selfRun.length) $('self-run-note').hidden = !showSelfRun;
   $('self-run-toggle').addEventListener('change', e => {
     showSelfRun = !!e.target.checked;
     setParam('selfrun', showSelfRun ? null : '0');
-    $('self-run-note').hidden = !activeSelfRun().length;
+    $('self-run-note').hidden = !showSelfRun;
     renderBoard(); renderGraph();
   });
   const tooltip = $('graph-tooltip');
@@ -501,15 +475,18 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   }
   function renderBars() {
     const units = v => v.toLocaleString('en-US', {maximumFractionDigits: 1}).replace('-', '−');
-    const rows = data.models.map((m, i) => ({m, i, v: metricValue(m, i, 'net'), latest: m.latest !== false}))
-      .concat(selected ? [] : activeSelfRun().map(m => ({m, i: -1, v: netMean(m), latest: true, selfRun: true})))
-      .filter(r => modelIncluded(r.m, r.i) && Number.isFinite(r.v)).sort((a, b) => a.v - b.v || a.m.name.localeCompare(b.m.name));
+    // Bars show the X-axis metric; footprints smallest first, percentages and indices largest first.
+    const key = currentAxes().x, footprint = ['net', 'solved_net', 'churn'].includes(key);
+    const percent = ['resolve_rate', 'coverage'].includes(key) ? '%' : '';
+    const rows = data.models.map((m, i) => ({m, i, v: metricValue(m, i, key), latest: m.latest !== false}))
+      .concat(selected ? [] : activeSelfRun().map(m => ({m, i: -1, v: metricValue(m, -1, key), latest: true, selfRun: true})))
+      .filter(r => Number.isFinite(r.v)).sort((a, b) => (footprint ? a.v - b.v : b.v - a.v) || a.m.name.localeCompare(b.m.name));
     // Self-run means cover only their own task subset, so they get their own group, never interleaved.
     rows.sort((a, b) => !!a.selfRun - !!b.selfRun);
     const firstSelfRun = rows.findIndex(r => r.selfRun);
-    const metric = selected ? 'Net units added in this attempt' : solvedOnly() ? 'Mean net units added per solved attempt' : 'Mean net units added per attempt';
+    const metric = axisOptions().find(o => o.key === key).label + (selected ? ' in this attempt' : '');
     $('graph-legend').textContent = rows.length
-      ? `${metric}${selected || solvedOnly() ? '' : ', failures included'}. Smaller ≠ better. Older generations faded.`
+      ? `${metric}.${footprint ? ' Smaller ≠ better.' : ''} Older generations faded.`
       : 'No measured values available for this view.';
     $('company-legend').innerHTML = [...new Set(rows.map(r => r.m.company || 'Other'))].sort().map(company =>
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
@@ -517,16 +494,16 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const span = hi - lo || 1, pct = v => (v - lo) / span * 100;
     const note = r => {
       const m = r.m, total = m.footprint_population_count || data.population_count || data.task_count;
-      return `${m.name}${r.selfRun ? ' · self-run' : ''} (${m.company || 'Other'})\n${metric}: ${units(r.v)}` +
-        (selected ? `\n${labels[selected[2][r.i][6] || selected[2][r.i][0]] || 'unknown'} task attempt` : `\nMeasured ${measuredCount(m)}/${denominator(m)} ${solvedOnly() ? 'upstream solved' : 'population'} attempts`) + (r.selfRun ? '\n' + selfRunNote(m) : '');
+      return `${m.name}${r.selfRun ? ' · self-run' : ''} (${m.company || 'Other'})\n${metric}: ${units(r.v)}${percent}` +
+        (selected ? `\n${labels[selected[2][r.i][6] || selected[2][r.i][0]] || 'unknown'} task attempt` : `\nMeasured ${measuredCount(m) ?? 0}/${denominator(m) ?? 0} upstream solved attempts`) + (r.selfRun ? '\n' + selfRunNote(m) : '');
     };
     $('graph').style.marginBottom = '0px';
-    $('graph').innerHTML = `<div class="bars" role="list" aria-label="${esc(metric)} per model, smallest first">` + rows.map((r, k) =>
+    $('graph').innerHTML = `<div class="bars" role="list" aria-label="${esc(metric)} per model, ${footprint ? 'smallest' : 'largest'} first">` + rows.map((r, k) =>
       (k === firstSelfRun ? `<div class="bar-group" role="presentation">Self-run pilot: 3–10 tasks only, not comparable with the bars above</div>` : '') +
       `<div class="bar-row${r.latest ? '' : ' older'}${r.selfRun ? ' self-run' : ''}" role="listitem" tabindex="0" data-bar="${k}" aria-label="${esc(note(r).replace(/\n/g, '; '))}">` +
       `<span class="bar-name">${esc(r.m.name)}</span>` +
       `<span class="bar-track">${lo < 0 ? `<span class="bar-zero" style="left:${pct(0)}%"></span>` : ''}<span class="bar" style="left:${pct(Math.min(0, r.v))}%;width:${Math.abs(r.v) / span * 100}%;background:${companyColor(r.m.company || 'Other')}"></span></span>` +
-      `<span class="bar-value">${units(r.v)}</span></div>`).join('') + '</div>';
+      `<span class="bar-value">${units(r.v)}${percent}</span></div>`).join('') + '</div>';
     document.querySelectorAll('#graph [data-bar]').forEach(row => {
       const show = event => showTooltipAt(row, event, note(rows[Number(row.dataset.bar)]));
       ['mouseenter', 'mousemove', 'focus', 'click'].forEach(event => row.addEventListener(event, show));
@@ -535,7 +512,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   }
   function renderGraph() {
     hideTooltip();
-    $('axis-controls').hidden = chartType === 'bar';
+    $('graph-y-control').hidden = chartType === 'bar';
+    $('graph-x-label').textContent = chartType === 'bar' ? 'Metric' : 'X axis';
     if (chartType === 'bar') return renderBars();
     const axes = currentAxes(), options = axisOptions();
     const xLabel = options.find(o => o.key === axes.x).label, yLabel = options.find(o => o.key === axes.y).label;
@@ -545,7 +523,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : (selected[2][i][6] || selected[2][i][0]) === 'r' ? 'resolved' : 'unknown') : 'all', i, m}))
       .concat(selected ? [] : activeSelfRun().map(m => ({x: metricValue(m, -1, axes.x), y: metricValue(m, -1, axes.y), name: m.name,
         company: m.company || 'Other', count: measuredCount(m), match: m.aa_match, latest: true, kind: 'all', i: -1, m, selfRun: true})))
-      .filter(p => modelIncluded(p.m, p.i) && Number.isFinite(p.x) && Number.isFinite(p.y));
+      .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
     $('graph-legend').textContent = points.length
       ? 'Older generations faded.' + (selected ? ' Status on hover.' : '')
       : 'No measured points available for this view.';
@@ -592,7 +570,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const usesExternal = [axes.x, axes.y].some(k => k.startsWith('aa_'));
     const matchNote = p => usesExternal && p.match && p.match !== 'exact'
       ? {effort_unlabelled: 'Artificial Analysis entry has no effort label', undated_alias: 'undated model ID matched to the Artificial Analysis snapshot'}[p.match] : '';
-    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; outside fitted axes, plotted to scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + p.count + '/' + denominator(p.m) + (solvedOnly() ? ' upstream solved attempts' : ' population attempts') : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}`;
+    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; outside fitted axes, plotted to scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + (p.count ?? 0) + '/' + (denominator(p.m) ?? 0) + ' upstream solved attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}`;
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
     const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip"></circle>`).join('');
     // Green zone: the half of each axis that is better (lower footprint, higher solved/index).
