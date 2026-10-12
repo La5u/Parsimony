@@ -17,11 +17,9 @@ import argparse
 import fcntl
 import hashlib
 import json
-import os
 import re
 import shutil
 import subprocess
-import sys
 import threading
 import time
 from datetime import datetime, timezone

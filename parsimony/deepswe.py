@@ -15,7 +15,6 @@ import hashlib
 import http.client
 import json
 import re
-import sys
 import tomllib
 from collections import defaultdict
 from pathlib import Path

@@ -24,7 +24,7 @@ from pathlib import Path
 from urllib.error import HTTPError
 
 from .artifacts import Cache
-from .live import fetch_hf_rows
+from .live import _unique_object, fetch_hf_rows
 
 SUBMISSION_REVISION = 'e7062f4a848ca7775bc1c1313f7aa419bd6a3ec1'
 DATASET_REVISION = 'b3fca77b637379f0c01ad86d18753a7ac1998b53'
@@ -76,14 +76,7 @@ def _id(value) -> str:
 
 def _object(raw: bytes) -> dict:
     # Duplicate JSON keys must not silently overwrite IDs/outcomes.
-    def pairs(items):
-        result = {}
-        for key, value in items:
-            if key in result:
-                raise ValueError(f'duplicate JSON key: {key}')
-            result[key] = value
-        return result
-    value = json.loads(raw, object_pairs_hook=pairs)
+    value = json.loads(raw, object_pairs_hook=_unique_object)
     if not isinstance(value, dict):
         raise ValueError('expected JSON object')
     return value

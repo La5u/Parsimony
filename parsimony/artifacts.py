@@ -72,10 +72,6 @@ def _bytes(source: str, cache: Cache) -> bytes:
     return Path(source).read_bytes()
 
 
-def _json(source: str, cache: Cache) -> Any:
-    return json.loads(_bytes(source, cache).decode("utf-8"))
-
-
 def _github_parts(url: str) -> tuple[str, str, str] | None:
     p = urlparse(url)
     if p.netloc not in {"github.com", "www.github.com"}:
