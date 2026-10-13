@@ -1,6 +1,6 @@
 # Parsimony
 
-How much code do coding agents write to fix real issues?
+How much code do AI models add?
 
 Parsimony takes the patches that agents published for public benchmarks (DeepSWE, SWE-bench Verified, SWE-bench Live), parses the code before and after each patch, and counts how many **coding units** each one added and removed. It never runs the code, never calls a model and never reruns a benchmark: every number comes from public artifacts and can be recomputed.
 
