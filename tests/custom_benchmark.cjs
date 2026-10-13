@@ -66,7 +66,7 @@ async function upload(value, size = 100) {
   await upload({...data([{...row, model: attack}]), benchmark: attack, unit: attack});
   const output = text(elements['custom-results']);
   assert.ok(output.includes(attack));
-  for (const label of ['User-provided, unverified', 'Measurement: total', 'Unit:', 'not part of the official board', 'known outcomes only', 'Unknown outcomes', 'Measured / recorded', 'Missing amounts are excluded, not zero']) assert.ok(output.includes(label), label);
+  for (const label of ['Your data', 'Measurement: total', 'Unit:', 'Not part of the leaderboard', 'Unknown outcomes', 'Measured / recorded']) assert.ok(output.includes(label), label);
   // Simulate editing and selecting the same path again.
   await upload(data([{...row, amount: 7}]));
   assert.match(text(elements['custom-results']), /7/);
@@ -98,7 +98,7 @@ async function upload(value, size = 100) {
     await oldRead;
     assert.match(text(elements['custom-results']), /Newest selection/);
     assert.doesNotMatch(text(elements['custom-results']), /Stale selection/);
-    assert.match(elements['custom-status'].textContent, /^Loaded locally/);
+    assert.match(elements['custom-status'].textContent, /^Loaded\. Nothing was uploaded/);
   }
   elements['custom-example'].listeners.click();
   validateBenchmark(JSON.parse(blob.parts.join('')));

@@ -81,8 +81,7 @@
     function render(data) {
       results.replaceChildren();
       results.appendChild(node('h3', data.benchmark));
-      results.appendChild(node('p', 'User-provided, unverified · Unit: ' + data.unit + ' · Measurement: ' + data.measurement + '. Independent per-model summaries; not part of the official board.'));
-      results.appendChild(node('p', 'Missing amounts are excluded, not zero. Solved-only means include measured solved results only. Outcome denominators include known outcomes only; unknown outcomes are shown separately.'));
+      results.appendChild(node('p', 'Your data · Unit: ' + data.unit + ' · Measurement: ' + data.measurement + '. Not part of the leaderboard.'));
       const table = node('table');
       const head = node('thead');
       const headings = node('tr');
@@ -114,7 +113,7 @@
         if (current !== generation) return;
         const data = validateBenchmark(JSON.parse(text));
         render(data);
-        status.textContent = 'Loaded locally. User-provided, unverified data; nothing uploaded or saved.';
+        status.textContent = 'Loaded. Nothing was uploaded.';
       } catch (error) {
         if (current !== generation) return;
         results.replaceChildren();

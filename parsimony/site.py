@@ -107,7 +107,7 @@ def published_sources(benchmark, language='python', root=None):
         raw = (root / plan_path).read_bytes()
         plan = json.loads(raw)
         planned = sorted({c['tasks'] * plan['attempts'] for c in plan['configurations']})
-        sources.append(dict(name='Self-run pilot · DeepSWE Python tasks', benchmark='self-run', language=plan['language'],
+        sources.append(dict(name='My runs · DeepSWE Python tasks', benchmark='self-run', language=plan['language'],
                             tasks=len(plan['tasks']), attempts_per_task=plan['attempts'],
                             population_per_model=f'{planned[0]}–{planned[-1]}' if len(planned) > 1 else planned[0],
                             active=False, self_run=True, board_url='index.html',

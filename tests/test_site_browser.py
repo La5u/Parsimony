@@ -111,7 +111,7 @@ class SiteBrowserTests(unittest.TestCase):
                              ['1.0', '1.0', '100.0%', '1/1'])
             self.assertEqual([cell.text for cell in rows[1].find_elements(By.TAG_NAME, 'td')[2:]],
                              ['—', '−2.0', '0.0%', '0/0'])
-            self.assertIn('Measured solved / upstream', browser.find_element(By.CSS_SELECTOR, '#board thead').text)
+            self.assertIn('Measured', browser.find_element(By.CSS_SELECTOR, '#board thead').text)
             x = Select(browser.find_element(By.ID, 'graph-x'))
             self.assertEqual(x.first_selected_option.get_attribute('value'), 'solved_net')
             self.assertEqual([p.get_attribute('data-model') for p in browser.find_elements(By.CSS_SELECTOR, '#graph circle[data-point]')], ['Alpha'])
@@ -204,7 +204,7 @@ class SiteBrowserTests(unittest.TestCase):
             def select(content, success):
                 upload.write_text(content)
                 browser.find_element(By.ID, 'custom-file').send_keys(str(upload))
-                prefix = 'Loaded locally.' if success else 'Unable to load benchmark:'
+                prefix = 'Loaded. Nothing was uploaded.' if success else 'Unable to load benchmark:'
                 wait.until(lambda b: b.find_element(By.ID, 'custom-status').text.startswith(prefix))
                 self.assertEqual(browser.find_element(By.ID, 'custom-file').get_attribute('value'), '')
 

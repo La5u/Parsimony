@@ -2,15 +2,15 @@
 
 How much code do AI models add?
 
-Parsimony takes the patches that agents published for public benchmarks (DeepSWE, SWE-bench Verified, SWE-bench Live), parses the code before and after each patch, and counts how many **coding units** each one added and removed. It never runs the code, never calls a model and never reruns a benchmark: every number comes from public artifacts and can be recomputed.
+Parsimony takes the patches that agents published for public benchmarks (DeepSWE, SWE-bench Verified, SWE-bench Live), parses the code before and after each patch, and counts how many **coding units** each one added and removed. Nothing is run, so anyone can recompute every number from the published data.
 
-**Website: [parsimony.lasu.dev](https://parsimony.lasu.dev)** · Status: research preview
+**Website: [parsimony.lasu.dev](https://parsimony.lasu.dev)**
 
 ## What the leaderboard shows
 
 Each model is ranked by its **mean net coding units added over the attempts that solved the task**, smallest first. Next to it are the same mean over all measured attempts (failures included), the benchmark's own solve rate, and how many attempts could be measured.
 
-A smaller footprint is not a better model. Units measure size, not readability or design, and models that write more code also tend to solve more tasks. See [Limits](#limits).
+Less code isn't automatically better; see [Limits](#limits).
 
 ## A worked example
 
@@ -38,7 +38,7 @@ The full counting rules, scope (test, docs and generated files are excluded) and
 
 ## Boards
 
-Benchmarks and languages are never pooled: raw units are not comparable across languages or analyzer versions.
+Each benchmark and language has its own board, since unit counts can't be compared across them.
 
 | Page | Benchmark | Models | Tasks × attempts | Analyzer | Data |
 |---|---|---:|---|---|---|
@@ -49,7 +49,7 @@ Benchmarks and languages are never pooled: raw units are not comparable across l
 | [SWE-bench Verified](https://parsimony.lasu.dev/verified.html) | SWE-bench Verified | 35 | 500 × 1 | 0.5.2-beta | [examples/mini-swe-agent-500](examples/mini-swe-agent-500/README.md) |
 | [Live Python](https://parsimony.lasu.dev/live.html) | SWE-bench Live Lite | 4 | 300 × 1 | 0.6.0-beta | [examples/live-python](examples/live-python/README.md) |
 
-Each data directory holds one JSONL file per model with every attempt's measurement, the artifact hashes it came from and the frozen task population. The DeepSWE Python page also shows a few newer models the maintainer ran and graded on 10 tasks ([self-run pilot](examples/self-run/README.md)); they are faded and never ranked.
+Each data directory holds one JSONL file per model with every attempt's measurement, the artifact hashes it came from and the frozen task population. The DeepSWE Python page also shows a few newer models I ran myself on 3–10 tasks ([my runs](examples/self-run/README.md)); they're faded and not ranked.
 
 ## Quick start
 
@@ -72,11 +72,11 @@ More commands (failed patches, frozen populations, caching, snapshots) are in [d
 
 ## Limits
 
-- **Size is not quality.** Small code can be cryptic, wrong beyond the tests or hard to maintain; a larger patch may add useful validation.
-- **Bigger footprints go with higher solve rates.** On every board with 26 or more models, the Spearman correlation between the solved-only footprint and the solve rate is 0.33–0.60.
-- **The agent matters.** Footprints depend on the harness and its settings, not only the model. DeepSWE and Verified use mini-SWE-agent for every model except GLM-5.1 on Verified (EvalScope); Live configurations each use their own agent.
-- **Outcomes are the benchmark's.** Pass/fail comes from the published results; Parsimony does not rerun tests.
-- **Coverage is partial.** Some attempts cannot be measured (missing artifacts, unparseable files); they are excluded, never counted as zero, and shown in the Measured column.
+- **Smaller isn't always better.** Units measure size, not readability or design.
+- **Models that write more code also tend to solve more tasks** (Spearman 0.33–0.60 on the boards with 26+ models).
+- **The agent matters**, not only the model. DeepSWE and Verified use mini-SWE-agent for every model except GLM-5.1 on Verified (EvalScope); Live configurations each use their own agent.
+- **Pass/fail comes from the benchmarks.** Tests aren't rerun.
+- **Some attempts can't be measured** (missing files, parse errors). They're left out, and the Measured column shows how many.
 
 ## Contributing
 
