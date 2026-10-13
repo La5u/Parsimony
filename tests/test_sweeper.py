@@ -183,6 +183,16 @@ class SweeperAnalysisTests(SweeperPopulationTests):
         self.assertEqual([r['analysis_status'] for r in rows], ['fetch_error', 'empty_patch'])
         self.assertTrue(all(r['metrics'] is None for r in rows))
 
+    def test_undecodable_patch_is_an_error_not_a_crash(self):
+        raw = PATCH.replace(b'array_sum', b'array_sum /* \xa9 */')
+        (self.patches / 'run-2.patch').write_bytes(raw)
+        self.run_rows[1]['patch_sha256'] = sha256(raw)
+        self.save_runs()
+        rows = self.records()
+        self.assertEqual([r['analysis_status'] for r in rows], ['ok', 'error'])
+        self.assertIn('UnicodeDecodeError', rows[1]['analysis_error'])
+        self.assertIsNone(rows[1]['metrics'])
+
     def test_release_panel_stability_and_site_compatibility(self):
         rows = self.records()
         # Tests bind the current source hash and leave an uncommitted analyzer

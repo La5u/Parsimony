@@ -167,7 +167,12 @@ def analyze_runs(runs_path, dataset_path, patches, cache, *, model, harness):
                       metrics=None, human_metrics=None, model_human_ratio=None,
                       analysis_status='missing_patch')
         if raw is not None:
-            patch = raw.decode('utf-8-sig')
+            try:
+                patch = raw.decode('utf-8-sig')
+            except UnicodeDecodeError as exc:  # e.g. a Latin-1 source file inside the diff
+                record.update(analysis_status='error', analysis_error=f'UnicodeDecodeError: {exc}')
+                records.append(record)
+                continue
             record['provenance']['patch_final_newline_restored'] = bool(patch) and not patch.endswith('\n')
             if not patch.strip():
                 record['analysis_status'] = 'empty_patch'
