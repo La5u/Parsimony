@@ -364,7 +364,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     if (selected) {
       const task = selected[0], m = task.match(/^(.+?)__(.+)-(\d+)$/);
       $('task-link').textContent = bench.task_link;
-      $('task-link').href = safeUrl(bench.task_url.includes('{task}') ? bench.task_url.replace('{task}', encodeURIComponent(task.split('#')[0])) : m ? bench.task_url.replace('{owner}', m[1]).replace('{repo}', m[2]).replace('{number}', m[3]) : '#');
+      $('task-link').href = safeUrl(data.task_urls?.[task] || (bench.task_url.includes('{task}') ? bench.task_url.replace('{task}', encodeURIComponent(task.split('#')[0])) : m ? bench.task_url.replace('{owner}', m[1]).replace('{repo}', m[2]).replace('{number}', m[3]) : '#'));
     }
     renderBoard(); renderAxisControls(); renderGraph();
   }

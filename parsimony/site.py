@@ -41,7 +41,22 @@ NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude
          'live-lite-deepseek-v4.1-flash-tianxicode-0.1.423': 'DeepSeek V4.1 Flash · TianxiCode 0.1.423',
          'live-lite-claude-opus-4.8-aiwork': 'Claude Opus 4.8 · AiWork.Code',
          'live-multilang-gpt-5.6-sol-slingshot-3.4.0': 'GPT-5.6 Sol · Slingshot 3.4.0',
-         'live-multilang-gpt-5.5-sweagent-medium': 'GPT-5.5 (medium) · SWE-agent'}
+         'live-multilang-gpt-5.5-sweagent-medium': 'GPT-5.5 (medium) · SWE-agent',
+         'sweeper-gpt-6-astra-codex': 'GPT-6 Astra (xhigh) · Codex',
+         'sweeper-claude-fable-5-1-claude-code': 'Claude Fable 5.1 (xhigh) · Claude Code',
+         'sweeper-claude-opus-5-claude-code': 'Claude Opus 5 (xhigh) · Claude Code',
+         'sweeper-deepseek-v4-pro-deepseek-harness': 'DeepSeek V4 Pro (xhigh) · DeepSeek harness',
+         'sweeper-deepseek-v4.1-flash-deepseek-harness': 'DeepSeek V4.1 Flash (xhigh) · DeepSeek harness',
+         'sweeper-glm-5.3-codex': 'GLM-5.3 (max) · Codex',
+         'sweeper-glm-5.3-flash-codex': 'GLM-5.3 Flash (max) · Codex',
+         'sweeper-gpt-5.6-luna-codex': 'GPT-5.6 Luna (xhigh) · Codex',
+         'sweeper-gpt-5.6-sol-codex': 'GPT-5.6 Sol (xhigh) · Codex',
+         'sweeper-gpt-5.6-terra-codex': 'GPT-5.6 Terra (xhigh) · Codex',
+         'sweeper-grok-4.6-cursor': 'Grok 4.6 (xhigh-fast) · Cursor',
+         'sweeper-kimi-k3-kimi-code': 'Kimi K3 (high) · Kimi Code',
+         'sweeper-muse-spark-1.3-muse-code': 'Muse Spark 1.3 (xhigh) · Muse Code',
+         'sweeper-qwen3.8-flash-codex': 'Qwen3.8 Flash (xhigh) · Codex',
+         'sweeper-qwen3.8-max-codex': 'Qwen3.8 Max (none) · Codex'}
 
 
 BENCHMARKS = {
@@ -56,6 +71,11 @@ BENCHMARKS = {
                  results='public submitter evaluation reports', attempts=1,
                  harness_note='Each model uses its own agent, so this compares model + agent setups, not models alone.',
                  notice='Model names and pass/fail are reported by the submitters, not checked independently.'),
+    'sweeper': dict(name='SWEeper-Bench', url='https://sweeperbench.com', reference="Maintainers' fix",
+                    task_url='https://github.com/{owner}/{repo}/pull/{number}', task_link="Maintainers' fix",
+                    results="SWEeper's browser-agent verdicts (target + preservation)", attempts=1,
+                    harness_note='Each model uses its own agent, so this compares model + agent setups, not models alone.',
+                    notice="Outcomes are SWEeper's browser-agent verdicts (target + preservation), reported by the benchmark, not checked independently."),
     'polybench': dict(name='SWE-PolyBench Verified', url='https://amazon-science.github.io/SWE-PolyBench/',
                       reference="Maintainers' fix", task_url='https://github.com/{owner}/{repo}/pull/{number}',
                       task_link="Maintainers' pull request", results='public submitter evaluation reports', attempts=1,
@@ -75,10 +95,15 @@ def published_sources(benchmark, language='python', root=None):
         ('DeepSWE · Go', 'deepswe', 'go', 'deepswe-go-v2', 'population.json', 'go.html'),
         ('SWE-bench Verified', 'verified', 'python', 'mini-swe-agent-500', 'population.json', 'verified.html'),
         ('SWE-bench Live Lite', 'live', 'python', 'live-python', 'population-manifest.json', 'live.html'),
+        ('SWEeper-Bench · PHP', 'sweeper', 'php', 'sweeper-php', 'population-manifest.json', 'sweeper-php.html'),
     ]
     sources = []
     for name, key, lang, directory, filename, board_url in boards:
         path = f'examples/{directory}/{filename}'
+        # The SWEeper importer ships before networked measurement. Describe its
+        # frozen population once the owner has produced the manifest.
+        if key == 'sweeper' and not (root / path).exists():
+            continue
         raw = (root / path).read_bytes()
         manifest = json.loads(raw)
         tasks = manifest['tasks']
@@ -202,6 +227,13 @@ def build(panel, records, draws=2000, seed=42):
     groups = {}
     for r in records:
         groups.setdefault(r['agent'], {})[r['task_id']] = r
+    task_urls = {}
+    for r in records:
+        url = r.get('provenance', {}).get('task_url')
+        if url:
+            if r['task_id'] in task_urls and task_urls[r['task_id']] != url:
+                raise ValueError(f"conflicting task URLs: {r['task_id']}")
+            task_urls[r['task_id']] = url
     common, intervals = bootstrap(board, draws, seed)
     population_tasks = set(panel['tasks']) | {t for group in groups.values() for t in group}
     models = []
@@ -308,6 +340,7 @@ def build(panel, records, draws=2000, seed=42):
                         uncalibrated_tasks=[t for t, refs in panel['tasks'].items() if not refs]) if bounded else {}),
                 measurement_track=panel.get('measurement_track'),
                 ranking_metric='measured-solved-net-mean-v1', footprint_tasks=footprint_tasks,
+                **(dict(task_urls=task_urls) if task_urls else {}),
                 score_version=VERSION, panel=panel['name'], references=len(references), harness=versions, other_harness=other_harness, analyzer_version=panel['analyzer_version'],
                 python_version=panel['python_version'], task_count=len(panel['tasks']),
                 population_count=max(len(footprint_tasks), max((r.get('benchmark_tasks', len(footprint_tasks)) for r in records),
@@ -371,7 +404,7 @@ def render(data, standalone=True, page_name=None):
     custom_js = CUSTOM_JS.read_text()
     language = (data.get('measurement_track') or {}).get('language') or 'python'
     language_name = {'python': 'Python', 'javascript': 'JavaScript', 'typescript': 'TypeScript',
-                     'go': 'Go'}.get(language, language)
+                     'go': 'Go', 'php': 'PHP'}.get(language, language)
     benchmark_name = (data.get('benchmark') or {}).get('name', 'SWE-bench Verified')
     title = f'Parsimony: {benchmark_name} · {language_name}'
     stem = Path(page_name).stem if page_name else None

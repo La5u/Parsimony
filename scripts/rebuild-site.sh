@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rebuild the six website pages from committed data. No patch analysis, no model calls.
+# Rebuild the website pages from frozen data. No patch analysis, no model calls.
 #
 #   scripts/rebuild-site.sh [OUT_DIR] [--offline]
 #
@@ -19,7 +19,8 @@ done
 mkdir -p "$OUT"
 
 NAV=(--nav 'DeepSWE Python=index.html' --nav 'DeepSWE JavaScript=javascript.html' --nav 'DeepSWE TypeScript=typescript.html'
-     --nav 'DeepSWE Go=go.html' --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html')
+     --nav 'DeepSWE Go=go.html' --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html'
+     --nav 'SWEeper PHP=sweeper-php.html')
 AA=examples/external/artificial-analysis-2026-10-08.json
 
 LANGS=(python javascript typescript)
@@ -47,3 +48,13 @@ DATA=$L/site-data.json
 python -m parsimony.site "$L/score-panel.json" "$L/deepseek-v4.1-flash.jsonl" "$L/gpt-5.6-sol.jsonl" \
   "$L/claude-opus-4.8.jsonl" "$L/gpt-5.5-agav.jsonl" --sensitivity "$L/stability.json" --benchmark live \
   "${NAV[@]}" --output "$OUT/live.html" --data "$DATA"
+
+S=examples/sweeper-php
+# This checkout initially has reproduction instructions only; render once measured.
+if [ -f "$S/score-panel.json" ]; then
+  DATA=$S/site-data.json
+  [ "$OUT" = site ] || DATA=$OUT/sweeper-data.json
+  python -m parsimony.site "$S/score-panel.json" "$S/"sweeper-*.jsonl \
+    --sensitivity "$S/stability.json" --benchmark sweeper "${NAV[@]}" \
+    --output "$OUT/sweeper-php.html" --data "$DATA"
+fi
