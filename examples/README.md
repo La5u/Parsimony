@@ -12,6 +12,7 @@ Every directory is frozen: records are never edited or relabelled, and changed m
 | [deepswe-go-v2](deepswe-go-v2/README.md) | DeepSWE Go, 26 × 34 × 4; per-model files in a checksummed release asset | 0.8.0-beta |
 | [mini-swe-agent-500](mini-swe-agent-500/README.md) | SWE-bench Verified, 35 configurations × 500 tasks | 0.5.2-beta |
 | [live-python](live-python/README.md) | SWE-bench Live Lite Python, 4 configurations × 300 tasks | 0.6.0-beta |
+| [sweeper-php](sweeper-php/README.md) | SWEeper-Bench PHP, 15 model + agent configurations × 128 tasks | 0.10.0-beta |
 | [self-run](self-run/README.md) | Maintainer-run and self-graded newer models on 10 DeepSWE Python tasks (unranked) | 0.5.2-beta |
 | [external](external/) | Pinned Artificial Analysis snapshot and model mapping for the DeepSWE chart axis | – |
 

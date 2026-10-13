@@ -100,10 +100,6 @@ def published_sources(benchmark, language='python', root=None):
     sources = []
     for name, key, lang, directory, filename, board_url in boards:
         path = f'examples/{directory}/{filename}'
-        # The SWEeper importer ships before networked measurement. Describe its
-        # frozen population once the owner has produced the manifest.
-        if key == 'sweeper' and not (root / path).exists():
-            continue
         raw = (root / path).read_bytes()
         manifest = json.loads(raw)
         tasks = manifest['tasks']

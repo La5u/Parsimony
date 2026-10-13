@@ -6,7 +6,7 @@ Issues and pull requests are welcome, including critiques of the method.
 
 - **Point to a public patch export.** A model can only be added when a benchmark publishes its per-attempt patches and pass/fail outcomes (for example newer models on DeepSWE, SWE-bench Verified or SWE-bench Live). Open an issue with the link and the exact revision. A leaderboard row or aggregate score is not enough; the patches must be downloadable.
 - **Question the method.** Is a unit counted wrong? Is a scope rule unfair? Open an issue with a small patch that shows it; [docs/adversarial-validation.md](docs/adversarial-validation.md) has the existing cases.
-- **Add a language.** Java and Rust have no analyzer yet. See [docs/language-tracks.md](docs/language-tracks.md).
+- **Add a language.** Java, Rust and Vue/Twig templates have no analyzer yet. See [docs/language-tracks.md](docs/language-tracks.md).
 - **Compare your own numbers.** Every page has *Add your own benchmark*: load a JSON file of per-task code amounts and compare locally. Nothing is uploaded. See [docs/custom-benchmarks.md](docs/custom-benchmarks.md).
 - **Submit a result bundle** measured from public SWE-bench Verified artifacts (below).
 

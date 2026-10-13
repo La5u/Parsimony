@@ -13,7 +13,7 @@ Current-state snapshot only. History lives in [CHANGELOG.md](CHANGELOG.md) and `
 
 Website ranking and columns:
 
-- All six boards rank by the **mean net units added over measured, in-scope solved attempts** (`ranking_metric: measured-solved-net-mean-v1`), lowest first, irrespective of passing-reference availability. The **all-measured mean, including failures** (`measured_net_mean`), is the second column and a chart metric; it does not set rank. **No trimmed mean:** the owner tried a 10% trimmed mean on 2026-10-01 and had it removed the same day; do not reintroduce it or another robust statistic without being asked. No coverage gate.
+- All seven boards rank by the **mean net units added over measured, in-scope solved attempts** (`ranking_metric: measured-solved-net-mean-v1`), lowest first, irrespective of passing-reference availability. The **all-measured mean, including failures** (`measured_net_mean`), is the second column and a chart metric; it does not set rank. **No trimmed mean:** the owner tried a 10% trimmed mean on 2026-10-01 and had it removed the same day; do not reintroduce it or another robust statistic without being asked. No coverage gate.
 - Rank is fixed to the **solved-only mean** (`measured_solved_net_mean`); there is no correctness tie-break. **No mode selector** (the owner removed "Count attempts" on 2026-10-13 as redundant): the all-measured mean, including failures, is the second table column and a chart metric instead. Measured is measured successes / upstream resolved attempt slots, not unique tasks. Task views show every attempt of the task with its outcome. Self-runs (`examples/self-run/grade.py` self-grades them) appear faded and unranked. Solved %, external indices and archived diagnostics do not change. Equal values tie; models with no eligible measurements stay unranked. This is not a shared-solved-task comparison.
 - Visible columns: **Rank, Net units, solved (mean), Net units, all measured (mean), Solved, Measured** (measured solved / upstream solved). Solved % is upstream resolved / full frozen population, context only. Footprint is raw mean coding units, **not %**, with equal 1/N weight for each measured in-scope attempt, including failures; no correctness weighting. Exclude missing measurements, never zero-fill them.
 - Describe the ranking as *smallest measured footprint*, never *best coding model*. Negative deletions and failed no-ops may rank first; say so.
@@ -49,6 +49,7 @@ Cloudflare Pages serves `site/` at <https://parsimony.lasu.dev>; a push to `main
 | DeepSWE Go | `site/go.html` | `examples/deepswe-go-v2/` + checksum-bound release asset | 26 | 34 × 4 | 0.8.0-beta @ `34d59ca` |
 | SWE-bench Verified | `site/verified.html` | `examples/mini-swe-agent-500/` | 35 | 500 × 1 | 0.5.2-beta |
 | SWE-bench Live Lite Python | `site/live.html` | `examples/live-python/` | 4 configs | 300 × 1 | 0.6.0-beta @ `de63300` |
+| SWEeper-Bench PHP | `site/sweeper-php.html` | `examples/sweeper-php/` | 15 configs | 128 × 1 | 0.10.0-beta @ `03d5c59` |
 
 - Each example directory holds measured JSONL, `population.json`, `coverage.json`, `score-panel.json`, `scores.json`, sensitivity/stability reports and a README. Large JSON files are tens of MB: summarise them with Python rather than dumping them into context.
 - Live Python: four model + agent configurations (DeepSeek V4.1 Flash · TianxiCode, GPT-5.6 Sol · Slingshot 3.4.0, Claude Opus 4.8 · AiWork, GPT-5.5 · agav 0.2.0-beta.2). The agav addition has 262 eligible footprints / 300 (271 completed analyses, 9 excluded-only), 186 source-reported successes, 85 failures, 29 empty-only unknowns; eligible mean net 50.38549618320611. All 271 nonempty patches have matching old-blob/hunk preimages. See `docs/archive/agav-gpt55-live-release-review.md`; historical measurement authorization is not external board certification. 238/300 tasks calibrated, 62 uncalibrated under opt-in `full-population-uncalibrated-bounds-v1`. Records publish scalars and hashes only, not patches; raw-artifact redistribution remains uncleared (`docs/archive/deepseek-v4.1-live-release-review.md`, `docs/archive/priority-live-provenance.md`). The JSONLs are byte-identical to clean `de63300` measurements; never relabel them.
@@ -142,7 +143,7 @@ The parser problem is solved (0.7.0, 2026-10-01): JS/TS use the official TypeScr
 - `parsimony/deepswe.py`, `live.py`, `polybench.py`, `artifacts.py`, `preimages.py`: importers and provenance audits.
 - `parsimony/scoring.py` (formula, bounds, track compatibility), `stability.py`, `sensitivity.py` (diagnostics, bootstrap).
 - `parsimony/release.py`: frozen populations and coverage audits.
-- `parsimony/site.py`: offline page data (`build()` sets `ranking_metric` and sorts models). `parsimony/template.html`: all interaction, CSS and graph code. Rebuild **all six** pages after changing either.
+- `parsimony/site.py`: offline page data (`build()` sets `ranking_metric` and sorts models). `parsimony/template.html`: all interaction, CSS and graph code. Rebuild **all seven** pages after changing either.
 - Tests: `tests/test_site.py` + `tests/site_sorting.cjs` (generator and page behaviour), `tests/test_languages.py`, `tests/test_multilanguage.py`, plus per-module tests.
 
 ## Measurement rules
@@ -169,7 +170,7 @@ uv pip install --python /tmp/parsimony-checks/bin/python '.[languages]'
 /tmp/parsimony-checks/bin/python -m unittest discover -s tests -q
 ```
 
-### Rebuild all six pages (offline, no remeasurement)
+### Rebuild all seven pages (offline, no remeasurement)
 
 `scripts/rebuild-site.sh` reproduces every committed page byte-for-byte (it downloads the checksum-bound Go scalar asset; `--offline` skips the Go page, as CI does). Check with `git status` afterwards. Go asset files remain external rather than duplicated in Git.
 

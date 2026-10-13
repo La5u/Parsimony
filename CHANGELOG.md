@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — SWEeper-Bench PHP board — 2026-10-13
+
+**Data.** New board `site/sweeper-php.html`: 15 model + agent configurations from SWEeper-Bench (pinned Hugging Face tasks `0a4c5e2` and traces `15e41de`) on the 128 tasks whose reference fix changes PHP, measured with the 0.10.0-beta PHP track (`parsimony/sweeper.py`). 1,851 of 1,920 attempts measured; 8 uncertain or infrastructure-failed outcomes stay unknown. See `examples/sweeper-php/README.md`.
+
 ## Unreleased — GLM-5.1 on SWE-bench Verified — 2026-10-13
 
 **Data.** The Verified board adds GLM-5.1 run with EvalScope (pinned Hugging Face export, uploader-reported outcomes), measured with the board's 0.5.2-beta analyzer: 491 of 494 nonempty patches, 363/500 solved, 6 empty patches kept as `no_generation`. The export stripped trailing whitespace, so 85 patches had their final blank context lines restored (checked against the base commit; counts recorded per record). The page names it as the only row not run with mini-SWE-agent. Reports: `coverage-35.json`, `scores-35.json`, `sensitivity-35.json`.

@@ -50,11 +50,5 @@ python -m parsimony.site "$L/score-panel.json" "$L/deepseek-v4.1-flash.jsonl" "$
   "${NAV[@]}" --output "$OUT/live.html" --data "$DATA"
 
 S=examples/sweeper-php
-# This checkout initially has reproduction instructions only; render once measured.
-if [ -f "$S/score-panel.json" ]; then
-  DATA=$S/site-data.json
-  [ "$OUT" = site ] || DATA=$OUT/sweeper-data.json
-  python -m parsimony.site "$S/score-panel.json" "$S/"sweeper-*.jsonl \
-    --sensitivity "$S/stability.json" --benchmark sweeper "${NAV[@]}" \
-    --output "$OUT/sweeper-php.html" --data "$DATA"
-fi
+python -m parsimony.site "$S/score-panel.json" "$S/"sweeper-*.jsonl --sensitivity "$S/stability.json" \
+  --benchmark sweeper "${NAV[@]}" --output "$OUT/sweeper-php.html"
