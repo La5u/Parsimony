@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — GLM-5.1 on SWE-bench Verified — 2026-10-13
+
+**Data.** The Verified board adds GLM-5.1 run with EvalScope (pinned Hugging Face export, uploader-reported outcomes), measured with the board's 0.5.2-beta analyzer: 491 of 494 nonempty patches, 363/500 solved, 6 empty patches kept as `no_generation`. The export stripped trailing whitespace, so 85 patches had their final blank context lines restored (checked against the base commit; counts recorded per record). The page names it as the only row not run with mini-SWE-agent. Reports: `coverage-35.json`, `scores-35.json`, `sensitivity-35.json`.
+
 ## 0.10.0-beta — PHP track — 2026-10-13
 
 **Analyzer.** New PHP measurement track `tree-sitter-php-units-v1` (Tree-sitter 0.26.0 with `tree-sitter-php==0.25.1`, `.php`/`.phtml`). Named syntax nodes are units except wrappers, punctuation, comments, `<?php`/`?>` tags and inline HTML; `$name` and plain strings are one unit; operators and modifiers fold into their parent. Complexity adds functions, closures, branches, loops, catches, match arms, ternaries, `??` and short-circuit operators. PHPUnit `*Test.php` files plus the shared test/vendor/generated directories are out of scope. Python, JavaScript/TypeScript and Go unit definitions are unchanged. No board uses PHP yet; on GPT-6 Astra's 124 PHP patches from SWEeper-Bench (pinned `15e41de`), 118 measured, 3 had context that differs from the base commit, 2 base files do not parse as modern PHP and 1 was rename-only.

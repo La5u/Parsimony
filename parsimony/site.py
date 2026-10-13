@@ -21,6 +21,7 @@ VERSION_OF = re.compile(r'^\d{8}_mini-(v[\d.]+)[_-]')
 NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude Sonnet 4.5 (high)',
          'claude-4-5-haiku-high': 'Claude Haiku 4.5 (high)', 'deepseek-3-2-high': 'DeepSeek V3.2 (high)',
          'gemini-3-flash-high': 'Gemini 3 Flash (high)', 'glm-5-high': 'GLM-5 (high)',
+         'glm-5.1-evalscope': 'GLM-5.1 · EvalScope',
          'gpt-5-2-high': 'GPT-5.2 (high)', 'gpt-5-mini': 'GPT-5 mini', 'kimi-k2-5-high': 'Kimi K2.5 (high)',
          'minimax-2-5-high': 'MiniMax M2.5 (high)', 'claude-4-5-opus-high': 'Claude Opus 4.5 (high)',
          'gpt-5-2-codex': 'GPT-5.2 Codex', 'gemini-3-pro-high': 'Gemini 3 Pro (high)',
@@ -301,11 +302,13 @@ def build(panel, records, draws=2000, seed=42):
     references = {r['agent'].split('#', 1)[0] for refs in panel['tasks'].values() for r in refs}
     versions = sorted({m.group(1) for a in order if (m := VERSION_OF.match(a))},
                       key=lambda v: tuple(int(x) for x in v[1:].split('.')))
+    # Verified rows not run with mini-SWE-agent (their label names the agent).
+    other_harness = [label(a) for a in order if not VERSION_OF.match(a)] if versions else []
     return dict(**(dict(calibration_policy=UNCALIBRATED,
                         uncalibrated_tasks=[t for t, refs in panel['tasks'].items() if not refs]) if bounded else {}),
                 measurement_track=panel.get('measurement_track'),
                 ranking_metric='measured-solved-net-mean-v1', footprint_tasks=footprint_tasks,
-                score_version=VERSION, panel=panel['name'], references=len(references), harness=versions, analyzer_version=panel['analyzer_version'],
+                score_version=VERSION, panel=panel['name'], references=len(references), harness=versions, other_harness=other_harness, analyzer_version=panel['analyzer_version'],
                 python_version=panel['python_version'], task_count=len(panel['tasks']),
                 population_count=max(len(footprint_tasks), max((r.get('benchmark_tasks', len(footprint_tasks)) for r in records),
                                      default=len(footprint_tasks))),

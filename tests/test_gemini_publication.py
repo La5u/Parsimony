@@ -38,7 +38,7 @@ class GeminiPublicationTests(unittest.TestCase):
     def test_board_contains_new_configuration_without_zero_fill(self):
         page = (ROOT / 'site/verified.html').read_text()
         data = json.loads(page.split('type="application/json">')[1].split('</script>')[0])
-        self.assertEqual(len(data['models']), 34)
+        self.assertEqual(len(data['models']), 35)
         self.assertEqual(data['population_count'], 500)
         self.assertEqual(data['ranking_metric'], 'measured-solved-net-mean-v1')
         model = next(m for m in data['models'] if 'gemini-3-5-flash' in m['agent'])

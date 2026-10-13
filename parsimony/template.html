@@ -276,6 +276,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const versions = data.harness || [];
   if (bench.harness_note) {
     $('harness-limit').textContent = bench.harness_note;
+  } else if ((data.other_harness || []).length) {
+    $('harness-limit').textContent = `Every model except ${data.other_harness.join(', ')} uses mini-SWE-agent (versions ${versions[0]} to ${versions[versions.length - 1]}); the agent affects how much code gets written.`;
   } else if (versions.length > 1) {
     $('harness-limit').textContent = `Every model uses mini-SWE-agent, but versions ${versions[0]} to ${versions[versions.length - 1]}; the agent affects how much code gets written.`;
   } else if (versions.length === 1) {

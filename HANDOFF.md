@@ -47,7 +47,7 @@ Cloudflare Pages serves `site/` at <https://parsimony.lasu.dev>; a push to `main
 | DeepSWE JavaScript | `site/javascript.html` | `examples/deepswe-javascript/` | 26 | 5 × 4 | 0.7.0-beta @ `ca37c31` |
 | DeepSWE TypeScript | `site/typescript.html` | `examples/deepswe-typescript/` | 26 | 35 × 4 | 0.7.0-beta @ `ca37c31` |
 | DeepSWE Go | `site/go.html` | `examples/deepswe-go-v2/` + checksum-bound release asset | 26 | 34 × 4 | 0.8.0-beta @ `34d59ca` |
-| SWE-bench Verified | `site/verified.html` | `examples/mini-swe-agent-500/` | 34 | 500 × 1 | 0.5.2-beta |
+| SWE-bench Verified | `site/verified.html` | `examples/mini-swe-agent-500/` | 35 | 500 × 1 | 0.5.2-beta |
 | SWE-bench Live Lite Python | `site/live.html` | `examples/live-python/` | 4 configs | 300 × 1 | 0.6.0-beta @ `de63300` |
 
 - Each example directory holds measured JSONL, `population.json`, `coverage.json`, `score-panel.json`, `scores.json`, sensitivity/stability reports and a README. Large JSON files are tens of MB: summarise them with Python rather than dumping them into context.
@@ -75,6 +75,8 @@ Keep actionable backlog in [TODO.md](TODO.md). Owner workflow: solve directly an
 ### 1. Add newer models to the existing benchmark battery
 
 **Recommended direction: recent models on supported Python/JS/TS/Go tracks first, not another ranking redesign or Java/Rust expansion.** Start with public exports on an existing board's frozen population and, where possible, the same harness. Cross-harness Live additions remain model + agent configurations, not controlled model-only comparisons. This is a plan, not a claim that new exports have been found.
+
+- Verified includes **GLM-5.1 · EvalScope** (2026-10-13), the only non-mini-SWE-agent row: pinned HF `fxiao0369/GLM51-swebench-replay@5c03de1`, MIT, uploader-reported outcomes. 491/494 nonempty patches measured with 0.5.2-beta at `0aa66df` on Python 3.14.7 (85 had whitespace-stripped final blank context lines restored, recorded per record; 3 errors), 6 empty patches are `no_generation`. Script: `examples/benchmark-discovery/add-glm51-verified.py`. Current reports use `coverage-35.json`, `scores-35.json`, `sensitivity-35.json`; the 34-model files are frozen snapshots. Known issue: Verified `rank_range` comes from the stability report, which does not rank by the solved-only mean.
 
 Latest source search: **2026-10-13** web search found one directly usable newer export, GLM-5.1 on SWE-bench Verified (500 patches, 363 resolved, MIT, pinned HF revision) but run with EvalScope, not mini-SWE-agent: owner decision needed before measuring. New 2026-model sources (SWEeper-Bench, NVIDIA Open-SWE-Traces) would be new boards. Census: `examples/benchmark-discovery/new-source-search-2026-10-13.json`.
 

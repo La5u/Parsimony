@@ -46,7 +46,7 @@ Benchmarks and languages are never pooled: raw units are not comparable across l
 | [DeepSWE JavaScript](https://parsimony.lasu.dev/javascript.html) | DeepSWE v1.1 | 26 | 5 × 4 | 0.7.0-beta | [examples/deepswe-javascript](examples/deepswe-javascript/README.md) |
 | [DeepSWE TypeScript](https://parsimony.lasu.dev/typescript.html) | DeepSWE v1.1 | 26 | 35 × 4 | 0.7.0-beta | [examples/deepswe-typescript](examples/deepswe-typescript/README.md) |
 | [DeepSWE Go](https://parsimony.lasu.dev/go.html) | DeepSWE v1.1 | 26 | 34 × 4 | 0.8.0-beta | [examples/deepswe-go-v2](examples/deepswe-go-v2/README.md) |
-| [SWE-bench Verified](https://parsimony.lasu.dev/verified.html) | SWE-bench Verified | 34 | 500 × 1 | 0.5.2-beta | [examples/mini-swe-agent-500](examples/mini-swe-agent-500/README.md) |
+| [SWE-bench Verified](https://parsimony.lasu.dev/verified.html) | SWE-bench Verified | 35 | 500 × 1 | 0.5.2-beta | [examples/mini-swe-agent-500](examples/mini-swe-agent-500/README.md) |
 | [Live Python](https://parsimony.lasu.dev/live.html) | SWE-bench Live Lite | 4 | 300 × 1 | 0.6.0-beta | [examples/live-python](examples/live-python/README.md) |
 
 Each data directory holds one JSONL file per model with every attempt's measurement, the artifact hashes it came from and the frozen task population. The DeepSWE Python page also shows a few newer models the maintainer ran and graded on 10 tasks ([self-run pilot](examples/self-run/README.md)); they are faded and never ranked.
@@ -74,7 +74,7 @@ More commands (failed patches, frozen populations, caching, snapshots) are in [d
 
 - **Size is not quality.** Small code can be cryptic, wrong beyond the tests or hard to maintain; a larger patch may add useful validation.
 - **Bigger footprints go with higher solve rates.** On every board with 26 or more models, the Spearman correlation between the solved-only footprint and the solve rate is 0.33–0.60.
-- **The agent matters.** Footprints depend on the harness and its settings, not only the model. DeepSWE and Verified use mini-SWE-agent for every model; Live configurations each use their own agent.
+- **The agent matters.** Footprints depend on the harness and its settings, not only the model. DeepSWE and Verified use mini-SWE-agent for every model except GLM-5.1 on Verified (EvalScope); Live configurations each use their own agent.
 - **Outcomes are the benchmark's.** Pass/fail comes from the published results; Parsimony does not rerun tests.
 - **Coverage is partial.** Some attempts cannot be measured (missing artifacts, unparseable files); they are excluded, never counted as zero, and shown in the Measured column.
 

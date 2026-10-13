@@ -38,7 +38,7 @@ for lang in "${LANGS[@]}"; do
 done
 
 V=examples/mini-swe-agent-500
-python -m parsimony.site "$V/score-panel.json" "$V/"*.jsonl --sensitivity "$V/sensitivity-34.json" \
+python -m parsimony.site "$V/score-panel.json" "$V/"*.jsonl --sensitivity "$V/sensitivity-35.json" \
   --benchmark verified "${NAV[@]}" --output "$OUT/verified.html"
 
 L=examples/live-python
