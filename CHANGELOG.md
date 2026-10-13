@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## 0.10.0-beta — PHP track — 2026-10-13
+
+**Analyzer.** New PHP measurement track `tree-sitter-php-units-v1` (Tree-sitter 0.26.0 with `tree-sitter-php==0.25.1`, `.php`/`.phtml`). Named syntax nodes are units except wrappers, punctuation, comments, `<?php`/`?>` tags and inline HTML; `$name` and plain strings are one unit; operators and modifiers fold into their parent. Complexity adds functions, closures, branches, loops, catches, match arms, ternaries, `??` and short-circuit operators. PHPUnit `*Test.php` files plus the shared test/vendor/generated directories are out of scope. Python, JavaScript/TypeScript and Go unit definitions are unchanged. No board uses PHP yet; on GPT-6 Astra's 124 PHP patches from SWEeper-Bench (pinned `15e41de`), 118 measured, 3 had context that differs from the base commit, 2 base files do not parse as modern PHP and 1 was rename-only.
+
 ## Unreleased — simpler site, self-graded pilot and repository cleanup — 2026-10-13
 
 **Site.** The Count attempts selector is removed. Boards rank by the mean net units added over measured solved attempts (`ranking_metric: measured-solved-net-mean-v1`, previously mislabelled `measured-net-mean-v1`); page data lists models in that order. The all-measured mean is a fixed second column and, with every other column, one of a single list of chart metrics; bars show the X metric. Task views list every attempt. Limits now state the solve-rate correlation (Spearman 0.33–0.60 on boards with 26+ models). Self-run models are self-graded in rebuilt task images (`examples/self-run/grade.py`) and show Solved and the solved-only mean.

@@ -1,7 +1,7 @@
-"""Optional coding-unit backends for JavaScript, TypeScript and Go.
+"""Optional coding-unit backends for JavaScript, TypeScript, Go and PHP.
 
 JavaScript and TypeScript use the official TypeScript parser (pinned npm package,
-run by Node through ``typescript_units.cjs``); Go uses Tree-sitter. These
+run by Node through ``typescript_units.cjs``); Go and PHP use Tree-sitter. These
 syntax-derived counts are not semantic complexity and are not comparable across
 languages or backends. Dependencies are deliberately loaded lazily.
 """
@@ -17,8 +17,9 @@ from importlib import metadata
 from pathlib import Path
 from threading import Lock
 
-SUPPORTED = ("python", "javascript", "typescript", "go")
+SUPPORTED = ("python", "javascript", "typescript", "go", "php")
 UNIT_VERSION = "tree-sitter-go-units-v2"
+PHP_UNIT_VERSION = "tree-sitter-php-units-v1"
 GO_GRAMMAR_URL = "https://codeload.github.com/botanica-consulting/tree-sitter-go/tar.gz/97cacdcb9e1e699f7b3dfed21386da60ed6e63cd"
 GO_GRAMMAR_SHA256 = "c653dd381ce89f883393f6d4db7aa1f27772dad79cc932c0f3aff5b15dc9b588"
 GO_EOF_POLICY = "append-one-lf-if-nonempty-without-final-lf-v1"
@@ -27,12 +28,13 @@ _PINS = {
     "tree-sitter": "0.26.0",
     "tree-sitter-go": "0.25.0",
 }
+_PHP_PINS = {"tree-sitter": "0.26.0", "tree-sitter-php": "0.25.1"}
 TYPESCRIPT_PIN = "5.9.3"
 _WORKER = Path(__file__).with_name("typescript_units.cjs")
 _EXTENSIONS = {
     ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript",
     ".ts": "typescript", ".tsx": "typescript", ".mts": "typescript", ".cts": "typescript",
-    ".go": "go", ".py": "python",
+    ".go": "go", ".py": "python", ".php": "php", ".phtml": "php",
 }
 # Pure syntax containers and expression wrappers do not represent useful units.
 _WRAPPERS = {
@@ -48,6 +50,17 @@ _BRANCHES = {"if_statement", "conditional_expression", "switch_case", "for_state
 _FUNCTIONS = {"function_declaration", "function_expression", "arrow_function", "method_definition",
               "method_declaration", "function_literal"}
 _COMMENTS = {"comment", "hash_bang_line"}
+_PHP_SKIP = {"php_tag", "php_end_tag", "text", "text_interpolation"}
+_PHP_MODIFIERS = {"visibility_modifier", "static_modifier", "abstract_modifier", "final_modifier",
+                  "readonly_modifier", "var_modifier", "reference_modifier"}
+_PHP_WRAPPERS = {"argument", "declaration_list", "enum_declaration_list", "switch_block", "match_block",
+                 "match_condition_list", "empty_statement"} | _PHP_MODIFIERS
+_PHP_BLOCKS = {"compound_statement", "colon_block", "declaration_list", "enum_declaration_list",
+               "switch_block", "match_block"}
+_PHP_BRANCHES = {"else_if_clause", "case_statement", "default_statement", "match_conditional_expression",
+                 "match_default_expression", "foreach_statement"}
+_PHP_FUNCTIONS = {"function_definition", "anonymous_function"}
+_PHP_OPERATORS = {"$", ".", ".=", "<=>", "and", "or", "xor", "->", "?->", "::"}
 # Significant anonymous terminals are folded into their named parent's label,
 # so an expression/operator or declaration/modifier remains one syntax unit.
 _OPERATORS = {
@@ -92,6 +105,18 @@ def _versions():
 
 def _install_help():
     return f'python -m pip install tree-sitter==0.26.0 "tree-sitter-go @ {GO_GRAMMAR_URL}#sha256={GO_GRAMMAR_SHA256}"'
+
+
+def _php_versions():
+    install = "python -m pip install tree-sitter==0.26.0 tree-sitter-php==0.25.1"
+    try:
+        actual = {name: metadata.version(name) for name in _PHP_PINS}
+    except metadata.PackageNotFoundError as exc:
+        raise ValueError(f"Tree-sitter PHP backend dependency missing; install exact pins: {install}") from exc
+    wrong = [f"{name}=={pin} (found {actual[name]})" for name, pin in _PHP_PINS.items() if actual[name] != pin]
+    if wrong:
+        raise ValueError(f"Tree-sitter PHP backend requires exact versions: {', '.join(wrong)}; install: {install}")
+    return actual
 
 
 _TYPESCRIPT_HELP = ("JavaScript/TypeScript tracks need Node.js and the pinned parser: run `npm ci` in the "
@@ -192,13 +217,15 @@ def track(language):
         _typescript()
         return {"language": language, "unit_version": TYPESCRIPT_UNIT_VERSION,
                 "versions": {"typescript": TYPESCRIPT_PIN}}
+    if language == "php":
+        return {"language": language, "unit_version": PHP_UNIT_VERSION, "versions": _php_versions()}
     return {"language": language, "unit_version": UNIT_VERSION, "versions": _versions(),
             "grammar_sha256": GO_GRAMMAR_SHA256, "eof_policy": GO_EOF_POLICY}
 
 
 @dataclass
 class Parsed:
-    """Go tree and owned normalized parsing bytes (not original provenance bytes)."""
+    """Tree-sitter tree and owned parsing bytes (Go normalizes EOF)."""
     language: str
     tree: object
     source: bytes
@@ -237,14 +264,18 @@ def parse(source, path):
             raise ValueError(f"invalid or recovered {language} syntax: {response['error']}")
         return CompilerParsed(language, _rows(response["units"]), _rows(response["plain"]),
                               _rows(response["tokens"]), tuple(response["structure"]))
-    _versions()
+    _php_versions() if language == "php" else _versions()
     from tree_sitter import Language, Parser
-    import tree_sitter_go as grammar
-    parser = Parser(Language(grammar.language()))
+    if language == "php":
+        import tree_sitter_php as grammar
+        parser = Parser(Language(grammar.language_php()))
+    else:
+        import tree_sitter_go as grammar
+        parser = Parser(Language(grammar.language()))
     data = source.encode("utf-8") if isinstance(source, str) else bytes(source)
     # Go's implicit EOF semicolon needs a final LF in this grammar. Normalize
     # only these owned parsing bytes; callers retain original source/hash input.
-    if data and not data.endswith(b"\n"):
+    if language == "go" and data and not data.endswith(b"\n"):
         data += b"\n"
     tree = parser.parse(data)
     if tree.root_node.has_error:
@@ -271,13 +302,31 @@ def _label(node, keep_values, source):
     return kind
 
 
-def _unit_label(node, keep_values, source):
+def _php_atom(node):
+    return node.type in {"variable_name", "string"} or (node.type == "encapsed_string"
+            and all(child.type in {'"', "string_content", "escape_sequence"} for child in node.children))
+
+
+def _unit_label(node, keep_values, source, language="go"):
+    if language == "php" and _php_atom(node):
+        kind = "string" if node.type in {"string", "encapsed_string"} else node.type
+        text = source[node.start_byte:node.end_byte].decode('utf-8', 'replace')
+        if kind == "string":
+            text = text[1:-1]
+        return f"{kind}:{text}" if keep_values else kind
     label = _label(node, keep_values, source)
     if label is None:
         return None
     punctuation = {'(', ')', '{', '}', '[', ']', ',', ';', '.', '\"', "'", '`'}
+    if language == "php":
+        punctuation = (punctuation - {'.'}) | {':'}
     terminals = [child.type for child in node.children
                  if not child.is_named and child.type not in punctuation]
+    if language == "php":
+        terminals = [terminal for child in node.children
+                     for terminal in ([part.type for part in child.children if not part.is_named]
+                                      if child.type in _PHP_MODIFIERS else [child.type] if not child.is_named else [])
+                     if terminal not in punctuation]
     return label + ("[" + ",".join(terminals) + "]" if terminals else "")
 
 
@@ -285,6 +334,9 @@ def unit_lines(parsed, keep_values=True):
     """Return preorder syntax units grouped by source row, with block-end markers."""
     if isinstance(parsed, CompilerParsed):
         return parsed.units if keep_values else parsed.plain
+    php = parsed.language == "php"
+    wrappers = _WRAPPERS | _PHP_WRAPPERS if php else _WRAPPERS
+    blocks = _BLOCKS | _PHP_BLOCKS if php else _BLOCKS
     result = []
     def add(row, label):
         if label is None:
@@ -299,15 +351,17 @@ def unit_lines(parsed, keep_values=True):
         if isinstance(node, tuple):
             add(node[1], "EndBlock")
             continue
-        if node.type in _COMMENTS:
+        if node.type in _COMMENTS or (php and node.type in _PHP_SKIP):
             continue
-        if node.is_named and node.type not in _WRAPPERS:
-            add(bisect_right(parsed.line_starts, node.start_byte), _unit_label(node, keep_values, parsed.source))
+        if node.is_named and node.type not in wrappers:
+            add(bisect_right(parsed.line_starts, node.start_byte),
+                _unit_label(node, keep_values, parsed.source, parsed.language))
         # The marker sits beneath descendants and is visited after the block.
-        if node.type in _BLOCKS:
+        if node.type in blocks:
             stack.append(("end", bisect_right(parsed.line_starts, node.end_byte)))
         # A literal is one value-sensitive unit, not a unit per escape/fragment.
-        if node.type not in {'string', 'string_literal', 'interpreted_string_literal', 'raw_string_literal'}:
+        if node.type not in {'string', 'string_literal', 'interpreted_string_literal', 'raw_string_literal'} \
+                and not (php and _php_atom(node)):
             stack.extend(reversed(node.children))
     return [tuple(labels) for _, labels in result]
 
@@ -316,16 +370,17 @@ def token_lines(parsed):
     """Normalized significant lexical leaves, grouped by source row."""
     if isinstance(parsed, CompilerParsed):
         return parsed.tokens
+    php = parsed.language == "php"
     result = []
     stack = [parsed.tree.root_node]
     while stack:
         node = stack.pop()
-        if node.type in _COMMENTS:
+        if node.type in _COMMENTS or (php and node.type in _PHP_SKIP):
             continue
         if node.child_count == 0:
             # Slice our owned bytes: avoid Node.text's native slice path on Python 3.14.
             value = parsed.source[node.start_byte:node.end_byte].decode('utf-8', 'replace')
-            if node.is_named or node.type in _OPERATORS:
+            if node.is_named or node.type in _OPERATORS or (php and node.type in _PHP_OPERATORS):
                 token = f"{node.type}:{value}"
                 row = bisect_right(parsed.line_starts, node.start_byte)
                 if result and result[-1][0] == row:
@@ -341,17 +396,23 @@ def structure(parsed):
     """Return named-node count and a simple branch-count cyclomatic proxy."""
     if isinstance(parsed, CompilerParsed):
         return parsed.structure
+    php = parsed.language == "php"
+    branches_set = _BRANCHES | _PHP_BRANCHES if php else _BRANCHES
+    functions = _FUNCTIONS | _PHP_FUNCTIONS if php else _FUNCTIONS
+    boolean = {"&&", "||", "and", "or"} | ({"??", "??="} if php else set())
     count = branches = 0
     stack = [parsed.tree.root_node]
     while stack:
         node = stack.pop()
+        if php and node.type in _COMMENTS | _PHP_SKIP:
+            continue
         if node.is_named and node.type not in _COMMENTS:
             count += 1
-            if node.type in _FUNCTIONS:
+            if node.type in functions:
                 branches += 1
-            if node.type in _BRANCHES:
+            if node.type in branches_set:
                 branches += 1
-            if node.type == "binary_expression":
-                branches += sum(child.type in {"&&", "||", "and", "or"} for child in node.children)
+            if node.type == "binary_expression" or (php and node.type == "augmented_assignment_expression"):
+                branches += sum(child.type in boolean for child in node.children)
         stack.extend(node.children)
     return count, branches

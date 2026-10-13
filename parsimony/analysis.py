@@ -129,6 +129,9 @@ def implementation(path: str, language='python') -> bool:
     # A top-level testing/ directory is a test suite (pytest); nested ones such as
     # sympy/testing/ or lib/matplotlib/testing/ are shipped library code.
     if language != 'python':
+        # PHPUnit test classes are named *Test.php; match case so Latest.php stays implementation.
+        if language == 'php' and PurePosixPath(path).stem.endswith('Test'):
+            return False
         # JS-labelled projects can contain TS (e.g. DeepSWE's KaTeX task), and vice versa.
         accepted = {'typescript', 'javascript'} if language in {'typescript', 'javascript'} else {language}
         return (extension_language(path) in accepted and not excluded.intersection(parts)
@@ -154,7 +157,8 @@ def generated(source: str, language='python') -> bool:
         pattern = (r'^\s*#\s*(?:this file (?:is|was) )?'
                    r'(?:auto[- ]?generated|generated (?:by|file)|do not edit)\b')
     else:
-        pattern = (r'^\s*(?://|/\*+|\*)\s*(?:this file (?:is|was) )?'
+        prefix = r'^\s*(?:<\?php\s*)?(?://|/\*+|\*|#)' if language == 'php' else r'^\s*(?://|/\*+|\*)'
+        pattern = (prefix + r'\s*(?:this file (?:is|was) )?'
                    r'(?:code generated .*do not edit\.?|'
                    r'(?:@generated|auto[- ]?generated|generated (?:by|file)|do not edit)\b)')
     return any(re.search(pattern, line, re.I) for line in header)
@@ -539,6 +543,8 @@ def measure(patch: str, get_source=None, language='python') -> dict:
         raise ValueError(f'unsupported language: {language}')
     measurement_track = languages.track(language)
     if language != 'python' and get_source is None:
+        if language == 'php':
+            raise ValueError('PHP track requires full-file base sources, not patch-only estimates')
         raise ValueError('JavaScript, TypeScript and Go tracks require full-file base sources, not patch-only estimates')
     totals = dict(units_added=0, units_deleted=0, net_units=0, churn=0, structural_churn=0,
                   tokens_added=0, tokens_deleted=0, net_tokens=0, token_churn=0,

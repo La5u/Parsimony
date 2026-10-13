@@ -1,4 +1,4 @@
-# Optional JavaScript, TypeScript and Go tracks
+# Optional JavaScript, TypeScript, Go and PHP tracks
 
 Analyzer **0.9.0-beta** (stricter shared patch parsing; units unchanged since 0.8) measures JavaScript and TypeScript with the **official TypeScript parser** and Go with a source-pinned Tree-sitter grammar. The 0.8 Go track is **`tree-sitter-go-units-v2`**; frozen 0.6 Go measurements remain historical `tree-sitter-units-v1` records until replaced by a separately validated full-cohort release. Python still uses the standard-library AST and needs no runtime dependencies. The scoring formula is unchanged: footprint credit for passing patches and footprint penalties for explicitly failed patches, averaged over the frozen score-panel tasks; unavailable measurements remain bounds.
 
@@ -10,7 +10,7 @@ Use the same Python version for every record in a comparison (the existing board
 
 ```sh
 uv venv --python 3.14.7 .venv
-uv pip install --python .venv/bin/python -e '.[languages]'   # Go runtime + checksum-pinned grammar archive
+uv pip install --python .venv/bin/python -e '.[languages]'   # Tree-sitter runtime + Go/PHP grammars
 npm ci                                                       # JavaScript/TypeScript: typescript@5.9.3 (Node.js)
 .venv/bin/python -m unittest discover -s tests -q
 ```
@@ -22,6 +22,14 @@ Dependencies load lazily. A missing Node.js, a missing or different `typescript`
 The Go runtime remains `tree-sitter==0.26.0`. The grammar is the immutable, **unmerged upstream PR #190** source at `botanica-consulting/tree-sitter-go@97cacdcb9e1e699f7b3dfed21386da60ed6e63cd`, archive SHA256 `c653dd381ce89f883393f6d4db7aa1f27772dad79cc932c0f3aff5b15dc9b588`. This is not an official corrected release. Its package still reports `tree-sitter-go==0.25.0`, so that version alone is insufficient: the analyzer checks the installed PEP 610 `direct_url.json` for the exact archive URL and SHA256. Install via the direct dependency in `pyproject.toml`; stock 0.25.0 or an unbound locally installed wheel is rejected. The track records the grammar hash and EOF policy as well as package versions.
 
 Go v2 appends exactly one LF to **owned parsing bytes** when nonempty input lacks a final LF (`append-one-lf-if-nonempty-without-final-lf-v1`). This models Go EOF semicolon handling for grouped declarations that the pinned grammar otherwise rejects. Original downloaded sources, patches and their provenance hashes are unchanged. Trees with any error/recovery flag remain rejected. Both acceptance changes are versioned; they do not authorize relabelling v1 records. See the [seven-error investigation](go-parser-investigation.md). Set `PARSIMONY_TYPESCRIPT_DIR` to a directory whose `node_modules` contains the pinned parser when running outside this checkout, and `PARSIMONY_NODE` to choose the Node.js binary. Tests skip each backend that is not installed; run with both before publishing.
+
+### PHP v1
+
+PHP uses `tree-sitter==0.26.0` and the exact PyPI pin `tree-sitter-php==0.25.1`, available in `.[languages]` or via `python -m pip install tree-sitter==0.26.0 tree-sitter-php==0.25.1`. The track is `tree-sitter-php-units-v1` and records both parser versions. It uses `language_php()` for complete files with PHP tags and inline HTML, requires full-file sources and rejects error/recovered trees. PHP has no Go archive binding or EOF normalization.
+
+Named syntax nodes count except pure containers, expression/argument wrappers, comments, PHP opening/closing tags and inline HTML (`text`/`text_interpolation`). `$` and its name form one variable unit. Operators, keywords and declaration modifiers fold into parent labels; plain strings are one value-sensitive unit regardless of quote style, while interpolated strings retain their expressions. Statement blocks and class/switch/match bodies receive `EndBlock` markers. Complexity counts functions, methods, closures and arrows; `if`/`elseif` (spelled `else if` is a nested `if`), each switch case and match arm including defaults, loops, catches, ternaries, null-coalescing operators and short-circuit boolean operators. Plain `else` adds no decision.
+
+Scope includes `.php` and `.phtml`; `.inc` remains excluded because it is ambiguous across languages. Root entry points count. Shared test/vendor/docs/build/generated exclusions apply, plus case-insensitive `Test.php`/`Test.phtml` suffixes and `tests.php`/`tests.phtml`. Explicit generated headers recognize `//`, `/* ... */` and `#`, including a comment following `<?php` on the same line; only the base file can exclude a patch. Existing Python, JavaScript/TypeScript and Go unit versions and rules are unchanged.
 
 ## The same small measurement pipeline
 
@@ -37,11 +45,11 @@ Go tree traversal uses byte offsets and Python-computed line starts, avoiding a 
 
 ## Scope and provenance
 
-- JavaScript: `.js`, `.jsx`, `.mjs`, `.cjs`; TypeScript: `.ts`, `.tsx`, `.mts`, `.cts`; Go: `.go`.
+- JavaScript: `.js`, `.jsx`, `.mjs`, `.cjs`; TypeScript: `.ts`, `.tsx`, `.mts`, `.cts`; Go: `.go`; PHP: `.php`, `.phtml`.
 - **JS- and TS-labelled task tracks both measure JS and TS implementation files**: projects mix them, and DeepSWE labels its KaTeX task JavaScript although its reference fix is TypeScript. The file extension selects the script kind; TSX and JSX are parsed as such. Go and Python remain separate scopes.
 - Exclude test/spec/benchmark paths and filenames, dependency/vendor/build/docs/generated directories, TypeScript declaration files, generated protobuf Go files, minified JS, and explicit generated headers in the **base** file. An agent cannot hide edits by adding a generated header.
-- New root-level JS/TS/Go files count: root Go packages and JS/TS entry points are normal implementation. The existing Python-only scratch-file rule is unchanged.
-- Each non-Python record, its metrics, frozen population and score panel identify the `measurement_track`: task language, unit version (`typescript-compiler-units-v1` for JavaScript/TypeScript, `tree-sitter-go-units-v2` for current Go) and exact parser versions/source/EOF policy. Freeze, scoring, sensitivity, stability and coverage reject incompatible tracks. Do not relabel existing records with a newer analyzer version or pool them with new measurements.
+- New root-level JS/TS/Go/PHP files count: root Go packages and JS/TS/PHP entry points are normal implementation. The existing Python-only scratch-file rule is unchanged.
+- Each non-Python record, its metrics, frozen population and score panel identify the `measurement_track`: task language, unit version (`typescript-compiler-units-v1` for JavaScript/TypeScript, `tree-sitter-go-units-v2` for current Go, `tree-sitter-php-units-v1` for PHP) and exact parser versions/source/EOF policy where applicable. Freeze, scoring, sensitivity, stability and coverage reject incompatible tracks. Do not relabel existing records with a newer analyzer version or pool them with new measurements.
 - A track is chosen by dataset metadata, never inferred from whether an individual attempt passed. All attempts in that population remain records. A task without any measured passing reference cannot calibrate the current score and is explicitly absent from the score panel, not silently called a failure.
 
 ## DeepSWE workflow
