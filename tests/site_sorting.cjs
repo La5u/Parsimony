@@ -89,7 +89,8 @@ browser.location = new URL('https://example.org/index.html');
 browser.history = {replaceState(state, title, next) { browser.location = new URL(next); }};
 vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc, window: browser, URL, URLSearchParams});
 const script = html.match(/<script>\n([\s\S]*?)<\/script>/)[1];
-assert(html.indexOf('id="task-search"') < html.indexOf('id="graph-x"'));
+assert(html.indexOf('id="graph"') < html.indexOf('id="task-search"'));
+assert(html.indexOf('id="task-search"') < html.indexOf('id="board"'));
 assert(html.indexOf('id="graph"') < html.indexOf('id="board"'));
 assert(html.indexOf('id="board"') < html.indexOf('id="data-sources"'));
 assert(html.indexOf('id="data-sources"') < html.indexOf('id="method"'));
@@ -98,7 +99,7 @@ assert.match(element('source-counts').innerHTML, /width:100%/);
 assert.match(element('source-counts').innerHTML, /width:50%/);
 assert.match(element('source-counts').innerHTML, /100 tasks · 4 attempts per task · 400 total planned attempts\/model/);
 assert.match(element('source-counts').innerHTML, /50 tasks · 1 attempt per task · 50 total planned attempts\/model/);
-assert.match(element('source-counts').innerHTML, /Current board/);
+assert.match(element('source-counts').innerHTML, /this board/);
 assert.match(element('source-counts').innerHTML, /href="current.html">Current &lt;source&gt;<\/a>/);
 assert.doesNotMatch(element('source-counts').innerHTML, /<img|rank|contribution/i);
 assert.match(element('source-evidence').innerHTML, /href="https:\/\/example.org\/manifest">Manifest<\/a>/);
@@ -122,10 +123,9 @@ assert.match(html, /#graph text \{ fill: #000;/);
 assert.doesNotMatch(html, /best-label|class="leader"|Smaller footprint, more solved|Better on both axes|const candidates|const boxes/);
 assert.match(html, /transform: translate\(10px,-50%\); line-height: 10px/);
 assert.match(html, /<summary>How to read this<\/summary>/);
-assert.match(html, /id="units-definition"><b>Coding units<\/b> count syntax elements/);
-assert.match(html, /not lines or runtime complexity\. Net units = added − removed\./);
+assert.match(html, /id="units-definition">It takes the patches that benchmarks already publish and counts <b>coding units<\/b>/);
+assert.match(html, /cramming code isn't rewarded, and deleted code is subtracted: net units = added − removed\./);
 assert(html.indexOf('id="units-definition"') < html.indexOf('<summary>How to read this</summary>'));
-assert.match(html, /Mean net units added over measured solved attempts only\. Smaller footprint ≠ better coding\./);
 assert.doesNotMatch(html, /paint-order|box-shadow|text-shadow/);
 const tooltipCSS = html.match(/#graph-tooltip \{([\s\S]*?)\}/)[1];
 assert.match(tooltipCSS, /color: #000/);
@@ -145,6 +145,8 @@ const graph = () => {
   }
   return markup;
 };
+// The left margin fits the widest y tick label; read it from the y axis line.
+const left = () => Number(graph().match(/<line class="axis" x1="([\d.]+)" y1="18"/)[1]);
 function tickValues(axis) {
   const anchor = axis === 'x' ? 'middle' : 'end';
   const pattern = new RegExp(`<text class="tick" text-anchor="${anchor}"[^>]*>([−\\d.,]+%?)<\\/text>`, 'g');
@@ -224,7 +226,7 @@ assert.match(html, /older-label \{ opacity: 0\.75/);
 assert.match(graph(), /<circle data-point="1" data-model="Beta" class="all-point older"/);
 assert.match(graph(), /<circle data-point="0" data-model="Alpha" class="all-point"/);
 // Lower net units and higher solved are better: the green zone sits in the top-left corner.
-assert.match(graph(), /<rect class="best-zone" x="90" y="18"/);
+assert.match(graph(), new RegExp(`<rect class="best-zone" x="${left()}" y="18"`));
 assert.equal(element('graph-legend').textContent, 'Older generations faded.');
 element('graph-y').listeners.change({target: {value: 'coverage'}});
 assert.doesNotMatch(graph(), /best-zone/); // Coverage has no better direction.
@@ -317,7 +319,6 @@ assert.match(graph(), /Gamma \(Anthropic\): failed task attempt/);
 assert.equal(element('graph-legend').textContent, 'Older generations faded. Status on hover.');
 assert.doesNotMatch(graph(), /<polyline/); // Alpha dominates both task-footprint axes.
 assert.deepEqual(colors(), [initialColors[0], initialColors[1], initialColors[0]]);
-assert.equal(element('rank-note').hidden, true);
 click('net', ['Gamma', 'Beta', 'Alpha'], 'descending');
 click('net', ['Alpha', 'Beta', 'Gamma'], 'ascending');
 axis('x', 'churn');
@@ -393,9 +394,9 @@ assert.match(element('graph-legend').textContent, /omitted from fitting X\/Y/);
 domainNear('y', 18, 62);
 assert.deepEqual(tickValues('y'), [20, 30, 40, 50, 60]);
 assert.match(element('graph-legend').textContent, /plotted to scale/);
-near(coordinates()[0], 90 + (-500 + 2.1) / 2.2 * 600);
+near(coordinates()[0], left() + (-500 + 2.1) / 2.2 * (690 - left()));
 near(coordinates()[1], 388 - (8 - 18) / 44 * 370);
-assert(coordinates()[0] < 90 && coordinates()[1] > 388);
+assert(coordinates()[0] < left() && coordinates()[1] > 388);
 assert(Number.parseFloat(element('graph').style.marginBottom) > coordinates()[1] - 440);
 assert.match(html, /height: auto; overflow: visible/);
 assert.doesNotMatch(graph(), /marker|third quadrant/i);
@@ -406,7 +407,7 @@ assert.match(tooltip.textContent, /outside fitted axes, plotted to scale.*\nNet 
 assert.doesNotMatch(tooltip.textContent, /marker/i);
 assert.match(element('#board tbody').innerHTML, /−500.0/);
 axis('x', 'resolve_rate');
-near(coordinates()[0], 90 + (8 - 18) / 44 * 600);
+near(coordinates()[0], left() + (8 - 18) / 44 * (690 - left()));
 near(coordinates()[1], 388 - (-500 + 2.1) / 2.2 * 370);
 axis('x', 'net');
 axis('x', 'coverage');
@@ -488,7 +489,7 @@ withSelfRun.sources = [...data.sources, {name: 'Self-run pilot', benchmark: 'sel
   attempts_per_task: 2, population_per_model: '6–20', active: false, self_run: true, board_url: 'index.html',
   report_url: 'https://example.org/self-run', manifest_url: 'https://example.org/plan', manifest_sha256: 'plan', deepswe_commit: 'abc'}];
 load(withSelfRun);
-assert.match(element('source-counts').innerHTML, /Self-run pilot<\/a> — Self-run by the owner, unverified; shown faded on the DeepSWE Python board, never ranked/);
+assert.match(element('source-counts').innerHTML, /Self-run pilot<\/a> — run by me, not ranked/);
 assert.match(element('source-counts').innerHTML, /up to 10 tasks · 2 attempts per task · 6–20 planned attempts\/model, by model/);
 assert.match(element('source-evidence').innerHTML, /Plan SHA-256: plan<br>DeepSWE commit: abc/);
 assert.doesNotMatch(graph(), /Delta/); // Not graded: no point on the Solved axis.
@@ -499,7 +500,7 @@ assert.match(graph(), /Delta \(high\) \(OpenAI\)[^"]*Self-run with pi, unverifie
 assert.match(element('#board tbody').innerHTML, /<tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta \(high\)<\/td><td>—<\/td><td>−5.0<\/td><td>—<\/td><td>—<\/td>/);
 assert.match(element('#board tbody').innerHTML, /<td>2<\/td><td class="left">Alpha/); // Self-run never takes a rank.
 assert.match(element('#board tbody').innerHTML, /Beta[\s\S]*<tr class="self-run-head"><td colspan="6">Self-run pilot · unranked, 3–10 tasks<\/td><\/tr><tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta/); // after ranked rows, even with the smallest mean
-assert.match(element('self-run-note').textContent, /^Faded: self-run by the site owner on 3–10 of these tasks\./);
+assert.match(element('self-run-note').textContent, /^Faded: models I ran myself on 3–10 of these tasks\. Not ranked\./);
 assert.equal(element('self-run-help').hidden, false);
 assert.equal(element('self-run-note').hidden, false);
 task('org__repo-1');
@@ -513,7 +514,6 @@ load(gradedSelfRun);
 assert.match(graph(), /<circle[^>]*data-model="Delta \(high\)"[^>]*class="all-point self-run"/);
 assert.match(graph(), /Self-run with pi, unverified: self-graded, 2 solved, 2 of \d+ tasks/);
 assert.match(element('#board tbody').innerHTML, /<tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta \(high\)<\/td><td>12.0<\/td><td>−5.0<\/td><td>50.0%<\/td><td>2\/2<\/td>/);
-assert.match(element('self-run-note').textContent, /Unverified, self-graded, unranked/);
 assert.equal(element('self-run-note').hidden, false);
 // Bars use the X metric, ascending for footprints; self-run stays in a separate group.
 load(withSelfRun);
@@ -530,7 +530,7 @@ assert.match(element('graph').innerHTML, /class="bar-row self-run"[^>]*>[\s\S]*?
 assert.match(element('graph').innerHTML, /class="bar-row older"[^>]*aria-label="Beta \(OpenAI\); Net units added, all measured \(mean\): 0; Measured 1\/4 upstream solved attempts"/);
 assert.match(element('graph').innerHTML, /<span class="bar-zero" style="left:100%"><\/span>/);
 assert.match(element('graph').innerHTML, /<span class="bar-value">−5<\/span>/);
-assert.equal(element('graph-legend').textContent, 'Net units added, all measured (mean). Smaller ≠ better. Older generations faded.');
+assert.equal(element('graph-legend').textContent, 'Net units added, all measured (mean). Older generations faded.');
 doc.querySelectorAll('#graph [data-bar]')[2].listeners.focus({});
 assert.match(element('graph-tooltip').textContent, /^Delta \(high\) · self-run \(OpenAI\)\nNet units added, all measured \(mean\): −5\nMeasured 0\/0 upstream solved attempts\nSelf-run with pi/);
 task('org__repo-1');
@@ -635,7 +635,7 @@ element('chart-type').listeners.change({target: {value: 'bar'}});
 assert.deepEqual(barNames(), ['Gamma', 'Alpha', 'Beta', 'Delta (high)']);
 axis('x', 'churn');
 assert.deepEqual(barNames(), ['Alpha', 'Beta', 'Delta (high)']);
-assert.equal(element('graph-legend').textContent, 'Units changed, all measured (mean). Smaller ≠ better. Older generations faded.');
+assert.equal(element('graph-legend').textContent, 'Units changed, all measured (mean). Older generations faded.');
 axis('x', 'coverage');
 assert.deepEqual(barNames(), ['Alpha', 'Beta']);
 assert.match(graph(), /<span class="bar-value">33.3%<\/span>/);

@@ -132,13 +132,13 @@ class SiteTests(unittest.TestCase):
             parser = Structure()
             parser.feed(page)
             self.assertEqual(parser.metadata, [('meta', True), ('meta', True), ('title', True),
-                                                ('meta', True)] + [('meta', True)] * 6 + [('style', True)])
+                                                ('meta', True)] + [('meta', True)] * 10 + [('style', True)])
             self.assertIn(f'<title>Parsimony: {expected}</title>', page)
             self.assertIn('<nav class="small" id="nav" aria-label="Leaderboards"', page)
             self.assertIn('<noscript>', page)
-            self.assertIn('download the published JSON/JSONL data', page)
+            self.assertIn('The charts and leaderboard need JavaScript', page)
             for fragment_tag in ('rel="canonical" href="https://parsimony.lasu.dev/"', 'property="og:site_name" content="Parsimony"',
-                                 'name="twitter:card" content="summary"', 'property="og:url" content="https://parsimony.lasu.dev/"'):
+                                 'name="twitter:card" content="summary_large_image"', 'property="og:image" content="https://parsimony.lasu.dev/og.png"', 'property="og:url" content="https://parsimony.lasu.dev/"'):
                 self.assertIn(fragment_tag, page)
             fragment = render(data, standalone=False)
             self.assertNotIn('<head>', fragment)
@@ -384,8 +384,8 @@ class MainTests(unittest.TestCase):
         self.run_main('--benchmark', 'live')
         data = self.data
         self.assertEqual(data['benchmark']['name'], 'SWE-bench Live Lite')
-        self.assertIn('not a controlled model-only comparison', data['benchmark']['harness_note'])
-        self.assertIn('not independently certified', data['benchmark']['notice'])
+        self.assertIn('not models alone', data['benchmark']['harness_note'])
+        self.assertIn('not checked independently', data['benchmark']['notice'])
         self.assertEqual(company('live-lite-gpt-5.6-sol-slingshot-3.4.0'), 'OpenAI')
         self.assertEqual(company('live-lite-deepseek-v4.1-flash-tianxicode-0.1.423'), 'DeepSeek')
         self.assertEqual(company('live-lite-claude-opus-4.8-aiwork'), 'Anthropic')

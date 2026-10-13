@@ -12,7 +12,11 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://parsimony.lasu.dev/verified">
 <meta property="og:site_name" content="Parsimony">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://parsimony.lasu.dev/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Scatterplot of AI models: net code units added on solved DeepSWE Python tasks versus Artificial Analysis Intelligence Index">
+<meta name="twitter:card" content="summary_large_image">
 <style>
 :root {
   color-scheme: light;
@@ -119,29 +123,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
 
 <main>
   <h1>Parsimony</h1>
-  <p class="muted">How much code do coding agents write to fix real issues? Research preview.</p>
+  <p>Existing benchmarks measure solve rate and cost, but don't punish excess code, which makes a codebase harder to work with in the long term. Parsimony measures how much code AI models add to fix real issues.</p>
+  <noscript><p class="small">The charts and leaderboard need JavaScript. The data is on <a href="https://github.com/La5u/Parsimony/tree/main/examples">GitHub</a>.</p></noscript>
+
+  <p class="small" id="units-definition">It takes the patches that benchmarks already publish and counts <b>coding units</b>: syntax elements like statements, calls, comparisons, names and literals. Lines aren't counted, so cramming code isn't rewarded, and deleted code is subtracted: net units = added − removed.</p>
   <nav class="small" id="nav" aria-label="Leaderboards" hidden></nav>
-  <noscript><p class="small">JavaScript is required for the interactive charts and leaderboard. Read the cohort reports and download the published JSON/JSONL data from <a href="https://github.com/La5u/Parsimony/tree/main/examples">the benchmark data directory</a>.</p></noscript>
-
-  <p class="small" id="units-definition"><b>Coding units</b> count syntax elements—statements, calls, comparisons, names and literals—not lines or runtime complexity. Net units = added − removed.</p>
-  <details class="small muted"><summary>How to read this</summary>
-  <p>We parse published <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a> patches and count syntax elements plus block-end markers. Formatting, comments and punctuation do not count. Python, JavaScript/TypeScript and Go use separate parser-specific tracks; raw unit counts are not comparable across them.</p>
-  <p>Rank is by mean net units added, lowest first, over measured upstream successes. The all-measured column is the mean over all measured in-scope attempts, including failures; sorting it does not change rank. Equal means tie; models with no measurements are unranked. Partial coverage can change the order, and a few very large solved attempts or deletions can dominate a mean. This is smallest measured footprint, not best coding ability.</p>
-  <p>Net units added means coding units added minus removed, not semantic complexity. Measured shows measured solved attempts / upstream solved attempts (not unique tasks). Missing or entirely excluded edits are not zero. Solved % comes from the upstream benchmark. The rank uses upstream outcomes to select measured successes, not as a correctness tie-break. A model whose solved attempts mostly delete code can rank first. Click headings to sort; missing values stay last.</p>
-  <p>Pick any two metrics for the scatter, or one for the bars. Models missing a selected value have no point or bar. Choosing the other axis’s value swaps the axes. Numeric axes fit the visible points with padding; percentage axes normally stay at 0–100%. Points outside fitted axes remain at their actual, true-scale positions.</p>
-  <p>Solved % = upstream resolved attempts / frozen attempt population × 100. Tests are not rerun by Parsimony. Footprint = sum of net coding units / N measured in-scope attempts: each attempt has equal weight 1/N, over successes for the rank and the solved columns, including failures for the all-measured ones. Missing measurements are not zero. Benchmarks and languages are not pooled and have no benchmark weights. Footprint uses no correctness weight beyond that success filter.</p>
-  <p id="external-help" hidden>Artificial Analysis indices are external, model-level capability scores from a pinned snapshot, not results on this benchmark. They are matched to a configuration only for the same model and reasoning effort, or where Artificial Analysis lists a single unlabelled entry or resolves an undated model ID; these weaker matches are disclosed on hover. Configurations without a match have no value and no point. They never affect footprint rank.</p>
-  <p id="self-run-help" hidden>Self-run models were run by the site owner on the first 3–10 DeepSWE Python tasks (OpenAI models via pi, Anthropic models via Claude Code), without the task containers. Their patches were then graded with each task's own DeepSWE tests in task containers rebuilt by the owner (every reference solution passes there; a hung test suite counts as unknown, not solved). They are unverified and never ranked, and cover only a task subset, so compare them mainly with each other. GPT-5.6 Sol is the one model run both ways: its self-run footprint was 0.88× its published one on the same tasks. Claude Code has no such check.</p>
-  </details>
-
-  <h2 id="leaderboard">Leaderboard</h2>
-  <p class="small muted" id="board-intro"></p>
-  <p class="small muted" id="benchmark-notice" hidden></p>
-  <label for="task-search" class="small muted">Task</label><br>
-  <input id="task-search" list="task-ids" autocomplete="off" spellcheck="false" placeholder="All tasks" aria-describedby="task-status">
-  <button type="button" id="task-reset">All tasks</button>
-  <datalist id="task-ids"></datalist>
-  <p class="small muted" id="task-status" role="status" aria-live="polite"></p>
   <section aria-labelledby="complexity">
   <h2 id="complexity">Compare models</h2>
   <p class="small muted" id="external-note" hidden></p>
@@ -157,7 +143,21 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="small muted" id="self-run-note" hidden></p>
   </section>
 
-  <h2>Leaderboard</h2>
+  <details class="small muted"><summary>How to read this</summary>
+  <p>Models are ranked by mean net units added on the tasks they solved, lowest first. "Net units added (mean)" also includes failed attempts. Solved comes from <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a>; tests aren't rerun. Measured is how many solved attempts could be measured.</p>
+  <p id="external-help" hidden>The Artificial Analysis Intelligence Index is an outside score, matched by model and reasoning effort. It doesn't affect the rank.</p>
+  <p id="self-run-help" hidden>Faded models were run by me on the first 3–10 DeepSWE Python tasks (OpenAI models with pi, Anthropic models with Claude Code) and graded with each task's own tests. They aren't verified or ranked. GPT-5.6 Sol ran both ways: my run added 0.88× the code of its published run.</p>
+  </details>
+
+  <h2 id="leaderboard">Leaderboard</h2>
+  <p class="small muted" id="board-intro"></p>
+  <p class="small muted" id="benchmark-notice" hidden></p>
+  <label for="task-search" class="small muted">Task</label><br>
+  <input id="task-search" list="task-ids" autocomplete="off" spellcheck="false" placeholder="All tasks" aria-describedby="task-status">
+  <button type="button" id="task-reset">All tasks</button>
+  <datalist id="task-ids"></datalist>
+  <p class="small muted" id="task-status" role="status" aria-live="polite"></p>
+
   <div class="scroll">
     <table id="board">
       <thead>
@@ -173,15 +173,13 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       <tbody></tbody>
     </table>
   </div>
-  <p class="small muted" id="rank-note" style="margin-top:8px">Mean net units added over measured solved attempts only. Smaller footprint ≠ better coding.</p>
   <p class="small" id="task-footer" hidden><a id="task-link" href="#">Maintainers' pull request</a></p>
 
   <section id="data-sources" aria-labelledby="sources-heading" hidden>
     <h2 id="sources-heading">Data sources</h2>
-    <p class="small muted">Separate boards, never pooled. Bars show task counts, not weights.</p>
+    <p class="small muted">Tasks per board. Boards are never combined.</p>
     <div id="source-counts"></div>
-    <details class="small muted"><summary>Source contribution and evidence</summary>
-      <p>Each leaderboard uses only its own benchmark and language: 100% from that board, 0% from the others. These are source shares, not combined-score weights. The self-run pilot is the only exception: its points are shown faded on the DeepSWE Python board, outside the ranking.</p>
+    <details class="small muted"><summary>Hashes</summary>
       <p id="metric-source"></p>
       <div id="source-evidence"></div>
     </details>
@@ -189,35 +187,31 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
 
   <h2 id="method">Method</h2>
   <ul>
-    <li>Each patch is applied to the task's base commit and both versions of each changed file are parsed. Nothing is executed.</li>
-    <li>Footprint rank uses the arithmetic mean of net coding units added across measured, in-scope successful attempts; passing references are not required. The second footprint column counts successful and failed attempts equally; equal means tie without a correctness tie-break.</li>
-    <li>Correctness is reported separately by the upstream benchmark. Smaller failed or no-op attempts are not better solutions.</li>
-    <li id="language-scope">Test, docs and generated files are excluded. Only Python is measured.</li>
+    <li>Each patch is applied to the task's code, and both versions of every changed file are parsed. Nothing is run.</li>
+    <li id="language-scope">Tests, docs and generated files are left out. Only Python is measured.</li>
+    <li id="results-limit">Pass/fail comes from SWE-bench's published results; tests aren't rerun.</li>
   </ul>
 
   <h2 id="limits">Limits</h2>
   <ul>
-    <li>Smaller is not always better. Units measure size, not readability or design.</li>
-    <li>Models that write more code also tend to solve more tasks: on every board with 26 or more models, the Spearman correlation between the solved-only footprint and Solved is 0.33–0.60.</li>
-    <li id="harness-limit">Footprints depend on the agent configuration, which here is the same harness (mini-SWE-agent) for every model.</li>
-    <li id="results-limit">Pass/fail comes from SWE-bench's published results; tests are not rerun.</li>
+    <li>Smaller isn't always better: units measure size, not readability or design.</li>
+    <li>Models that write more code also tend to solve more tasks (Spearman 0.33–0.60 on the boards with 26+ models).</li>
+    <li id="harness-limit">Every model uses the same agent (mini-SWE-agent), but the agent still affects how much code gets written.</li>
   </ul>
 
   <section aria-labelledby="custom-heading">
     <h2 id="custom-heading">Add your own benchmark</h2>
-    <p>Any benchmark, any language: if you know the amount of code used, you can explore it here. No patches or Parsimony analyzer required.</p>
-    <p class="small muted">Download the example JSON, replace its benchmark name, unit and results, then open it below. Use <code>total</code> for code used, <code>net</code> for added minus removed, or <code>churn</code> for added plus removed. Units can be lines, tokens, bytes or your own clearly defined measure. Keep different units and measurement methods in separate files.</p>
+    <p>Have code-size numbers from another benchmark? Download the example file, fill in your results and open it to get the same chart and table. The file stays in your browser. <a href="https://github.com/La5u/Parsimony/blob/main/docs/custom-benchmarks.md">Format and how to share it</a>.</p>
     <p><button type="button" id="custom-example">Download example JSON</button> <button type="button" id="custom-clear">Clear</button></p>
     <label for="custom-file">Open benchmark JSON</label><br>
-    <input type="file" id="custom-file" accept=".json,application/json" aria-describedby="custom-privacy custom-status">
-    <p class="small muted" id="custom-privacy">Your file stays in this browser tab: nothing is uploaded, published or saved. Up to 5 MB / 10,000 results. Imported counts are unverified and never mixed into the published leaderboard.</p>
-    <p class="small">Want to share it publicly? <a href="https://github.com/La5u/Parsimony/blob/main/docs/custom-benchmarks.md">See the format and contribution guide</a>.</p>
+    <input type="file" id="custom-file" accept=".json,application/json" aria-describedby="custom-status">
     <p id="custom-status" class="small" role="status" aria-live="polite"></p>
     <div id="custom-results" class="scroll"></div>
   </section>
 
+
   <section aria-labelledby="example-heading">
-    <h2 id="example-heading">Same answer, less code</h2>
+    <h2 id="example-heading">Example</h2>
     <p>Task: does a finite list of numbers contain a negative value? Both solutions return the same answer—including <code>False</code> for an empty list.</p>
     <div class="example-pair">
       <article><h3>More bookkeeping · 6 lines</h3><pre><code>def has_negative(values):
@@ -230,7 +224,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     return any(value &lt; 0 for value in values)</code></pre></article>
     </div>
     <p class="small">For <code>[3, -1, 2]</code> both return <code>True</code>; for <code>[0, 2]</code> and <code>[]</code> both return <code>False</code>. The second removes the mutable flag and explicit nested <code>if</code>, using Python’s built-in <code>any</code>.</p>
-    <p class="small muted">Illustrative example, not a benchmark result. The shorter version stops at the first match; equivalence here assumes a plain finite list of numbers, not side-effecting iterators. Less bookkeeping can be easier to read, but line count and coding units are footprint measures—not proof of lower semantic or runtime complexity. Both have O(n) worst-case time.</p>
   </section>
 
   <footer class="small muted">
@@ -398,14 +391,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   // Only http(s) or same-site relative URLs may reach an href.
   const safeUrl = u => /^(https?:\/\/[^\s]|\.{0,2}\/(?!\/)|[^:/?#\s]+(?:[/?#]|$))/i.test(String(u || '')) ? String(u) : '#';
   $('bench-link').href = safeUrl(bench.url);
-  $('results-limit').textContent = `Pass/fail comes from ${bench.results}; tests are not rerun.`;
+  $('results-limit').textContent = `Pass/fail comes from ${bench.results}; tests aren't rerun.`;
   $('metric-source').textContent = `${bench.name}: ${bench.results}`;
   const sources = data.sources || [];
   $('data-sources').hidden = sources.length === 0;
   const maxTasks = Math.max(1, ...sources.map(s => s.tasks));
   const sourceLink = (url, label) => /^(https?:\/\/|\.{0,2}\/(?!\/)|[^:/?#]+\.html(?:[?#]|$))/.test(String(url || ''))
     ? `<a href="${esc(url)}">${esc(label)}</a>` : esc(label);
-  $('source-counts').innerHTML = sources.map(s => `<div class="source-row">${sourceLink(s.board_url, s.name)}${s.self_run ? ' — Self-run by the owner, unverified; shown faded on the DeepSWE Python board, never ranked' : s.active ? ' — Current board' : ' — Separate board'}<div class="source-bar" style="width:${Number.isFinite(s.tasks) && s.tasks >= 0 ? s.tasks / maxTasks * 100 : 0}%" aria-hidden="true"></div><span>${s.self_run ? `up to ${esc(s.tasks)} tasks · ${esc(s.attempts_per_task)} attempt${s.attempts_per_task === 1 ? '' : 's'} per task · ${esc(s.population_per_model)} planned attempts/model, by model` : `${esc(s.tasks)} tasks · ${esc(s.attempts_per_task)} attempt${s.attempts_per_task === 1 ? '' : 's'} per task · ${esc(s.population_per_model)} total planned attempts/model`}</span></div>`).join('');
+  $('source-counts').innerHTML = sources.map(s => `<div class="source-row">${sourceLink(s.board_url, s.name)}${s.self_run ? ' — run by me, not ranked' : s.active ? ' — this board' : ''}<div class="source-bar" style="width:${Number.isFinite(s.tasks) && s.tasks >= 0 ? s.tasks / maxTasks * 100 : 0}%" aria-hidden="true"></div><span>${s.self_run ? `up to ${esc(s.tasks)} tasks · ${esc(s.attempts_per_task)} attempt${s.attempts_per_task === 1 ? '' : 's'} per task · ${esc(s.population_per_model)} planned attempts/model, by model` : `${esc(s.tasks)} tasks · ${esc(s.attempts_per_task)} attempt${s.attempts_per_task === 1 ? '' : 's'} per task · ${esc(s.population_per_model)} total planned attempts/model`}</span></div>`).join('');
   $('source-evidence').innerHTML = sources.map(s => `<p>${esc(s.name)}: ${sourceLink(s.report_url, 'Report')} · ${sourceLink(s.manifest_url, 'Manifest')}<br>${s.self_run ? 'Plan' : 'Manifest'} SHA-256: ${esc(s.manifest_sha256)}<br>${s.self_run ? `DeepSWE commit: ${esc(s.deepswe_commit)}` : `Dataset SHA-256: ${esc(s.dataset_sha256)}`}</p>`).join('');
   $('task-link').textContent = bench.task_link;
   if ((data.nav || []).length) {
@@ -415,12 +408,12 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const displayedTasks = data.footprint_tasks || data.tasks;
   const taskCount = new Set(displayedTasks.map((t) => t[0].split('#')[0])).size;
   const items = bench.attempts > 1 ? `${taskCount} ${bench.name} tasks (${data.population_count || data.task_count} attempts per model)` : `${data.population_count || data.task_count} ${bench.name} tasks`;
-  $('board-intro').textContent = `${n} model + agent configurations on ${items}, ranked by measured footprint—not correctness.`;
+  $('board-intro').textContent = `${n} models on ${items}.`;
   if (data.measurement_track) {
     const language = {javascript: 'JavaScript / JSX and TypeScript', typescript: 'TypeScript / TSX and JavaScript', go: 'Go'}[data.measurement_track.language];
     const parser = data.measurement_track.unit_version.startsWith('typescript-compiler')
       ? `the official TypeScript parser (typescript ${data.measurement_track.versions.typescript}, syntax only)` : 'pinned Tree-sitter grammars';
-    $('language-scope').textContent = `Test, docs and generated files are excluded. This track measures ${language} with ${parser}. Units are syntax elements, not semantic complexity; raw counts are not comparable across language tracks.`;
+    $('language-scope').textContent = `Tests, docs and generated files are left out. This page measures ${language} with ${parser}; counts can't be compared across languages.`;
   }
   if (bench.notice) {
     $('benchmark-notice').hidden = false;
@@ -430,9 +423,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   if (bench.harness_note) {
     $('harness-limit').textContent = bench.harness_note;
   } else if (versions.length > 1) {
-    $('harness-limit').textContent = `Footprints depend on the agent configuration. All use the mini-SWE-agent harness, but versions ${versions[0]} to ${versions[versions.length - 1]}, so part of a gap between models can come from the harness version.`;
+    $('harness-limit').textContent = `Every model uses mini-SWE-agent, but versions ${versions[0]} to ${versions[versions.length - 1]}; the agent affects how much code gets written.`;
   } else if (versions.length === 1) {
-    $('harness-limit').textContent = `Footprints depend on the agent configuration, which here is the same harness (mini-SWE-agent ${versions[0]}) for every model.`;
+    $('harness-limit').textContent = `Every model uses the same agent (mini-SWE-agent ${versions[0]}), but the agent still affects how much code gets written.`;
   }
   const external = data.external || null;
   // Owner-run configurations: shown faded in the all-tasks view, never ranked.
@@ -447,11 +440,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   if (selfRun.length) {
     $('self-run-note').hidden = false;
     $('self-run-help').hidden = false;
-    $('self-run-note').textContent = `Faded: self-run by the site owner on 3–10 of these tasks. Unverified, ${selfRun.every(m => m.graded) ? 'self-graded' : 'ungraded'}, unranked; details under How to read this.`;
+    $('self-run-note').textContent = `Faded: models I ran myself on 3–10 of these tasks. Not ranked.`;
   }
   if (external) {
     $('external-note').hidden = $('external-help').hidden = false;
-    $('external-note').innerHTML = `Y axis: <a href="${esc(external.attribution)}">Artificial Analysis</a> Intelligence Index, an external score (snapshot ${esc(external.fetched_at.slice(0, 10))}).`;
+    $('external-note').innerHTML = `Y axis: <a href="${esc(external.attribution)}">Artificial Analysis</a> Intelligence Index (${esc(external.fetched_at.slice(0, 10))}).`;
   }
   const rankOf = m => Number.isFinite(netMean(m)) ? 1 + data.models.filter(other =>
     Number.isFinite(netMean(other)) && netMean(other) < netMean(m)).length : null;
@@ -514,7 +507,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     $('task-status').textContent = selected ? `Selected task: ${selected[0]}` : 'Showing all tasks.';
     $('task-search').value = selected ? selected[0] : '';
     $('task-footer').hidden = !selected;
-    $('rank-note').hidden = !!selected;
     if (selected) {
       const task = selected[0], m = task.match(/^(.+?)__(.+)-(\d+)$/);
       $('task-link').textContent = bench.task_link;
@@ -632,7 +624,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const firstSelfRun = rows.findIndex(r => r.selfRun);
     const metric = axisOptions().find(o => o.key === key).label + (selected ? ' in this attempt' : '');
     $('graph-legend').textContent = rows.length
-      ? `${metric}.${footprint ? ' Smaller ≠ better.' : ''} Older generations faded.`
+      ? `${metric}. Older generations faded.`
       : 'No measured values available for this view.';
     $('company-legend').innerHTML = [...new Set(rows.map(r => r.m.company || 'Other'))].sort().map(company =>
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
@@ -679,7 +671,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
 
     // Leave a wider left gutter on narrow screens for true-scale extrapolated points.
-    const W = 720, H = 440, L = $('graph').clientWidth && $('graph').clientWidth < 600 ? 160 : 90, R = 30, T = 18, B = 52;
+    const W = 720, H = 440, R = 30, T = 18, B = 52;
+    let L = $('graph').clientWidth && $('graph').clientWidth < 600 ? 160 : 90;
     const excludedAxes = [];
     function extent(axis, key) {
       if (key === 'coverage') return [0, 100];
@@ -696,13 +689,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       return key === 'resolve_rate' ? [Math.max(0, low - padding), Math.min(100, high + padding)] : [low - padding, high + padding];
     }
     const [xmin, xmax] = extent('x', axes.x), [ymin, ymax] = extent('y', axes.y);
-    const sx = x => L + (x - xmin) / (xmax - xmin) * (W - L - R), sy = y => H - B - (y - ymin) / (ymax - ymin) * (H - T - B);
-    if (excludedAxes.length) $('graph-legend').textContent += ` Gemini 3.1 Pro omitted from fitting ${excludedAxes.map(axis => axis.toUpperCase()).join('/')}; plotted to scale.`;
-    for (const p of points) {
-      p.offscale = p.x < xmin || p.x > xmax || p.y < ymin || p.y > ymax;
-      p.px = sx(p.x);
-      p.py = sy(p.y);
-    }
     // Ticks sit at round values (1, 2 or 5 × 10^k apart, about five) inside the fitted range, which stays data-driven.
     const roundTicks = (lo, hi) => {
       const raw = (hi - lo) / 5, mag = 10 ** Math.floor(Math.log10(raw)), f = raw / mag;
@@ -712,6 +698,15 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       return {values: out, digits};
     };
     const tickLabel = (v, key, digits) => v.toLocaleString('en-US', {minimumFractionDigits: digits, maximumFractionDigits: digits}).replace('-', '−') + (['resolve_rate', 'coverage'].includes(key) ? '%' : '');
+    // On wide screens the left margin fits the widest y tick label (about 7 units per 12px character).
+    if (L === 90) { const {values, digits} = roundTicks(ymin, ymax); L = 34 + 7 * Math.max(2, ...values.map(v => tickLabel(v, axes.y, digits).length)); }
+    const sx = x => L + (x - xmin) / (xmax - xmin) * (W - L - R), sy = y => H - B - (y - ymin) / (ymax - ymin) * (H - T - B);
+    if (excludedAxes.length) $('graph-legend').textContent += ` Gemini 3.1 Pro omitted from fitting ${excludedAxes.map(axis => axis.toUpperCase()).join('/')}; plotted to scale.`;
+    for (const p of points) {
+      p.offscale = p.x < xmin || p.x > xmax || p.y < ymin || p.y > ymax;
+      p.px = sx(p.x);
+      p.py = sy(p.y);
+    }
     const ticks = (lo, hi, axis) => { const {values, digits} = roundTicks(lo, hi); return values.map(v => axis === 'x' ? `<line class="axis" x1="${sx(v)}" y1="${H-B}" x2="${sx(v)}" y2="${H-B+4}"/><text class="tick" text-anchor="middle" x="${sx(v)}" y="${H-B+19}">${tickLabel(v, axes.x, digits)}</text>` : `<line class="axis" x1="${L-4}" y1="${sy(v)}" x2="${L}" y2="${sy(v)}"/><text class="tick" text-anchor="end" x="${L-8}" y="${sy(v)+4}">${tickLabel(v, axes.y, digits)}</text>`).join(''); };
     const usesExternal = [axes.x, axes.y].some(k => k.startsWith('aa_'));
     const matchNote = p => usesExternal && p.match && p.match !== 'exact'
@@ -777,7 +772,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   $('task-reset').addEventListener('click', () => showTask(''));
   showTask('');
 
-  $('provenance').textContent = `Analyzer ${data.analyzer_version}. Footprint ranking: mean net units added. Archived combined-score diagnostics: ${data.score_version}, panel ${data.panel}.${data.measurement_track ? ' Units: ' + data.measurement_track.unit_version + '.' : ''}`;
+  $('provenance').textContent = `Analyzer ${data.analyzer_version}${data.measurement_track ? ', units ' + data.measurement_track.unit_version : ''}.`;
 })();
 </script>
 

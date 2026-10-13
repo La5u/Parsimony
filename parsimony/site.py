@@ -53,18 +53,13 @@ BENCHMARKS = {
     'live': dict(name='SWE-bench Live Lite', url='https://swe-bench-live.github.io', reference='Reference solution',
                  task_url='https://github.com/{owner}/{repo}/pull/{number}', task_link="Maintainers' pull request",
                  results='public submitter evaluation reports', attempts=1,
-                 harness_note='These are model + agent configurations, not a controlled model-only comparison. '
-                              'Harnesses, prompts and execution protocols differ; see the cohort report.',
-                 notice='Model identity and pass/fail are source-reported; historical evaluator inputs and protocol '
-                        'compliance are not independently certified. Footprint rank uses measured in-scope '
-                        'solved attempts by default (All measured, including failures, is selectable); missing footprints are not zero. Passing references are not required.'),
+                 harness_note='Each model uses its own agent, so this compares model + agent setups, not models alone.',
+                 notice='Model names and pass/fail are reported by the submitters, not checked independently.'),
     'polybench': dict(name='SWE-PolyBench Verified', url='https://amazon-science.github.io/SWE-PolyBench/',
                       reference="Maintainers' fix", task_url='https://github.com/{owner}/{repo}/pull/{number}',
                       task_link="Maintainers' pull request", results='public submitter evaluation reports', attempts=1,
-                      harness_note='Configurations use different agent harnesses and may have different retry/selection '
-                                   'protocols. These are not controlled model-only comparisons.',
-                      notice='Declared-candidate research measurements: historical evaluator inputs, retries and '
-                             'temporal-isolation replacements are source-reported, not independently certified.'),
+                      harness_note='Each model uses its own agent, so this compares model + agent setups, not models alone.',
+                      notice='Results are reported by the submitters, not checked independently.'),
 }
 
 
