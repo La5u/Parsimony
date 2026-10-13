@@ -1,0 +1,60 @@
+{
+ "date": "2026-10-13",
+ "method": "Web search (GPT-6.1 Sol, high effort) plus direct Hugging Face API checks of the top three. Metadata only; no patches committed.",
+ "candidates": [
+  {
+   "source": "fxiao0369/GLM51-swebench-replay",
+   "url": "https://huggingface.co/datasets/fxiao0369/GLM51-swebench-replay",
+   "revision": "5c03de18c6ef604d8cd95da95c1335b717fc0936",
+   "license": "MIT",
+   "model": "GLM-5.1",
+   "harness": "EvalScope swe_bench_verified_agentic (toolcall), not mini-SWE-agent",
+   "benchmark": "SWE-bench Verified 500 x 1; Lite 300 x 1",
+   "patches": "verified: data/verified_agentic/predictions.jsonl has 500 unique instance_ids with model_patch, 6 empty",
+   "outcomes": "verified: resolved true 363 / false 137 (publisher-run, not the official SWE-bench leaderboard)",
+   "predictions_sha256": "3cfd73490b4cefb78fc5f4dca0bb2a0d4bbf2e7a25eb5ceec4933cc426123951",
+   "blocker": "Different harness from the Verified board (all mini-SWE-agent); individual uploader, outcomes self-reported",
+   "next_action": "Owner decision: separate labelled configuration or skip. If accepted, measure with the 0.5.2-beta Python analyzer against Verified base commits."
+  },
+  {
+   "source": "nvidia/Open-SWE-Traces",
+   "url": "https://huggingface.co/datasets/nvidia/Open-SWE-Traces",
+   "revision": "b3076fb0e11dc0231f867666586cf33c82062bb0",
+   "models": "DeepSeek V4 Flash 0731, Qwen3.6-27B, Qwen3.8-27B",
+   "benchmark": "Training traces on SWE-rebench-style tasks (Python/JS/TS/Go and others), tens of thousands of attempts",
+   "patches": "claimed in metadata.model_patch; files verified to exist, payloads not inspected",
+   "outcomes": "claimed resolved 1/0/-1 per attempt",
+   "blocker": "Not any existing board's task population; small open models; would need a new board",
+   "next_action": "Lower priority; inspect one shard only if a new board is wanted"
+  },
+  {
+   "source": "zlab-princeton/SWEeper-Bench-traces",
+   "url": "https://huggingface.co/datasets/zlab-princeton/SWEeper-Bench-traces",
+   "revision": "15e41de53a1c7bec06898da56c99d88f368ba17f",
+   "models": "GPT-6 Astra, Opus 5, Fable 5.1, DeepSeek V4 Pro / V4.1 Flash, Kimi K3, GLM-5.3, Qwen3.8, Grok 4.6, GPT-5.6",
+   "benchmark": "SWEeper-Bench, 200 tasks x 1 x 15 configurations, browser-agent grading of web apps",
+   "patches": "claimed prediction/patch files; 65,656 files in repo; patch bodies not fetched",
+   "outcomes": "verified sample result.json with target/preservation verdicts",
+   "blocker": "New benchmark with mixed web languages; would be a new board, language census needed",
+   "next_action": "Most promising source of 2026 frontier models; census languages and patch completeness"
+  },
+  {
+   "source": "Multi-SWE-bench experiments",
+   "url": "https://github.com/multi-swe-bench/experiments",
+   "revision": "6a7d5566f62fa76f4192302cf763051b98e4facc",
+   "blocker": "New submissions found are C/C++ (unsupported)",
+   "next_action": "Recheck JS/TS/Go submissions"
+  },
+  {
+   "source": "Unavailable or aggregate-only",
+   "items": [
+    "SWE-rebench (gold patches only)",
+    "Claw-SWE-Bench (gold patches only)",
+    "SWE-bench Science (no run export)",
+    "Finding the Right Fit / Terminal-Bench trajectories (no final diffs documented)",
+    "arXiv 2610.13563 (no artifact)",
+    "tarsur385/swebench-verified-trajectories (sampled submission empty)"
+   ]
+  }
+ ]
+}
