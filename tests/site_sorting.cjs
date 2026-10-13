@@ -44,7 +44,7 @@ function element(id) {
   return elements.get(id);
 }
 element('parsimony-data').textContent = JSON.stringify(data);
-let lastButtons, lastHeader, lastCircles, lastGraph, lastBars, lastBarGraph;
+let lastButtons, lastHeader, lastCircles, lastGraph, lastBars, lastBarGraph, lastCompanies, lastCompanyGraph;
 const doc = {
   getElementById: element,
   querySelector: element,
@@ -58,6 +58,17 @@ const doc = {
         getBoundingClientRect() { return {left: 100, width: 12, bottom: 200}; }
       }));
       return lastCircles;
+    }
+    if (selector === '#graph [data-company]') {
+      const graph = element('graph').innerHTML;
+      if (lastCompanies && lastCompanyGraph === graph) return lastCompanies;
+      lastCompanyGraph = graph;
+      lastCompanies = [...graph.matchAll(/data-point="(\d+)"[^>]*?data-company="([^"]*)"/g)].map(match => ({
+        dataset: {point: match[1], company: match[2]}, dim: false,
+        classList: {toggle(name, on) { if (name === 'dim') this.owner.dim = on; }},
+      }));
+      lastCompanies.forEach(el => { el.classList.owner = el; });
+      return lastCompanies;
     }
     if (selector === '#graph [data-bar]') {
       const graph = element('graph').innerHTML;
@@ -255,18 +266,14 @@ for (const event of ['mouseenter', 'mousemove', 'focus', 'click']) {
 firstCircle.listeners.mouseenter({clientX: 799, clientY: 599});
 assert.equal(tooltip.style.left, '632px');
 assert.equal(tooltip.style.top, '563px');
-assert.equal(element('#graph .gen-lines').innerHTML, ''); // No same-generation peers: nothing drawn.
-// Hover links: same company and version, plus adjacent versions of the same model line (effort ignored).
+// Hover fades other companies' points and labels; leaving restores them.
 {
-  const block = html.slice(html.indexOf('const versionOf'), html.indexOf('const genLines'));
-  const points = ['GPT-6 Sol (high)', 'GPT-6 Astra (high)', 'GPT-6.1 Sol (high)', 'GPT-5.6 Sol (max)', 'GPT-5.4 (xhigh)',
-    'Grok 4.5 (high)', 'Grok 4.6 (medium)'].map(name => ({name, company: name.startsWith('Grok') ? 'xAI' : 'OpenAI'}));
-  const peersOf = new Function('points', block + 'return peersOf;')(points);
-  const peers = name => peersOf(points.find(p => p.name === name)).map(p => p.name).sort();
-  assert.deepEqual(peers('GPT-6 Sol (high)'), ['GPT-5.6 Sol (max)', 'GPT-6 Astra (high)', 'GPT-6.1 Sol (high)']);
-  assert.deepEqual(peers('GPT-6.1 Sol (high)'), ['GPT-6 Sol (high)']);
-  assert.deepEqual(peers('GPT-6 Astra (high)'), ['GPT-6 Sol (high)']);
-  assert.deepEqual(peers('Grok 4.5 (high)'), ['Grok 4.6 (medium)']);
+  const dimmed = () => doc.querySelectorAll('#graph [data-company]').filter(el => el.dim).map(el => el.dataset.company);
+  firstCircle.listeners.mouseenter({clientX: 1, clientY: 1});
+  const company = doc.querySelectorAll('#graph [data-company]').find(el => el.dataset.point === '0').dataset.company;
+  assert.ok(dimmed().length > 0 && dimmed().every(c => c !== company));
+  firstCircle.listeners.mouseleave();
+  assert.deepEqual(dimmed(), []);
 }
 firstCircle.listeners.blur();
 assert.equal(tooltip.hidden, true);

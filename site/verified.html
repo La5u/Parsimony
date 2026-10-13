@@ -68,14 +68,14 @@ body { overflow-x: clip; }
 #graph-legend, #company-legend { color: #000; }
 #graph .tick { fill: #000; font: 12px system-ui, sans-serif; }
 #graph circle { stroke: none; cursor: pointer; }
-#graph .gen-lines { pointer-events: none; }
-#graph .gen-lines line { stroke-width: 1; stroke-opacity: 0.55; stroke-dasharray: 4 3; }
 #graph .older { fill-opacity: 0.70; }
 #graph .point-label { position: absolute; font: 400 8px system-ui, sans-serif; color: #000; white-space: nowrap; pointer-events: none; transform: translate(10px,-50%); line-height: 10px; }
 #graph .point-label.flip { transform: translate(calc(-100% - 10px),-50%); }
 #graph .point-label.older-label { opacity: 0.75; }
 #graph .self-run { fill-opacity: 0.35; }
 #graph .point-label.self-run-label { opacity: 0.45; }
+#graph circle, #graph .point-label { transition: opacity 0.15s; }
+#graph circle.dim, #graph .point-label.dim { opacity: 0.12; }
 #board tr.self-run td { color: var(--muted); }
 #board tr.self-run-head td { text-align: left; color: var(--muted); font-size: 0.8rem; padding-top: 14px; }
 .source-bar { height: 8px; background: var(--link); margin: 4px 0; }
@@ -715,7 +715,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       ? {effort_unlabelled: 'Artificial Analysis entry has no effort label', undated_alias: 'undated model ID matched to the Artificial Analysis snapshot'}[p.match] : '';
     const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; outside fitted axes, plotted to scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + (p.count ?? 0) + '/' + (denominator(p.m) ?? 0) + ' upstream solved attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}`;
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
-    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip"></circle>`).join('');
+    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('');
     // Green zone: the half of each axis that is better (lower footprint, higher solved/index).
     const better = {net: -1, solved_net: -1, churn: -1, resolve_rate: 1, aa_coding: 1, aa_intelligence: 1};
     const bx = better[axes.x], by = better[axes.y];
@@ -730,44 +730,29 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     labelled.forEach(p => {
       // Full names keep the reasoning effort, e.g. 'GPT-6 Sol (high)'.
       const text = p.name + (p.offscale ? ' (off-scale)' : '');
-      overlays.push(`<span class="point-label${p.latest ? '' : ' older-label'}${p.selfRun ? ' self-run-label' : ''}" data-point="${points.indexOf(p)}" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(text)}</span>`);
+      overlays.push(`<span class="point-label${p.latest ? '' : ' older-label'}${p.selfRun ? ' self-run-label' : ''}" data-point="${points.indexOf(p)}" data-company="${esc(p.company)}" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(text)}</span>`);
     });
     const scale = ($('graph').clientWidth || W) / W;
     const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
     $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. All models are labelled; earlier generations are lighter. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}<g class="gen-lines"></g>${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. All models are labelled; earlier generations are lighter. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other companies fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
     // Labels that would cross the right edge sit left of their point instead.
     const graphWidth = $('graph').clientWidth;
     document.querySelectorAll('#graph .point-label').forEach(label => {
       if (graphWidth && label.offsetLeft + 10 + label.offsetWidth > graphWidth) label.classList.add('flip');
     });
-    // Hover/focus links a model to its generation (same company and version: GPT-6 Sol, Astra, Luna) and to the
-    // adjacent versions of its own model line (GPT-6 Sol <-> GPT-6.1 Sol, Grok 4.5 <-> 4.6); effort is ignored.
-    const versionOf = p => (p.name.match(/\d+(?:\.\d+)*/) || [null])[0];
-    const lineOf = p => p.company + '|' + p.name.replace(/ \([^)]*\)$/, '').replace(/\d+(?:\.\d+)*/, '#');
-    const compareVersions = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number);
-      for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0);
-      return 0; };
-    const peersOf = p => {
-      const v = versionOf(p);
-      if (!v) return [];
-      const generation = points.filter(q => q !== p && q.company === p.company && versionOf(q) === v);
-      const versions = [...new Set(points.filter(q => lineOf(q) === lineOf(p) && versionOf(q)).map(versionOf))].sort(compareVersions);
-      const k = versions.indexOf(v), adjacent = [versions[k - 1], versions[k + 1]].filter(Boolean);
-      return [...new Set([...generation, ...points.filter(q => lineOf(q) === lineOf(p) && adjacent.includes(versionOf(q)))])];
-    };
-    const genLines = document.querySelector('#graph .gen-lines');
-    const drawGen = p => { genLines.innerHTML = peersOf(p).map(q => `<line x1="${p.px}" y1="${p.py}" x2="${q.px}" y2="${q.py}" stroke="${companyColor(p.company)}"/>`).join(''); };
+    // Hover/focus fades every other company's points and labels.
+    const focusCompany = company => document.querySelectorAll('#graph [data-company]').forEach(el =>
+      el.classList.toggle('dim', company !== null && el.dataset.company !== company));
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
-      ['mouseenter', 'focus', 'click'].forEach(event => circle.addEventListener(event, () => drawGen(points[Number(circle.dataset.point)])));
-      ['mouseleave', 'blur'].forEach(event => circle.addEventListener(event, () => { genLines.innerHTML = ''; }));
       const show = event => {
         const p = points[Number(circle.dataset.point)];
         const text = `${p.name}${p.offscale ? ' (outside fitted axes, plotted to scale)' : ''}\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${matchNote(p) ? '\n' + matchNote(p) : ''}${p.selfRun ? '\n' + selfRunNote(p.m) : ''}${p.kind !== 'all' ? '\n' + p.kind + ' task attempt' : ''}`;
         showTooltipAt(circle, event, text);
+        focusCompany(p.company);
       };
       ['mouseenter', 'mousemove', 'focus', 'click'].forEach(event => circle.addEventListener(event, show));
-      ['mouseleave', 'blur'].forEach(event => circle.addEventListener(event, hideTooltip));
+      ['mouseleave', 'blur'].forEach(event => circle.addEventListener(event, () => { hideTooltip(); focusCompany(null); }));
     });
   }
   $('task-search').addEventListener('input', e => showTask(e.target.value.trim()));
