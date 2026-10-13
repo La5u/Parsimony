@@ -81,7 +81,7 @@ More commands (failed patches, frozen populations, caching, snapshots) are in [d
 
 ## Contributing
 
-Ideas, critiques and data are welcome. The most useful thing is a link to a public export of per-attempt patches and outcomes for a newer model. See [CONTRIBUTING.md](CONTRIBUTING.md). Contact: [lasu4a@gmail.com](mailto:lasu4a@gmail.com).
+Ideas, critiques and data are welcome. The most useful thing is a link to a public export of per-attempt patches and outcomes for a newer model. See [CONTRIBUTING.md](CONTRIBUTING.md). Contact: [lasushin@proton.me](mailto:lasushin@proton.me).
 
 ## Repository map
 
