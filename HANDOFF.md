@@ -1,4 +1,4 @@
-# Session handoff — 2026-10-07
+# Session handoff — 2026-10-14
 
 Current-state snapshot only. History lives in [CHANGELOG.md](CHANGELOG.md) and `git log`; older handoff text is in git history (`git show 9c02b9a:HANDOFF.md`). **Replace this file's facts when they change instead of appending dated sections.**
 
@@ -8,6 +8,25 @@ Current-state snapshot only. History lives in [CHANGELOG.md](CHANGELOG.md) and `
 2. Before measurement or scoring changes, read `docs/language-tracks.md`, `docs/archive/scoring.md` and the relevant example README.
 3. Commit and push directly to **`main`** (owner preference; no branches/PRs).
 4. The untracked `.claude/` directory (other worktrees) is unrelated: never add, delete or clean it.
+5. Other Claude sessions may edit this repo at the same time: check `git status` before rebuilding or committing and stage only your own paths.
+6. Commit rebuilt `site/*.html` in the **same commit** as any `site.py`/`template.html` change, or CI's page comparison fails (it did on `6c8ca32`/`03d5c59`). After a push, a green CI run is enough; don't poll the live site.
+
+## Where the last session stopped (2026-10-14)
+
+Done on 2026-10-13/14: PHP track (0.10.0-beta) and the **SWEeper-Bench PHP board**; **GLM-5.1 · EvalScope** on Verified; chart hover fades other companies; contact email `lasushin@proton.me` in the footer and README; **same-task ranking** + complexity metrics + self-run range bars (`784b4ac`, see Owner requirements).
+
+Owner's next direction: **more models, and more tasks for existing models**. Look beyond issue-fix patches too: one-shot builds, refactoring and other task types. Those need their **own boards** (never pooled into the issue-fix rank). A refactoring board would rank by code removed with tests still passing, because the same-task ratio breaks when typical net units are negative. Census candidates before importing; last census: `examples/benchmark-discovery/new-source-search-2026-10-13.json`. Usable leads not yet taken: other SWEeper languages (by reference fix: TS 15, Go 22, Python 12, JS 8 tasks, so small boards); NVIDIA Open-SWE-Traces (small open models).
+
+Owner feedback from Reddit (u/lasushin; r/LLMDevs and r/codex threads, read via `https://www.reddit.com/r/<sub>/comments/<id>/.rss` because JSON and HTML are blocked) is handled except for two ideas that need data no source publishes: **patch survival after a follow-up task** and **whole-session code** (single-turn exports can't show rework). A refactoring benchmark was also suggested (see above).
+
+Self-run (GPT-6 family etc.) findings: on the same tasks GPT-6 Luna 0.52×, Astra 0.72×, Sol 0.72×, 6.1 Sol 0.80×, Opus 5.5 1.10×, Sonnet 5.5 1.06×, but each from only 2–6 tasks; more self-run tasks would firm this up.
+
+Known issues:
+- Verified/others `rank_range` comes from the stability report, which ranks by an older metric. It is stored but not shown; don't present it as same-task uncertainty.
+- A few models rank 1st on few tasks: Gemini 3.1 Pro on DeepSWE Python (8 shared tasks, 0.66×) and Qwen2.5-Coder 32B on Verified (42 tasks, interval crosses zero). Ranges are in the tooltip only.
+- Board READMEs (e.g. `examples/sweeper-php/README.md`) list the plain solved mean, not the same-task ratio.
+- On this aarch64 machine the Go grammar doesn't build (Go tests skip; CI runs them) and selenium isn't installed (Firefox tests can't run; use `firefox --headless --screenshot` for a visual check).
+- The wrong contact address (gmail) is in git history at `ebffe7e`; removing it needs a force-push, so it's only done if the owner asks.
 
 ## Owner requirements — do not regress these
 
@@ -27,7 +46,7 @@ Page behaviour:
 
 - One shared table. A task-ID text/datalist input replaces that table with the selected task's attempts (including failures); an All tasks button resets. No second task table. `footprint_tasks` keeps every recorded task ID, including ones outside the old score panel.
 - Numeric headers sort on click and reverse on a second click; missing values stay last.
-- Graph: one borderless circle per model; company colours are **OpenAI black, xAI purple, Google green, Anthropic orange, DeepSeek blue**. Task failures are disclosed via tooltip and ARIA labels, never a dashed point outline. One fixed list of X/Y metrics (solved mean, all-measured mean, units changed, Solved %, Measured %, AA indices; default X = solved mean, Y = Solved % or AA Intelligence). Bars show the X metric ("Metric"), footprints smallest first, others largest first. Choosing an already-used metric swaps axes. Numeric axes fit visible points with 5% padding; coverage stays 0–100%, and Solved normally stays 0–100% (exception below); constant values use ±5% (min 1 unit); empty views 0–1; negatives supported.
+- Graph: one borderless circle per model; company colours are **OpenAI black, xAI purple, Google green, Anthropic orange, DeepSeek blue**. Task failures are disclosed via tooltip and ARIA labels, never a dashed point outline. One fixed list of X/Y metrics (same-task net and complexity ratios, solved mean, all-measured mean, units changed, Solved %, Measured %, complexity solved mean, AA indices; default X = same-task net ratio, Y = Solved % or AA Intelligence; boards without same-task data fall back to the solved mean). Bars show the X metric ("Metric"), footprints smallest first, others largest first. Choosing an already-used metric swaps axes. Numeric axes fit visible points with 5% padding; coverage stays 0–100%, and Solved normally stays 0–100% (exception below); constant values use ±5% (min 1 unit); empty views 0–1; negatives supported.
 - **Gemini 3.1 Pro range exclusion:** in All tasks only, exclude Gemini 3.1 Pro (including Preview and effort variants) from numeric-axis fitting when at least two other points have finite values on that axis and exclusion changes the fit. Never match Gemini 3.1 Professional or Gemini 3.1 Pro Plus, or remove any model from data, rank or table. Solved normally stays 0–100%; when this exclusion changes its fit, use the other points' 5%-padded range bounded to 0–100%. Coverage stays fixed at 0–100%, and task-view scaling is unchanged. Points outside fitted axes are extrapolated at their true coordinates using the same linear scales, never clamped or replaced with edge markers; disclose them in labels and hover, retaining actual hover/table values. Data and ranks are unchanged; no Pareto overlay.
 - **Newest generation emphasised**: `site.py` sets `latest` per model, the highest version within its model line (the name text before the version number). Every generation has a permanent plain HTML name label: **8px, normal weight (400), black, no halo/shadow/border** (effort suffix dropped unless two labels would collide; every label is a fixed 10 CSS pixels to the right of its dot, vertically centered; no leader lines or variable-distance placement). Newest circles and labels have full opacity; older circles use **70% opacity**, older labels **75% opacity**, and all keep hover tooltips. This is chart emphasis only and never affects rank or the table.
 - **Green better-corner square**, in the style of Artificial Analysis charts: half the plot in each dimension, at the corner that is better on both axes (lower net/churn/rank, higher solved/score). Top-left on the default axes, without any text caption; hidden when an axis has no better direction (coverage).
@@ -67,7 +86,7 @@ Cloudflare Pages serves `site/` at <https://parsimony.lasu.dev>; a push to `main
 
 ## Known property of the mean ranking
 
-Under the old all-measured ranking a few failed mass deletions decided Verified's top ranks (Llama 4 Maverick at −244 overall, +10 over solved attempts); the solved-only rank removes that. Smaller footprint still goes with lower solve rate: Spearman 0.33–0.60 between the solved-only footprint and Solved on every board with 26+ models (2026-10-13), stated under Limits on the site.
+Under the old all-measured ranking a few failed mass deletions decided Verified's top ranks (Llama 4 Maverick at −244 overall, +10 over solved attempts); the solved-only rank removes that. Smaller footprint still goes with lower solve rate: Spearman 0.33–0.60 between the solved-only footprint and Solved on every board with 26+ models (2026-10-13), stated under Limits on the site. The same-task ratio (2026-10-14) removes the part of that caused by solving only small tasks, but not a model's own tendency to write less.
 
 ## Next work, in priority order
 
@@ -79,7 +98,7 @@ Keep actionable backlog in [TODO.md](TODO.md). Owner workflow: solve directly an
 
 - Verified includes **GLM-5.1 · EvalScope** (2026-10-13), the only non-mini-SWE-agent row: pinned HF `fxiao0369/GLM51-swebench-replay@5c03de1`, MIT, uploader-reported outcomes. 491/494 nonempty patches measured with 0.5.2-beta at `0aa66df` on Python 3.14.7 (85 had whitespace-stripped final blank context lines restored, recorded per record; 3 errors), 6 empty patches are `no_generation`. Script: `examples/benchmark-discovery/add-glm51-verified.py`. Current reports use `coverage-35.json`, `scores-35.json`, `sensitivity-35.json`; the 34-model files are frozen snapshots. Known issue: Verified `rank_range` comes from the stability report, which does not rank by the solved-only mean.
 
-Latest source search: **2026-10-13** web search found one directly usable newer export, GLM-5.1 on SWE-bench Verified (500 patches, 363 resolved, MIT, pinned HF revision) but run with EvalScope, not mini-SWE-agent: owner decision needed before measuring. New 2026-model sources (SWEeper-Bench, NVIDIA Open-SWE-Traces) would be new boards. Census: `examples/benchmark-discovery/new-source-search-2026-10-13.json`.
+Latest source search: **2026-10-13**. Both usable finds are now published: GLM-5.1 (Verified) and SWEeper-Bench (PHP board). NVIDIA Open-SWE-Traces is still open (small open models). Census: `examples/benchmark-discovery/new-source-search-2026-10-13.json`.
 
 Earlier discovery: **2026-10-07** complete GitHub trees for Live, PolyBench and Verified match their stored pins. Complete DeepSWE trials/release/leaderboard hashes are unchanged: 70 configs / 28 model names, Astra has no declared patches; four representative Gemini 3.8 GETs returned 403. This is not a full usable-config patch-availability refresh. GPT-5.2 Codex outcome probes still returned 404. Census: `examples/benchmark-discovery/model-battery-refresh-2026-10-07.json`.
 
@@ -114,7 +133,7 @@ Passing references are needed only for archived combined-score diagnostics, **no
 
 - Pin upstream submission/dataset revisions, full task/attempt membership, patch and outcome checksums, model/harness attribution and language mapping. Preserve submitted versus placeholder/missing distinctions. Corroborate touched-file preimages; do not claim full-checkout, evaluator or model-backend certification from that evidence.
 - Use a clean committed analyzer worktree with external cache/raw storage and Python 3.14.7. A same-board comparison must use compatible analyzer/track identities: use the existing identity where operationally possible, otherwise remeasure the comparison cohort and version the release. Never relabel old records or pool incompatible versions. JS/TS worktrees require their own pinned `npm ci`.
-- Retain the entire predefined population. Report eligible/population coverage plus source-reported outcomes and exclusion/error reasons. Rank by the mean over measured in-scope solved attempts; preserve the all-measured mean column. No trimming, correctness tie-break, coverage gate or missing-zero imputation.
+- Retain the entire predefined population. Report eligible/population coverage plus source-reported outcomes and exclusion/error reasons. Rank by the same-task ratio (built by `site.py`); preserve the plain solved mean and all-measured mean columns. No trimming, correctness tie-break, coverage gate or missing-zero imputation.
 - Review numerical publication separately from raw-artifact redistribution. Publish attributed scalars/hashes, coverage and reproduction metadata; do not assume an output ownership clause grants rights to another submitter's artifacts. Keep raw patches/source/prompts/trajectories external unless separately cleared.
 - Freeze/version population, numerical exports and diagnostics; update the example README, board navigation and Published state table. Rebuild all affected pages with the shared template, run the full pinned-parser suite and Node checks, reproduce archived score arithmetic, then commit/push `main`. Verify deployment if accessible; report access failures rather than claiming a push proves deployment.
 
@@ -158,13 +177,13 @@ The parser problem is solved (0.7.0, 2026-10-01): JS/TS use the official TypeScr
 
 ## Commands
 
-Latest validation (2026-10-13, 0.9.0-beta): **382 tests passed** on Python 3.14.8 without the Go extra (16 Go-grammar and 7 opt-in browser skips); all six pages rebuilt and passed the Node checks. Earlier validation (2026-10-11): **370 tests passed with 7 browser skips** using Python 3.14.7 and exact current optional parser/source pins; **7 opt-in real Firefox tests passed** separately. All six Node page checks and custom importer tests passed. Full 3,536-slot Go v2 population/provenance/comparison audit passed; public scalar download verified all 43 member hashes and reproduced new archived scores byte-for-byte. Historical ten-model and current Live score arithmetic also reproduce exactly. All historical Go JSON/JSONLs remain unchanged; the other five boards' embedded measurement payloads are identical except Sources metadata. Current reproducible Go scalars: checksummed `deepswe-go-v0.8` release asset with bindings in `examples/deepswe-go-v2/release-assets.json`; external raw/measurement cache `/tmp/parsimony-go-v2-release`, clean analyzer `/tmp/parsimony-go-v2-measure` (temporary paths, not durable publication inputs).
+Latest validation (2026-10-14, 0.10.0-beta): **413 tests ran, 45 skipped** (Go grammar, PHP extras and opt-in browser tests) on Python 3.14.8; all seven pages rebuilt and passed the Node checks; CI green. Earlier validation (2026-10-11): **370 tests passed with 7 browser skips** using Python 3.14.7 and exact current optional parser/source pins; **7 opt-in real Firefox tests passed** separately. All six Node page checks and custom importer tests passed. Full 3,536-slot Go v2 population/provenance/comparison audit passed; public scalar download verified all 43 member hashes and reproduced new archived scores byte-for-byte. Historical ten-model and current Live score arithmetic also reproduce exactly. All historical Go JSON/JSONLs remain unchanged; the other five boards' embedded measurement payloads are identical except Sources metadata. Current reproducible Go scalars: checksummed `deepswe-go-v0.8` release asset with bindings in `examples/deepswe-go-v2/release-assets.json`; external raw/measurement cache `/tmp/parsimony-go-v2-release`, clean analyzer `/tmp/parsimony-go-v2-measure` (temporary paths, not durable publication inputs).
 
 ### Before every push
 
 ```sh
 npm ci                                            # pinned TypeScript parser for JS/TS tests
-scripts/check.sh                                  # Python tests (382; Go and opt-in browser tests skip without extras), page checks, bundles
+scripts/check.sh                                  # Python tests (413; Go and opt-in browser tests skip without extras), page checks, bundles
 uv venv --python 3.14.7 /tmp/parsimony-checks     # full check with the Go grammar, as in CI
 uv pip install --python /tmp/parsimony-checks/bin/python '.[languages]'
 /tmp/parsimony-checks/bin/python -m unittest discover -s tests -q
