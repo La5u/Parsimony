@@ -48,8 +48,12 @@ class Cache:
         request = Request(url, headers={"User-Agent": "parsimony-artifacts/1"})
         with urlopen(request, timeout=self.timeout) as response:
             data = response.read(self.max_bytes + 1)
+            expected = response.headers.get("Content-Length")
         if len(data) > self.max_bytes:
             raise ValueError(f"download exceeds {self.max_bytes} bytes: {url}")
+        # A dropped connection can end the body early without an error; never cache a short read.
+        if expected is not None and expected.isdigit() and len(data) != int(expected):
+            raise ValueError(f"incomplete download ({len(data)} of {expected} bytes): {url}")
         # A named temporary file plus replace prevents partial cache entries.
         fd, tmp = tempfile.mkstemp(prefix=name + ".", dir=self.cache_dir)
         try:

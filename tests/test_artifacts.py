@@ -23,6 +23,25 @@ class ArtifactsTests(unittest.TestCase):
             self.assertEqual(loaded['predictions'], {'a': 'patch'})
             self.assertEqual(len(loaded['provenance']['results_sha256']), 64)
 
+    def test_cache_rejects_and_does_not_store_short_downloads(self):
+        class Response:
+            def __init__(self, body, length):
+                self.body, self.headers = body, {'Content-Length': str(length)}
+            def read(self, _n):
+                return self.body
+            def __enter__(self):
+                return self
+            def __exit__(self, *_):
+                return False
+        with tempfile.TemporaryDirectory() as tmp:
+            cache = Cache(tmp)
+            with patch('parsimony.artifacts.urlopen', return_value=Response(b'abc', 10)):
+                with self.assertRaisesRegex(ValueError, 'incomplete download'):
+                    cache.get('https://example.org/a')
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+            with patch('parsimony.artifacts.urlopen', return_value=Response(b'abc', 3)):
+                self.assertEqual(cache.get('https://example.org/a'), b'abc')
+
     def test_manifest_requires_object(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
