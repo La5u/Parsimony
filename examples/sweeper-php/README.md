@@ -14,23 +14,25 @@ Every one of the 128 tasks is kept for every configuration. Measurements count P
 
 ## Results (analyzer 0.10.0-beta, `tree-sitter-php-units-v1`)
 
-| # | Model · agent | Net units, solved (mean) | Net units, all measured (mean) | Solved / 128 | Measured / 128 |
-|---:|---|---:|---:|---:|---:|
-| 1 | Qwen3.8 Max (none) · Codex | +8.2 | +29.6 | 40 | 112 |
-| 2 | GLM-5.3 Flash (max) · Codex | +22.9 | +29.0 | 55 | 114 |
-| 3 | Kimi K3 (high) · Kimi Code | +39.4 | +40.7 | 66 | 115 |
-| 4 | DeepSeek V4.1 Flash (xhigh) · DeepSeek harness | +40.7 | +39.2 | 68 | 120 |
-| 5 | GPT-5.6 Terra (xhigh) · Codex | +42.7 | +38.5 | 46 | 103 |
-| 6 | GPT-5.6 Luna (xhigh) · Codex | +49.7 | +45.1 | 57 | 106 |
-| 7 | Muse Spark 1.3 (xhigh) · Muse Code | +54.2 | +45.3 | 65 | 112 |
-| 8 | Claude Opus 5 (xhigh) · Claude Code | +55.3 | +52.4 | 71 | 117 |
-| 9 | GLM-5.3 (max) · Codex | +61.7 | +43.9 | 56 | 118 |
-| 10 | DeepSeek V4 Pro (xhigh) · DeepSeek harness | +64.0 | +64.4 | 66 | 117 |
-| 11 | GPT-5.6 Sol (xhigh) · Codex | +68.7 | +70.5 | 63 | 114 |
-| 12 | GPT-6 Astra (xhigh) · Codex | +69.3 | +60.3 | 78 | 117 |
-| 13 | Claude Fable 5.1 (xhigh) · Claude Code | +91.7 | +83.1 | 73 | 118 |
-| 14 | Qwen3.8 Flash (xhigh) · Codex | +131.7 | +128.8 | 76 | 116 |
-| 15 | Grok 4.6 (xhigh-fast) · Cursor | +156.8 | +168.3 | 78 | 119 |
+As on the website: a model's net units added on the tasks it solved, divided by what the other ranked models added on those same tasks (0.8× = 20% less code). Only tasks solved by at least 3 other models count (*Tasks*); there is no 95% range below 5 tasks. This ranks the smallest measured footprint, not the best coding model.
+
+| Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
+|---:|---|---:|---|---:|---:|---:|---:|---:|
+| 1 | Qwen3.8 Max (none) · Codex | 0.13× | −0.06 to 0.33× | 38 | +8.2 | +29.6 | 31.2% | 38/40 |
+| 2 | GLM-5.3 Flash (max) · Codex | 0.30× | 0.16–0.43× | 51 | +22.9 | +29.0 | 43.0% | 53/55 |
+| 3 | DeepSeek V4.1 Flash (xhigh) · DeepSeek harness | 0.57× | 0.44–0.71× | 64 | +40.7 | +39.2 | 53.1% | 67/68 |
+| 4 | Kimi K3 (high) · Kimi Code | 0.59× | 0.44–0.76× | 62 | +39.4 | +40.7 | 51.6% | 65/66 |
+| 5 | GPT-5.6 Terra (xhigh) · Codex | 0.60× | 0.45–0.78× | 45 | +42.7 | +38.5 | 35.9% | 45/46 |
+| 6 | GPT-5.6 Luna (xhigh) · Codex | 0.74× | 0.58–0.94× | 54 | +49.7 | +45.1 | 44.5% | 55/57 |
+| 7 | Muse Spark 1.3 (xhigh) · Muse Code | 0.80× | 0.56–1.02× | 61 | +54.2 | +45.3 | 50.8% | 62/65 |
+| 8 | Claude Opus 5 (xhigh) · Claude Code | 0.83× | 0.62–1.06× | 67 | +55.3 | +52.4 | 55.5% | 70/71 |
+| 9 | GLM-5.3 (max) · Codex | 0.95× | 0.67–1.30× | 55 | +61.7 | +43.9 | 43.8% | 55/56 |
+| 10 | GPT-6 Astra (xhigh) · Codex | 0.99× | 0.74–1.26× | 72 | +69.3 | +60.3 | 60.9% | 75/78 |
+| 11 | DeepSeek V4 Pro (xhigh) · DeepSeek harness | 1.01× | 0.80–1.26× | 63 | +64.0 | +64.4 | 51.6% | 64/66 |
+| 12 | GPT-5.6 Sol (xhigh) · Codex | 1.05× | 0.75–1.33× | 60 | +68.7 | +70.5 | 49.2% | 60/63 |
+| 13 | Claude Fable 5.1 (xhigh) · Claude Code | 1.20× | 0.95–1.46× | 67 | +91.7 | +83.1 | 57.0% | 70/73 |
+| 14 | Qwen3.8 Flash (xhigh) · Codex | 2.17× | 1.72–2.76× | 70 | +131.7 | +128.8 | 59.4% | 73/76 |
+| 15 | Grok 4.6 (xhigh-fast) · Cursor | 2.67× | 2.22–3.18× | 64 | +156.8 | +168.3 | 60.9% | 71/78 |
 
 Of 1,920 attempts: **1,851 measured**, 67 analysis errors (30 base or patched files that do not parse as modern PHP, 21 binary/rename-only diffs, 15 patches with non-UTF-8 bytes, 1 file missing at the base commit) and 2 missing patches. Outcomes: 958 pass, 954 fail, 8 unknown (`uncertain` or `infrastructure_failed`, never counted as failures). Missing measurements are never zero. Coverage: [coverage.json](coverage.json); stability: [stability.md](stability.md).
 

@@ -33,6 +33,48 @@ python -m parsimony.stability score-panel.json *.jsonl --output sensitivity-34.j
 python -m parsimony.site score-panel.json *.jsonl --sensitivity sensitivity-34.json --benchmark verified --output site/verified.html
 ```
 
+## Ranking (same tasks)
+
+As on the website: a model's net units added on the tasks it solved, divided by what the other ranked models added on those same tasks (0.8× = 20% less code). Only tasks solved by at least 3 other models count (*Tasks*); there is no 95% range below 5 tasks. This ranks the smallest measured footprint, not the best coding model.
+
+| Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
+|---:|---|---:|---|---:|---:|---:|---:|---:|
+| 1 | Qwen2.5-Coder 32B | 0.41× | −0.51 to 1.03× | 42 | +4.6 | -40.3 | 9.0% | 43/45 |
+| 2 | Gemini 2.5 Pro | 0.54× | 0.46–0.62× | 264 | +10.3 | +9.3 | 53.6% | 264/268 |
+| 3 | Claude Opus 4.5 (high) | 0.67× | 0.59–0.76× | 378 | +15.5 | +21.6 | 76.8% | 384/384 |
+| 4 | Gemini 3 Flash (high) | 0.74× | 0.62–0.86× | 375 | +20.1 | +25.1 | 75.8% | 379/379 |
+| 5 | Gemini 3 Pro (preview) | 0.75× | 0.65–0.85× | 368 | +17.1 | +23.2 | 74.2% | 370/371 |
+| 6 | Claude Opus 4.6 | 0.75× | 0.66–0.83× | 373 | +18.7 | +22.8 | 75.6% | 378/378 |
+| 7 | Claude Sonnet 4 | 0.77× | 0.09–1.15× | 324 | +16.5 | +53.7 | 64.8% | 324/324 |
+| 8 | MiniMax M2.5 (high) | 0.83× | 0.68–0.98× | 373 | +22.2 | +26.1 | 75.8% | 379/379 |
+| 9 | Kimi K2.5 (high) | 0.85× | 0.75–0.96× | 354 | +19.7 | +25.5 | 70.8% | 354/354 |
+| 10 | Claude Haiku 4.5 (high) | 0.87× | 0.71–1.03× | 333 | +20.2 | +30.3 | 66.6% | 333/333 |
+| 11 | Devstral 2512 | 0.87× | 0.65–1.09× | 268 | +19.5 | +23.8 | 53.8% | 269/269 |
+| 12 | GLM-5.1 · EvalScope | 0.88× | 0.78–1.01× | 358 | +20.8 | +26.9 | 72.6% | 363/363 |
+| 13 | o4-mini | 0.92× | 0.75–1.13× | 222 | +15.9 | -51.7 | 45.0% | 223/225 |
+| 14 | o3 | 0.93× | 0.77–1.14× | 292 | +18.8 | +20.9 | 58.4% | 292/292 |
+| 15 | Llama 4 Maverick | 0.94× | 0.56–1.70× | 104 | +10.0 | -244.2 | 21.0% | 104/105 |
+| 16 | Kimi K2 Instruct | 0.95× | 0.77–1.20× | 216 | +16.9 | +0.8 | 43.8% | 216/219 |
+| 17 | Claude Sonnet 4.5 (high) | 0.95× | 0.84–1.07× | 357 | +21.2 | +29.2 | 71.4% | 357/357 |
+| 18 | GLM-5 (high) | 0.97× | 0.87–1.08× | 360 | +22.1 | +30.4 | 72.8% | 364/364 |
+| 19 | GPT-5 mini | 0.98× | 0.77–1.20× | 281 | +22.0 | +26.2 | 56.2% | 281/281 |
+| 20 | GPT-5.1 | 1.01× | 0.88–1.15× | 327 | +20.4 | +27.4 | 66.0% | 329/330 |
+| 21 | GPT-5.1 Codex | 1.03× | 0.91–1.18× | 330 | +21.4 | +26.9 | 66.0% | 330/330 |
+| 22 | Qwen3-Coder 480B | 1.05× | 0.89–1.22× | 271 | +18.9 | +29.5 | 55.4% | 273/277 |
+| 23 | GLM-4.6 | 1.06× | 0.89–1.27× | 273 | +20.3 | +62.5 | 55.4% | 273/277 |
+| 24 | Claude Opus 4 | 1.10× | 0.98–1.25× | 336 | +23.4 | +31.0 | 67.6% | 337/338 |
+| 25 | GPT-5 | 1.11× | 0.99–1.25× | 318 | +21.8 | +27.6 | 65.0% | 319/325 |
+| 26 | GPT-5 nano | 1.12× | 0.86–1.41× | 173 | +17.3 | -16.8 | 34.8% | 173/174 |
+| 27 | gpt-oss-120b | 1.16× | 0.71–1.71× | 122 | +15.0 | -82.2 | 26.0% | 123/130 |
+| 28 | gemini-3-5-flash | 1.17× | 1.05–1.30× | 347 | +28.7 | +36.6 | 71.8% | 359/359 |
+| 29 | GPT-5.2 | 1.22× | 1.01–1.44× | 343 | +28.5 | +42.9 | 69.0% | 345/345 |
+| 30 | DeepSeek V3.2 (high) | 1.22× | 1.11–1.34× | 348 | +27.6 | +35.4 | 70.0% | 350/350 |
+| 31 | GLM-4.5 | 1.25× | 0.82–2.01× | 267 | +21.9 | +27.0 | 54.2% | 267/271 |
+| 32 | Devstral Small 2512 | 1.30× | 0.19–2.56× | 279 | +27.4 | +52.2 | 56.4% | 280/282 |
+| 33 | Kimi K2 Thinking | 1.38× | 0.98–1.93× | 313 | +32.4 | +38.1 | 63.4% | 314/317 |
+| 34 | MiniMax M2 | 1.43× | 1.09–1.97× | 299 | +29.7 | +41.1 | 61.0% | 302/305 |
+| 35 | GPT-5.2 (high) | 1.67× | 1.45–1.90× | 362 | +36.6 | +50.9 | 72.8% | 364/364 |
+
 ## Which runs are included
 
 All 48 mini-SWE-agent runs on Verified at the pinned revision were checked; 39 are measured here.

@@ -26,20 +26,18 @@ The unchanged static measurements were made from clean analyzer commit
 The JSONLs are byte-for-byte copies of the archived external measurements. No
 record is relabelled to the newer scoring/site implementation commit.
 
-## Current website: net-unit footprint ranking
+## Current website: same-task ranking
 
-The website now ranks by **mean net units added, ascending**, over all measured
-in-scope attempts, including 85 DeepSeek failures, 83 Slingshot failures, 174
-AiWork failures and 77 agav failures. Upstream Solved % is separate context. Eligible/population
-coverage remains visible (287/300, 288/300, 276/300 and 262/300). GPT-5.5 / agav
-has mean net units **50.38549618320611** across eligible attempts and
-**57.52972972972973** over eligible solved attempts only. Its 271 completed
-full-file analyses (`analysis_status=ok`) include 9 excluded-only attempts
-(1 success, 8 failures), which are not ranking inputs: successful analysis does
-not guarantee an in-scope footprint. The 29 empty-patch-only records
-have unknown correctness and no footprint metrics. Missing footprints are
-never zero; models without measurements are unranked. Equal values tie. A failed no-op or large
-deletion can rank first: this is footprint comparison, not a coding-ability rank.
+As on the website: a model's net units added on the tasks it solved, divided by what the other ranked models added on those same tasks (0.8× = 20% less code). Only tasks solved by at least 3 other models count (*Tasks*); there is no 95% range below 5 tasks. This ranks the smallest measured footprint, not the best coding model.
+
+| Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
+|---:|---|---:|---|---:|---:|---:|---:|---:|
+| 1 | GPT-5.5 · agav 0.2.0-beta.2 | 0.79× | 0.55–1.04× | 73 | +57.5 | +50.4 | 62.0% | 185/186 |
+| 2 | DeepSeek V4.1 Flash · TianxiCode 0.1.423 | 0.87× | 0.57–1.21× | 73 | +54.0 | +50.1 | 68.0% | 202/204 |
+| 3 | Claude Opus 4.8 · AiWork.Code | 1.16× | 0.85–1.56× | 73 | +58.6 | +54.0 | 34.0% | 102/102 |
+| 4 | GPT-5.6 Sol · Slingshot 3.4.0 | 1.21× | 0.93–1.64× | 73 | +68.2 | +58.1 | 70.3% | 205/211 |
+
+The all-measured mean includes 85 DeepSeek failures, 83 Slingshot failures, 174 AiWork failures and 77 agav failures. Upstream Solved % is separate context. Eligible/population coverage is 287/300, 288/300, 276/300 and 262/300. GPT-5.5 / agav has mean net units **50.38549618320611** across eligible attempts and **57.52972972972973** over eligible solved attempts only. Its 271 completed full-file analyses (`analysis_status=ok`) include 9 excluded-only attempts (1 success, 8 failures), which are not ranking inputs: successful analysis does not guarantee an in-scope footprint. The 29 empty-patch-only records have unknown correctness and no footprint metrics. Missing footprints are never zero; models without measurements are unranked. Equal values tie.
 
 Passing references and their absence do not restrict footprint data. Task views
 show all recorded tasks and their actual net changes when eligible. The 80/20

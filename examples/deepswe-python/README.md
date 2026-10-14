@@ -29,7 +29,40 @@ python -m parsimony.site score-panel.json *.jsonl --sensitivity sensitivity.json
 - **33 tasks are scored:** no model solved `koota-entity-snapshot-rollback`, so it cannot calibrate footprint.
 - **Reference solution:** DeepSWE's own solution for each task plays the role of the maintainers' fix (the *Churn vs reference* column). A few solutions lost the leading space of blank context lines; the dataset builder restores it.
 
-## Results
+## Ranking (same tasks)
+
+As on the website: a model's net units added on the tasks it solved, divided by what the other ranked models added on those same tasks (0.8× = 20% less code). Only tasks solved by at least 3 other models count (*Tasks*); there is no 95% range below 5 tasks. This ranks the smallest measured footprint, not the best coding model.
+
+| Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
+|---:|---|---:|---|---:|---:|---:|---:|---:|
+| 1 | Gemini 3.1 Pro Preview (high) | 0.66× | 0.56–0.77× | 8 | +1,479.5 | +1,156.3 | 8.1% | 11/11 |
+| 2 | Claude Fable 5 (xhigh) | 0.80× | 0.75–0.85× | 28 | +1,557.5 | +1,509.1 | 74.3% | 97/101 |
+| 3 | Claude Sonnet 5 (max) | 0.83× | 0.79–0.88× | 25 | +1,665.9 | +1,563.5 | 59.6% | 78/81 |
+| 4 | Claude Opus 4.8 (max) | 0.84× | 0.80–0.89× | 29 | +1,621.9 | +1,592.2 | 63.2% | 83/86 |
+| 4 | GLM-5.2 (max) | 0.84× | 0.81–0.89× | 24 | +1,733.2 | +1,591.3 | 41.9% | 53/57 |
+| 6 | Kimi K3 (max) | 0.85× | 0.79–0.90× | 30 | +1,641.2 | +1,601.1 | 67.6% | 89/92 |
+| 7 | Gemini 3.5 Flash (high) | 0.86× | 0.78–0.94× | 17 | +1,621.5 | +1,707.6 | 29.4% | 38/40 |
+| 8 | Claude Sonnet 4.6 (high) | 0.87× | 0.77–0.99× | 19 | +1,684.5 | +1,587.9 | 29.4% | 36/40 |
+| 9 | Kimi K2.7 Code | 0.89× | 0.84–0.94× | 20 | +1,737.3 | +1,600.1 | 24.3% | 32/33 |
+| 10 | DeepSeek V4 Flash (max) | 0.93× | 0.88–1.00× | 27 | +1,748.7 | +1,770.3 | 48.5% | 63/66 |
+| 11 | Qwen3.8 Max (xhigh) | 0.93× | 0.89–0.98× | 27 | +1,697.8 | +1,770.5 | 55.1% | 74/75 |
+| 12 | Gemini 3.6 Flash (high) | 0.95× | 0.87–1.02× | 22 | +1,741.9 | +1,835.1 | 41.9% | 53/57 |
+| 13 | Grok 4.5 (high) | 0.98× | 0.91–1.05× | 28 | +1,819.8 | +1,886.7 | 58.8% | 79/80 |
+| 14 | Grok 4.6 (medium) | 1.00× | 0.96–1.04× | 28 | +1,825.9 | +1,981.0 | 67.6% | 89/92 |
+| 15 | GPT-5.4 (xhigh) | 1.03× | 0.96–1.11× | 25 | +1,913.5 | +2,058.9 | 46.3% | 59/63 |
+| 16 | Gemini 3.7 Flash (medium) | 1.04× | 0.96–1.15× | 27 | +1,904.2 | +2,038.1 | 60.3% | 80/82 |
+| 17 | GLM-5.3 Flash (max) | 1.05× | 0.99–1.10× | 29 | +2,006.5 | +1,998.5 | 69.9% | 93/95 |
+| 18 | GPT-5.6 Sol (max) | 1.06× | 0.99–1.13× | 29 | +1,964.2 | +2,031.8 | 74.3% | 98/101 |
+| 19 | GPT-5.6 Terra (max) | 1.07× | 1.02–1.11× | 29 | +2,028.7 | +2,096.5 | 68.4% | 90/93 |
+| 20 | GPT-5.5 (xhigh) | 1.07× | 1.01–1.14× | 28 | +1,936.7 | +2,102.4 | 66.9% | 87/91 |
+| 21 | DeepSeek V4 Pro (max) | 1.07× | 1.02–1.14× | 29 | +2,043.7 | +2,074.7 | 59.6% | 77/81 |
+| 21 | GLM-5.3 (max) | 1.07× | 0.98–1.16× | 29 | +2,090.0 | +2,035.5 | 66.2% | 87/90 |
+| 23 | GPT-5.6 Luna (max) | 1.14× | 1.08–1.21× | 30 | +2,202.3 | +2,203.8 | 65.4% | 85/89 |
+| 24 | Claude Opus 5 (max) | 1.14× | 1.07–1.22× | 28 | +2,183.4 | +2,124.4 | 74.3% | 97/101 |
+| 25 | Muse Spark 1.2 (xhigh) | 1.31× | 1.22–1.41× | 27 | +2,484.1 | +2,463.2 | 50.7% | 66/69 |
+| 26 | Muse Spark 1.1 (xhigh) | 1.35× | 1.24–1.50× | 24 | +2,562.3 | +2,412.7 | 52.9% | 68/72 |
+
+## Archived Score diagnostic (not the ranking)
 
 | Rank (95%) | Model | Score | 95% interval | Resolved | Per solve | Median net units | Median churn | Churn vs reference |
 |---:|---|---:|---|---:|---:|---:|---:|---:|

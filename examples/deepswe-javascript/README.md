@@ -49,6 +49,39 @@ JS-labelled projects measure both JavaScript and TypeScript files, with the scri
 
 “Measured” in the coverage table means full-file analysis completed; the audit separately reports excluded-only successes and unmeasured-unit records. This does not certify upstream test results or patch correctness. Approximate unit alignment is flagged per record.
 
+## Ranking (same tasks)
+
+As on the website: a model's net units added on the tasks it solved, divided by what the other ranked models added on those same tasks (0.8× = 20% less code). Only tasks solved by at least 3 other models count (*Tasks*); there is no 95% range below 5 tasks. This ranks the smallest measured footprint, not the best coding model.
+
+| Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
+|---:|---|---:|---|---:|---:|---:|---:|---:|
+| 1 | Gemini 3.1 Pro Preview (high) | 0.55× | — | 2 | +1,138.0 | +1,446.5 | 10.0% | 2/2 |
+| 2 | Gemini 3.5 Flash (high) | 0.79× | — | 4 | +1,926.4 | +2,123.5 | 50.0% | 10/10 |
+| 3 | Claude Fable 5 (xhigh) | 0.80× | — | 4 | +1,636.5 | +2,466.8 | 70.0% | 14/14 |
+| 4 | Claude Opus 4.8 (max) | 0.83× | — | 3 | +1,672.4 | +2,328.1 | 40.0% | 8/8 |
+| 5 | Kimi K2.7 Code | 0.84× | — | 2 | +1,809.2 | +2,412.9 | 25.0% | 5/5 |
+| 6 | Gemini 3.6 Flash (high) | 0.86× | — | 4 | +1,853.6 | +2,542.2 | 55.0% | 11/11 |
+| 7 | GPT-5.5 (xhigh) | 0.89× | — | 4 | +2,422.1 | +2,491.6 | 50.0% | 10/10 |
+| 8 | Kimi K3 (max) | 0.91× | 0.72–1.02× | 5 | +2,379.6 | +2,554.4 | 65.0% | 13/13 |
+| 9 | Qwen3.8 Max (xhigh) | 0.93× | — | 4 | +2,078.5 | +2,714.7 | 65.0% | 13/13 |
+| 10 | GPT-5.6 Terra (max) | 0.93× | — | 4 | +2,827.9 | +2,682.9 | 70.0% | 14/14 |
+| 11 | GLM-5.2 (max) | 0.93× | — | 2 | +1,911.7 | +2,611.4 | 30.0% | 6/6 |
+| 12 | Claude Sonnet 5 (max) | 0.94× | 0.68–1.14× | 5 | +3,019.6 | +2,464.9 | 55.0% | 11/11 |
+| 13 | GLM-5.3 (max) | 0.96× | 0.84–1.05× | 5 | +2,533.8 | +2,714.2 | 90.0% | 18/18 |
+| 14 | DeepSeek V4 Flash (max) | 0.97× | — | 3 | +1,949.1 | +2,591.7 | 35.0% | 7/7 |
+| 15 | Gemini 3.7 Flash (medium) | 1.02× | 0.82–1.13× | 5 | +2,366.2 | +2,794.3 | 55.0% | 11/11 |
+| 16 | GPT-5.6 Luna (max) | 1.02× | 0.86–1.27× | 5 | +2,958.2 | +2,879.0 | 60.0% | 12/12 |
+| 17 | GPT-5.6 Sol (max) | 1.03× | — | 4 | +2,994.1 | +2,892.0 | 75.0% | 15/15 |
+| 18 | GPT-5.4 (xhigh) | 1.03× | — | 4 | +2,422.7 | +2,913.6 | 35.0% | 7/7 |
+| 19 | Grok 4.5 (high) | 1.05× | — | 3 | +2,373.6 | +2,757.8 | 40.0% | 8/8 |
+| 20 | GLM-5.3 Flash (max) | 1.06× | — | 4 | +2,287.3 | +2,844.7 | 60.0% | 12/12 |
+| 21 | DeepSeek V4 Pro (max) | 1.07× | — | 4 | +2,691.8 | +2,815.8 | 65.0% | 13/13 |
+| 22 | Claude Sonnet 4.6 (high) | 1.07× | — | 3 | +2,313.0 | +2,653.1 | 40.0% | 8/8 |
+| 23 | Grok 4.6 (medium) | 1.12× | 0.75–1.40× | 5 | +2,855.3 | +3,183.8 | 80.0% | 16/16 |
+| 24 | Claude Opus 5 (max) | 1.18× | — | 4 | +2,466.3 | +3,000.8 | 65.0% | 13/13 |
+| 25 | Muse Spark 1.2 (xhigh) | 1.30× | 0.97–1.96× | 5 | +3,002.4 | +3,162.4 | 55.0% | 11/11 |
+| 26 | Muse Spark 1.1 (xhigh) | 1.30× | 1.01–1.87× | 5 | +3,422.3 | +3,238.2 | 45.0% | 9/9 |
+
 ## Reproduce
 
 Run `npm ci` for the pinned TypeScript parser and use the measurement revision in a clean checkout; **do not relabel results from a different analyzer commit**. From the repository root:
