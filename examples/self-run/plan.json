@@ -4,7 +4,7 @@
  "status": "SELF-RUN, unverified: owner-run agents, not a published benchmark submission",
  "deepswe_commit": "0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea",
  "language": "python",
- "selection": "DeepSWE Python tasks ordered by sha256(\"parsimony-self-run-v1:\" + task_id); first 10. A configuration with N tasks uses the first N. Fixed before any run (GPT-6 Astra reduced from 5 to 3 tasks before any run, to save usage). On 10 Oct 2026, with 1 Sonnet 5.5 attempt done, Claude Sonnet 5.5 was reduced from 10 to 5 tasks to save Claude usage and to match Opus 5.5's task set; the choice did not depend on results. On 14 Oct 2026 the owner briefly extended the GPT-6 family to more tasks, then replaced that, before any run on tasks 11-20, with Codex runs of the same models on the same tasks so both harnesses can be compared. GPT-6 Astra (pi) had run tasks 4-5 by then and is kept at 5 tasks; its Codex counterpart uses the same 5. The choice did not depend on results.",
+ "selection": "DeepSWE Python tasks ordered by sha256(\"parsimony-self-run-v1:\" + task_id); first 10. A configuration with N tasks uses the first N. Fixed before any run (GPT-6 Astra reduced from 5 to 3 tasks before any run, to save usage). On 10 Oct 2026, with 1 Sonnet 5.5 attempt done, Claude Sonnet 5.5 was reduced from 10 to 5 tasks to save Claude usage and to match Opus 5.5's task set; the choice did not depend on results. On 14 Oct 2026 the owner briefly extended the GPT-6 family to more tasks, then replaced that, before any run on tasks 11-20, with Codex runs of the same models on the same tasks so both harnesses can be compared. GPT-6 Astra (pi) had run tasks 4-5 by then and is kept at 5 tasks; its Codex counterpart was planned on the same 5, then cut to the first 3 on 15 Oct 2026 (owner request, to save usage) after 1 Codex Astra attempt, before any Codex Astra result was looked at. The choices did not depend on results.",
  "attempts": 2,
  "environment": "Host Python 3.14 in a bubblewrap sandbox; repository at the base commit only; no task Docker image, no project dependencies, no grading. Network is not blocked (the harness needs its API); the prompt forbids it and transcripts are scanned.",
  "configurations": [
@@ -15,7 +15,7 @@
   {"id": "codex_gpt_6_luna_high", "harness": "codex", "provider": "openai", "model": "gpt-6-luna", "effort": "high", "tasks": 10},
   {"id": "codex_gpt_6_sol_high", "harness": "codex", "provider": "openai", "model": "gpt-6-sol", "effort": "high", "tasks": 10},
   {"id": "codex_gpt_6_1_sol_high", "harness": "codex", "provider": "openai", "model": "gpt-6.1-sol", "effort": "high", "tasks": 10},
-  {"id": "codex_gpt_6_astra_high", "harness": "codex", "provider": "openai", "model": "gpt-6-astra", "effort": "high", "tasks": 5},
+  {"id": "codex_gpt_6_astra_high", "harness": "codex", "provider": "openai", "model": "gpt-6-astra", "effort": "high", "tasks": 3},
   {"id": "pi_gpt_5_6_sol_high", "harness": "pi", "provider": "openai", "model": "gpt-5.6-sol", "effort": "high", "tasks": 5, "anchor_of": "deepswe-v1.1_mini_swe_agent_gpt_5_6_sol_max"},
   {"id": "claude_code_claude_haiku_5_5_high", "harness": "claude-code", "provider": "anthropic", "model": "claude-haiku-5-5", "effort": "high", "tasks": 10},
   {"id": "claude_code_claude_sonnet_5_5_high", "harness": "claude-code", "provider": "anthropic", "model": "claude-sonnet-5-5", "effort": "high", "tasks": 5},

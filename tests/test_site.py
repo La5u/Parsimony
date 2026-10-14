@@ -31,7 +31,7 @@ class SiteTests(unittest.TestCase):
         plan = (root / 'examples/self-run/plan.json').read_bytes()
         self.assertTrue(self_run['self_run'])
         self.assertFalse(self_run['active'])
-        self.assertEqual((self_run['tasks'], self_run['attempts_per_task'], self_run['population_per_model']), (10, 2, '10–20'))
+        self.assertEqual((self_run['tasks'], self_run['attempts_per_task'], self_run['population_per_model']), (10, 2, '6–20'))
         self.assertEqual(self_run['manifest_sha256'], hashlib.sha256(plan).hexdigest())
         self.assertEqual(self_run['deepswe_commit'], json.loads(plan)['deepswe_commit'])
         for source in sources:
