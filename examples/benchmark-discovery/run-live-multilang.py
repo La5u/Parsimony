@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproduce SWE-bench Live MultiLang JavaScript/TypeScript inventories, audits and measurements in external storage.
+"""Reproduce SWE-bench Live MultiLang JavaScript/TypeScript/Go inventories, audits and measurements in external storage.
 
 Run with PYTHONPATH pointing at a clean committed Parsimony checkout. The cache
 and inventory contain upstream patches and must NOT be committed or redistributed.
@@ -29,6 +29,17 @@ COHORTS = [(f'{name}_{split}', f'{BASE}{path}/{split}', agent, model, language,
             f"live-multilang-{model.lower().replace(' ', '-')}-{agent.lower().replace(' ', '-')}")
            for split, language in (('js', 'javascript'), ('ts', 'typescript'))
            for name, path, agent, model in CONFIGS]
+GO_CONFIGS = [
+    ('ami_claude_opus_4_6', '20260716-v0.7.0-claude-opus-4-6', 'AMI Agent 0.7.0', 'Claude Opus 4.6'),
+    ('ami_claude_sonnet_4_6', '20260723-v0.7.0-claude-sonnet-4-6', 'AMI Agent 0.7.0', 'Claude Sonnet 4.6'),
+    ('ami_claude_haiku_4_5', '20260729-v0.7.0-claude-haiku-4-5', 'AMI Agent 0.7.0', 'Claude Haiku 4.5'),
+    ('ami_gemini_3_1_pro_preview', '20260729-v0.7.0-gemini-3.1-pro-preview', 'AMI Agent 0.7.0', 'Gemini 3.1 Pro Preview'),
+    ('ami_gemini_3_6_flash', '20260729-v0.7.0-gemini-3.6-flash', 'AMI Agent 0.7.0', 'Gemini 3.6 Flash'),
+    ('ami_qwen3_8_27b', '20260923-v0.7.2-qwen3.8-27b', 'AMI Agent 0.7.2', 'Qwen3.8-27B'),
+]
+COHORTS += [(f'{name}_go', f'multilang/go/ami-agent/{path}', agent, model, 'go',
+             f"live-multilang-{model.lower().replace(' ', '-')}-{agent.lower().replace(' ', '-')}")
+            for name, path, agent, model in GO_CONFIGS]
 
 
 def save(path, value):
@@ -87,7 +98,7 @@ def main():
         inventory = root / (name + '.inventory.json')
         audit_path = root / (name + '.preimages.json')
         if args.phase == 'inventory':
-            split = {'javascript': 'js', 'typescript': 'ts'}[language]
+            split = {'javascript': 'js', 'typescript': 'ts', 'go': 'go'}[language]
             run = import_run(cache, submission_revision=REVISION, config_path='submissions/' + config,
                              dataset='SWE-bench-Live/MultiLang', dataset_revision=MULTILANG_REVISION,
                              dataset_files=[(language, f'data/{split}-00000-of-00001.parquet')],
