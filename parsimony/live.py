@@ -126,6 +126,9 @@ def _result_categories(result: dict) -> dict[str, set[str]]:
         result['submitted'] = (result['submitted_instances'] if 'submitted_instances' in result else
                                len(result['submitted_ids']) if isinstance(result['submitted_ids'], list) else None)
         completed = result.get('completed_ids')
+        if completed is None and all(isinstance(result.get(k), list) for k in ('success_ids', 'failure_ids')):
+            # Some AMI v2 files list only resolved/unresolved IDs; their union must match completed_instances.
+            completed = sorted(set(result['success_ids']) | set(result['failure_ids']))
         if (not isinstance(completed, list) or any(not isinstance(x, str) for x in completed)
                 or len(completed) != len(set(completed))
                 or type(result.get('completed_instances')) is not int

@@ -639,6 +639,16 @@ class LiveJSONLayoutTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'success count'):
             _result_categories(result)
 
+    def test_ami_v2_without_completed_ids_uses_outcome_lists(self):
+        # Actual AMI JS/TS schema: no completed_ids; completed_instances must match the outcome lists.
+        result = dict(total_instances=3, completed_instances=2, resolved_instances=1,
+                      resolved_ids=['a__a-1'], unresolved_ids=['b__b-2'],
+                      language='javascript', dataset='SWE-bench-Live/MultiLang', split='js', schema_version=2)
+        self.assertEqual(_result_categories(dict(result))['success'], {'a__a-1'})
+        result['completed_instances'] = 3
+        with self.assertRaisesRegex(ValueError, 'completed count'):
+            _result_categories(result)
+
     def test_v2_count_lists_completed_and_outcome_conflicts_fail_closed(self):
         for field, replacement in (('resolved_instances', True), ('unresolved_instances', 99),
                                    ('error_instances', 2), ('empty_patch_instances', 9),
