@@ -143,6 +143,9 @@ def _result_categories(result: dict) -> dict[str, set[str]]:
                 or result['total_instances'] < max(len(completed), len(result['submitted_ids'])
                                                   if isinstance(result['submitted_ids'], list) else 0)):
             raise ValueError('invalid total_instances count')
+    if 'incomplete_ids' not in result and 'incomplete' not in result:
+        # Older all_languages results omit the category altogether: nothing was incomplete.
+        result = dict(result, incomplete_ids=[], incomplete=0)
     ids = {}
     keys = {'success': 'success_ids', 'failure': 'failure_ids', 'error': 'error_ids',
             'incomplete': 'incomplete_ids', 'empty_patch': 'empty_patch_ids'}
@@ -267,8 +270,11 @@ def import_run(cache: Cache, *, submission_revision: str, config_path: str,
                dataset: str, dataset_revision: str, dataset_file: str | None = None,
                dataset_files=None, task_ids: list[str] | None = None,
                verify_patch_files: bool = False, agent: str = 'swe-bench-live',
-               model: str | None = None) -> dict:
-    """Inventory a run against explicitly mapped immutable dataset files."""
+               model: str | None = None, set_aside_outside: bool = False) -> dict:
+    """Inventory a run against explicitly mapped immutable dataset files.
+
+    ``set_aside_outside`` is for cross-language runs: tasks outside the given dataset files (other
+    languages) are left out and counted, instead of failing the import."""
     if not SHA.fullmatch(submission_revision):
         raise ValueError('submission revision must be a full Git commit SHA')
     if (not config_path or config_path.startswith('/')
@@ -289,6 +295,7 @@ def import_run(cache: Cache, *, submission_revision: str, config_path: str,
     prediction_url = base + '/preds.json'
     prediction_bytes = _optional_bytes(cache, prediction_url)
     predictions = _predictions(prediction_bytes) if prediction_bytes is not None else {}
+    prediction_indexes = {task: i for i, task in enumerate(predictions)}
     prediction_digest = sha256(prediction_bytes) if prediction_bytes is not None else None
     specs = _dataset_specs(dataset_file, dataset_files)
     files, by_id = [], {}
@@ -321,8 +328,14 @@ def import_run(cache: Cache, *, submission_revision: str, config_path: str,
     submitted_ids = result.get('submitted_ids', sorted(set().union(*categories.values())))
     submitted = set(submitted_ids)
     run_ids = submitted | set(predictions)
-    if not run_ids <= set(by_id):
-        raise ValueError(f'run IDs absent from dataset (count={len(run_ids-set(by_id))})')
+    outside = sorted(run_ids - set(by_id))
+    if outside and not set_aside_outside:
+        raise ValueError(f'run IDs absent from dataset (count={len(outside)})')
+    if outside:
+        submitted_ids = [task for task in submitted_ids if task in by_id]
+        submitted = set(submitted_ids)
+        predictions = {task: p for task, p in predictions.items() if task in by_id}
+        run_ids = submitted | set(predictions)
     selected_ids = set(task_ids or [])
     if selected_ids - set(by_id):
         raise ValueError(f'task selection contains IDs absent from dataset: {sorted(selected_ids-set(by_id))}')
@@ -330,7 +343,6 @@ def import_run(cache: Cache, *, submission_revision: str, config_path: str,
     population_ids = submitted_ids + [task for task in by_id if task not in submitted]
     prediction_is_list = (prediction_bytes is not None
                           and prediction_bytes.decode('utf-8-sig').lstrip().startswith('['))
-    prediction_indexes = {task: i for i, task in enumerate(predictions)}
     patch_root = (base + '/logs/rollouts'
                   if config_path.strip('/') == 'submissions/lite/tianxicode/deepseek-flash' else base)
     for task_id in population_ids:
@@ -403,8 +415,10 @@ def import_run(cache: Cache, *, submission_revision: str, config_path: str,
                               dataset_checksum=dataset_checksum)
     return dict(schema_version=1, submission_revision=submission_revision, dataset=dataset_provenance,
                 dataset_task_count=len(by_id), submitted_task_count=len(submitted),
-                completeness_audit=dict(submitted_ids_within_dataset=True,
-                                        dataset_only_count=len(set(by_id)-submitted)),
+                completeness_audit=dict(submitted_ids_within_dataset=not outside,
+                                        dataset_only_count=len(set(by_id)-submitted),
+                                        outside_dataset_count=len(outside),
+                                        outside_dataset_ids_sha256=sha256('\n'.join(outside).encode())),
                 historical_dataset_match='unverified',
                 model=model, agent=agent, config=config_path, result_metadata=result,
                 prediction_url=prediction_url if prediction_bytes is not None else None,

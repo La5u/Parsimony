@@ -627,6 +627,28 @@ class LiveJSONLayoutTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'absent from dataset'):
             import_run(cache, **args)
 
+    def test_results_without_any_incomplete_field_mean_none_incomplete(self):
+        result = dict(submitted=1, submitted_ids=['a__a-1'], success=1, success_ids=['a__a-1'], failure=0, failure_ids=[],
+                      error=0, error_ids=[], empty_patch=0, empty_patch_ids=[])
+        self.assertEqual(_result_categories(dict(result))['incomplete'], set())
+        with self.assertRaisesRegex(ValueError, 'incomplete_ids'):
+            _result_categories(dict(result, incomplete=1))
+
+    def test_cross_language_run_sets_aside_other_language_tasks_only_on_request(self):
+        cache, args, result, predictions, root = self.fixture()
+        other = 'other-language-task'
+        result = dict(result, submitted=result['submitted'] + 1, submitted_ids=result['submitted_ids'] + [other],
+                      success=result['success'] + 1, success_ids=result['success_ids'] + [other])
+        cache.values[root + '/results.json'] = json.dumps(result).encode()
+        cache.values[root + '/preds.json'] = json.dumps(dict(predictions, **{other: {'model_patch': 'x'}})).encode()
+        with self.assertRaisesRegex(ValueError, 'absent from dataset'):
+            import_run(cache, **args)
+        run = import_run(cache, **args, set_aside_outside=True)
+        self.assertNotIn(other, {r['task_id'] for r in run['records']})
+        self.assertEqual(run['completeness_audit']['outside_dataset_count'], 1)
+        self.assertFalse(run['completeness_audit']['submitted_ids_within_dataset'])
+        self.assertEqual(run['submitted_task_count'], len(result['submitted_ids']) - 1)
+
     def test_observed_ami_v2_without_submitted_or_unresolved_counts(self):
         # Actual AMI Go schema at the same pin: only these lists/counts present.
         result = dict(total_instances=2, completed_instances=2, resolved_instances=1,

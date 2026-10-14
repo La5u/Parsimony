@@ -40,6 +40,20 @@ GO_CONFIGS = [
 COHORTS += [(f'{name}_go', f'multilang/go/ami-agent/{path}', agent, model, 'go',
              f"live-multilang-{model.lower().replace(' ', '-')}-{agent.lower().replace(' ', '-')}")
             for name, path, agent, model in GO_CONFIGS]
+# Cross-language runs (all_languages): only their Go tasks are imported; other languages are set aside.
+HARNESS = {'claudecode': 'Claude Code', 'openhands': 'OpenHands', 'sweagent': 'SWE-agent'}
+ALL_LANGUAGE_RUNS = [
+    ('claudecode', 'claude-4-5-sonnet', 'Claude Sonnet 4.5'), ('claudecode', 'deepseek-v3.1-terminus', 'DeepSeek V3.1 Terminus'),
+    ('claudecode', 'deepseek-v4-pro', 'DeepSeek V4 Pro'), ('claudecode', 'gpt-5-2-medium', 'GPT-5.2 (medium)'),
+    ('claudecode', 'gpt-5.5-medium', 'GPT-5.5 (medium)'), ('openhands', 'deepseek-v4-pro', 'DeepSeek V4 Pro'),
+    ('openhands', 'gpt-5.5-medium', 'GPT-5.5 (medium)'), ('sweagent', 'claude-4-5-sonnet', 'Claude Sonnet 4.5'),
+    ('sweagent', 'deepseek-v3.1-terminus', 'DeepSeek V3.1 Terminus'), ('sweagent', 'deepseek-v4-pro', 'DeepSeek V4 Pro'),
+    ('sweagent', 'gemini-3-flash', 'Gemini 3 Flash'), ('sweagent', 'gpt-5.2-medium', 'GPT-5.2 (medium)'),
+    ('sweagent', 'gpt-5.5-medium', 'GPT-5.5 (medium)'),
+]
+COHORTS += [(f"all_{harness}_{folder.replace('-', '_').replace('.', '_')}_go", f'multilang/all_languages/{harness}/{folder}',
+             HARNESS[harness], model, 'go', f"live-multilang-{folder}-{harness}")
+            for harness, folder, model in ALL_LANGUAGE_RUNS]
 
 
 def save(path, value):
@@ -102,7 +116,8 @@ def main():
             run = import_run(cache, submission_revision=REVISION, config_path='submissions/' + config,
                              dataset='SWE-bench-Live/MultiLang', dataset_revision=MULTILANG_REVISION,
                              dataset_files=[(language, f'data/{split}-00000-of-00001.parquet')],
-                             agent=source_agent, model=model)
+                             agent=source_agent, model=model,
+                             set_aside_outside=config.startswith('multilang/all_languages/'))
             save(inventory, run)
             print(name, 'population', len(run['records']), flush=True)
         else:
