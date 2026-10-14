@@ -1,0 +1,38 @@
+{
+ "date": "2026-10-14",
+ "source": "nvidia/Open-SWE-Traces",
+ "url": "https://huggingface.co/datasets/nvidia/Open-SWE-Traces",
+ "revision": "1db674173119d71df45c22007af99e214600711a",
+ "previous_census_revision": "b3076fb0e11dc0231f867666586cf33c82062bb0",
+ "license": "CC BY 4.0 (dataset card)",
+ "method": "Dataset card, data_distribution.md and the Hugging Face dataset-server size and rows endpoints (one row read). Metadata only; no patches or trajectories committed. Per-row instance IDs were not downloaded (the parquet shards are 263 GB-scale), so cross-configuration task overlap is unmeasured.",
+ "purpose": "Training traces for distilling SWE agents, not a benchmark submission.",
+ "configurations": [
+  {"version": "v1.0", "harness": "OpenHands 0.53.0", "model": "MiniMax-M2.5 (thinking)", "trajectories": 43603, "unique_tasks": 19022},
+  {"version": "v1.0", "harness": "OpenHands 0.53.0", "model": "Qwen3.5-122B (non-thinking)", "trajectories": 40463, "unique_tasks": 18451},
+  {"version": "v1.0", "harness": "SWE-agent", "model": "MiniMax-M2.5 (thinking)", "trajectories": 46819, "unique_tasks": 19522},
+  {"version": "v1.0", "harness": "SWE-agent", "model": "Qwen3.5-122B (non-thinking)", "trajectories": 20334, "unique_tasks": 10511},
+  {"version": "v1.1", "harness": "OpenHands", "model": "DeepSeek-V4-Flash-0731 (thinking)", "trajectories": 50295, "unique_tasks": 32660},
+  {"version": "v1.1", "harness": "OpenHands", "model": "Qwen3.6-27B (non-thinking)", "trajectories": 40379, "unique_tasks": 28545},
+  {"version": "v1.1", "harness": "SWE-agent", "model": "Qwen3.6-27B (non-thinking)", "trajectories": 77261, "unique_tasks": 34393},
+  {"version": "v1.1", "harness": "mini-SWE-agent", "model": "Qwen3.6-27B (non-thinking)", "trajectories": 95291, "unique_tasks": 39540},
+  {"version": "v1.2", "harness": "OpenHands", "model": "Qwen3.8-27B (thinking)", "trajectories": 25599, "unique_tasks": 25599},
+  {"version": "v1.2", "harness": "OpenHands", "model": "Qwen3.8-Flash-Next (thinking)", "trajectories": 26027, "unique_tasks": 26027},
+  {"version": "v1.2", "harness": "SWE-agent", "model": "Qwen3.8-27B (thinking)", "trajectories": 33213, "unique_tasks": 33213},
+  {"version": "v1.2", "harness": "SWE-agent", "model": "Qwen3.8-Flash-Next (thinking)", "trajectories": 34688, "unique_tasks": 34688},
+  {"version": "v1.2", "harness": "mini-SWE-agent", "model": "Qwen3.8-27B (thinking, xhigh in sampled row)", "trajectories": 107267, "unique_tasks": 41405},
+  {"version": "v1.2", "harness": "mini-SWE-agent", "model": "Qwen3.8-Flash-Next (thinking)", "trajectories": 36577, "unique_tasks": 36577}
+ ],
+ "dataset_server_rows": {"v1.0": {"openhands": 84066, "sweagent": 67153}, "v1.1": {"openhands": 90674, "sweagent": 77261, "minisweagent": 95291}, "v1.2": {"openhands": 51626, "sweagent": 67898, "minisweagent": 143844}},
+ "tasks": "SWE-rebench-V2 and Scale-SWE training instances, many repositories. Languages by trajectories (v1.2): Python 157,692, Go 32,249, TypeScript 24,112, JavaScript 19,521, Rust 14,440, Java 7,926, PHP 6,726, C/C++ 705.",
+ "row_fields": "instance_id, repo, license, language, trajectory_id, messages, tools, resolved (1/0/-1), metadata {category, teacher_model, reference_patch, model_patch {patch, num_modified_files, num_modified_lines}}, hf_dataset_name. No base commit: preimage identity must come from the source datasets by instance_id.",
+ "verified": "One v1.2 mini-SWE-agent row (Scale-SWE python-distro_distro_pr145) has a nonempty unified-diff model_patch and resolved = 1. Split row counts match the documented totals.",
+ "blockers": [
+  "No predefined evaluation population: each configuration covers a different, undocumented subset of training tasks (10,511 to 41,405 unique tasks), and v1.0 had trajectories with git-hacking behaviour removed after release. Released rows are a curated training set, so Solved % is not a benchmark rate.",
+  "Same-task ranking needs tasks shared by at least 4 configurations; overlap is unmeasured and would need the instance_id column of every shard.",
+  "Before-state identity: rows carry no base commit; it would have to be joined from SWE-rebench-V2 / Scale-SWE and corroborated per touched file across thousands of repositories.",
+  "Models are small or mid-size open models (Qwen 27B/Flash, Qwen3.5-122B, MiniMax-M2.5, DeepSeek-V4-Flash-0731), several harnesses; none are on an existing board's population."
+ ],
+ "verdict": "Not usable for an existing board and not releasable as a new board under the acceptance checklist (no frozen population). Skip unless the owner wants a separate, clearly labelled training-trace board; then first download only the instance_id/resolved columns to measure overlap.",
+ "next_action": "None by default."
+}
