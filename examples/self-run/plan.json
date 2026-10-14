@@ -4,21 +4,19 @@
  "status": "SELF-RUN, unverified: owner-run agents, not a published benchmark submission",
  "deepswe_commit": "0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea",
  "language": "python",
- "selection": "DeepSWE Python tasks ordered by sha256(\"parsimony-self-run-v1:\" + task_id); first 10. A configuration with N tasks uses the first N. Fixed before any run (GPT-6 Astra reduced from 5 to 3 tasks before any run, to save usage). On 10 Oct 2026, with 1 Sonnet 5.5 attempt done, Claude Sonnet 5.5 was reduced from 10 to 5 tasks to save Claude usage and to match Opus 5.5's task set; the choice did not depend on results.",
+ "selection": "DeepSWE Python tasks ordered by sha256(\"parsimony-self-run-v1:\" + task_id); first 10. A configuration with N tasks uses the first N. Fixed before any run (GPT-6 Astra reduced from 5 to 3 tasks before any run, to save usage). On 10 Oct 2026, with 1 Sonnet 5.5 attempt done, Claude Sonnet 5.5 was reduced from 10 to 5 tasks to save Claude usage and to match Opus 5.5's task set; the choice did not depend on results. On 14 Oct 2026, before any run on them, the owner extended the GPT-6 family (GPT-6 Luna, GPT-6 Sol, GPT-6.1 Sol, GPT-6 Astra) to the first 20 tasks, so their same-task ratios rest on more tasks; tasks 11-20 follow the same ordering. Other configurations keep their task counts.",
  "attempts": 2,
  "environment": "Host Python 3.14 in a bubblewrap sandbox; repository at the base commit only; no task Docker image, no project dependencies, no grading. Network is not blocked (the harness needs its API); the prompt forbids it and transcripts are scanned.",
  "configurations": [
-  {"id": "pi_gpt_6_luna_high", "harness": "pi", "provider": "openai", "model": "gpt-6-luna", "effort": "high", "tasks": 10},
-  {"id": "pi_gpt_6_sol_high", "harness": "pi", "provider": "openai", "model": "gpt-6-sol", "effort": "high", "tasks": 10},
-  {"id": "pi_gpt_6_1_sol_high", "harness": "pi", "provider": "openai", "model": "gpt-6.1-sol", "effort": "high", "tasks": 10},
-  {"id": "pi_gpt_6_astra_high", "harness": "pi", "provider": "openai", "model": "gpt-6-astra", "effort": "high", "tasks": 3},
-  {"id": "pi_gpt_5_6_sol_high", "harness": "pi", "provider": "openai", "model": "gpt-5.6-sol", "effort": "high", "tasks": 5,
-   "anchor_of": "deepswe-v1.1_mini_swe_agent_gpt_5_6_sol_max"},
+  {"id": "pi_gpt_6_luna_high", "harness": "pi", "provider": "openai", "model": "gpt-6-luna", "effort": "high", "tasks": 20},
+  {"id": "pi_gpt_6_sol_high", "harness": "pi", "provider": "openai", "model": "gpt-6-sol", "effort": "high", "tasks": 20},
+  {"id": "pi_gpt_6_1_sol_high", "harness": "pi", "provider": "openai", "model": "gpt-6.1-sol", "effort": "high", "tasks": 20},
+  {"id": "pi_gpt_6_astra_high", "harness": "pi", "provider": "openai", "model": "gpt-6-astra", "effort": "high", "tasks": 20},
+  {"id": "pi_gpt_5_6_sol_high", "harness": "pi", "provider": "openai", "model": "gpt-5.6-sol", "effort": "high", "tasks": 5, "anchor_of": "deepswe-v1.1_mini_swe_agent_gpt_5_6_sol_max"},
   {"id": "claude_code_claude_haiku_5_5_high", "harness": "claude-code", "provider": "anthropic", "model": "claude-haiku-5-5", "effort": "high", "tasks": 10},
   {"id": "claude_code_claude_sonnet_5_5_high", "harness": "claude-code", "provider": "anthropic", "model": "claude-sonnet-5-5", "effort": "high", "tasks": 5},
   {"id": "claude_code_claude_opus_5_5_high", "harness": "claude-code", "provider": "anthropic", "model": "claude-opus-5-5", "effort": "high", "tasks": 5},
-  {"id": "claude_code_claude_sonnet_5_high", "harness": "claude-code", "provider": "anthropic", "model": "claude-sonnet-5", "effort": "high", "tasks": 5,
-   "anchor_of": "deepswe-v1.1_mini_swe_agent_claude_sonnet_5_max"}
+  {"id": "claude_code_claude_sonnet_5_high", "harness": "claude-code", "provider": "anthropic", "model": "claude-sonnet-5", "effort": "high", "tasks": 5, "anchor_of": "deepswe-v1.1_mini_swe_agent_claude_sonnet_5_max"}
  ],
  "tasks": [
   {"task": "fastapi-deprecation-response-headers", "repo": "fastapi/fastapi", "base_commit": "11614be9021aa4ac078d4d0693a8b5250a1010d8", "instruction_sha256": "b8e0cb43fe2850b2173c8b5e940d463345b96aed6a2b3e7c0c559deda468c568"},
@@ -30,6 +28,16 @@
   {"task": "adaptix-name-mapping-aliases", "repo": "reagento/adaptix", "base_commit": "a691069fcadf9131e5f7a5a130a022dc678f3e1d", "instruction_sha256": "e8e4a39e65723ff56eb35bc9b9183fef4e09677159063abf8189f471cc1b2eac"},
   {"task": "httpx-multipart-response-parsing", "repo": "encode/httpx", "base_commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254", "instruction_sha256": "6a9c3400a23ad61f43c6e6f5b2dfbe8f5a5af81061cc063fd9440f327c5a0fb5"},
   {"task": "numba-stencil-boundary-modes", "repo": "numba/numba", "base_commit": "5781334aa654972fdc749003e7c1e93e6d277110", "instruction_sha256": "f04c458707106be3c67a530cd724a92b72f4a8e5e546fe926a8891a7e2fb98bd"},
-  {"task": "sqlite-utils-safe-import-checkpoints", "repo": "simonw/sqlite-utils", "base_commit": "8d74ffc93292c604d5827e2b44fffedca0c28c19", "instruction_sha256": "dcdf0f34992ce86f4ef516fbc4cac6daaf159ae4542a6bbebe055e37851ff7a6"}
+  {"task": "sqlite-utils-safe-import-checkpoints", "repo": "simonw/sqlite-utils", "base_commit": "8d74ffc93292c604d5827e2b44fffedca0c28c19", "instruction_sha256": "dcdf0f34992ce86f4ef516fbc4cac6daaf159ae4542a6bbebe055e37851ff7a6"},
+  {"task": "narwhals-rolling-window-suite", "repo": "narwhals-dev/narwhals", "base_commit": "061c97f8a01bf9e721835978b039303c5051501c", "instruction_sha256": "d25036c0761a9e6a2194f40bda5ae29b12487ee4f4c2045e4326ece0a80679a2"},
+  {"task": "psd-tools-blend-range-api", "repo": "psd-tools/psd-tools", "base_commit": "c5e03189188daa3c5589326a9d74506d7dc48bc9", "instruction_sha256": "be619e943671da3bb1e9855c0ce939d54491c5cce4a45553403cf026d33255ce"},
+  {"task": "returns-validated-error-accumulation", "repo": "dry-python/returns", "base_commit": "41607fae1289de2787523c452d75212206b9c7c0", "instruction_sha256": "77d27406cd485339c36030cde62de2a50233a0e3253536ac0468b4f1c46cc208"},
+  {"task": "skrub-duration-encoding", "repo": "skrub-data/skrub", "base_commit": "24c4466fea94f551fb73d21eba54038dc5b346d3", "instruction_sha256": "aecc575c2253564382af8fcb9afb0af11b47b8fda94c7625100a18148919e95d"},
+  {"task": "mobly-grouped-test-barriers", "repo": "google/mobly", "base_commit": "ec052921917ef201e73cc8e275dc91c5706b345f", "instruction_sha256": "475b2b59d25c8bf27ba72b9b079207cca38f1b39d250fb695cf1f47015a0f064"},
+  {"task": "aiomonitor-task-snapshots-diff", "repo": "aio-libs/aiomonitor", "base_commit": "b73fea2e0682803bda7531c93cd1dfb360839175", "instruction_sha256": "40f3eeea527d09aba7e54b35aadc1bb5f70743d41a9f09094e5968ebdf8b79d7"},
+  {"task": "bandit-interprocedural-taint-checks", "repo": "PyCQA/bandit", "base_commit": "b46fa3a2723635aa29cc012538df4867ac2ac006", "instruction_sha256": "d780c0ef58de282522a94650d7fd54eed4e24aec73affc55c90898e2f11ba3b2"},
+  {"task": "mnamer-daemon-watch-lifecycle", "repo": "jkwill87/mnamer", "base_commit": "73f5b537c8cad998e8e6d6bc40ad60e2e23bf268", "instruction_sha256": "1759aa73299b2871d311613b6d53259f7b32dce806f6978542e5b111f5ab4649"},
+  {"task": "dateutil-rfc5545-timezone-interop", "repo": "dateutil/dateutil", "base_commit": "c981f9c7aa91b83cc9bd33a09ecee9e751b06e8d", "instruction_sha256": "029feb3185f43a1ed77c0fa9e250c50e82758c78b7544f8905782c2dda9eb9b6"},
+  {"task": "langchain-request-coalescing", "repo": "langchain-ai/langchain", "base_commit": "7cef35b", "instruction_sha256": "208b99162a6a2a40e25630f566c3b735d3fea91dbb3c7b3717f5a3a3c7ea3557"}
  ]
 }
