@@ -52,7 +52,7 @@ Page behaviour:
 - **Green better-corner square**, in the style of Artificial Analysis charts: half the plot in each dimension, at the corner that is better on both axes (lower net/churn/rank, higher solved/score). Top-left on the default axes, without any text caption; hidden when an axis has no better direction (coverage).
 - Company colors belong to points/legend swatches; all graph text is black and tooltips have no border/shadow.
 - **Light mode only**, even under a dark OS preference.
-- Immediate custom tooltip showing the **model name and both selected axis names and actual values, plus task outcome in task view** (no native SVG `<title>`); hides on pointer exit, blur, scroll, resize and redraw. Accessible (ARIA) point labels keep metric details and task outcome.
+- Immediate custom tooltip, **docked in a reserved slot under the chart** (owner request 2026-10-14: never over other points), showing the **model name and both selected axis names and actual values, plus task outcome in task view** (no native SVG `<title>`); hides on pointer exit, blur, scroll, resize and redraw. Accessible (ARIA) point labels keep metric details and task outcome.
 - Keep visible copy concise, with detailed caveats/archived diagnostics under a collapsed **How to read this** section. Keep a short coding-unit definition visible: syntax elements such as statements, calls, comparisons, names and literals; net = added − removed. Not lines or runtime complexity.
 - "Complexity" means static coding-unit footprint, not readability, technical debt or runtime cost.
 

@@ -265,8 +265,8 @@ for (const event of ['mouseenter', 'mousemove', 'focus', 'click']) {
   assert.equal(tooltip.hidden, true);
 }
 firstCircle.listeners.mouseenter({clientX: 799, clientY: 599});
-assert.equal(tooltip.style.left, '632px');
-assert.equal(tooltip.style.top, '563px');
+assert.equal(tooltip.style.left, undefined); // docked under the chart, not placed over other points
+assert.match(html, /<div id="graph-tooltip-slot"><div class="small" id="graph-tooltip"/);
 // Hover fades other companies' points and labels; leaving restores them.
 {
   const dimmed = () => doc.querySelectorAll('#graph [data-company]').filter(el => el.dim).map(el => el.dataset.company);
