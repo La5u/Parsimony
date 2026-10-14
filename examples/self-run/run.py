@@ -1,7 +1,7 @@
 """Self-run pilot: run coding agents on preregistered DeepSWE Python tasks and keep their diffs.
 
 Owner-approved exception to Parsimony's no-model-call rule. Results are SELF-RUN and unverified:
-the agent harness differs from DeepSWE's (pi for OpenAI models, Claude Code for Anthropic models),
+the agent harness differs from DeepSWE's (pi or Codex for OpenAI models, Claude Code for Anthropic models),
 tasks run on the host Python without the task images or project dependencies, and outcomes are not
 graded. They are shown faded and never ranked with published boards.
 
@@ -114,6 +114,12 @@ def harness_command(config, prompt):
                  '--no-extensions', '--no-prompt-templates', '--no-mcp', '--no-themes',
                  '--model', f"{config['provider']}/{config['model']}", '--thinking', config['effort'], prompt],
                 [HOME / '.pi'], [HOME / '.pi' / 'agent' / 'sessions'])
+    if config['harness'] == 'codex':
+        # Codex's own workspace-write sandbox also confines (and offlines) the agent's shell commands.
+        return (['codex', 'exec', '--json', '--ephemeral', '--ignore-user-config', '--skip-git-repo-check',
+                 '--color', 'never', '-s', 'workspace-write', '-m', config['model'],
+                 '-c', f'model_reasoning_effort="{config["effort"]}"', '-c', 'web_search="disabled"', prompt],
+                [HOME / '.codex'], [HOME / '.codex' / 'sessions'])
     return (['claude', '-p', '--safe-mode', '--no-session-persistence', '--strict-mcp-config', '--no-chrome',
              '--model', config['model'], '--effort', config['effort'], '--permission-mode', 'bypassPermissions',
              '--output-format', 'stream-json', '--verbose', prompt],
@@ -121,7 +127,7 @@ def harness_command(config, prompt):
 
 
 def harness_version(config):
-    tool = 'pi' if config['harness'] == 'pi' else 'claude'
+    tool = {'pi': 'pi', 'codex': 'codex'}.get(config['harness'], 'claude')
     return subprocess.run([tool, '--version'], capture_output=True, text=True).stdout.strip()
 
 
@@ -141,6 +147,15 @@ def summarize(config, transcript):
                 for key, value in (message.get('usage') or {}).items():
                     if isinstance(value, (int, float)):
                         usage[key] = usage.get(key, 0) + value
+        elif config['harness'] == 'codex':
+            if event.get('type') == 'turn.completed':
+                stop = 'completed'
+                for key, value in (event.get('usage') or {}).items():
+                    if isinstance(value, (int, float)):
+                        usage[key] = usage.get(key, 0) + value
+            elif event.get('type') in ('turn.failed', 'error'):
+                stop = 'failed'
+                error = (event.get('error') or {}).get('message') or event.get('message') or 'codex error'
         elif event.get('type') == 'result':
             stop = event.get('subtype')
             if event.get('is_error'):
@@ -161,6 +176,10 @@ def network_attempts(config, transcript):
         except json.JSONDecodeError:
             continue
         text = json.dumps(event)
+        item = event.get('item') or {}
+        if item.get('type') == 'command_execution' and NETWORK.search(str(item.get('command', ''))):
+            hits.append(str(item['command'])[:300])
+            continue
         if '"bash"' not in text.lower() and '"Bash"' not in text:
             continue
         for match in re.finditer(r'"command":\s*"((?:[^"\\]|\\.)*)"', text):
@@ -283,7 +302,7 @@ def main():
                 with lock:
                     paused[harness] = max(paused.get(harness, 0), time.time() + LIMIT_PAUSE)
 
-    threads = [threading.Thread(target=worker, args=(h,)) for h in ('pi', 'claude-code') for _ in range(args.parallel)]
+    threads = [threading.Thread(target=worker, args=(h,)) for h in ('pi', 'codex', 'claude-code') for _ in range(args.parallel)]
     for t in threads:
         t.start()
     for t in threads:

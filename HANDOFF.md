@@ -19,7 +19,7 @@ Owner's next direction: **more models, and more tasks for existing models**. Loo
 
 Owner feedback from Reddit (u/lasushin; r/LLMDevs and r/codex threads, read via `https://www.reddit.com/r/<sub>/comments/<id>/.rss` because JSON and HTML are blocked) is handled except for two ideas that need data no source publishes: **patch survival after a follow-up task** and **whole-session code** (single-turn exports can't show rework). A refactoring benchmark was also suggested (see above).
 
-Self-run (GPT-6 family etc.) findings: on the same tasks GPT-6 Luna 0.52×, Astra 0.72×, Sol 0.72×, 6.1 Sol 0.80×, Opus 5.5 1.10×, Sonnet 5.5 1.06×, but each from only 2–6 tasks; more self-run tasks would firm this up.
+Self-run Codex comparison (owner request 2026-10-14): the GPT-6 family is being re-run through the Codex CLI on the same tasks as pi (Luna/Sol/6.1 Sol 10 tasks, Astra 5; `examples/self-run/plan.json`), shown as separate `· pi` / `· Codex` dots. The runner (`examples/self-run/run.py ... --only codex_...`) resumes after usage limits; grade and measure the new runs with `grade.py` / `measure.py` afterwards. Self-run (GPT-6 family etc.) findings: on the same tasks GPT-6 Luna 0.52×, Astra 0.72×, Sol 0.72×, 6.1 Sol 0.80×, Opus 5.5 1.10×, Sonnet 5.5 1.06×, but each from only 2–6 tasks; more self-run tasks would firm this up.
 
 Known issues:
 - Verified/others `rank_range` comes from the stability report, which ranks by an older metric. It is stored but not shown; don't present it as same-task uncertainty.

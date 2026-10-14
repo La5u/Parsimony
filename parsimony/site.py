@@ -424,7 +424,7 @@ SELF_RUN_MODELS = {'gpt-6-luna': 'GPT-6 Luna', 'gpt-6-sol': 'GPT-6 Sol', 'gpt-6.
                    'gpt-6-astra': 'GPT-6 Astra', 'gpt-5.6-sol': 'GPT-5.6 Sol', 'claude-haiku-5-5': 'Claude Haiku 5.5',
                    'claude-sonnet-5-5': 'Claude Sonnet 5.5', 'claude-opus-5-5': 'Claude Opus 5.5',
                    'claude-sonnet-5': 'Claude Sonnet 5'}
-HARNESSES = {'pi': 'pi', 'claude-code': 'Claude Code'}
+HARNESSES = {'pi': 'pi', 'codex': 'Codex', 'claude-code': 'Claude Code'}
 
 
 def mean_complexity(records):
@@ -469,6 +469,11 @@ def self_run_models(records, task_typical=None):
             **same_task(solved_by_task(group) if graded else {},
                         {t: (net * n, None if cx is None else cx * n, n) for t, (net, cx, n) in (task_typical or {}).items()},
                         agent, leave_out=False)))
+    # The same model run through two harnesses (pi and Codex) is told apart by its harness.
+    names = [m['name'] for m in models]
+    for m in models:
+        if names.count(m['name']) > 1:
+            m['name'] += f" · {m['harness']}"
     return models
 
 

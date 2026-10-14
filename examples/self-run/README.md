@@ -10,7 +10,10 @@ faded, labelled self-run on hover and never ranked.
 configurations: OpenAI models through [pi](https://github.com/badlogic/pi-mono) on a ChatGPT
 subscription, Anthropic models through Claude Code (`--safe-mode`) on a Claude subscription. Pi
 cannot use the Claude subscription (Anthropic bills third-party apps as extra usage), so the two
-companies use different harnesses: compare within a company, not across. GPT-5.6 Sol and Claude
+companies use different harnesses: compare within a company, not across. Since 14 Oct 2026 the GPT-6 family (Luna, Sol, 6.1 Sol, Astra) also runs through the
+[Codex CLI](https://github.com/openai/codex) on the same tasks and subscription, so pi and Codex can be compared for the
+same model; on the site these show as `· pi` and `· Codex`. Codex runs with `--ephemeral --ignore-user-config`, web
+search off and its own workspace-write sandbox for shell commands. GPT-5.6 Sol and Claude
 Sonnet 5 also run as anchors, since they are on the published DeepSWE board; their gap shows the
 effect of the harness and environment.
 

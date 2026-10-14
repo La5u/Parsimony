@@ -25,6 +25,13 @@ class SelfRunTest(unittest.TestCase):
         self.assertIsNone(model['resolve_rate'])  # never graded
         self.assertIsNone(model['measured_solved_net_mean'])
 
+    def test_same_model_in_two_harnesses_is_named_by_harness(self):
+        codex = record('a#1', 5)
+        codex.update(agent='self-run-v1_codex_gpt_6_luna_high',
+                     provenance=dict(model='gpt-6-luna', reasoning_effort='high', harness='codex'))
+        names = sorted(m['name'] for m in self_run_models([record('a#1', 10), codex]))
+        self.assertEqual(names, ['GPT-6 Luna (high) · Codex', 'GPT-6 Luna (high) · pi'])
+
     def test_self_graded_summary_adds_solved(self):
         [model] = self_run_models([record('a#1', 10, result='resolved'), record('a#2', 20, result='unresolved'),
                                    record('b#1', 0, status='error', result='resolved'),
