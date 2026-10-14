@@ -126,7 +126,7 @@ Choose the first releasable newer-model cohort by **artifact completeness and co
 
 These are concrete fallbacks if fresh discovery yields no immediately releasable newer exports:
 
-- **Live JS/TS:** published 2026-10-14 as two boards with all five MultiLang JS/TS submissions (`examples/benchmark-discovery/run-live-multilang.py`). The six AMI Go configurations are on the Live Go board. Other MultiLang folders (`all_languages/*`, Java/Rust/C#) are separate populations or unsupported languages.
+- **Live JS/TS:** published 2026-10-14 as two boards with all five MultiLang JS/TS submissions (`examples/benchmark-discovery/run-live-multilang.py`). The six AMI Go configurations are on the Live Go board. The 13 cross-language `all_languages` runs were imported and measured for Go on 2026-10-14 but **excluded by the owner**: they share only 5-15 solved tasks and took the top/bottom ranks on noise (see `examples/benchmark-discovery/model-battery-refresh-2026-10-14.json`). Other MultiLang folders (`all_languages/*`, Java/Rust/C#) are separate populations or unsupported languages.
 - **PolyBench Opus 4.8 Python:** 111/113 attempts have static measurements. Complete the provenance/population release review and publish a separate PolyBench board if justified. Preserve all 113 population items and distinguish missing measurements from failures. Do not mix it with Live or Verified.
 - **PolyBench GPT-5.4:** still blocked on historical before-state identity. Candidate-base hunk matches without usable old-blob prefixes are insufficient for release; seek stronger public operational/reset or byte-identity evidence, not permissive patch application. Lower priority than accessible newer-model cohorts.
 

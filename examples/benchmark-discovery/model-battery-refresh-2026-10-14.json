@@ -182,6 +182,103 @@
    }
   ],
   "note": "Cross-language sample (160-240 tasks per run, C/C++/C#/Java/Rust/Go/JS/TS/PHP...). Overlap with the frozen Live JS/TS/Go populations is 17-28 / 19-28 / 35-40 tasks per run. Importing needs the cross-language run split by language (the importer rejects prediction IDs absent from the given dataset file).",
-  "next_action": "Owner decision: add these runs to the Live Go board (35-40 of 138 tasks each); JS/TS overlap is too thin for a stable ratio."
+  "next_action": "Excluded by owner decision; the importer support (set_aside_outside) and driver cohorts are committed for a later re-import.",
+  "go_measurement_2026_10_14": {
+   "analyzer_commit": "e90ffe4f09ccdc38c5fb02c76e6e2c9f06250ee9",
+   "records_external": "~/parsimony-live-ml (not committed)",
+   "status_counts": {
+    "claudecode_claude_4_5_sonnet": {
+     "go_tasks_submitted": 38,
+     "ok": 30,
+     "empty_patch": 5,
+     "unverified_preimage": 3,
+     "missing_patch": 100
+    },
+    "claudecode_deepseek_v3_1_terminus": {
+     "go_tasks_submitted": 36,
+     "ok": 26,
+     "empty_patch": 6,
+     "unverified_preimage": 4,
+     "missing_patch": 102
+    },
+    "claudecode_deepseek_v4_pro": {
+     "go_tasks_submitted": 40,
+     "ok": 33,
+     "empty_patch": 5,
+     "unverified_preimage": 2,
+     "missing_patch": 98
+    },
+    "claudecode_gpt_5_2_medium": {
+     "go_tasks_submitted": 35,
+     "ok": 30,
+     "unverified_preimage": 4,
+     "empty_patch": 1,
+     "missing_patch": 103
+    },
+    "claudecode_gpt_5_5_medium": {
+     "go_tasks_submitted": 40,
+     "ok": 33,
+     "empty_patch": 2,
+     "unverified_preimage": 5,
+     "missing_patch": 98
+    },
+    "openhands_deepseek_v4_pro": {
+     "go_tasks_submitted": 40,
+     "ok": 20,
+     "unverified_preimage": 20,
+     "missing_patch": 98
+    },
+    "openhands_gpt_5_5_medium": {
+     "go_tasks_submitted": 40,
+     "ok": 21,
+     "unverified_preimage": 19,
+     "missing_patch": 98
+    },
+    "sweagent_claude_4_5_sonnet": {
+     "go_tasks_submitted": 39,
+     "missing_patch": 100,
+     "unverified_preimage": 13,
+     "ok": 22,
+     "empty_patch": 3
+    },
+    "sweagent_deepseek_v3_1_terminus": {
+     "go_tasks_submitted": 39,
+     "ok": 34,
+     "unverified_preimage": 4,
+     "empty_patch": 1,
+     "missing_patch": 99
+    },
+    "sweagent_deepseek_v4_pro": {
+     "go_tasks_submitted": 40,
+     "ok": 38,
+     "unverified_preimage": 2,
+     "missing_patch": 98
+    },
+    "sweagent_gemini_3_flash": {
+     "go_tasks_submitted": 39,
+     "ok": 32,
+     "empty_patch": 4,
+     "unverified_preimage": 2,
+     "error": 1,
+     "missing_patch": 99
+    },
+    "sweagent_gpt_5_2_medium": {
+     "go_tasks_submitted": 39,
+     "ok": 35,
+     "empty_patch": 1,
+     "error": 1,
+     "unverified_preimage": 2,
+     "missing_patch": 99
+    },
+    "sweagent_gpt_5_5_medium": {
+     "go_tasks_submitted": 40,
+     "ok": 39,
+     "unverified_preimage": 1,
+     "missing_patch": 98
+    }
+   },
+   "finding": "Measured and ranked on a 19-setup Go board, these runs shared only 5-15 solved tasks with the others and took ranks 1-5 and 15-19 on noise; Solved read 4-13% because each attempted ~40 of 138 tasks. OpenHands runs and SWE-agent + Sonnet 4.5 have many malformed patches (hunk length mismatch), left unmeasured.",
+   "decision": "Owner, 2026-10-14: exclude from the Live Go board for now. Revisit with a minimum-shared-tasks rank rule or an attempted-tasks Solved display."
+  }
  }
 }
