@@ -262,7 +262,7 @@ class SiteBrowserTests(unittest.TestCase):
             self.assertTrue(tooltip.is_displayed())
             self.assertTrue(browser.execute_script("""
                 const r = arguments[0].getBoundingClientRect();
-                return r.left >= 0 && r.right <= innerWidth;  // docked under the chart, inside the page width
+                return r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight;
             """, tooltip))
             browser.switch_to.default_content()
             browser.execute_script("document.querySelector('iframe').style.width = '320px'")

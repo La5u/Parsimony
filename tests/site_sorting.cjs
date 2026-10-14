@@ -56,7 +56,8 @@ const doc = {
       lastGraph = graph;
       lastCircles = [...graph.matchAll(/<circle data-point="(\d+)"/g)].map(match => ({
         dataset: {point: match[1]}, listeners: {}, addEventListener(event, fn) { this.listeners[event] = fn; },
-        getBoundingClientRect() { return {left: 100, width: 12, bottom: 200}; }
+        matches: selector => selector === 'circle',
+        getBoundingClientRect() { return {left: 100, width: 12, height: 12, top: 188, right: 112, bottom: 200}; }
       }));
       return lastCircles;
     }
@@ -265,8 +266,9 @@ for (const event of ['mouseenter', 'mousemove', 'focus', 'click']) {
   assert.equal(tooltip.hidden, true);
 }
 firstCircle.listeners.mouseenter({clientX: 799, clientY: 599});
-assert.equal(tooltip.style.left, undefined); // docked under the chart, not placed over other points
-assert.match(html, /<div id="graph-tooltip-slot"><div class="small" id="graph-tooltip"/);
+// Beside the point (right side when nothing is there), not at the cursor and never over the point itself.
+assert.equal(tooltip.style.left, '124px');
+assert.equal(tooltip.style.top, '182px');
 // Hover fades other companies' points and labels; leaving restores them.
 {
   const dimmed = () => doc.querySelectorAll('#graph [data-company]').filter(el => el.dim).map(el => el.dataset.company);

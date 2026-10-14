@@ -101,11 +101,10 @@ body { overflow-x: clip; }
 #self-run-toggle { width: auto; min-width: 0; padding: 0; margin: 0; border: initial; flex: none; }
 #company-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .company-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
-/* Details sit in a reserved slot under the chart, never on top of other points. */
-#graph-tooltip-slot { min-height: 7.2em; margin-top: 6px; }
 #graph-tooltip {
-  white-space: pre-line; overflow-wrap: anywhere;
-  padding: 2px 0;
+  position: fixed; z-index: 1000; pointer-events: none; white-space: pre-line;
+  max-width: min(320px, calc(100vw - 16px)); box-sizing: border-box;
+  padding: 5px 9px;
   background: var(--bg); color: #000;
 }
 #graph circle:focus-visible { outline: 2px solid #000; outline-offset: 4px; }
@@ -139,7 +138,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="small muted" id="graph-legend"></p>
   <div class="small" id="company-legend" aria-label="Model companies"></div>
   <div id="graph" aria-label="Comparison of selected metrics per model"></div>
-  <div id="graph-tooltip-slot"><div class="small" id="graph-tooltip" role="tooltip" hidden></div></div>
+  <div class="small" id="graph-tooltip" role="tooltip" hidden></div>
   <p class="small muted" id="self-run-note" hidden></p>
   </section>
 
@@ -489,6 +488,30 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     tooltipTarget = target;
     tooltip.textContent = text;
     tooltip.hidden = false;
+    const rect = target.getBoundingClientRect();
+    const w = tooltip.offsetWidth, h = tooltip.offsetHeight, gap = 12;
+    const fit = (left, top) => [Math.max(8, Math.min(left, window.innerWidth - w - 8)), Math.max(8, Math.min(top, window.innerHeight - h - 8))];
+    let place;
+    if (target.matches && target.matches('circle')) {
+      // Scatter: beside the point, on the side that covers the fewest other points and labels.
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2, r = rect.width / 2;
+      const obstacles = [...document.querySelectorAll('#graph circle, #graph .point-label')]
+        .filter(el => el !== target).map(el => el.getBoundingClientRect());
+      const spots = [[cx + r + gap, cy - h / 2], [cx - r - gap - w, cy - h / 2], [cx - w / 2, cy - r - gap - h], [cx - w / 2, cy + r + gap],
+                          [cx + r + gap, cy - r - gap - h], [cx - r - gap - w, cy - r - gap - h], [cx + r + gap, cy + r + gap], [cx - r - gap - w, cy + r + gap]]
+        .map(([left, top]) => fit(left, top));
+      const overlap = ([left, top]) => {
+        const covers = (b, pad = 0) => left < b.right + pad && left + w > b.left - pad && top < b.bottom + pad && top + h > b.top - pad;
+        return (covers(rect, 2) ? 1000 : 0) + obstacles.filter(b => covers(b)).length;
+      };
+      place = spots.reduce((best, c) => overlap(c) < overlap(best) ? c : best);
+    } else {
+      const x = Number.isFinite(event?.clientX) ? event.clientX : rect.left + rect.width / 2;
+      const y = Number.isFinite(event?.clientY) ? event.clientY : rect.bottom;
+      place = fit(x + gap, y + 14 + h > window.innerHeight - 8 ? y - h - gap : y + 14);
+    }
+    tooltip.style.left = `${place[0]}px`;
+    tooltip.style.top = `${place[1]}px`;
   }
   function renderBars() {
     // Bars show the X-axis metric; footprints smallest first, percentages and indices largest first.
