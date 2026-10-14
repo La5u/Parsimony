@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — Task difficulty and complexity on the site — 2026-10-14
+
+**Ranking.** Boards now rank by code relative to the other models on the same solved tasks (`same-task-net-ratio-v1`), so solving only small tasks no longer looks parsimonious. The plain solved mean stays as a column. **Site.** New chart metrics: complexity added (solved mean) and both same-task ratios; self-run dots show a 95% range bar (5+ shared tasks); the task view shows the task's typical solved patch. No measurements changed.
+
 ## Unreleased — SWEeper-Bench PHP board — 2026-10-13
 
 **Data.** New board `site/sweeper-php.html`: 15 model + agent configurations from SWEeper-Bench (pinned Hugging Face tasks `0a4c5e2` and traces `15e41de`) on the 128 tasks whose reference fix changes PHP, measured with the 0.10.0-beta PHP track (`parsimony/sweeper.py`). 1,851 of 1,920 attempts measured; 8 uncertain or infrastructure-failed outcomes stay unknown. See `examples/sweeper-php/README.md`.

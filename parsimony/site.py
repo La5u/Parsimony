@@ -215,6 +215,69 @@ def bootstrap(board, draws, seed):
                         for a in lows}
 
 
+# A task enters a same-task comparison only when at least this many other models solved and measured it.
+SAME_TASK_MIN_MODELS = 3
+# Below this many shared tasks no interval is given: a bootstrap over 2-4 tasks is overconfident.
+SAME_TASK_MIN_INTERVAL = 5
+
+
+def solved_by_task(records):
+    """Per base task (DeepSWE attempts pooled): mean net units and complexity over solved, measured, in-scope attempts."""
+    tasks = {}
+    for r in records:
+        if r['resolved'] and measured(r) and r['metrics'].get('mode') == 'full_file' and not out_of_scope(r['metrics']):
+            tasks.setdefault(r['task_id'].split('#', 1)[0], []).append(
+                (r['metrics']['net_units'], r['metrics'].get('complexity_delta')))
+    return {t: (statistics.fmean(n for n, _ in v),
+                None if any(c is None for _, c in v) else statistics.fmean(c for _, c in v)) for t, v in tasks.items()}
+
+
+def typical_by_task(per_model):
+    """Per task: (net sum, complexity sum or None, model count) over every ranked model that solved and measured it."""
+    sums = {}
+    for tasks in per_model.values():
+        for t, (net, cx) in tasks.items():
+            total = sums.setdefault(t, [0.0, 0.0, 0])
+            total[0] += net
+            total[1] = None if cx is None or total[1] is None else total[1] + cx
+            total[2] += 1
+    return sums
+
+
+def same_task(own, typical, seed, leave_out=True):
+    """Code a model wrote relative to the other models on the same solved tasks (1 = the same as them).
+
+    Ratio of sums over the shared tasks: the model's own per-task means over the other models' per-task
+    means, so a model that only solved small tasks is compared on those small tasks. Big tasks weigh more
+    and a task with a near-zero typical patch cannot blow the ratio up. The interval is a percentile
+    bootstrap over shared tasks."""
+    out = {}
+    for k, key in ((0, 'net'), (1, 'complexity')):
+        pairs = []
+        for t, values in own.items():
+            total = typical.get(t)
+            if values[k] is None or not total or total[k] is None:
+                continue
+            others = total[2] - leave_out
+            if others >= SAME_TASK_MIN_MODELS:
+                pairs.append((values[k], (total[k] - values[k] * leave_out) / others))
+        denominator = sum(b for _, b in pairs)
+        ratio = sum(a for a, _ in pairs) / denominator if pairs and denominator > 0 else None
+        interval = None
+        if ratio is not None and len(pairs) >= SAME_TASK_MIN_INTERVAL:
+            rng, draws = random.Random(f'{seed}:{key}'), []
+            for _ in range(1000):
+                drawn = rng.choices(pairs, k=len(pairs))
+                d = sum(b for _, b in drawn)
+                if d > 0:
+                    draws.append(sum(a for a, _ in drawn) / d)
+            interval = [round(quantile(draws, 0.025), 3), round(quantile(draws, 0.975), 3)]
+        out[f'same_task_{key}'] = None if ratio is None else round(ratio, 3)
+        out[f'same_task_{key}_ci'] = interval
+        out[f'same_task_{key}_tasks'] = len(pairs)
+    return out
+
+
 def build(panel, records, draws=2000, seed=42):
     # Archived score diagnostics only; footprint means below determine the published order.
     board = sorted(score_records(panel, records),
@@ -264,6 +327,7 @@ def build(panel, records, draws=2000, seed=42):
             measured_solved_churn_mean=statistics.fmean(r['metrics']['churn'] for r in footprint_records
                                                        if r['resolved']) if solved_footprints else None,
             measured_solved_net_mean=statistics.fmean(solved_footprints) if solved_footprints else None,
+            measured_solved_complexity_mean=mean_complexity(r for r in footprint_records if r['resolved']),
             measured_churn_mean=statistics.fmean(m['churn'] for m in measured_metrics) if measured_metrics else None,
             lower=entry['lower'], upper=entry['upper'], ci=intervals[entry['agent']]['ci'],
             top=intervals[entry['agent']]['top'],
@@ -279,8 +343,15 @@ def build(panel, records, draws=2000, seed=42):
             churn=median(r['metrics']['churn'] for r in ok),
             token_churn=median(r['metrics'].get('token_churn') for r in ok),
             human_ratio=median(r.get('model_human_ratio') for r in ok)))
-    # Rank order: mean net units added over measured solved attempts; unmeasured models last.
-    models.sort(key=lambda m: (m['measured_solved_net_mean'] is None, m['measured_solved_net_mean'] or 0, m['name']))
+    # Task difficulty: each model is compared with the other models on the tasks it solved.
+    per_model = {m['agent']: solved_by_task(groups[m['agent']].values()) for m in models}
+    typical = typical_by_task(per_model)
+    for m in models:
+        m.update(same_task(per_model[m['agent']], typical, f"{seed}:{m['agent']}"))
+    # Rank order: code relative to other models on the same solved tasks, then the plain solved mean;
+    # unmeasured models last.
+    models.sort(key=lambda m: (m['measured_solved_net_mean'] is None, m['same_task_net'] is None,
+                               m['same_task_net'] or 0, m['measured_solved_net_mean'] or 0, m['name']))
     # Chart emphasis only: older generations and their labels are slightly lighter; rank ignores this.
     newest = newest_generation([m['name'] for m in models])
     for m in models:
@@ -324,6 +395,7 @@ def build(panel, records, draws=2000, seed=42):
             if eligible:
                 cell[1:3] = [r['metrics']['net_units'], r['metrics']['churn']]
             cell.append(eligible)
+            cell.append(r['metrics'].get('complexity_delta') if eligible else None)
             cells.append(cell)
         footprint_tasks.append([task, (scored_tasks.get(task) or [None, None])[1], cells])
     # Pooled panels label references agent#attempt; count models, not attempts.
@@ -335,7 +407,10 @@ def build(panel, records, draws=2000, seed=42):
     return dict(**(dict(calibration_policy=UNCALIBRATED,
                         uncalibrated_tasks=[t for t, refs in panel['tasks'].items() if not refs]) if bounded else {}),
                 measurement_track=panel.get('measurement_track'),
-                ranking_metric='measured-solved-net-mean-v1', footprint_tasks=footprint_tasks,
+                ranking_metric='same-task-net-ratio-v1', footprint_tasks=footprint_tasks,
+                # Typical solved patch per task: mean net units, mean complexity, number of models.
+                task_typical={t: [round(net / n, 1), None if cx is None else round(cx / n, 1), n]
+                              for t, (net, cx, n) in sorted(typical.items())},
                 **(dict(task_urls=task_urls) if task_urls else {}),
                 score_version=VERSION, panel=panel['name'], references=len(references), harness=versions, other_harness=other_harness, analyzer_version=panel['analyzer_version'],
                 python_version=panel['python_version'], task_count=len(panel['tasks']),
@@ -352,7 +427,12 @@ SELF_RUN_MODELS = {'gpt-6-luna': 'GPT-6 Luna', 'gpt-6-sol': 'GPT-6 Sol', 'gpt-6.
 HARNESSES = {'pi': 'pi', 'claude-code': 'Claude Code'}
 
 
-def self_run_models(records):
+def mean_complexity(records):
+    values = [r['metrics'].get('complexity_delta') for r in records]
+    return statistics.fmean(values) if values and None not in values else None
+
+
+def self_run_models(records, task_typical=None):
     """Unranked owner-run configurations, summarised like measured board models.
 
     Self-graded configurations (every record has an outcome from examples/self-run/grade.py) also get
@@ -382,7 +462,13 @@ def self_run_models(records):
             measured_solved_attempts=len(solved) if graded else None,
             measured_solved_net_mean=statistics.fmean(m['net_units'] for m in solved) if solved else None,
             measured_solved_churn_mean=statistics.fmean(m['churn'] for m in solved) if solved else None,
-            resolve_rate=sum(r['resolved'] for r in group) / group[0]['benchmark_tasks'] if graded else None))
+            measured_solved_complexity_mean=statistics.fmean(m['complexity_delta'] for m in solved)
+            if solved and all(m.get('complexity_delta') is not None for m in solved) else None,
+            resolve_rate=sum(r['resolved'] for r in group) / group[0]['benchmark_tasks'] if graded else None,
+            # Compared with every ranked model on the same tasks (self-runs are not in the baseline).
+            **same_task(solved_by_task(group) if graded else {},
+                        {t: (net * n, None if cx is None else cx * n, n) for t, (net, cx, n) in (task_typical or {}).items()},
+                        agent, leave_out=False)))
     return models
 
 
@@ -446,7 +532,8 @@ def main():
         data['sources'] = published_sources(args.benchmark, track.get('language') or 'python')
         data['nav'] = [dict(zip(('label', 'url'), item.split('=', 1))) for item in args.nav]
         if args.self_run:
-            data['self_run_models'] = self_run_models([r for path in args.self_run for r in read_jsonl(path)])
+            data['self_run_models'] = self_run_models([r for path in args.self_run for r in read_jsonl(path)],
+                                                      data['task_typical'])
         if args.external:
             snapshot = json.loads(Path(args.external).read_text())
             data['external'] = attach(data['models'], snapshot)

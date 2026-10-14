@@ -36,6 +36,17 @@ class SelfRunTest(unittest.TestCase):
         self.assertEqual(model['measured_solved_net_mean'], 10)
         self.assertEqual(model['measured_net_mean'], 20)  # timeouts (unknown) still count as measured
 
+    def test_same_task_ratio_uses_every_ranked_model_as_baseline(self):
+        typical = {'a': [20, None, 3], 'd': [60, None, 3], 'e': [5, None, 2]}
+        [model] = self_run_models([record('a#1', 10, result='resolved'), record('d#1', 30, result='resolved'),
+                                   record('e#1', 1, result='resolved')], typical)
+        self.assertEqual(model['same_task_net'], 0.5)  # (10 + 30) / (20 + 60); task e has only 2 models
+        self.assertEqual(model['same_task_net_tasks'], 2)
+        self.assertIsNone(model['same_task_net_ci'])  # fewer than 5 tasks: no range
+        self.assertIsNone(model['same_task_complexity'])
+        [ungraded] = self_run_models([record('a#1', 10)], typical)
+        self.assertIsNone(ungraded['same_task_net'])
+
     def test_rejects_published_records(self):
         bad = record('a#1', 1)
         del bad['self_run']

@@ -8,7 +8,7 @@ Parsimony takes the patches that agents published for public benchmarks (DeepSWE
 
 ## What the leaderboard shows
 
-Each model is ranked by its **mean net coding units added over the attempts that solved the task**, smallest first. Next to it are the same mean over all measured attempts (failures included), the benchmark's own solve rate, and how many attempts could be measured.
+Some tasks need far more code than others, and each model solves a different set. So each model is ranked by **the net coding units it added on the tasks it solved, divided by what the other models added on those same tasks** (0.8× = 20% less code), smallest first. Only tasks that at least 3 other models solved count. Next to it are the plain mean over solved attempts, the mean over all measured attempts (failures included), the benchmark's own solve rate, and how many attempts could be measured. The chart can also show complexity added (branches, loops, functions), raw or relative to the same tasks, and each task's typical solved patch is shown when you pick a task.
 
 Less code isn't automatically better; see [Limits](#limits).
 

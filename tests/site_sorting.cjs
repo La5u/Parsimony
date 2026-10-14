@@ -6,7 +6,8 @@ const html = fs.readFileSync(process.argv[2], 'utf8');
 const data = JSON.parse(html.match(/type="application\/json">([\s\S]*?)<\/script>/)[1]);
 delete data.external; // Pages built with --external are checked separately below.
 delete data.self_run_models; // Likewise for self-run points.
-const base = data.models[0];
+// Same-task fields are tested on their own fixture below; the base fixture is the plain-mean board.
+const base = Object.fromEntries(Object.entries(data.models[0]).filter(([key]) => !key.startsWith('same_task') && !key.includes('complexity')));
 data.models = [
   {...base, agent: 'alpha', footprint_population_count: 4, measured_churn_mean: 4, name: 'Alpha', score: 10, lower: 4, upper: 16, ci: [1, 90], resolve_rate: .8,
     company: 'Anthropic', latest: true, measured_net_mean: -2, measured_solved_net_mean: 7, measured_attempts: 4, measured_solved_attempts: 2, upstream_solved_attempts: 4, rank_range: [1, 2]},
@@ -687,4 +688,41 @@ element('self-run-toggle').listeners.change({target: {checked: true}});
 assert.match(graph(), /Delta/);
 assert.equal(element('self-run-note').hidden, false);
 assert.equal(browser.location.search, '?chart=bar');
+// Same-task ratio (task difficulty): ranks, defaults, task averages and self-run range bars.
+const sameTask = structuredClone(gradedSelfRun);
+Object.assign(sameTask.models[0], {same_task_net: 1.2, same_task_net_ci: [1.1, 1.3], same_task_net_tasks: 8,
+  same_task_complexity: 1.1, same_task_complexity_ci: null, same_task_complexity_tasks: 3, measured_solved_complexity_mean: 9});
+Object.assign(sameTask.models[1], {same_task_net: 0.9, same_task_net_ci: [0.8, 1.0], same_task_net_tasks: 8,
+  same_task_complexity: 0.7, same_task_complexity_ci: [0.6, 0.8], same_task_complexity_tasks: 8, measured_solved_complexity_mean: 4});
+Object.assign(sameTask.self_run_models[0], {same_task_net: 0.5, same_task_net_ci: [0.3, 0.9], same_task_net_tasks: 5,
+  same_task_complexity: 0.6, same_task_complexity_ci: null, same_task_complexity_tasks: 2, measured_solved_complexity_mean: 3});
+sameTask.task_typical = {'org__repo-1': [150.5, 12, 4]};
+for (const row of sameTask.footprint_tasks) for (const cell of row[2]) { while (cell.length < 8) cell.push(true); cell[8] = 7; }
+load(sameTask, 'https://example.org/index.html');
+assert.equal(element('graph-x').value, 'same_net');
+assert.equal(element('header-same_net').attributes['aria-sort'], 'ascending');
+assert.deepEqual(names(), ['Beta', 'Alpha', 'Gamma']); // Beta writes less than others on its tasks despite fewer solves
+assert.match(element('#board tbody').innerHTML, /<tr><td>1<\/td><td class="left">Beta<\/td><td title="95% range 0.80–1.00× over 8 tasks">0.90×<\/td>/);
+assert.match(element('#board tbody').innerHTML, /<td>2<\/td><td class="left">Alpha<\/td>/);
+assert.match(element('rank-help').textContent, /same tasks/);
+assert.match(element('graph-x').innerHTML, /value="same_cx">Complexity vs\. other models, same tasks/);
+assert.match(element('graph-x').innerHTML, /value="solved_cx">Complexity added, solved \(mean\)/);
+assert.match(graph(), /<line class="range self-run"[^>]*x1="[\d.]+" x2="[\d.]+"/); // self-run gets a 95% range bar
+assert.equal((graph().match(/<line class="range/g) || []).length, 1); // ranked models: range in the tooltip only
+assert.match(graph(), /0\.50×/);
+const selfRunPoint = doc.querySelectorAll('#graph circle[data-point]').find(c => /Delta/.test(graph().match(new RegExp(`<circle data-point="${c.dataset.point}"[^>]*>`))[0]));
+selfRunPoint.listeners.focus({});
+assert.match(tooltip.textContent, /95% range 0\.30–0\.90× over 5 tasks/);
+axis('x', 'same_cx');
+assert.equal((graph().match(/<line class="range/g) || []).length, 0); // 2 shared tasks: no range bar
+selfRunPoint.listeners.focus({});
+doc.querySelectorAll('#graph circle[data-point]').find(c => /Delta/.test(graph().match(new RegExp(`<circle data-point="${c.dataset.point}"[^>]*>`))[0])).listeners.focus({});
+assert.match(tooltip.textContent, /Only 2 shared tasks: too few for a range/);
+task('org__repo-1');
+assert.match(element('task-status').textContent, /Typical solved patch: \+150\.5 net units, complexity \+12 \(mean of 4 models\)\./);
+assert.match(element('graph-x').innerHTML, /value="cx">Complexity added/);
+axis('x', 'cx');
+assert.match(graph(), /Complexity added: 7\.0/);
+task('');
+assert.equal(element('header-same_net').attributes['aria-sort'], 'ascending');
 console.log('Sorting, chart views, task switching, external/self-run axes and fixed metric regressions passed');

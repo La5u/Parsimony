@@ -257,8 +257,8 @@ class SiteTests(unittest.TestCase):
         missing = record('c', 't1')
         missing.update(metrics=None, analysis_status='fetch_error')
         data = build(panel, [refs[0], record('b', 't1', net=0, churn=0, resolved=False), missing], draws=20)
-        self.assertEqual(data['ranking_metric'], 'measured-solved-net-mean-v1')
-        self.assertEqual([m['agent'] for m in data['models']], ['a', 'b', 'c'])  # rank order: solved mean, unmeasured last
+        self.assertEqual(data['ranking_metric'], 'same-task-net-ratio-v1')
+        self.assertEqual([m['agent'] for m in data['models']], ['a', 'b', 'c'])  # too few models for a same-task ratio: solved mean, unmeasured last
         self.assertEqual([m['measured_net_mean'] for m in data['models']], [9, 0, None])  # the failed no-op is kept
         self.assertEqual([m['measured_solved_net_mean'] for m in data['models']], [9, None, None])
         self.assertEqual([m['measured_attempts'] for m in data['models']], [1, 1, 0])
@@ -276,13 +276,51 @@ class SiteTests(unittest.TestCase):
         deleter = [record('deleter', t, net=20, churn=20) for t in tasks[1:]]
         deleter.append(record('deleter', tasks[0], net=-5000, churn=5000, resolved=False))
         data = build(freeze(steady, 'means'), steady + deleter, draws=20)
-        self.assertEqual(data['ranking_metric'], 'measured-solved-net-mean-v1')
+        self.assertEqual(data['ranking_metric'], 'same-task-net-ratio-v1')
         self.assertEqual([m['agent'] for m in data['models']], ['steady', 'deleter'])
         steady_row, deleter_row = data['models']
         self.assertEqual(deleter_row['measured_net_mean'], (19 * 20 - 5000) / 20)
         self.assertEqual((deleter_row['measured_solved_net_mean'], deleter_row['measured_solved_attempts']), (20, 19))
         self.assertEqual((steady_row['measured_solved_net_mean'], steady_row['measured_solved_attempts']), (5, 20))
         self.assertNotIn('measured_net_trimmed_mean', deleter_row)
+
+    def test_same_task_ratio_corrects_for_task_difficulty(self):
+        small, big = [f's{i}' for i in range(5)], [f'b{i}' for i in range(5)]
+
+        def solves(agent, tasks, net):
+            rows = [record(agent, t, net=net(t), churn=abs(net(t))) for t in tasks]
+            for r in rows:
+                r['metrics']['complexity_delta'] = net(r['task_id']) // 10
+            return rows
+        size = lambda t: 10 if t.startswith('s') else 100
+        records = [r for name in ('p', 'q', 'r', 's') for r in solves(name, small + big, size)]
+        records += solves('easy', small, size)  # same code as everyone, but only on small tasks
+        records += solves('lean', big, lambda t: size(t) * 4 // 5)  # 20% less code on the big tasks
+        data = build(freeze(records, 'difficulty'), records, draws=20)
+        models = {m['agent']: m for m in data['models']}
+        self.assertEqual(models['easy']['measured_solved_net_mean'], 10)
+        self.assertEqual(models['lean']['measured_solved_net_mean'], 80)
+        self.assertEqual(models['easy']['same_task_net'], 1)
+        self.assertAlmostEqual(models['lean']['same_task_net'], 0.8)
+        self.assertAlmostEqual(models['lean']['same_task_complexity'], 0.8)
+        self.assertEqual(models['lean']['same_task_net_tasks'], 5)
+        self.assertEqual(models['lean']['same_task_net_ci'], [0.8, 0.8])
+        # Ranked on the same-task ratio, not the plain mean that rewards solving only small tasks.
+        self.assertEqual(data['models'][0]['agent'], 'lean')
+        # Typical solved patch per task: every model that solved it (leave-one-out happens per model).
+        self.assertEqual(data['task_typical']['s0'], [10, 1, 5])
+        self.assertEqual(data['task_typical']['b0'], [96, 9.6, 5])
+        cell = next(row for row in data['footprint_tasks'] if row[0] == 'b0')[2][0]
+        self.assertEqual(cell[8], cell[1] // 10 if cell[7] else None)
+
+    def test_same_task_ratio_needs_three_other_models_and_five_tasks_for_a_range(self):
+        records = [record(name, t, net=10, churn=10) for name in ('a', 'b', 'c') for t in ('t1', 't2')]
+        data = build(freeze(records, 'too-few'), records, draws=20)
+        self.assertTrue(all(m['same_task_net'] is None and m['same_task_net_tasks'] == 0 for m in data['models']))
+        records += [record('d', t, net=5, churn=5) for t in ('t1', 't2')]
+        data = build(freeze(records, 'enough'), records, draws=20)
+        d = next(m for m in data['models'] if m['agent'] == 'd')
+        self.assertEqual((d['same_task_net'], d['same_task_net_tasks'], d['same_task_net_ci']), (0.5, 2, None))
 
     def test_newest_generation_per_model_line(self):
         names = ['Claude Opus 5 (max)', 'Claude Opus 4.8 (max)', 'Claude Sonnet 4.6 (high)', 'GPT-5.6 Sol (max)',
