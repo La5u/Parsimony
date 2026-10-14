@@ -20,7 +20,7 @@ mkdir -p "$OUT"
 
 NAV=(--nav 'DeepSWE Python=index.html' --nav 'DeepSWE JavaScript=javascript.html' --nav 'DeepSWE TypeScript=typescript.html'
      --nav 'DeepSWE Go=go.html' --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html'
-     --nav 'SWEeper PHP=sweeper-php.html')
+     --nav 'Live JavaScript=live-javascript.html' --nav 'Live TypeScript=live-typescript.html' --nav 'SWEeper PHP=sweeper-php.html')
 AA=examples/external/artificial-analysis-2026-10-08.json
 
 LANGS=(python javascript typescript)
@@ -52,3 +52,9 @@ python -m parsimony.site "$L/score-panel.json" "$L/deepseek-v4.1-flash.jsonl" "$
 S=examples/sweeper-php
 python -m parsimony.site "$S/score-panel.json" "$S/"sweeper-*.jsonl --sensitivity "$S/stability.json" \
   --benchmark sweeper "${NAV[@]}" --output "$OUT/sweeper-php.html"
+
+for lang in javascript typescript; do
+  M=examples/live-$lang
+  python -m parsimony.site "$M/score-panel.json" "$M/"*-*.jsonl --sensitivity "$M/stability.json" \
+    --benchmark live-multilang "${NAV[@]}" --output "$OUT/live-$lang.html"
+done

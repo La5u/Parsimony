@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — SWE-bench Live JavaScript and TypeScript boards — 2026-10-14
+
+**Data.** New boards `site/live-javascript.html` (108 tasks) and `site/live-typescript.html` (111 tasks): five public SWE-bench Live MultiLang submissions (Claude Opus 4.6 · AMI Agent, Claude Sonnet 4.5 · Slingshot 2.6.0, GPT-5.5 · Slingshot 2.6.0 and 3.0.0, GPT-5.6 Sol · Slingshot 3.4.0), submissions pinned at `99bae66`, dataset at `62dc074`, measured with 0.10.0-beta at `4c02b61` and the official TypeScript parser. Before-state audits in `examples/live-multilang/`. **Importer.** AMI result files without `completed_ids` are accepted when their counts match; the download cache rejects responses shorter than their Content-Length.
+
 ## Unreleased — Task difficulty and complexity on the site — 2026-10-14
 
 **Ranking.** Boards now rank by code relative to the other models on the same solved tasks (`same-task-net-ratio-v1`), so solving only small tasks no longer looks parsimonious. The plain solved mean stays as a column. **Site.** New chart metrics: complexity added (solved mean) and both same-task ratios; the task view shows the task's typical solved patch. No measurements changed.

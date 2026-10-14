@@ -10,7 +10,7 @@ cd "$(dirname "$0")/.."
 python -m unittest discover -s tests -q
 python -m parsimony.contribute validate submissions
 node tests/custom_benchmark.cjs
-for page in index javascript typescript go verified live sweeper-php; do
+for page in index javascript typescript go verified live live-javascript live-typescript sweeper-php; do
   node tests/site_sorting.cjs "site/$page.html"
 done
 git diff --check

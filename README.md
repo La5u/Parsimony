@@ -48,6 +48,8 @@ Each benchmark and language has its own board, since unit counts can't be compar
 | [DeepSWE Go](https://parsimony.lasu.dev/go.html) | DeepSWE v1.1 | 26 | 34 × 4 | 0.8.0-beta | [examples/deepswe-go-v2](examples/deepswe-go-v2/README.md) |
 | [SWE-bench Verified](https://parsimony.lasu.dev/verified.html) | SWE-bench Verified | 35 | 500 × 1 | 0.5.2-beta | [examples/mini-swe-agent-500](examples/mini-swe-agent-500/README.md) |
 | [Live Python](https://parsimony.lasu.dev/live.html) | SWE-bench Live Lite | 4 | 300 × 1 | 0.6.0-beta | [examples/live-python](examples/live-python/README.md) |
+| [Live JavaScript](https://parsimony.lasu.dev/live-javascript.html) | SWE-bench Live MultiLang | 5 | 108 × 1 | 0.10.0-beta | [examples/live-javascript](examples/live-javascript/README.md) |
+| [Live TypeScript](https://parsimony.lasu.dev/live-typescript.html) | SWE-bench Live MultiLang | 5 | 111 × 1 | 0.10.0-beta | [examples/live-typescript](examples/live-typescript/README.md) |
 | [SWEeper PHP](https://parsimony.lasu.dev/sweeper-php.html) | SWEeper-Bench | 15 | 128 × 1 | 0.10.0-beta | [examples/sweeper-php](examples/sweeper-php/README.md) |
 
 Each data directory holds one JSONL file per model with every attempt's measurement, the artifact hashes it came from and the frozen task population. The DeepSWE Python page also shows a few newer models I ran myself on 3–10 tasks ([my runs](examples/self-run/README.md)); they're faded and not ranked.
