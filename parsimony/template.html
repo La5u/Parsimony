@@ -33,6 +33,12 @@ h1 { font-size: 1.6rem; margin: 0 0 6px; }
 h2 { font-size: 1.1rem; margin: 40px 0 10px; }
 p { margin: 0 0 10px; }
 .muted { color: var(--muted); }
+#nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 4px; }
+#nav .nav-title { flex-basis: 100%; font-weight: 600; font-size: 0.85rem; color: var(--muted); }
+#nav .board { padding: 8px 14px; border: 1px solid #c4c8cc; border-radius: 6px; color: var(--ink); text-decoration: none; font-size: 0.95rem; line-height: 1.2; }
+#nav .board:hover { border-color: var(--ink); }
+#nav .board:focus-visible { outline: 2px solid #000; outline-offset: 2px; }
+#nav .board.current { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
 .small { font-size: 0.85rem; }
 a { color: var(--link); }
 .scroll { overflow-x: auto; }
@@ -120,7 +126,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <noscript><p class="small">The charts and leaderboard need JavaScript. The data is on <a href="https://github.com/La5u/Parsimony/tree/main/examples">GitHub</a>.</p></noscript>
 
   <p class="small" id="units-definition">It takes the patches that benchmarks already publish and counts <b>coding units</b>: syntax elements like statements, calls, comparisons, names and literals. Lines aren't counted, so cramming code isn't rewarded, and deleted code is subtracted: net units = added − removed.</p>
-  <nav class="small" id="nav" aria-label="Leaderboards" hidden></nav>
+  <nav id="nav" aria-label="Leaderboards" hidden></nav>
   <section aria-labelledby="complexity">
   <h2 id="complexity">Compare models</h2>
   <p class="small muted" id="external-note" hidden></p>
@@ -256,7 +262,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   $('task-link').textContent = bench.task_link;
   if ((data.nav || []).length) {
     $('nav').hidden = false;
-    $('nav').innerHTML = 'Leaderboards: ' + data.nav.map((l) => `<a href="${esc(l.url)}">${esc(l.label)}</a>`).join(' · ');
+    $('nav').innerHTML = '<span class="nav-title">Leaderboard</span>' + data.nav.map((l) => l.current
+      ? `<a class="board current" href="${esc(l.url)}" aria-current="page">${esc(l.label)}</a>`
+      : `<a class="board" href="${esc(l.url)}">${esc(l.label)}</a>`).join('');
   }
   const displayedTasks = data.footprint_tasks || data.tasks;
   const taskCount = new Set(displayedTasks.map((t) => t[0].split('#')[0])).size;

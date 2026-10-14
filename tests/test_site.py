@@ -134,7 +134,7 @@ class SiteTests(unittest.TestCase):
             self.assertEqual(parser.metadata, [('meta', True), ('meta', True), ('title', True),
                                                 ('meta', True)] + [('meta', True)] * 10 + [('style', True)])
             self.assertIn(f'<title>Parsimony: {expected}</title>', page)
-            self.assertIn('<nav class="small" id="nav" aria-label="Leaderboards"', page)
+            self.assertIn('<nav id="nav" aria-label="Leaderboards"', page)
             self.assertIn('<noscript>', page)
             self.assertIn('The charts and leaderboard need JavaScript', page)
             for fragment_tag in ('rel="canonical" href="https://parsimony.lasu.dev/"', 'property="og:site_name" content="Parsimony"',
@@ -416,7 +416,11 @@ class MainTests(unittest.TestCase):
         self.assertEqual(len(models), 2)
         data = self.data
         self.assertEqual(data['benchmark']['name'], 'DeepSWE')
-        self.assertEqual(data['nav'], [dict(label='Other board', url='other.html')])
+        self.assertEqual(data['nav'], [dict(label='Other board', url='other.html', current=False)])
+
+    def test_nav_marks_the_board_being_built(self):
+        self.run_main('--benchmark', 'deepswe', '--nav', 'This board=index.html', '--nav', 'Other board=other.html')
+        self.assertEqual([item['current'] for item in self.data['nav']], [True, False])
 
     def test_live_discloses_mixed_harnesses_and_candidate_provenance(self):
         self.run_main('--benchmark', 'live')

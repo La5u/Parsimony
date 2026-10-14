@@ -553,6 +553,8 @@ def main():
         track = data.get('measurement_track') or {}
         data['sources'] = published_sources(args.benchmark, track.get('language') or 'python')
         data['nav'] = [dict(zip(('label', 'url'), item.split('=', 1))) for item in args.nav]
+        for item in data['nav']:  # the board this page shows is highlighted in the switcher
+            item['current'] = item['url'] == Path(args.output).name
         if args.self_run:
             data['self_run_models'] = self_run_models([r for path in args.self_run for r in read_jsonl(path)],
                                                       data['task_typical'])
