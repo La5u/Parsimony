@@ -73,7 +73,7 @@ python examples/self-run/grade.py --apply   # copy outcomes into results/*.jsonl
 | Claude Sonnet 5.5 (high) | 6/10 | 1 | 1,974 | 1,779 |
 | GPT-5.6 Sol (high) | 4/10 | 1 | 1,660 | 1,725 |
 | GPT-6.1 Sol (high) | 10/20 | 0 | 1,356 | 1,395 |
-| GPT-6 Astra (high) | 4/6 | 1 | 1,103 | 1,256 |
+| GPT-6 Astra (high) | 6/10 | 1 | 1,327 | 1,326 |
 | GPT-6 Luna (high) | 3/20 | 0 | 1,076 | 857 |
 | GPT-6 Sol (high) | 7/20 | 3 | 1,354 | 1,116 |
 

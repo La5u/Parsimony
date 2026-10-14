@@ -1,0 +1,187 @@
+{
+ "date": "2026-10-14",
+ "method": "Fresh-cache DeepSWE configs/artifact hashes and patch probes; SWE-bench Live submission tree at 99bae66 (result.json only). Metadata only; no patches committed.",
+ "deepswe": {
+  "release": "v1.1",
+  "artifacts_unchanged": true,
+  "artifact_sha256_prefixes": {
+   "trials.json": "310cb428fe8914cf",
+   "leaderboard-live.json": "a7c15d66288fd249",
+   "release.json": "0b77963ed8c54ef4"
+  },
+  "newer_releases_probed": {
+   "v1.2": 404,
+   "v1.3": 404,
+   "v2": 404,
+   "v2.0": 404
+  },
+  "usable_configurations": 26,
+  "same_as": "examples/deepswe-python/refresh-2026-09-29.json",
+  "gpt_6_astra": "3 configurations, 452 trials each, 0 declared patches",
+  "gemini_3_8_flash": "high/medium configurations declare patches; 6 sampled patch GETs returned HTTP 403 while a Claude Opus 5 control returned 200",
+  "verdict": "No new DeepSWE configuration is importable."
+ },
+ "live_multilang_all_languages": {
+  "revision": "99bae66f923b3dfeab2d18366c0593929c5722de",
+  "configurations": [
+   {
+    "config": "multilang/all_languages/claudecode/claude-4-5-sonnet",
+    "submitted": 176,
+    "success": 59,
+    "failure": 100,
+    "empty_patch": 17,
+    "overlap": {
+     "javascript": 27,
+     "typescript": 28,
+     "go": 38
+    }
+   },
+   {
+    "config": "multilang/all_languages/claudecode/deepseek-v3.1-terminus",
+    "submitted": 171,
+    "success": 37,
+    "failure": 94,
+    "empty_patch": 40,
+    "overlap": {
+     "javascript": 26,
+     "typescript": 27,
+     "go": 36
+    }
+   },
+   {
+    "config": "multilang/all_languages/claudecode/deepseek-v4-pro",
+    "submitted": 240,
+    "success": 67,
+    "failure": 118,
+    "empty_patch": 55,
+    "overlap": {
+     "javascript": 17,
+     "typescript": 23,
+     "go": 40
+    }
+   },
+   {
+    "config": "multilang/all_languages/claudecode/gpt-5-2-medium",
+    "submitted": 164,
+    "success": 53,
+    "failure": 106,
+    "empty_patch": 5,
+    "overlap": {
+     "javascript": 26,
+     "typescript": 25,
+     "go": 35
+    }
+   },
+   {
+    "config": "multilang/all_languages/claudecode/gpt-5.5-medium",
+    "submitted": 240,
+    "success": 90,
+    "failure": 135,
+    "empty_patch": 15,
+    "overlap": {
+     "javascript": 17,
+     "typescript": 23,
+     "go": 40
+    }
+   },
+   {
+    "config": "multilang/all_languages/openhands/deepseek-v4-pro",
+    "submitted": 232,
+    "success": 76,
+    "failure": 156,
+    "empty_patch": 0,
+    "overlap": {
+     "javascript": 17,
+     "typescript": 19,
+     "go": 40
+    }
+   },
+   {
+    "config": "multilang/all_languages/openhands/gpt-5.5-medium",
+    "submitted": 235,
+    "success": 95,
+    "failure": 140,
+    "empty_patch": 0,
+    "overlap": {
+     "javascript": 17,
+     "typescript": 23,
+     "go": 40
+    }
+   },
+   {
+    "config": "multilang/all_languages/sweagent/claude-4-5-sonnet",
+    "submitted": 165,
+    "success": 49,
+    "failure": 54,
+    "empty_patch": 62,
+    "overlap": {
+     "javascript": 26,
+     "typescript": 24,
+     "go": 39
+    }
+   },
+   {
+    "config": "multilang/all_languages/sweagent/deepseek-v3.1-terminus",
+    "submitted": 160,
+    "success": 40,
+    "failure": 114,
+    "empty_patch": 6,
+    "overlap": {
+     "javascript": 26,
+     "typescript": 24,
+     "go": 39
+    }
+   },
+   {
+    "config": "multilang/all_languages/sweagent/deepseek-v4-pro",
+    "submitted": 238,
+    "success": 97,
+    "failure": 137,
+    "empty_patch": 4,
+    "overlap": {
+     "javascript": 17,
+     "typescript": 23,
+     "go": 40
+    }
+   },
+   {
+    "config": "multilang/all_languages/sweagent/gemini-3-flash",
+    "submitted": 165,
+    "success": 47,
+    "failure": 106,
+    "empty_patch": 12,
+    "overlap": {
+     "javascript": 26,
+     "typescript": 24,
+     "go": 39
+    }
+   },
+   {
+    "config": "multilang/all_languages/sweagent/gpt-5.2-medium",
+    "submitted": 165,
+    "success": 45,
+    "failure": 116,
+    "empty_patch": 4,
+    "overlap": {
+     "javascript": 26,
+     "typescript": 24,
+     "go": 39
+    }
+   },
+   {
+    "config": "multilang/all_languages/sweagent/gpt-5.5-medium",
+    "submitted": 230,
+    "success": 105,
+    "failure": 120,
+    "empty_patch": 5,
+    "overlap": {
+     "javascript": 17,
+     "typescript": 23,
+     "go": 40
+    }
+   }
+  ],
+  "note": "Cross-language sample (160-240 tasks per run, C/C++/C#/Java/Rust/Go/JS/TS/PHP...). Overlap with the frozen Live JS/TS/Go populations is 17-28 / 19-28 / 35-40 tasks per run. Importing needs the cross-language run split by language (the importer rejects prediction IDs absent from the given dataset file).",
+  "next_action": "Owner decision: add these runs to the Live Go board (35-40 of 138 tasks each); JS/TS overlap is too thin for a stable ratio."
+ }
+}

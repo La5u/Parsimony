@@ -508,7 +508,7 @@ assert.match(graph(), /Delta \(high\) \(OpenAI\)[^"]*Run by me with pi on 2 of \
 assert.match(element('#board tbody').innerHTML, /<tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta \(high\)<\/td><td>—<\/td><td>−5.0<\/td><td>—<\/td><td>—<\/td>/);
 assert.match(element('#board tbody').innerHTML, /<td>2<\/td><td class="left">Alpha/); // Self-run never takes a rank.
 assert.match(element('#board tbody').innerHTML, /Beta[\s\S]*<tr class="self-run-head"><td colspan="6">My runs · not ranked, 5–10 tasks<\/td><\/tr><tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta/); // after ranked rows, even with the smallest mean
-assert.match(element('self-run-note').textContent, /^Faded: models I ran myself on 3–10 of these tasks\. Not ranked\./);
+assert.match(element('self-run-note').textContent, /^Faded: models I ran myself on 5–10 of these tasks\. Not ranked\./);
 assert.equal(element('self-run-help').hidden, false);
 assert.equal(element('self-run-note').hidden, false);
 task('org__repo-1');
@@ -707,6 +707,8 @@ assert.deepEqual(names(), ['Beta', 'Alpha', 'Gamma']); // Beta writes less than 
 assert.match(element('#board tbody').innerHTML, /<tr><td>1<\/td><td class="left">Beta<\/td><td title="95% range 0.80–1.00× over 8 tasks">0.90×<\/td>/);
 assert.match(element('#board tbody').innerHTML, /<td>2<\/td><td class="left">Alpha<\/td>/);
 assert.match(element('rank-help').textContent, /same tasks/);
+assert.match(element('board-intro').innerHTML, /tasks, so the order is rough\./); // small boards say their order is rough
+assert.match(element('rank-help').textContent, /tasks where everyone writes a lot weigh more/);
 assert.match(element('graph-x').innerHTML, /value="same_cx">Complexity vs\. other models, same tasks/);
 assert.match(element('graph-x').innerHTML, /value="solved_cx">Complexity added, solved \(mean\)/);
 assert.equal((graph().match(/<line class="range/g) || []).length, 0); // ranges are in the tooltip only, also for self-runs

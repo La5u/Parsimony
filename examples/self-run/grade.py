@@ -116,6 +116,11 @@ def apply_grades():
     results = {'pass': 'resolved', 'fail': 'unresolved', 'timeout': 'unknown'}
     for path in sorted((HERE / 'results').glob('*.jsonl')):
         records = [json.loads(line) for line in path.read_text().splitlines()]
+        missing = [r['task_id'] for r in records
+                   if not (HERE / 'runs' / path.stem / r['task_id'].replace('#', '__') / 'grade.json').exists()]
+        if missing:  # a configuration is graded all at once, never partly
+            print(f"{path}: {len(missing)} attempts not graded yet; left not_graded")
+            continue
         for record in records:
             grade = json.loads((HERE / 'runs' / path.stem / record['task_id'].replace('#', '__') / 'grade.json').read_text())
             if grade['outcome'] not in results:
