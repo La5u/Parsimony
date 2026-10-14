@@ -73,7 +73,6 @@ body { overflow-x: clip; }
 #graph .point-label.flip { transform: translate(calc(-100% - 10px),-50%); }
 #graph .point-label.older-label { opacity: 0.75; }
 #graph .self-run { fill-opacity: 0.35; }
-#graph line.range { stroke-width: 2; stroke-opacity: 0.45; }
 #graph .point-label.self-run-label { opacity: 0.45; }
 #graph circle, #graph .point-label { transition: opacity 0.15s; }
 #graph circle.dim, #graph .point-label.dim { opacity: 0.12; }
@@ -737,15 +736,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; off the chart\'s scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + (p.count ?? 0) + '/' + (denominator(p.m) ?? 0) + ' solved attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}`;
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
     const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('');
-    // My runs cover few tasks: a bar shows the 95% range of a same-task ratio (none below 5 shared tasks).
-    const clampTo = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-    const whiskers = points.filter(p => p.selfRun).map(p => ['x', 'y'].filter(axis => ratioKeys.includes(axes[axis])).map(axis => {
-      const ci = ratioOf(p.m, axes[axis])[0];
-      if (!ci) return '';
-      return axis === 'x'
-        ? `<line class="range self-run" data-company="${esc(p.company)}" stroke="${companyColor(p.company)}" x1="${sx(clampTo(ci[0], xmin, xmax))}" x2="${sx(clampTo(ci[1], xmin, xmax))}" y1="${p.py}" y2="${p.py}"/>`
-        : `<line class="range self-run" data-company="${esc(p.company)}" stroke="${companyColor(p.company)}" y1="${sy(clampTo(ci[0], ymin, ymax))}" y2="${sy(clampTo(ci[1], ymin, ymax))}" x1="${p.px}" x2="${p.px}"/>`;
-    }).join('')).join('');
     // Green zone: the half of each axis that is better (lower footprint, higher solved/index).
     const better = {net: -1, solved_net: -1, churn: -1, solved_cx: -1, cx: -1, same_net: -1, same_cx: -1, resolve_rate: 1, aa_coding: 1, aa_intelligence: 1};
     const bx = better[axes.x], by = better[axes.y];
@@ -765,7 +755,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const scale = ($('graph').clientWidth || W) / W;
     const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
     $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. All models are labelled; earlier generations are lighter. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other companies fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${whiskers}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. All models are labelled; earlier generations are lighter. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other companies fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
     // Labels that would cross the right edge sit left of their point instead.
     const graphWidth = $('graph').clientWidth;
     document.querySelectorAll('#graph .point-label').forEach(label => {

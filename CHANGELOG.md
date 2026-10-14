@@ -4,7 +4,7 @@ Analyzer versions change measurements. **Never pool or compare records from diff
 
 ## Unreleased — Task difficulty and complexity on the site — 2026-10-14
 
-**Ranking.** Boards now rank by code relative to the other models on the same solved tasks (`same-task-net-ratio-v1`), so solving only small tasks no longer looks parsimonious. The plain solved mean stays as a column. **Site.** New chart metrics: complexity added (solved mean) and both same-task ratios; self-run dots show a 95% range bar (5+ shared tasks); the task view shows the task's typical solved patch. No measurements changed.
+**Ranking.** Boards now rank by code relative to the other models on the same solved tasks (`same-task-net-ratio-v1`), so solving only small tasks no longer looks parsimonious. The plain solved mean stays as a column. **Site.** New chart metrics: complexity added (solved mean) and both same-task ratios; the task view shows the task's typical solved patch. No measurements changed.
 
 ## Unreleased — SWEeper-Bench PHP board — 2026-10-13
 

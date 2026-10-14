@@ -707,14 +707,12 @@ assert.match(element('#board tbody').innerHTML, /<td>2<\/td><td class="left">Alp
 assert.match(element('rank-help').textContent, /same tasks/);
 assert.match(element('graph-x').innerHTML, /value="same_cx">Complexity vs\. other models, same tasks/);
 assert.match(element('graph-x').innerHTML, /value="solved_cx">Complexity added, solved \(mean\)/);
-assert.match(graph(), /<line class="range self-run"[^>]*x1="[\d.]+" x2="[\d.]+"/); // self-run gets a 95% range bar
-assert.equal((graph().match(/<line class="range/g) || []).length, 1); // ranked models: range in the tooltip only
+assert.equal((graph().match(/<line class="range/g) || []).length, 0); // ranges are in the tooltip only, also for self-runs
 assert.match(graph(), /0\.50×/);
 const selfRunPoint = doc.querySelectorAll('#graph circle[data-point]').find(c => /Delta/.test(graph().match(new RegExp(`<circle data-point="${c.dataset.point}"[^>]*>`))[0]));
 selfRunPoint.listeners.focus({});
 assert.match(tooltip.textContent, /95% range 0\.30–0\.90× over 5 tasks/);
 axis('x', 'same_cx');
-assert.equal((graph().match(/<line class="range/g) || []).length, 0); // 2 shared tasks: no range bar
 selfRunPoint.listeners.focus({});
 doc.querySelectorAll('#graph circle[data-point]').find(c => /Delta/.test(graph().match(new RegExp(`<circle data-point="${c.dataset.point}"[^>]*>`))[0])).listeners.focus({});
 assert.match(tooltip.textContent, /Only 2 shared tasks: too few for a range/);
