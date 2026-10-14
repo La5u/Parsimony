@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — SWE-bench Live Go board — 2026-10-14
+
+**Data.** New board `site/live-go.html`: six AMI Agent submissions to SWE-bench Live MultiLang Go (Claude Opus 4.6, Sonnet 4.6, Haiku 4.5, Gemini 3.1 Pro Preview, Gemini 3.6 Flash, Qwen3.8-27B) on all 138 tasks, measured with 0.10.0-beta at `9dd189a` and `tree-sitter-go-units-v2`. Retry settings differ by configuration and are disclosed. Separate from the DeepSWE Go board.
+
 ## Unreleased — SWE-bench Live JavaScript and TypeScript boards — 2026-10-14
 
 **Data.** New boards `site/live-javascript.html` (108 tasks) and `site/live-typescript.html` (111 tasks): five public SWE-bench Live MultiLang submissions (Claude Opus 4.6 · AMI Agent, Claude Sonnet 4.5 · Slingshot 2.6.0, GPT-5.5 · Slingshot 2.6.0 and 3.0.0, GPT-5.6 Sol · Slingshot 3.4.0), submissions pinned at `99bae66`, dataset at `62dc074`, measured with 0.10.0-beta at `4c02b61` and the official TypeScript parser. Before-state audits in `examples/live-multilang/`. **Importer.** AMI result files without `completed_ids` are accepted when their counts match; the download cache rejects responses shorter than their Content-Length.

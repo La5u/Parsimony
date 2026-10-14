@@ -45,6 +45,11 @@ NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude
          'live-multilang-gpt-5.5-slingshot-2.6.0': 'GPT-5.5 · Slingshot 2.6.0',
          'live-multilang-claude-sonnet-4.5-slingshot-2.6.0': 'Claude Sonnet 4.5 · Slingshot 2.6.0',
          'live-multilang-claude-opus-4.6-ami-agent-0.7.0': 'Claude Opus 4.6 · AMI Agent 0.7.0',
+         'live-multilang-claude-sonnet-4.6-ami-agent-0.7.0': 'Claude Sonnet 4.6 · AMI Agent 0.7.0',
+         'live-multilang-claude-haiku-4.5-ami-agent-0.7.0': 'Claude Haiku 4.5 · AMI Agent 0.7.0',
+         'live-multilang-gemini-3.1-pro-preview-ami-agent-0.7.0': 'Gemini 3.1 Pro Preview · AMI Agent 0.7.0',
+         'live-multilang-gemini-3.6-flash-ami-agent-0.7.0': 'Gemini 3.6 Flash · AMI Agent 0.7.0',
+         'live-multilang-qwen3.8-27b-ami-agent-0.7.2': 'Qwen3.8-27B · AMI Agent 0.7.2',
          'live-multilang-gpt-5.5-sweagent-medium': 'GPT-5.5 (medium) · SWE-agent',
          'sweeper-gpt-6-astra-codex': 'GPT-6 Astra (xhigh) · Codex',
          'sweeper-claude-fable-5-1-claude-code': 'Claude Fable 5.1 (xhigh) · Claude Code',
@@ -106,6 +111,7 @@ def published_sources(benchmark, language='python', root=None):
         ('SWE-bench Live Lite', 'live', 'python', 'live-python', 'population-manifest.json', 'live.html'),
         ('SWE-bench Live MultiLang · JavaScript', 'live-multilang', 'javascript', 'live-javascript', 'population-manifest.json', 'live-javascript.html'),
         ('SWE-bench Live MultiLang · TypeScript', 'live-multilang', 'typescript', 'live-typescript', 'population-manifest.json', 'live-typescript.html'),
+        ('SWE-bench Live MultiLang · Go', 'live-multilang', 'go', 'live-go', 'population-manifest.json', 'live-go.html'),
         ('SWEeper-Bench · PHP', 'sweeper', 'php', 'sweeper-php', 'population-manifest.json', 'sweeper-php.html'),
     ]
     sources = []

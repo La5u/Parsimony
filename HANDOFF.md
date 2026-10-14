@@ -25,14 +25,14 @@ Known issues:
 - Verified/others `rank_range` comes from the stability report, which ranks by an older metric. It is stored but not shown; don't present it as same-task uncertainty.
 - A few models rank 1st on few tasks: Gemini 3.1 Pro on DeepSWE Python (8 shared tasks, 0.66×) and Qwen2.5-Coder 32B on Verified (42 tasks, interval crosses zero). Ranges are in the tooltip only.
 - Board READMEs carry a same-task ranking table generated from the built page by `scripts/readme-ranking-table.py`; regenerate it when a board's data changes. Not in `examples/deepswe-go-v2/README.md`: that file is checksum-bound in `release-assets.json`. The DeepSWE Python README's old Score table is relabelled as an archived diagnostic.
-- On this aarch64 machine the Go grammar doesn't build (Go tests skip; CI runs them) and selenium isn't installed (Firefox tests can't run; use `firefox --headless --screenshot` for a visual check).
+- On this aarch64 machine the Go grammar builds when installed with pip from the pinned URL (`/tmp/parsimony-ml` venv, 2026-10-14); `uv pip` rejects the codeload URL and a local-file install fails the source check. Selenium isn't installed (Firefox tests can't run; use `firefox --headless --screenshot` for a visual check).
 - The wrong contact address (gmail) is in git history at `ebffe7e`; removing it needs a force-push, so it's only done if the owner asks.
 
 ## Owner requirements — do not regress these
 
 Website ranking and columns:
 
-- All nine boards rank by the **same-task ratio** (`ranking_metric: same-task-net-ratio-v1`, `same_task_net`, owner request 2026-10-14 "account for task difficulty"): per base task, a model's mean net units over its measured, in-scope solved attempts; divided by the mean of the *other* ranked models' per-task means on that task (leave-one-out); ratio of sums over tasks with ≥3 other models (`SAME_TASK_MIN_MODELS`). 95% percentile task bootstrap when ≥5 shared tasks, else no interval. Self-runs use every ranked model as baseline (`task_typical`). The same is computed for complexity (`same_task_complexity`, from `complexity_delta`). Models with no ratio fall back to the plain solved mean after ranked ones. `task_typical` gives each task's mean solved patch (net, complexity, model count) for the task view. The plain solved mean (`measured_solved_net_mean`) stays a column and chart metric. The **all-measured mean, including failures** (`measured_net_mean`), is the second column and a chart metric; it does not set rank. **No trimmed mean:** the owner tried a 10% trimmed mean on 2026-10-01 and had it removed the same day; do not reintroduce it or another robust statistic without being asked. No coverage gate.
+- All ten boards rank by the **same-task ratio** (`ranking_metric: same-task-net-ratio-v1`, `same_task_net`, owner request 2026-10-14 "account for task difficulty"): per base task, a model's mean net units over its measured, in-scope solved attempts; divided by the mean of the *other* ranked models' per-task means on that task (leave-one-out); ratio of sums over tasks with ≥3 other models (`SAME_TASK_MIN_MODELS`). 95% percentile task bootstrap when ≥5 shared tasks, else no interval. Self-runs use every ranked model as baseline (`task_typical`). The same is computed for complexity (`same_task_complexity`, from `complexity_delta`). Models with no ratio fall back to the plain solved mean after ranked ones. `task_typical` gives each task's mean solved patch (net, complexity, model count) for the task view. The plain solved mean (`measured_solved_net_mean`) stays a column and chart metric. The **all-measured mean, including failures** (`measured_net_mean`), is the second column and a chart metric; it does not set rank. **No trimmed mean:** the owner tried a 10% trimmed mean on 2026-10-01 and had it removed the same day; do not reintroduce it or another robust statistic without being asked. No coverage gate.
 - Rank is fixed to the **same-task ratio** above; there is no correctness tie-break. **No mode selector** (the owner removed "Count attempts" on 2026-10-13 as redundant): the all-measured mean, including failures, is the second table column and a chart metric instead. Measured is measured successes / upstream resolved attempt slots, not unique tasks. Task views show every attempt of the task with its outcome. Self-runs (`examples/self-run/grade.py` self-grades them) appear faded and unranked. Solved %, external indices and archived diagnostics do not change. Equal values tie; models with no eligible measurements stay unranked. Self-run dots have **no range bars** (owner removed them 2026-10-14); the 95% range is in the tooltip only, like ranked models.
 - Visible columns: **Rank, Vs. others, same tasks (×), Net units, solved (mean), Net units, all measured (mean), Solved, Measured** (measured solved / upstream solved). Solved % is upstream resolved / full frozen population, context only. Footprint is raw mean coding units, **not %**, with equal 1/N weight for each measured in-scope attempt, including failures; no correctness weighting. Exclude missing measurements, never zero-fill them.
 - Describe the ranking as *smallest measured footprint*, never *best coding model*. Negative deletions and failed no-ops may rank first; say so.
@@ -70,6 +70,7 @@ Cloudflare Pages serves `site/` at <https://parsimony.lasu.dev>; a push to `main
 | SWE-bench Live Lite Python | `site/live.html` | `examples/live-python/` | 4 configs | 300 × 1 | 0.6.0-beta @ `de63300` |
 | SWE-bench Live JavaScript | `site/live-javascript.html` | `examples/live-javascript/` | 5 configs | 108 × 1 | 0.10.0-beta @ `4c02b61` |
 | SWE-bench Live TypeScript | `site/live-typescript.html` | `examples/live-typescript/` | 5 configs | 111 × 1 | 0.10.0-beta @ `4c02b61` |
+| SWE-bench Live Go | `site/live-go.html` | `examples/live-go/` | 6 configs (AMI) | 138 × 1 | 0.10.0-beta @ `9dd189a` |
 | SWEeper-Bench PHP | `site/sweeper-php.html` | `examples/sweeper-php/` | 15 configs | 128 × 1 | 0.10.0-beta @ `03d5c59` |
 
 - Each example directory holds measured JSONL, `population.json`, `coverage.json`, `score-panel.json`, `scores.json`, sensitivity/stability reports and a README. Large JSON files are tens of MB: summarise them with Python rather than dumping them into context.
@@ -125,7 +126,7 @@ Choose the first releasable newer-model cohort by **artifact completeness and co
 
 These are concrete fallbacks if fresh discovery yields no immediately releasable newer exports:
 
-- **Live JS/TS:** published 2026-10-14 as two boards with all five MultiLang JS/TS submissions (`examples/benchmark-discovery/run-live-multilang.py`). Other MultiLang folders (`all_languages/*`, Go/Java/Rust/C#) are separate populations.
+- **Live JS/TS:** published 2026-10-14 as two boards with all five MultiLang JS/TS submissions (`examples/benchmark-discovery/run-live-multilang.py`). The six AMI Go configurations are on the Live Go board. Other MultiLang folders (`all_languages/*`, Java/Rust/C#) are separate populations or unsupported languages.
 - **PolyBench Opus 4.8 Python:** 111/113 attempts have static measurements. Complete the provenance/population release review and publish a separate PolyBench board if justified. Preserve all 113 population items and distinguish missing measurements from failures. Do not mix it with Live or Verified.
 - **PolyBench GPT-5.4:** still blocked on historical before-state identity. Candidate-base hunk matches without usable old-blob prefixes are insufficient for release; seek stronger public operational/reset or byte-identity evidence, not permissive patch application. Lower priority than accessible newer-model cohorts.
 
@@ -164,7 +165,7 @@ The parser problem is solved (0.7.0, 2026-10-01): JS/TS use the official TypeScr
 - `parsimony/deepswe.py`, `live.py`, `polybench.py`, `artifacts.py`, `preimages.py`: importers and provenance audits.
 - `parsimony/scoring.py` (formula, bounds, track compatibility), `stability.py`, `sensitivity.py` (diagnostics, bootstrap).
 - `parsimony/release.py`: frozen populations and coverage audits.
-- `parsimony/site.py`: offline page data (`build()` sets `ranking_metric` and sorts models). `parsimony/template.html`: all interaction, CSS and graph code. Rebuild **all nine** pages after changing either.
+- `parsimony/site.py`: offline page data (`build()` sets `ranking_metric` and sorts models). `parsimony/template.html`: all interaction, CSS and graph code. Rebuild **all ten** pages after changing either.
 - Tests: `tests/test_site.py` + `tests/site_sorting.cjs` (generator and page behaviour), `tests/test_languages.py`, `tests/test_multilanguage.py`, plus per-module tests.
 
 ## Measurement rules
@@ -191,7 +192,7 @@ uv pip install --python /tmp/parsimony-checks/bin/python '.[languages]'
 /tmp/parsimony-checks/bin/python -m unittest discover -s tests -q
 ```
 
-### Rebuild all nine pages (offline, no remeasurement)
+### Rebuild all ten pages (offline, no remeasurement)
 
 `scripts/rebuild-site.sh` reproduces every committed page byte-for-byte (it downloads the checksum-bound Go scalar asset; `--offline` skips the Go page, as CI does). Check with `git status` afterwards. Go asset files remain external rather than duplicated in Git.
 
