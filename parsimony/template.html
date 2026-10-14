@@ -358,7 +358,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const extra = selected ? [] : activeSelfRun().map(m => ({m, i: -1})).sort(order);
     const models = data.models.map((m, i) => ({m, i})).sort(order).concat(extra);
     document.querySelector('#board tbody').innerHTML = models.map(({m, i}, k) => (k === models.length - extra.length && extra.length
-      ? `<tr class="self-run-head"><td colspan="${headers.length}">My runs · not ranked, 3–10 tasks</td></tr>` : '') + (() => {
+      ? `<tr class="self-run-head"><td colspan="${headers.length}">My runs · not ranked, 5–20 tasks</td></tr>` : '') + (() => {
       if (selected) {
         const c = selected[2][i];
         const outcome = labels[c[6] || c[0]] || c[0];
@@ -514,7 +514,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     };
     $('graph').style.marginBottom = '0px';
     $('graph').innerHTML = `<div class="bars" role="list" aria-label="${esc(metric)} per model, ${footprint ? 'smallest' : 'largest'} first">` + rows.map((r, k) =>
-      (k === firstSelfRun ? `<div class="bar-group" role="presentation">My runs: 3–10 tasks only, so not comparable with the bars above</div>` : '') +
+      (k === firstSelfRun ? `<div class="bar-group" role="presentation">My runs: 5–20 tasks only, so not comparable with the bars above</div>` : '') +
       `<div class="bar-row${r.latest ? '' : ' older'}${r.selfRun ? ' self-run' : ''}" role="listitem" tabindex="0" data-bar="${k}" aria-label="${esc(note(r).replace(/\n/g, '; '))}">` +
       `<span class="bar-name">${esc(r.m.name)}</span>` +
       `<span class="bar-track">${lo < 0 ? `<span class="bar-zero" style="left:${pct(0)}%"></span>` : ''}<span class="bar" style="left:${pct(Math.min(0, r.v))}%;width:${Math.abs(r.v) / span * 100}%;background:${companyColor(r.m.company || 'Other')}"></span></span>` +

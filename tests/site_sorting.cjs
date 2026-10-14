@@ -505,7 +505,7 @@ assert.match(graph(), /class="point-label self-run-label"[^>]*>Delta/);
 assert.match(graph(), /Delta \(high\) \(OpenAI\)[^"]*Run by me with pi on 2 of \d+ tasks, not graded/);
 assert.match(element('#board tbody').innerHTML, /<tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta \(high\)<\/td><td>—<\/td><td>−5.0<\/td><td>—<\/td><td>—<\/td>/);
 assert.match(element('#board tbody').innerHTML, /<td>2<\/td><td class="left">Alpha/); // Self-run never takes a rank.
-assert.match(element('#board tbody').innerHTML, /Beta[\s\S]*<tr class="self-run-head"><td colspan="6">My runs · not ranked, 3–10 tasks<\/td><\/tr><tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta/); // after ranked rows, even with the smallest mean
+assert.match(element('#board tbody').innerHTML, /Beta[\s\S]*<tr class="self-run-head"><td colspan="6">My runs · not ranked, 5–20 tasks<\/td><\/tr><tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta/); // after ranked rows, even with the smallest mean
 assert.match(element('self-run-note').textContent, /^Faded: models I ran myself on 3–10 of these tasks\. Not ranked\./);
 assert.equal(element('self-run-help').hidden, false);
 assert.equal(element('self-run-note').hidden, false);
@@ -531,7 +531,7 @@ assert.equal(element('graph-y-control').hidden, true);
 assert.equal(element('graph-x-label').textContent, 'Metric');
 const barNames = () => [...element('graph').innerHTML.matchAll(/<span class="bar-name">([^<]*)<\/span>/g)].map(m => m[1]);
 assert.deepEqual(barNames(), ['Alpha', 'Beta', 'Delta (high)']); // Gamma has no measurement; self-run listed after, never interleaved
-assert.match(element('graph').innerHTML, /data-bar="1"[\s\S]*?<div class="bar-group" role="presentation">My runs: 3–10 tasks only, so not comparable with the bars above<\/div><div class="bar-row self-run"[^>]*data-bar="2"/);
+assert.match(element('graph').innerHTML, /data-bar="1"[\s\S]*?<div class="bar-group" role="presentation">My runs: 5–20 tasks only, so not comparable with the bars above<\/div><div class="bar-row self-run"[^>]*data-bar="2"/);
 assert.match(element('graph').innerHTML, /class="bar-row self-run"[^>]*>[\s\S]*?background:#000000/);
 assert.match(element('graph').innerHTML, /class="bar-row older"[^>]*aria-label="Beta \(OpenAI\); Net units added, all measured \(mean\): 0; Measured 1\/4 solved attempts"/);
 assert.match(element('graph').innerHTML, /<span class="bar-zero" style="left:100%"><\/span>/);

@@ -29,39 +29,6 @@ Six attempts become measurable: five source-reported successful Arcane attempts 
 
 Default rank remains the plain mean net coding units over measured in-scope passing and failed attempts. The optional **Solved only** view restricts footprint/rank to measured successes. Means and coverage for five configurations change because valid formerly missing attempts are now included. Missing outcomes/measurements are not inferred, zero-filled or converted to failures. This is neither shared-solved-task matching nor a maintainability score.
 
-## Ranking (same tasks)
-
-As on the website: a model's net units added on the tasks it solved, divided by what the other ranked models added on those same tasks (0.8× = 20% less code). Only tasks solved by at least 3 other models count (*Tasks*); there is no 95% range below 5 tasks. This ranks the smallest measured footprint, not the best coding model.
-
-| Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
-|---:|---|---:|---|---:|---:|---:|---:|---:|
-| 1 | Gemini 3.1 Pro Preview (high) | 0.70× | 0.62–0.76× | 11 | +2,825.8 | +2,170.2 | 14.7% | 20/20 |
-| 2 | Claude Fable 5 (xhigh) | 0.82× | 0.78–0.86× | 31 | +2,937.0 | +2,836.3 | 71.3% | 97/97 |
-| 3 | Claude Opus 4.8 (max) | 0.86× | 0.81–0.90× | 29 | +2,970.7 | +2,725.9 | 61.8% | 84/84 |
-| 4 | Claude Sonnet 5 (max) | 0.86× | 0.82–0.90× | 27 | +2,853.0 | +2,584.9 | 49.3% | 67/67 |
-| 5 | Kimi K2.7 Code | 0.87× | 0.83–0.92× | 24 | +2,998.9 | +2,954.4 | 42.6% | 58/58 |
-| 6 | Gemini 3.5 Flash (high) | 0.88× | 0.83–0.91× | 24 | +2,759.7 | +2,892.5 | 39.7% | 54/54 |
-| 7 | Claude Sonnet 4.6 (high) | 0.88× | 0.80–0.97× | 21 | +2,847.3 | +2,988.4 | 26.5% | 36/36 |
-| 8 | GLM-5.2 (max) | 0.89× | 0.82–0.94× | 28 | +3,112.3 | +2,725.3 | 49.3% | 67/67 |
-| 9 | Kimi K3 (max) | 0.89× | 0.85–0.93× | 32 | +3,085.7 | +3,048.1 | 78.7% | 107/107 |
-| 10 | Gemini 3.6 Flash (high) | 0.91× | 0.87–0.96× | 30 | +2,921.8 | +2,985.1 | 58.8% | 80/80 |
-| 11 | Qwen3.8 Max (xhigh) | 0.92× | 0.87–0.97× | 28 | +3,340.1 | +3,148.0 | 61.8% | 84/84 |
-| 12 | DeepSeek V4 Flash (max) | 0.97× | 0.93–1.02× | 29 | +3,334.1 | +3,250.2 | 61.8% | 84/84 |
-| 13 | GLM-5.3 (max) | 1.00× | 0.96–1.04× | 32 | +3,476.7 | +3,293.7 | 76.5% | 104/104 |
-| 14 | GLM-5.3 Flash (max) | 1.00× | 0.95–1.06× | 31 | +3,543.3 | +3,415.0 | 69.1% | 94/94 |
-| 15 | Gemini 3.7 Flash (medium) | 1.01× | 0.97–1.06× | 29 | +3,554.7 | +3,545.2 | 75.0% | 102/102 |
-| 16 | Grok 4.5 (high) | 1.02× | 0.95–1.08× | 25 | +3,695.3 | +3,459.7 | 56.6% | 77/77 |
-| 17 | Grok 4.6 (medium) | 1.03× | 0.98–1.08× | 30 | +3,730.0 | +3,462.1 | 73.5% | 100/100 |
-| 18 | Claude Opus 5 (max) | 1.04× | 0.99–1.10× | 32 | +3,682.5 | +3,538.1 | 79.4% | 108/108 |
-| 19 | DeepSeek V4 Pro (max) | 1.08× | 1.03–1.13× | 32 | +3,747.9 | +3,738.6 | 66.9% | 91/91 |
-| 20 | GPT-5.5 (xhigh) | 1.09× | 1.04–1.15× | 32 | +3,682.0 | +3,661.2 | 75.0% | 102/102 |
-| 21 | GPT-5.6 Sol (max) | 1.11× | 1.02–1.22× | 30 | +3,927.7 | +3,749.9 | 78.7% | 107/107 |
-| 22 | GPT-5.6 Terra (max) | 1.11× | 1.05–1.16× | 32 | +3,730.9 | +3,720.5 | 77.2% | 105/105 |
-| 23 | GPT-5.6 Luna (max) | 1.13× | 1.08–1.19× | 33 | +3,663.0 | +3,847.4 | 78.7% | 107/107 |
-| 24 | GPT-5.4 (xhigh) | 1.14× | 1.08–1.21× | 28 | +3,710.8 | +3,815.4 | 63.2% | 86/86 |
-| 25 | Muse Spark 1.2 (xhigh) | 1.24× | 1.15–1.35× | 29 | +4,273.1 | +4,051.5 | 62.5% | 85/85 |
-| 26 | Muse Spark 1.1 (xhigh) | 1.28× | 1.18–1.38× | 28 | +4,397.3 | +4,285.1 | 59.6% | 81/81 |
-
 ## Scalar release assets, not raw artifacts
 
 Large record JSONLs, pooled reference panel, full comparison, diagnostic JSON and preparation/release hash metadata are stored in the checksummed [Go v0.8 release asset](https://github.com/La5u/Parsimony/releases/tag/deepswe-go-v0.8), not duplicated in Git. This directory keeps small manifests/reports only:

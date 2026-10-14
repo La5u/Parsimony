@@ -24,7 +24,7 @@ Self-run (GPT-6 family etc.) findings: on the same tasks GPT-6 Luna 0.52×, Astr
 Known issues:
 - Verified/others `rank_range` comes from the stability report, which ranks by an older metric. It is stored but not shown; don't present it as same-task uncertainty.
 - A few models rank 1st on few tasks: Gemini 3.1 Pro on DeepSWE Python (8 shared tasks, 0.66×) and Qwen2.5-Coder 32B on Verified (42 tasks, interval crosses zero). Ranges are in the tooltip only.
-- Board READMEs carry a same-task ranking table generated from the built page by `scripts/readme-ranking-table.py`; regenerate it when a board's data changes. The DeepSWE Python README's old Score table is relabelled as an archived diagnostic.
+- Board READMEs carry a same-task ranking table generated from the built page by `scripts/readme-ranking-table.py`; regenerate it when a board's data changes. Not in `examples/deepswe-go-v2/README.md`: that file is checksum-bound in `release-assets.json`. The DeepSWE Python README's old Score table is relabelled as an archived diagnostic.
 - On this aarch64 machine the Go grammar doesn't build (Go tests skip; CI runs them) and selenium isn't installed (Firefox tests can't run; use `firefox --headless --screenshot` for a visual check).
 - The wrong contact address (gmail) is in git history at `ebffe7e`; removing it needs a force-push, so it's only done if the owner asks.
 
