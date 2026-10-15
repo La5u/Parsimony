@@ -504,6 +504,7 @@ def self_run_models(records, task_typical=None):
     for m in models:
         if names.count(m['name']) > 1:
             m['name'] += f" · {m['harness']}"
+            m['alternative_harness'] = m['harness'] != 'Codex'  # the site shows Codex by default
     return models
 
 

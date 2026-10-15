@@ -103,7 +103,8 @@ body { overflow-x: clip; }
 #graph .bar-row.self-run .bar-name, #graph .bar-row.self-run .bar-value { opacity: 0.45; }
 #graph .bar-row:focus-visible .bar-name { outline: 2px solid #000; outline-offset: 2px; }
 #self-run-toggle-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
-#self-run-toggle { width: auto; min-width: 0; padding: 0; margin: 0; border: initial; flex: none; }
+#harness-toggle-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
+#self-run-toggle, #harness-toggle { width: auto; min-width: 0; padding: 0; margin: 0; border: initial; flex: none; }
 #company-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .company-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
 #graph-tooltip {
@@ -139,7 +140,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="small muted" id="external-note" hidden></p>
   <p><label for="chart-type">Chart</label> <select id="chart-type" aria-label="Chart type">
        <option value="scatter">Scatter: compare two metrics</option><option value="bar">Bars: one metric</option></select>
-     <label id="self-run-toggle-label" hidden><input type="checkbox" id="self-run-toggle" checked> Show my runs</label></p>
+     <label id="self-run-toggle-label" hidden><input type="checkbox" id="self-run-toggle" checked> Show my runs</label>
+     <label id="harness-toggle-label" hidden><input type="checkbox" id="harness-toggle"> Show other harnesses</label></p>
   <p id="axis-controls"><label for="graph-x" id="graph-x-label">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
      <span id="graph-y-control"><label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></span></p>
   <p class="small muted" id="graph-legend"></p>
@@ -152,7 +154,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <details class="small muted"><summary>How to read this</summary>
   <p><span id="rank-help">Models are ranked by mean net units added on the tasks they solved, lowest first. "Net units added (mean)" also includes failed attempts.</span> Solved comes from <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a>; tests aren't rerun. Measured is how many solved attempts could be measured.</p>
   <p id="external-help" hidden>The Artificial Analysis Intelligence Index is an outside score, matched by model and reasoning effort. It doesn't affect the rank.</p>
-  <p id="self-run-help" hidden>Faded models were run by me on the first 5–10 DeepSWE Python tasks (OpenAI models with pi, and the GPT-6 family also with Codex; Anthropic models with Claude Code) and graded with each task's own tests. They aren't verified or ranked. GPT-5.6 Sol ran both ways: my run added 0.88× the code of its published run.</p>
+  <p id="self-run-help" hidden>Faded models were run by me on the first 5–10 DeepSWE Python tasks (OpenAI models with pi, and the GPT-6 family with Codex, whose pi runs appear with "Show other harnesses"; Anthropic models with Claude Code) and graded with each task's own tests. They aren't verified or ranked. GPT-5.6 Sol ran both ways: my run added 0.88× the code of its published run.</p>
   </details>
 
   <h2 id="leaderboard">Leaderboard</h2>
@@ -445,8 +447,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const external = data.external || null;
   // Owner-run configurations: shown faded in the all-tasks view, never ranked.
   const selfRun = data.self_run_models || [];
-  let showSelfRun = true;
-  const activeSelfRun = () => showSelfRun ? selfRun : [];
+  let showSelfRun = true, showOtherHarnesses = false;
+  // A model run through both Codex and pi shows its Codex run unless other harnesses are turned on.
+  const activeSelfRun = () => showSelfRun ? selfRun.filter(m => showOtherHarnesses || !m.alternative_harness) : [];
   // Rank: mean net units added over measured solved attempts. Measured = measured solved / upstream solved.
   const netMean = m => m.measured_solved_net_mean;
   const measuredCount = m => m.measured_solved_attempts;
@@ -589,12 +592,13 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     renderAxisControls(); renderGraph();
   });
   // Chart type: the scatter, or bars of the X-axis metric; ?chart=bar opens the bars (shareable link).
-  // ?selfrun=0 hides the self-run models from the chart and table (shareable link).
+  // ?selfrun=0 hides the self-run models from the chart and table; ?harnesses=all adds the pi runs of models also run with Codex.
   let chartType = 'scatter';
   try {
     const params = new URLSearchParams(window.location.search);
     if (params.get('chart') === 'bar') chartType = 'bar';
     if (params.get('selfrun') === '0') showSelfRun = false;
+    if (params.get('harnesses') === 'all') showOtherHarnesses = true;
   } catch (e) {}
   const setParam = (key, value) => {
     try {
@@ -616,6 +620,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     showSelfRun = !!e.target.checked;
     setParam('selfrun', showSelfRun ? null : '0');
     $('self-run-note').hidden = !showSelfRun;
+    $('harness-toggle-label').hidden = !showSelfRun || !selfRun.some(m => m.alternative_harness);
+    renderBoard(); renderGraph();
+  });
+  $('harness-toggle-label').hidden = !showSelfRun || !selfRun.some(m => m.alternative_harness);
+  $('harness-toggle').checked = showOtherHarnesses;
+  $('harness-toggle').addEventListener('change', e => {
+    showOtherHarnesses = !!e.target.checked;
+    setParam('harnesses', showOtherHarnesses ? 'all' : null);
     renderBoard(); renderGraph();
   });
   const tooltip = $('graph-tooltip');

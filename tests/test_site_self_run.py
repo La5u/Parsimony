@@ -31,6 +31,10 @@ class SelfRunTest(unittest.TestCase):
                      provenance=dict(model='gpt-6-luna', reasoning_effort='high', harness='codex'))
         names = sorted(m['name'] for m in self_run_models([record('a#1', 10), codex]))
         self.assertEqual(names, ['GPT-6 Luna (high) · Codex', 'GPT-6 Luna (high) · pi'])
+        flags = {m['harness']: m.get('alternative_harness') for m in self_run_models([record('a#1', 10), codex])}
+        self.assertEqual(flags, {'Codex': False, 'pi': True})  # Codex shown by default, pi behind the toggle
+        [single] = self_run_models([record('a#1', 10)])
+        self.assertNotIn('alternative_harness', single)
 
     def test_self_graded_summary_adds_solved(self):
         [model] = self_run_models([record('a#1', 10, result='resolved'), record('a#2', 20, result='unresolved'),

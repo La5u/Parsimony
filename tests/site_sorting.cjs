@@ -567,8 +567,27 @@ element('chart-type').listeners.change({target: {value: 'scatter'}});
 element('self-run-toggle').listeners.change({target: {checked: true}});
 assert.match(graph(), /data-model="Delta \(high\)"/);
 assert.equal(element('self-run-note').hidden, false);
+// A model run through Codex and pi shows only its Codex run until "Show other harnesses" is on.
+const twoHarnesses = structuredClone(withSelfRun);
+twoHarnesses.self_run_models = [
+  {...withSelfRun.self_run_models[0], agent: 'self-run-v1_codex_x', name: 'Delta (high) · Codex', harness: 'Codex', alternative_harness: false},
+  {...withSelfRun.self_run_models[0], agent: 'self-run-v1_pi_x', name: 'Delta (high) · pi', harness: 'pi', alternative_harness: true}];
+load(twoHarnesses);
+assert.equal(element('harness-toggle-label').hidden, false);
+axis('x', 'net'); axis('y', 'churn');
+assert.match(graph(), /data-model="Delta \(high\) · Codex"/);
+assert.doesNotMatch(graph(), /Delta \(high\) · pi/);
+assert.doesNotMatch(element('#board tbody').innerHTML, /Delta \(high\) · pi/);
+element('harness-toggle').listeners.change({target: {checked: true}});
+assert.match(graph(), /data-model="Delta \(high\) · pi"/);
+assert.match(element('#board tbody').innerHTML, /Delta \(high\) · pi/);
+element('self-run-toggle').listeners.change({target: {checked: false}});
+assert.equal(element('harness-toggle-label').hidden, true);
+load(withSelfRun); // one harness per model: no harness toggle
+assert.equal(element('harness-toggle-label').hidden, true);
 load(data); // no self-run models: no toggle
 assert.equal(element('self-run-toggle-label').hidden, true);
+assert.equal(element('harness-toggle-label').hidden, true);
 // CSS must not override the hidden attribute on boards without a self-run pilot.
 assert.match(html, /#self-run-toggle-label:not\(\[hidden\]\)\s*\{\s*display: inline-flex/);
 const missingSolved = structuredClone(data);
