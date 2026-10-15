@@ -4,7 +4,8 @@ Issues and pull requests are welcome, including critiques of the method.
 
 ## Ways to help
 
-- **Point to a public patch export.** A model can only be added when a benchmark publishes its per-attempt patches and pass/fail outcomes (for example newer models on DeepSWE, SWE-bench Verified or SWE-bench Live). Open an issue with the link and the exact revision. A leaderboard row or aggregate score is not enough; the patches must be downloadable.
+- **Request a model.** [Open a model request](https://github.com/La5u/Parsimony/issues/new?template=model-request.yml), even without a link. A model can only be added when a benchmark publishes its per-attempt patches and pass/fail outcomes (for example newer models on DeepSWE, SWE-bench Verified or SWE-bench Live), so a link to such an export and its revision helps most. A leaderboard row or aggregate score is not enough.
+- **Report a number that looks wrong.** Every board links to [a short form](https://github.com/La5u/Parsimony/issues/new?template=number-looks-wrong.yml) that fills in the board and task.
 - **Question the method.** Is a unit counted wrong? Is a scope rule unfair? Open an issue with a small patch that shows it; [docs/adversarial-validation.md](docs/adversarial-validation.md) has the existing cases.
 - **Add a language.** Java, Rust and Vue/Twig templates have no analyzer yet. See [docs/language-tracks.md](docs/language-tracks.md).
 - **Compare your own numbers.** Every page has *Add your own benchmark*: load a JSON file of per-task code amounts and compare locally. Nothing is uploaded. See [docs/custom-benchmarks.md](docs/custom-benchmarks.md).
@@ -19,6 +20,8 @@ git clone --depth 1 https://github.com/La5u/Parsimony && cd Parsimony
 scripts/check.sh    # Python tests, page checks, bundle validation (about a minute, offline)
 ```
 
+The checkout is about 330 MB, almost all measurement data in `examples/`.
+
 Python 3.12 or newer is enough for the Python analyzer. JavaScript/TypeScript tests need Node.js and `npm ci`; Go tests need `pip install '.[languages]'` and a C compiler. Missing extras skip their tests.
 
 Where things live:
@@ -29,7 +32,7 @@ Where things live:
 
 ## Rules for changes
 
-- **Published data is frozen.** Never edit records in `examples/`. A measurement change needs a new analyzer version and a fresh, separately labelled measurement.
+- **Published data is frozen.** Never edit records in `examples/`. Files listed in a `release-assets.json` or a board's population manifest are checksummed, including their READMEs; CI fails with "part of a frozen release" if one changes. A measurement change needs a new analyzer version and a fresh, separately labelled measurement.
 - **Missing is not zero.** Unknown outcomes, missing patches and unparseable files stay unknown; never fill them with zeros or failures.
 - **Keep boards separate.** Never pool units across languages, benchmarks or analyzer versions.
 - Run `scripts/check.sh` before opening a pull request.

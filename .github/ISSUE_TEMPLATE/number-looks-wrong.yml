@@ -1,0 +1,28 @@
+name: A number looks wrong
+description: A count, rank or task result on the site doesn't make sense.
+title: "Number looks wrong: <model or task>"
+labels: [measurement]
+body:
+  - type: input
+    id: board
+    attributes:
+      label: Board
+      description: e.g. "SWE-bench Verified — Python".
+    validations:
+      required: true
+  - type: input
+    id: task
+    attributes:
+      label: Task (optional)
+      description: Task id, if it is about one task.
+  - type: input
+    id: model
+    attributes:
+      label: Model (optional)
+  - type: textarea
+    id: problem
+    attributes:
+      label: What looks wrong
+      description: What the site shows and what you expected. A small patch that is counted wrong helps most.
+    validations:
+      required: true

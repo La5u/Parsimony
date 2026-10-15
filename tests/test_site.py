@@ -37,7 +37,8 @@ class SiteTests(unittest.TestCase):
         for source in sources:
             path = source['manifest_url'].split('/blob/main/')[1]
             raw = (root / path).read_bytes()
-            self.assertEqual(source['manifest_sha256'], hashlib.sha256(raw).hexdigest())
+            self.assertEqual(source['manifest_sha256'], hashlib.sha256(raw).hexdigest(),
+                             f'{path} changed but site/ was not rebuilt; run scripts/rebuild-site.sh')
             self.assertEqual(source['dataset_sha256'], json.loads(raw)['dataset_sha256'])
             self.assertEqual(source['report_url'], source['manifest_url'].rsplit('/', 1)[0] + '/README.md')
 

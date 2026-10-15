@@ -65,8 +65,9 @@ class GoPublicationTests(unittest.TestCase):
             path = RELEASE / name
             if path.exists():
                 raw = path.read_bytes()
-                self.assertEqual(len(raw), binding['bytes'])
-                self.assertEqual(hashlib.sha256(raw).hexdigest(), binding['sha256'])
+                frozen = f'{path} is part of a frozen release (release-assets.json); revert your edit to it'
+                self.assertEqual(len(raw), binding['bytes'], frozen)
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), binding['sha256'], frozen)
         self.assertEqual(len([name for name in manifest['files'] if name.endswith('.jsonl')]), 26)
         self.assertIn('score-panel.json', manifest['files'])
         self.assertIn('record-comparison.json', manifest['files'])

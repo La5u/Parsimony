@@ -1,0 +1,24 @@
+name: Request a model
+description: Ask for a model or benchmark run to be added to a board.
+title: "Add <model> to <board>"
+labels: [model request]
+body:
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: Name and, if it matters, reasoning effort or agent.
+    validations:
+      required: true
+  - type: input
+    id: board
+    attributes:
+      label: Board
+      description: Which leaderboard, e.g. "DeepSWE — Python". Leave empty if you don't know.
+  - type: textarea
+    id: source
+    attributes:
+      label: Where the patches are published (optional)
+      description: >
+        A model can only be added if a benchmark publishes its per-attempt patches and pass/fail results.
+        If you know where they are, paste the link. If not, just ask and the maintainer will look.

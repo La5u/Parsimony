@@ -173,6 +173,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     </table>
   </div>
   <p class="small" id="task-footer" hidden><a id="task-link" href="#">Maintainers' pull request</a></p>
+  <p class="small muted" id="feedback">Missing a model? <a id="request-model" href="https://github.com/La5u/Parsimony/issues/new?template=model-request.yml">Request it</a>. A number looks wrong? <a id="report-number" href="https://github.com/La5u/Parsimony/issues/new?template=number-looks-wrong.yml">Report it</a>.</p>
 
   <section id="data-sources" aria-labelledby="sources-heading" hidden>
     <h2 id="sources-heading">Data sources</h2>
@@ -397,8 +398,16 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       $('task-link').textContent = bench.task_link;
       $('task-link').href = safeUrl(data.task_urls?.[task] || (bench.task_url.includes('{task}') ? bench.task_url.replace('{task}', encodeURIComponent(task.split('#')[0])) : m ? bench.task_url.replace('{owner}', m[1]).replace('{repo}', m[2]).replace('{number}', m[3]) : '#'));
     }
+    feedbackLinks();
     renderBoard(); renderAxisControls(); renderGraph();
   }
+  function feedbackLinks() {
+    const issue = (template, fields) => 'https://github.com/La5u/Parsimony/issues/new?' + new URLSearchParams({template, ...fields});
+    const board = `${bench.name} — ${trackName}`;
+    $('request-model').href = issue('model-request.yml', {board});
+    $('report-number').href = issue('number-looks-wrong.yml', selected ? {board, task: selected[0]} : {board});
+  }
+  feedbackLinks();
   const companyColors = {
     'Anthropic': '#d97757', 'OpenAI': '#000000', 'Google': '#34a853', 'DeepSeek': '#2756bd',
     'Alibaba': '#e59215', 'xAI': '#8b5cf6', 'Z.ai': '#c94eaf', 'Moonshot AI': '#00a6b2',
