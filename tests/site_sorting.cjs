@@ -747,3 +747,22 @@ assert.match(graph(), /Complexity added: 7\.0/);
 task('');
 assert.equal(element('header-same_net').attributes['aria-sort'], 'ascending');
 console.log('Sorting, chart views, task switching, external/self-run axes and fixed metric regressions passed');
+// Chart labels: placed near their point, inside the chart, without covering points or each other.
+{
+  const source = html.match(/\/\/ label-placement:start\n([\s\S]*?)\/\/ label-placement:end/)[1];
+  const placeLabelBoxes = vm.runInNewContext(`${source}; placeLabelBoxes`);
+  const dots = [{x: 100, y: 100}, {x: 104, y: 102}, {x: 98, y: 97}, {x: 300, y: 50}, {x: 395, y: 150}];
+  const sizes = dots.map(() => ({w: 60, h: 10}));
+  const offsets = placeLabelBoxes(dots, sizes, dots, 6, 400, 200);
+  const boxes = offsets.map((o, i) => ({x: dots[i].x + o.dx, y: dots[i].y + o.dy, w: 60, h: 10}));
+  const overlap = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+  for (const [i, box] of boxes.entries()) {
+    assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.w <= 400 && box.y + box.h <= 200, `label ${i} inside the chart`);
+    for (const [j, other] of boxes.entries()) if (i !== j) assert.equal(overlap(box, other), 0, `labels ${i} and ${j} overlap`);
+    for (const dot of dots) assert.equal(overlap(box, {x: dot.x - 6, y: dot.y - 6, w: 12, h: 12}), 0, `label ${i} covers a point`);
+    const near = Math.max(0, Math.abs(dots[i].x - (box.x + box.w / 2)) - box.w / 2) + Math.max(0, Math.abs(dots[i].y - (box.y + box.h / 2)) - box.h / 2);
+    assert.ok(near <= 6 + 24 + 1, `label ${i} stays near its point`);
+  }
+  assert.deepEqual([offsets[3].dx, offsets[3].dy], [9, -5]); // an isolated point keeps its label to the right
+  assert.ok(boxes[4].x + boxes[4].w <= 395); // at the right edge the label moves to the left
+}

@@ -71,7 +71,6 @@ body { overflow-x: clip; }
 #graph circle { stroke: none; cursor: pointer; }
 #graph .older { fill-opacity: 0.70; }
 #graph .point-label { position: absolute; font: 400 8px system-ui, sans-serif; color: #000; white-space: nowrap; pointer-events: none; transform: translate(10px,-50%); line-height: 10px; }
-#graph .point-label.flip { transform: translate(calc(-100% - 10px),-50%); }
 #graph .point-label.older-label { opacity: 0.75; }
 #graph .self-run { fill-opacity: 0.35; }
 #graph .point-label.self-run-label { opacity: 0.45; }
@@ -664,11 +663,17 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
     $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
     $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. All models are labelled; earlier generations are lighter. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other companies fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
-    // Labels that would cross the right edge sit left of their point instead.
-    const graphWidth = $('graph').clientWidth;
-    document.querySelectorAll('#graph .point-label').forEach(label => {
-      if (graphWidth && label.offsetLeft + 10 + label.offsetWidth > graphWidth) label.classList.add('flip');
-    });
+    // Labels sit near their point without covering other labels or points; ranked, current models choose first.
+    const graphWidth = $('graph').clientWidth, graphHeight = $('graph').clientHeight;
+    const labels = [...document.querySelectorAll('#graph .point-label')];
+    if (graphWidth && graphHeight && labels.length) {
+      const at = label => points[Number(label.dataset.point)];
+      const order = labels.map((l, i) => i).sort((a, b) => (!!at(labels[a]).selfRun - !!at(labels[b]).selfRun) || (at(labels[b]).latest - at(labels[a]).latest));
+      const xy = p => ({x: p.px / W * graphWidth, y: p.py / H * graphHeight});
+      const offsets = placeLabelBoxes(order.map(i => xy(at(labels[i]))), order.map(i => ({w: labels[i].offsetWidth, h: labels[i].offsetHeight})),
+        points.map(xy), 6 * graphWidth / W, graphWidth, graphHeight);
+      order.forEach((i, k) => { labels[i].style.transform = `translate(${offsets[k].dx}px, ${offsets[k].dy}px)`; });
+    }
     // Hover/focus fades every other company's points and labels.
     const focusCompany = company => document.querySelectorAll('#graph [data-company]').forEach(el =>
       el.classList.toggle('dim', company !== null && el.dataset.company !== company));
@@ -683,6 +688,33 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       ['mouseleave', 'blur'].forEach(event => circle.addEventListener(event, () => { hideTooltip(); focusCompany(null); }));
     });
   }
+  // label-placement:start
+  // Each label takes the nearest spot around its point that stays inside the chart and covers no point and no label
+  // placed before it; when every spot is taken it takes the least-covered one. Offsets are from the point's center.
+  function placeLabelBoxes(anchors, sizes, dots, radius, width, height) {
+    const overlap = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) *
+      Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+    const placed = dots.map(d => ({x: d.x - radius, y: d.y - radius, w: 2 * radius, h: 2 * radius}));
+    return anchors.map((a, i) => {
+      const {w, h} = sizes[i];
+      let best = null, bestCost = Infinity;
+      for (const gap of [radius + 3, radius + 12, radius + 24]) {
+        const d = gap * 0.7;
+        for (const [dx, dy] of [[gap, -h / 2], [-gap - w, -h / 2], [-w / 2, -gap - h], [-w / 2, gap],
+                                [d, -d - h], [d, d], [-d - w, -d - h], [-d - w, d]]) {
+          const box = {x: a.x + dx, y: a.y + dy, w, h};
+          const outside = Math.max(0, -box.x) + Math.max(0, box.x + w - width) + Math.max(0, -box.y) + Math.max(0, box.y + h - height);
+          const cost = outside * 1000 + placed.reduce((sum, other) => sum + overlap(box, other), 0);
+          if (cost < bestCost) { best = box; bestCost = cost; }
+          if (cost === 0) break;
+        }
+        if (bestCost === 0) break;
+      }
+      placed.push(best);
+      return {dx: best.x - a.x, dy: best.y - a.y};
+    });
+  }
+  // label-placement:end
   $('task-search').addEventListener('input', e => showTask(e.target.value.trim()));
   $('task-reset').addEventListener('click', () => showTask(''));
   showTask('');
