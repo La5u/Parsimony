@@ -42,6 +42,17 @@ class SiteTests(unittest.TestCase):
             self.assertEqual(source['dataset_sha256'], json.loads(raw)['dataset_sha256'])
             self.assertEqual(source['report_url'], source['manifest_url'].rsplit('/', 1)[0] + '/README.md')
 
+    def test_codex_self_runs_share_their_pi_runs_external_scores(self):
+        page = (Path(__file__).resolve().parents[1] / 'site' / 'index.html').read_text()
+        raw = page.split('<script id="parsimony-data" type="application/json">', 1)[1].split('</script>', 1)[0]
+        models = {m['agent']: m for m in json.loads(raw)['self_run_models']}
+        codex = [a for a in models if '_codex_' in a]
+        self.assertTrue(codex)
+        for agent in codex:
+            pi = models[agent.replace('_codex_', '_pi_', 1)]
+            self.assertIsNotNone(models[agent]['aa_intelligence'], agent)
+            self.assertEqual(models[agent]['aa_intelligence'], pi['aa_intelligence'])
+
     def test_published_sources_active_board(self):
         for benchmark, language, index in [('deepswe', 'python', 0), ('deepswe', 'javascript', 1),
                                             ('deepswe', 'typescript', 2), ('deepswe', 'go', 3),

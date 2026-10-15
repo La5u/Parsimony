@@ -574,7 +574,11 @@ def main():
         if args.external:
             snapshot = json.loads(Path(args.external).read_text())
             data['external'] = attach(data['models'], snapshot)
-            attach(data.get('self_run_models', []), snapshot)
+            # AA scores belong to the model and effort, not the harness: a Codex self-run uses its pi run's entry.
+            configs = snapshot['configurations']
+            aliases = {m['agent']: configs[pi] for m in data.get('self_run_models', [])
+                       if m['agent'] not in configs and (pi := m['agent'].replace('_codex_', '_pi_', 1)) in configs}
+            attach(data.get('self_run_models', []), {**snapshot, 'configurations': {**configs, **aliases}})
         if args.sensitivity:
             sensitivity = json.loads(Path(args.sensitivity).read_text())
             add_rank_ranges(data['models'], sensitivity)
