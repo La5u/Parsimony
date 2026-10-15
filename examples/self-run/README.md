@@ -72,11 +72,13 @@ python examples/self-run/grade.py --apply   # copy outcomes into results/*.jsonl
 | Claude Opus 5.5 (high) | 6/10 | 1 | 2,137 | 1,949 |
 | Claude Sonnet 5.5 (high) | 6/10 | 1 | 1,974 | 1,779 |
 | GPT-5.6 Sol (high) | 4/10 | 1 | 1,660 | 1,725 |
-| GPT-6.1 Sol (high) | 10/20 | 0 | 1,356 | 1,395 |
+| GPT-6.1 Sol (high) · Codex | 13/20 | 0 | 1,255 | 1,348 |
+| GPT-6.1 Sol (high) · pi | 10/20 | 0 | 1,356 | 1,395 |
 | GPT-6 Astra (high) | 6/10 | 1 | 1,327 | 1,326 |
 | GPT-6 Luna (high) · Codex | 4/20 | 0 | 901 | 1,025 |
 | GPT-6 Luna (high) · pi | 3/20 | 0 | 1,076 | 857 |
-| GPT-6 Sol (high) | 7/20 | 3 | 1,354 | 1,116 |
+| GPT-6 Sol (high) · Codex | 10/20 | 0 | 1,160 | 1,226 |
+| GPT-6 Sol (high) · pi | 7/20 | 3 | 1,354 | 1,116 |
 
 On the site, graded self-runs also appear in the default Solved-only view, still faded and unranked.
 

