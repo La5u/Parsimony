@@ -828,5 +828,12 @@ assert.match(mergedRows, /<tr class="partial" style="opacity:0\.50" title="On 1 
 assert.match(mergedRows, /<tr class="self-run" title="Run by me with Codex on 10 of 34 Python tasks, 10 solved"><td>—<\/td><td class="left">Delta \(high\)/);
 assert.match(element('self-run-note').textContent, /of the Python tasks, so their ratio is Python only/);
 assert.match(graph(), /data-model="Gamma"[^>]*fill-opacity="0\.50"/);
+// A contributed run is named after its contributor, and the run labels say so.
+const contributedPage = structuredClone(partialPage);
+contributedPage.self_run_models.push({...contributedPage.self_run_models[0], agent: 'theirs', name: 'Delta (high) · @ada', contributor: 'ada'});
+load(contributedPage);
+assert.match(element('#board tbody').innerHTML, /My and contributed runs · not ranked[\s\S]*title="Run by @ada with Codex on 10 of 34 Python tasks, 10 solved"/);
+assert.match(element('self-run-note').textContent, /^My and contributed runs: models run by me or contributors on/);
+assert.equal(element('self-run-toggle-text').textContent, 'Show my and contributed runs');
 load(cropped);
 assert.equal(element('task-picker').hidden, false);

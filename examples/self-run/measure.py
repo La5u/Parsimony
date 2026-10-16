@@ -52,7 +52,9 @@ def main():
                           provenance=dict(prediction_url='examples/self-run/runs', results_url=None, layout='self-run-v1',
                                           config=config['id'], harness=config['harness'], provider=config['provider'],
                                           model=config['model'], reasoning_effort=config['effort'],
-                                          deepswe_commit=plan['deepswe_commit'], self_run=True, ref=commit))
+                                          deepswe_commit=plan['deepswe_commit'], self_run=True, ref=commit,
+                                          # Contributed runs name who ran them; the owner's own runs have no contributor.
+                                          **({'contributor': config['contributor']} if config.get('contributor') else {})))
         out = args.output_dir / f"{config['id']}.jsonl"
         with out.open('w') as handle:
             for record in analyze_submission(submission, cache, dataset=rows, include_failed=True):

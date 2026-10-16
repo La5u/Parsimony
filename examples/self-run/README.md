@@ -30,6 +30,13 @@ Differences from DeepSWE, all identical across self-run configurations:
 The sandbox can write only the task directory and the harness credential store. It hides the
 DeepSWE checkout (reference solutions), this repository, the download cache and agent transcripts.
 
+## Contributed runs
+
+Since 16 Oct 2026 other people can run configurations too ([CONTRIBUTING.md](../../CONTRIBUTING.md#contributed-runs)):
+registered in `plan.json` with a `contributor` handle before running, run with `run.py`, then measured and graded here
+exactly like my runs. They show as `Model (effort) · @handle`, faded and unranked. I can verify the patches, the
+measurements and the outcomes, but not that the named model wrote them.
+
 ## Running
 
 ```sh

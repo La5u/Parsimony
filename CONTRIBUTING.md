@@ -10,8 +10,9 @@ Issues and pull requests are welcome, including critiques of the method.
 - **Add a language.** Java, Rust and Vue/Twig templates have no analyzer yet. See [docs/language-tracks.md](docs/language-tracks.md).
 - **Compare your own numbers.** Every page has *Add your own benchmark*: load a JSON file of per-task code amounts and compare locally. Nothing is uploaded. See [docs/custom-benchmarks.md](docs/custom-benchmarks.md).
 - **Submit a result bundle** measured from public SWE-bench Verified artifacts (below).
+- **Contribute a run.** Have API credits or a subscription? Run a model on the self-run tasks (below). It appears faded and unranked next to my runs, labelled with your handle.
 
-Everything must come from **public artifacts**: do not call a model or rerun a benchmark to produce a contribution, because nobody else could verify it. The [self-run pilot](examples/self-run/README.md) is the maintainer's labelled exception and is never ranked.
+Ranked boards come only from **public artifacts**: do not call a model or rerun a benchmark to change a ranked board, because nobody else could verify it. [Self-runs](examples/self-run/README.md) and contributed runs are the labelled exception and are never ranked.
 
 ## Setup
 
@@ -29,6 +30,17 @@ Where things live:
 - Counting rules: `parsimony/analysis.py` (Python) and `parsimony/languages.py` with `typescript_units.cjs` (other languages).
 - Importers: `parsimony/deepswe.py`, `live.py`, `polybench.py`; the Verified importer is in `benchmark.py` and `artifacts.py`.
 - Website: `parsimony/template.html` (layout, copy, chart) and `parsimony/site.py` (page data). After changing either, run `scripts/rebuild-site.sh` and commit the regenerated `site/` pages.
+
+## Contributed runs
+
+Contributed runs use the same tasks, scripts, measurement and grading as [my self-runs](examples/self-run/README.md), and show on the front page and the DeepSWE Python board faded, unranked and named `Model (effort) · @you`. I re-measure and re-grade every patch myself, so the numbers never depend on you; what nobody can check is that the patch really came from the model you name, which is why these runs are never ranked.
+
+1. **Register first.** Open a pull request that only adds your configuration to `examples/self-run/plan.json`, before running anything:
+   `{"id": "contrib_<you>_<harness>_<model>_<effort>", "harness": "codex", "provider": "openai", "model": "gpt-6-sol", "effort": "high", "tasks": 10, "contributor": "<your GitHub handle>"}`.
+   Use the plan's task order (the first `tasks` tasks) and its 2 attempts per task; at least 5 tasks. `run.py` supports the `pi`, `codex` and `claude-code` harnesses; another harness needs a small change to `run.py` in the same pull request.
+2. **Run** on Linux with bubblewrap, after the plan pull request is merged:
+   `python examples/self-run/run.py ~/deep-swe --scratch ~/parsimony-self-run --only <id>` (setup as in the self-run README). Don't rerun or drop attempts you dislike: every planned attempt is published, failed ones included.
+3. **Submit** a pull request with `examples/self-run/runs/<id>/` (each attempt's `patch.diff` and `meta.json`) and a public link to `<scratch>/transcripts/<id>/`, whose SHA-256s are in `meta.json`. Don't add measurements or outcomes: I run `measure.py` and `grade.py` and publish the results.
 
 ## Rules for changes
 
@@ -79,4 +91,5 @@ python -m parsimony.contribute verify submissions/your-bundle --dataset verified
 - What changed, and why.
 - For data: the public submission URL and pinned revision, model and harness, analyzer commit, Python version, and the commands you ran.
 - How tasks were selected, stated before any result, plus missing or excluded analyses.
+- For a contributed run: the merged plan pull request, harness version and a public transcript link.
 - `scripts/check.sh` passes.

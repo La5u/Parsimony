@@ -25,6 +25,16 @@ class SelfRunTest(unittest.TestCase):
         self.assertIsNone(model['resolve_rate'])  # never graded
         self.assertIsNone(model['measured_solved_net_mean'])
 
+    def test_contributed_run_is_named_after_its_contributor(self):
+        theirs = record('a#1', 5)
+        theirs.update(agent='self-run-v1_contrib_ada_pi_gpt_6_luna_high',
+                      provenance=dict(model='gpt-6-luna', reasoning_effort='high', harness='pi', contributor='ada'))
+        models = {m['agent']: m for m in self_run_models([record('a#1', 10), theirs])}
+        self.assertEqual(models['self-run-v1_contrib_ada_pi_gpt_6_luna_high']['name'], 'GPT-6 Luna (high) · @ada')
+        self.assertEqual(models['self-run-v1_contrib_ada_pi_gpt_6_luna_high']['contributor'], 'ada')
+        self.assertEqual(models['self-run-v1_pi_gpt_6_luna_high']['name'], 'GPT-6 Luna (high)')
+        self.assertNotIn('contributor', models['self-run-v1_pi_gpt_6_luna_high'])
+
     def test_same_model_in_two_harnesses_is_named_by_harness(self):
         codex = record('a#1', 5)
         codex.update(agent='self-run-v1_codex_gpt_6_luna_high',

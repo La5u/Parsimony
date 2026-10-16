@@ -159,7 +159,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <details id="chart-controls"><summary>Change chart</summary>
   <p><label for="chart-type">Chart</label> <select id="chart-type" aria-label="Chart type">
        <option value="scatter">Scatter: compare two metrics</option><option value="bar">Bars: one metric</option></select>
-     <label id="self-run-toggle-label" hidden><input type="checkbox" id="self-run-toggle" checked> Show my runs</label>
+     <label id="self-run-toggle-label" hidden><input type="checkbox" id="self-run-toggle" checked> <span id="self-run-toggle-text">Show my runs</span></label>
      <label id="harness-toggle-label" hidden><input type="checkbox" id="harness-toggle"> Show other harnesses</label></p>
   <p id="axis-controls"><label for="graph-x" id="graph-x-label">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
      <span id="graph-y-control"><label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></span></p>
@@ -206,7 +206,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     </table>
   </div>
   <p class="small" id="task-footer" hidden><a id="task-link" href="#">Maintainers' pull request</a></p>
-  <p class="small muted" id="feedback">Missing a model? <a id="request-model" href="https://github.com/La5u/Parsimony/issues/new?template=model-request.yml">Request it</a>. A number looks wrong? <a id="report-number" href="https://github.com/La5u/Parsimony/issues/new?template=number-looks-wrong.yml">Report it</a>.</p>
+  <p class="small muted" id="feedback">Missing a model? <a id="request-model" href="https://github.com/La5u/Parsimony/issues/new?template=model-request.yml">Request it</a>. A number looks wrong? <a id="report-number" href="https://github.com/La5u/Parsimony/issues/new?template=number-looks-wrong.yml">Report it</a>. Have spare API credits? <a href="https://github.com/La5u/Parsimony/blob/main/CONTRIBUTING.md#contributed-runs">Run a model on the tasks</a>.</p>
 
   <section id="data-sources" aria-labelledby="sources-heading" hidden>
     <h2 id="sources-heading">Data sources</h2>
@@ -357,13 +357,16 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   // Models missing from some language boards (all-languages page): shown faded by coverage, never ranked.
   const partialNote = m => `On ${Object.keys(m.languages || {}).length} of ${languages.length} languages, so not ranked`;
   const partialOpacity = m => m.partial ? (0.25 + 0.5 * Object.keys(m.languages || {}).length / languages.length).toFixed(2) : null;
-  const selfRunNote = m => `Run by me with ${m.harness} on ${m.tasks} of ${selfRunTaskTotal} ${merged ? 'Python ' : ''}tasks${m.graded ? `, ${m.upstream_solved_attempts} solved` : ', not graded'}`;
+  // Contributed runs follow the same plan, measurement and grading as mine; they are named after who ran them.
+  const contributed = selfRun.some(m => m.contributor);
+  const runsLabel = contributed ? 'My and contributed runs' : 'My runs';
+  const selfRunNote = m => `Run by ${m.contributor ? '@' + m.contributor : 'me'} with ${m.harness} on ${m.tasks} of ${selfRunTaskTotal} ${merged ? 'Python ' : ''}tasks${m.graded ? `, ${m.upstream_solved_attempts} solved` : ', not graded'}`;
   if (selfRun.length) {
     $('self-run-note').hidden = false;
     $('self-run-help').hidden = false;
     $('self-run-note').textContent = merged
-      ? `My runs: models I ran myself on ${selfRunTasks} of the Python tasks, so their ratio is Python only. Not ranked.`
-      : `My runs: models I ran myself on ${selfRunTasks} of these tasks. Not ranked.`;
+      ? `${runsLabel}: models ${contributed ? 'run by me or contributors' : 'I ran myself'} on ${selfRunTasks} of the Python tasks, so their ratio is Python only. Not ranked.`
+      : `${runsLabel}: models ${contributed ? 'run by me or contributors' : 'I ran myself'} on ${selfRunTasks} of these tasks. Not ranked.`;
     document.querySelectorAll('.self-run-tasks').forEach(el => { el.textContent = selfRunTasks; });
   }
   if (external) {
@@ -384,7 +387,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   // Legend entries for the two kinds of lighter dot, so older generations and my runs aren't confused.
   const fadeLegend = (older, selfRun) =>
     (older ? '<span><span class="company-swatch fade-swatch" style="opacity:0.7" aria-hidden="true"></span>Lighter: older generation</span>' : '')
-    + (selfRun ? '<span><span class="company-swatch fade-swatch" style="opacity:0.35" aria-hidden="true"></span>Faintest: my runs, not ranked</span>' : '');
+    + (selfRun ? '<span><span class="company-swatch fade-swatch" style="opacity:0.35" aria-hidden="true"></span>Faintest: ' + runsLabel.toLowerCase() + ', not ranked</span>' : '');
   const ratioKeys = ['same_net', 'same_cx', ...langKeys], footprintKeys = ['net', 'solved_net', 'churn', 'solved_cx', 'cx', ...ratioKeys];
   const defaultKey = sameTask ? 'same_net' : 'solved_net';
   if (sameTask) {
@@ -448,7 +451,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     // Partial models (missing from a language) follow the ranked rows, like self-runs.
     const models = data.models.map((m, i) => ({m, i})).sort((a, b) => (!selected && (!!a.m.partial - !!b.m.partial)) || order(a, b)).concat(extra);
     document.querySelector('#board tbody').innerHTML = models.map(({m, i}, k) => (k === models.length - extra.length && extra.length
-      ? `<tr class="self-run-head"><td colspan="${headers.length}">My runs · not ranked, ${selfRunTasks} tasks</td></tr>` : '') + (() => {
+      ? `<tr class="self-run-head"><td colspan="${headers.length}">${runsLabel} · not ranked, ${selfRunTasks} tasks</td></tr>` : '') + (() => {
       if (selected) {
         const c = selected[2][i];
         const outcome = labels[c[6] || c[0]] || c[0];
@@ -549,6 +552,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     renderAxisControls(); renderGraph();
   });
   $('self-run-toggle-label').hidden = selfRun.length === 0;
+  $('self-run-toggle-text').textContent = `Show ${runsLabel.toLowerCase()}`;
   $('self-run-toggle').checked = showSelfRun;
   if (selfRun.length) $('self-run-note').hidden = !showSelfRun;
   $('self-run-toggle').addEventListener('change', e => {
@@ -650,7 +654,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     };
     $('graph').style.marginBottom = '0px';
     $('graph').innerHTML = `<div class="bars" role="list" aria-label="${esc(metric)} per model, ${footprint ? 'smallest' : 'largest'} first">` + rows.map((r, k) =>
-      (k === firstSelfRun ? `<div class="bar-group" role="presentation">My runs: ${selfRunTasks} tasks only, so not comparable with the bars above</div>` : '') +
+      (k === firstSelfRun ? `<div class="bar-group" role="presentation">${runsLabel}: ${selfRunTasks} tasks only, so not comparable with the bars above</div>` : '') +
       `<div class="bar-row${r.latest ? '' : ' older'}${r.selfRun ? ' self-run' : ''}" role="listitem" tabindex="0" data-bar="${k}" aria-label="${esc(note(r).replace(/\n/g, '; '))}">` +
       `<span class="bar-name">${esc(r.m.name)}</span>` +
       `<span class="bar-track">${lo < 0 ? `<span class="bar-zero" style="left:${pct(0)}%"></span>` : ''}<span class="bar" style="left:${pct(Math.min(0, r.v))}%;width:${Math.abs(r.v) / span * 100}%;background:${companyColor(r.m.company || 'Other')}"></span></span>` +

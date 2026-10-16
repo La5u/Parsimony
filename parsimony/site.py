@@ -543,7 +543,10 @@ def mean_complexity(records):
 
 
 def self_run_models(records, task_typical=None):
-    """Unranked owner-run configurations, summarised like measured board models.
+    """Unranked owner-run and contributed configurations, summarised like measured board models.
+
+    Contributed runs (provenance.contributor) follow the same plan, measurement and grading as the owner's
+    and are labelled with the contributor's handle.
 
     Self-graded configurations (every record has an outcome from examples/self-run/grade.py) also get
     Solved and the solved-only mean; ungraded ones leave both empty."""
@@ -561,8 +564,10 @@ def self_run_models(records, task_typical=None):
         solved = [r['metrics'] for r in eligible if r['resolved']] if graded else []
         eligible = [r['metrics'] for r in eligible]
         name = f"{SELF_RUN_MODELS.get(provenance['model'], provenance['model'])} ({provenance['reasoning_effort']})"
+        contributor = provenance.get('contributor')
         models.append(dict(
-            agent=agent, name=name, company=company(name), self_run=True, latest=True,
+            agent=agent, name=name + (f' · @{contributor}' if contributor else ''), company=company(name),
+            self_run=True, latest=True, **({'contributor': contributor} if contributor else {}),
             harness=HARNESSES.get(provenance['harness'], provenance['harness']),
             tasks=len({r['task_id'].split('#', 1)[0] for r in group}), attempts=len(group),
             footprint_population_count=group[0]['benchmark_tasks'], measured_attempts=len(eligible),
