@@ -125,7 +125,7 @@ class SiteBrowserTests(unittest.TestCase):
             x.select_by_value('resolve_rate')
             self.assertEqual([p.text for p in browser.find_elements(By.CSS_SELECTOR, '.bar-name')], ['Alpha', 'Beta'])
             self.assertEqual([p.text for p in browser.find_elements(By.CSS_SELECTOR, '.bar-value')], ['100%', '0%'])
-            self.assertEqual(browser.find_element(By.ID, 'graph-legend').text, 'Solved (%). Older generations faded.')
+            self.assertEqual(browser.find_element(By.ID, 'graph-legend').text, 'Solved (%).')
             self.assertEqual(browser.execute_script('return location.search'), '?keep=1&chart=bar')
             self.assertEqual(browser.execute_script('return location.hash'), '#board')
             browser.find_element(By.ID, 'task-search').send_keys('task')

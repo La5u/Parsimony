@@ -52,7 +52,9 @@ th, td { padding: 7px 8px; text-align: right; white-space: nowrap; border-bottom
 th { font-weight: 600; color: var(--muted); font-size: 0.8rem; white-space: normal; vertical-align: bottom; line-height: 1.25; }
 th button { text-align: inherit; }
 td.left, th.left { white-space: normal; overflow-wrap: break-word; }
-@media (max-width: 700px) { #board { font-size: 0.74rem; } #board th, #board td { padding: 5px 3px; } #board th { font-size: 0.68rem; } #board td.left, #board th.left { min-width: 6.5em; } }
+@media (max-width: 700px) { #board { font-size: 0.85rem; } #board th, #board td { padding: 6px 5px; } #board th { font-size: 0.75rem; } #board td.left, #board th.left { min-width: 8em; } }
+#swipe-hint { display: none; }
+@media (max-width: 700px) { #swipe-hint { display: block; margin: 0 0 6px; } }
 th:first-child, td:first-child, .left { text-align: left; }
 .range { color: var(--muted); font-size: 0.8rem; }
 .r { color: var(--good); }
@@ -106,6 +108,8 @@ body { overflow-x: clip; }
 #self-run-toggle, #harness-toggle { width: auto; min-width: 0; padding: 0; margin: 0; border: initial; flex: none; }
 #company-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .company-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+.company-swatch.fade-swatch { background: #777; }
+#graph-legend:empty { display: none; }
 #graph-tooltip {
   position: fixed; z-index: 1000; pointer-events: none; white-space: pre-line;
   max-width: min(320px, calc(100vw - 16px)); box-sizing: border-box;
@@ -135,6 +139,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   #nav { gap: 6px; }
   #nav .board { padding: 6px 10px; font-size: 0.85rem; }
   #graph .point-label { font-size: 7px; line-height: 9px; }
+  /* Small dots keep a finger-sized target: the transparent stroke takes taps. */
+  #graph circle { stroke: transparent; stroke-width: 14px; }
   #board td.left, #board th.left { position: sticky; left: 0; z-index: 1; background: var(--bg); }
 }
 </style>
@@ -157,6 +163,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
      <label id="harness-toggle-label" hidden><input type="checkbox" id="harness-toggle"> Show other harnesses</label></p>
   <p id="axis-controls"><label for="graph-x" id="graph-x-label">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
      <span id="graph-y-control"><label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></span></p>
+  <p class="small" id="ratio-note" hidden></p>
   <p class="small muted" id="graph-legend"></p>
   <div class="small" id="company-legend" aria-label="Model companies"></div>
   <div id="graph" aria-label="Comparison of selected metrics per model"></div>
@@ -179,7 +186,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <datalist id="task-ids"></datalist>
   <p class="small muted" id="task-status" role="status" aria-live="polite"></p>
 
-  <div class="scroll">
+  <p class="small muted" id="swipe-hint">Swipe the table sideways for more columns.</p>
+  <div class="scroll" id="board-scroll">
     <table id="board">
       <thead>
         <tr>
@@ -471,7 +479,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   if (selfRun.length) {
     $('self-run-note').hidden = false;
     $('self-run-help').hidden = false;
-    $('self-run-note').textContent = `Faded: models I ran myself on 5–10 of these tasks. Not ranked.`;
+    $('self-run-note').textContent = `My runs: models I ran myself on 5–10 of these tasks. Not ranked.`;
   }
   if (external) {
     $('external-note').hidden = $('external-help').hidden = false;
@@ -482,6 +490,16 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const rankValue = m => sameTask ? m.same_task_net : netMean(m);
   const rankOf = m => Number.isFinite(rankValue(m)) ? 1 + data.models.filter(other =>
     Number.isFinite(rankValue(other)) && rankValue(other) < rankValue(m)).length : null;
+  // One sentence above the chart whenever an axis is a same-task ratio, so 0.8× reads without opening help.
+  const showRatioNote = keys => {
+    const what = keys.includes('same_net') ? 'Net units added' : keys.includes('same_cx') ? 'Complexity added' : '';
+    $('ratio-note').hidden = !what;
+    $('ratio-note').textContent = what ? `×: ${what.toLowerCase()} vs. other models on the same solved tasks. 1× = the same, 0.8× = 20% less.` : '';
+  };
+  // Legend entries for the two kinds of lighter dot, so older generations and my runs aren't confused.
+  const fadeLegend = (older, selfRun) =>
+    (older ? '<span><span class="company-swatch fade-swatch" style="opacity:0.7" aria-hidden="true"></span>Lighter: older generation</span>' : '')
+    + (selfRun ? '<span><span class="company-swatch fade-swatch" style="opacity:0.35" aria-hidden="true"></span>Faintest: my runs, not ranked</span>' : '');
   const ratioKeys = ['same_net', 'same_cx'], footprintKeys = ['net', 'solved_net', 'churn', 'solved_cx', 'cx', ...ratioKeys];
   const defaultKey = sameTask ? 'same_net' : 'solved_net';
   if (sameTask) {
@@ -712,10 +730,12 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const firstSelfRun = rows.findIndex(r => r.selfRun);
     const metric = axisOptions().find(o => o.key === key).label + (selected ? ' in this attempt' : '');
     $('graph-legend').textContent = rows.length
-      ? `${metric}. Older generations faded.`
+      ? `${metric}.`
       : 'No data for this view.';
+    showRatioNote([key]);
     $('company-legend').innerHTML = [...new Set(rows.map(r => r.m.company || 'Other'))].sort().map(company =>
-      `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
+      `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('')
+      + fadeLegend(rows.some(r => !r.latest && !r.selfRun), rows.some(r => r.selfRun));
     const lo = Math.min(0, ...rows.map(r => r.v)), hi = Math.max(0, ...rows.map(r => r.v));
     const span = hi - lo || 1, pct = v => (v - lo) / span * 100;
     const note = r => {
@@ -753,12 +773,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         company: m.company || 'Other', count: measuredCount(m), match: m.aa_match, latest: true, kind: 'all', i: -1, m, selfRun: true})))
       .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
     $('graph-legend').textContent = points.length
-      ? 'Older generations faded.' + (selected ? ' Status on hover.' : '')
+      ? (selected ? 'Status on hover.' : '')
       : 'No data for this view.';
     const unmatched = usesExternalAxis() ? data.models.filter(m => [currentAxes().x, currentAxes().y].some(k => k.startsWith('aa_') && m[k] == null)).length : 0;
-    if (unmatched) $('graph-legend').textContent += ` ${unmatched} model${unmatched > 1 ? 's have' : ' has'} no AA score.`;
+    if (unmatched) $('graph-legend').textContent = `${$('graph-legend').textContent} ${unmatched} model${unmatched > 1 ? 's have' : ' has'} no AA score.`.trim();
+    showRatioNote([currentAxes().x, currentAxes().y]);
     $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort().map(company =>
-      `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
+      `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('')
+      + fadeLegend(points.some(p => !p.latest && !p.selfRun), points.some(p => p.selfRun));
 
     // Narrow screens draw at their real width (text stays 12px) and a taller shape, so points spread out.
     const narrow = $('graph').clientWidth > 0 && $('graph').clientWidth < 600;
