@@ -1,6 +1,6 @@
 # DeepSWE v1.1 — TypeScript task track
 
-**Beta research preview, not an official ranking.** 26 configurations (one per model), 35 upstream-TypeScript-labelled tasks × four attempts; 3,640 records including failed and unavailable attempts. The [website board](../../site/typescript.html) ranks by net units added over all measured attempts. Language tracks have separate reference panels and syntax-unit definitions: do not pool them or compare raw counts across tracks.
+**Beta research preview, not an official ranking.** 26 configurations (one per model), 35 upstream-TypeScript-labelled tasks × four attempts; 3,640 records including failed and unavailable attempts. The [website board](../../site/typescript.html) ranks by the same-task ratio: a model's net units added on the tasks it solved, divided by what the other ranked models added on those same tasks; the all-measured mean is shown beside it. Language tracks have separate reference panels and syntax-unit definitions: do not pool them or compare raw counts across tracks.
 
 ## Pinned inputs and analyzer
 

@@ -61,7 +61,7 @@ unchanged score; they do not create metrics, references or point estimates.
 
 Thus every configuration has **300 contributions** and a bounded overall Score.
 Archived score diagnostics order by score-bound midpoint; the website's default
-ordering is mean net units, not the archived score.
+ordering is the same-task ratio of net units (see the table above), not the archived score.
 **There is no fabricated point score.** Known in-scope passing and failed
 footprints both contribute to the displayed net units, including measured
 failures whose reference calibration is missing.

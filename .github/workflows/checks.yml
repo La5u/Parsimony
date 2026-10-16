@@ -64,12 +64,12 @@ jobs:
         if: matrix.python-version == '3.14'
         run: |
           scripts/rebuild-site.sh /tmp/site --offline
-          for page in index javascript typescript verified live; do cmp "site/$page.html" "/tmp/site/$page.html"; done
+          for page in index javascript typescript verified live live-javascript live-typescript live-go sweeper-php; do cmp "site/$page.html" "/tmp/site/$page.html"; done
           cmp examples/live-python/site-data.json /tmp/site/live-data.json
       - name: Static website regression checks
         run: |
           node tests/custom_benchmark.cjs
-          for page in index javascript typescript go verified live; do
+          for page in index javascript typescript go verified live live-javascript live-typescript live-go sweeper-php; do
             node tests/site_sorting.cjs "site/$page.html"
           done
 

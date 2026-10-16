@@ -175,7 +175,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <details class="small muted"><summary>How to read this</summary>
   <p><span id="rank-help">Models are ranked by mean net units added on the tasks they solved, lowest first. "Net units added (mean)" also includes failed attempts.</span> Solved comes from <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a>; tests aren't rerun. Measured is how many solved attempts could be measured.</p>
   <p id="external-help" hidden><span id="external-note"></span> It's an outside score, matched by model and reasoning effort, and doesn't affect the rank.<span id="aa-missing"></span></p>
-  <p id="self-run-help" hidden>Faded models were run by me on the first 5–10 DeepSWE Python tasks (OpenAI models with pi, and the GPT-6 family with Codex, whose pi runs appear with "Show other harnesses"; Anthropic models with Claude Code) and graded with each task's own tests. They aren't verified or ranked. GPT-5.6 Sol ran both ways: my run added 0.88× the code of its published run.</p>
+  <p id="self-run-help" hidden>Faded models were run by me on the first <span class="self-run-tasks">few</span> DeepSWE Python tasks (OpenAI models with pi, and the GPT-6 family with Codex, whose pi runs appear with "Show other harnesses"; Anthropic models with Claude Code) and graded with each task's own tests. They aren't verified or ranked. GPT-5.6 Sol ran both ways: my run added 0.88× the code of its published run.</p>
   </details>
 
   <h2 id="leaderboard">Leaderboard</h2>
@@ -225,6 +225,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <h2 id="limits">Limits</h2>
   <ul>
     <li>Smaller isn't always better: units measure size, not readability or design.</li>
+    <li>A model whose fixes mostly delete code can rank first with a negative net, and failed attempts that change nothing pull the all-measured mean toward zero.</li>
     <li>Models that write more code also tend to solve more tasks (Spearman 0.33–0.60 on the boards with 26+ models).</li>
     <li id="harness-limit">Every model uses the same agent (mini-SWE-agent), but the agent still affects how much code gets written.</li>
   </ul>
@@ -276,7 +277,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const bench = data.benchmark || {name: 'SWE-bench Verified', url: 'https://www.swebench.com', reference: "Maintainers' fix",
     task_url: 'https://github.com/{owner}/{repo}/pull/{number}', task_link: "Maintainers' pull request",
     results: "SWE-bench's published results", attempts: 1};
-  const trackName = {python: 'Python', javascript: 'JavaScript', typescript: 'TypeScript', go: 'Go'}[data.measurement_track?.language || 'python'];
+  const trackName = {python: 'Python', javascript: 'JavaScript', typescript: 'TypeScript', go: 'Go', php: 'PHP'}[data.measurement_track?.language || 'python'];
   $('leaderboard').textContent = `${bench.name} — ${trackName}`;
   $('bench-link').textContent = bench.name;
   // Only http(s) or same-site relative URLs may reach an href.
@@ -311,7 +312,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       + (verified ? ` <a href="verified.html">SWE-bench Verified</a> has 500 tasks, with older models.` : '');
   }
   if (data.measurement_track) {
-    const language = {javascript: 'JavaScript / JSX and TypeScript', typescript: 'TypeScript / TSX and JavaScript', go: 'Go'}[data.measurement_track.language];
+    const language = {javascript: 'JavaScript / JSX and TypeScript', typescript: 'TypeScript / TSX and JavaScript', go: 'Go', php: 'PHP'}[data.measurement_track.language];
     const parser = data.measurement_track.unit_version.startsWith('typescript-compiler')
       ? `the official TypeScript parser (typescript ${data.measurement_track.versions.typescript}, syntax only)` : 'pinned Tree-sitter grammars';
     $('language-scope').textContent = `Tests, docs and generated files are left out. This page measures ${language} with ${parser}; counts can't be compared across languages.`;
@@ -340,11 +341,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const netMean = m => m.measured_solved_net_mean;
   const measuredCount = m => m.measured_solved_attempts;
   const denominator = m => m.upstream_solved_attempts;
+  const selfRunCounts = selfRun.map(m => m.tasks).filter(Number.isFinite);
+  const selfRunTasks = selfRunCounts.length ? (Math.min(...selfRunCounts) === Math.max(...selfRunCounts) ? `${Math.min(...selfRunCounts)}` : `${Math.min(...selfRunCounts)}–${Math.max(...selfRunCounts)}`) : 'a few';
   const selfRunNote = m => `Run by me with ${m.harness} on ${m.tasks} of ${taskCount} tasks${m.graded ? `, ${m.upstream_solved_attempts} solved` : ', not graded'}`;
   if (selfRun.length) {
     $('self-run-note').hidden = false;
     $('self-run-help').hidden = false;
-    $('self-run-note').textContent = `My runs: models I ran myself on 5–10 of these tasks. Not ranked.`;
+    $('self-run-note').textContent = `My runs: models I ran myself on ${selfRunTasks} of these tasks. Not ranked.`;
+    document.querySelectorAll('.self-run-tasks').forEach(el => { el.textContent = selfRunTasks; });
   }
   if (external) {
     $('external-note').hidden = $('external-help').hidden = false;
@@ -417,7 +421,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const extra = selected ? [] : activeSelfRun().map(m => ({m, i: -1})).sort(order);
     const models = data.models.map((m, i) => ({m, i})).sort(order).concat(extra);
     document.querySelector('#board tbody').innerHTML = models.map(({m, i}, k) => (k === models.length - extra.length && extra.length
-      ? `<tr class="self-run-head"><td colspan="${headers.length}">My runs · not ranked, 5–10 tasks</td></tr>` : '') + (() => {
+      ? `<tr class="self-run-head"><td colspan="${headers.length}">My runs · not ranked, ${selfRunTasks} tasks</td></tr>` : '') + (() => {
       if (selected) {
         const c = selected[2][i];
         const outcome = labels[c[6] || c[0]] || c[0];
@@ -611,7 +615,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     };
     $('graph').style.marginBottom = '0px';
     $('graph').innerHTML = `<div class="bars" role="list" aria-label="${esc(metric)} per model, ${footprint ? 'smallest' : 'largest'} first">` + rows.map((r, k) =>
-      (k === firstSelfRun ? `<div class="bar-group" role="presentation">My runs: 5–10 tasks only, so not comparable with the bars above</div>` : '') +
+      (k === firstSelfRun ? `<div class="bar-group" role="presentation">My runs: ${selfRunTasks} tasks only, so not comparable with the bars above</div>` : '') +
       `<div class="bar-row${r.latest ? '' : ' older'}${r.selfRun ? ' self-run' : ''}" role="listitem" tabindex="0" data-bar="${k}" aria-label="${esc(note(r).replace(/\n/g, '; '))}">` +
       `<span class="bar-name">${esc(r.m.name)}</span>` +
       `<span class="bar-track">${lo < 0 ? `<span class="bar-zero" style="left:${pct(0)}%"></span>` : ''}<span class="bar" style="left:${pct(Math.min(0, r.v))}%;width:${Math.abs(r.v) / span * 100}%;background:${companyColor(r.m.company || 'Other')}"></span></span>` +
@@ -655,7 +659,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     function extent(axis, key) {
       if (key === 'coverage') return [0, 100];
       if (!points.length) return key === 'resolve_rate' ? [0, 100] : [0, 1];
-      const others = points.filter(p => !/^Gemini 3\.1 Pro(?: Preview)?(?: \([^)]*\))?$/i.test(p.name));
+      const others = points.filter(p => !/^Gemini 3\.1 Pro(?: Preview)?(?: \([^)]*\))?(?: · .*)?$/i.test(p.name));
       const exclude = !selected && others.length >= 2 && others.length < points.length;
       const samples = exclude ? others : points;
       const values = samples.map(p => p[axis]);

@@ -437,7 +437,13 @@ domainNear('x', -2.1, .1);
 domainNear('y', 18, 62);
 assert.deepEqual(tickValues('y'), [20, 30, 40, 50, 60]);
 assert.match(element('graph-legend').textContent, /Gemini 3.1 Pro is off the scale/);
-for (const name of ['Gemini 3.1 Professional', 'Gemini 3.1 Pro Plus']) {
+const harness = structuredClone(cropped);
+harness.models[2].name = 'Gemini 3.1 Pro Preview · AMI Agent 0.7.0'; // Live boards append the harness
+load(harness);
+axis('x', 'net');
+domainNear('x', -2.1, .1);
+assert.match(element('graph-legend').textContent, /Gemini 3.1 Pro is off the scale/);
+for (const name of ['Gemini 3.1 Professional', 'Gemini 3.1 Pro Plus', 'Gemini 3.1 Pro Plus · AMI Agent 0.7.0']) {
   const similar = structuredClone(cropped);
   similar.models[2].name = name;
   load(similar);
@@ -446,6 +452,11 @@ for (const name of ['Gemini 3.1 Professional', 'Gemini 3.1 Pro Plus']) {
   assert.deepEqual(tickValues('y'), [0, 20, 40, 60, 80, 100]);
   assert.doesNotMatch(element('graph-legend').textContent, /off the scale/);
 }
+const php = structuredClone(cropped);
+php.measurement_track = {language: 'php', unit_version: 'tree-sitter-php-units-v1', versions: {}};
+load(php);
+assert.match(element('leaderboard').textContent, /— PHP$/);
+assert.match(element('language-scope').textContent, /This page measures PHP with pinned Tree-sitter grammars/);
 const singleton = structuredClone(cropped);
 singleton.models[1].measured_net_mean = null;
 load(singleton);
@@ -512,8 +523,8 @@ assert.match(graph(), /class="point-label self-run-label"[^>]*>Delta/);
 assert.match(graph(), /Delta \(high\) \(OpenAI\)[^"]*Run by me with pi on 2 of \d+ tasks, not graded/);
 assert.match(element('#board tbody').innerHTML, /<tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta \(high\)<\/td><td>—<\/td><td>−5.0<\/td><td>—<\/td><td>—<\/td>/);
 assert.match(element('#board tbody').innerHTML, /<td>2<\/td><td class="left">Alpha/); // Self-run never takes a rank.
-assert.match(element('#board tbody').innerHTML, /Beta[\s\S]*<tr class="self-run-head"><td colspan="6">My runs · not ranked, 5–10 tasks<\/td><\/tr><tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta/); // after ranked rows, even with the smallest mean
-assert.match(element('self-run-note').textContent, /^My runs: models I ran myself on 5–10 of these tasks\. Not ranked\./);
+assert.match(element('#board tbody').innerHTML, /Beta[\s\S]*<tr class="self-run-head"><td colspan="6">My runs · not ranked, 2 tasks<\/td><\/tr><tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta/); // after ranked rows, even with the smallest mean
+assert.match(element('self-run-note').textContent, /^My runs: models I ran myself on 2 of these tasks\. Not ranked\./);
 assert.equal(element('self-run-help').hidden, false);
 assert.equal(element('self-run-note').hidden, false);
 task('org__repo-1');
@@ -538,7 +549,7 @@ assert.equal(element('graph-y-control').hidden, true);
 assert.equal(element('graph-x-label').textContent, 'Metric');
 const barNames = () => [...element('graph').innerHTML.matchAll(/<span class="bar-name">([^<]*)<\/span>/g)].map(m => m[1]);
 assert.deepEqual(barNames(), ['Alpha', 'Beta', 'Delta (high)']); // Gamma has no measurement; self-run listed after, never interleaved
-assert.match(element('graph').innerHTML, /data-bar="1"[\s\S]*?<div class="bar-group" role="presentation">My runs: 5–10 tasks only, so not comparable with the bars above<\/div><div class="bar-row self-run"[^>]*data-bar="2"/);
+assert.match(element('graph').innerHTML, /data-bar="1"[\s\S]*?<div class="bar-group" role="presentation">My runs: 2 tasks only, so not comparable with the bars above<\/div><div class="bar-row self-run"[^>]*data-bar="2"/);
 assert.match(element('graph').innerHTML, /class="bar-row self-run"[^>]*>[\s\S]*?background:#000000/);
 assert.match(element('graph').innerHTML, /class="bar-row older"[^>]*aria-label="Beta \(OpenAI\); Net units added, all measured \(mean\): 0; Measured 1\/4 solved attempts"/);
 assert.match(element('graph').innerHTML, /<span class="bar-zero" style="left:100%"><\/span>/);

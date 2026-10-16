@@ -1,6 +1,6 @@
 # DeepSWE v1.1 — JavaScript task track
 
-**Beta research preview, not an official ranking.** 26 configurations (one per model), 5 upstream-JavaScript-labelled tasks × four attempts; 520 records including failed and unavailable attempts. The [website board](../../site/javascript.html) ranks by net units added over all measured attempts. Language tracks have separate reference panels and syntax-unit definitions: do not pool them or compare raw counts across tracks.
+**Beta research preview, not an official ranking.** 26 configurations (one per model), 5 upstream-JavaScript-labelled tasks × four attempts; 520 records including failed and unavailable attempts. The [website board](../../site/javascript.html) ranks by the same-task ratio: a model's net units added on the tasks it solved, divided by what the other ranked models added on those same tasks; the all-measured mean is shown beside it. Language tracks have separate reference panels and syntax-unit definitions: do not pool them or compare raw counts across tracks.
 
 ## Pinned inputs and analyzer
 

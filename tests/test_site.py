@@ -387,6 +387,7 @@ class SiteTests(unittest.TestCase):
 
     def test_label_falls_back_to_identifier(self):
         self.assertEqual(label('20260217_mini-v2.0.0_new-model'), 'new-model')
+        self.assertEqual(label('20260901_mini-v2.4.2_gemini-3-5-flash'), 'Gemini 3.5 Flash')
         self.assertEqual(label('20250720_mini-v0.0.0-Llama-4-Maverick-17B-Instruct'), 'Llama 4 Maverick')
 
 

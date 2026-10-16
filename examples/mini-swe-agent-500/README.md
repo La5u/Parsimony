@@ -1,6 +1,6 @@
 # 35 configurations × 500 Verified tasks (analyzer 0.5.2)
 
-**Experimental footprint comparison, not an official coding-ability ranking.** The [Verified board](../../site/verified.html) contains 34 source-reported model + mini-SWE-agent configurations (v0.0.0 to v2.4.2, July 2025 to September 2026) and one GLM-5.1 + EvalScope configuration, over every one of the 500 Verified tasks. Rank uses the mean net coding units added over measured in-scope solved attempts; the all-measured mean is shown beside it. Solved-only mean, upstream Solved % and Measured coverage are separate context. Missing footprints are not zeros; harness versions differ.
+**Experimental footprint comparison, not an official coding-ability ranking.** The [Verified board](../../site/verified.html) contains 34 source-reported model + mini-SWE-agent configurations (v0.0.0 to v2.4.2, July 2025 to September 2026) and one GLM-5.1 + EvalScope configuration, over every one of the 500 Verified tasks. Rank uses the same-task ratio: a model's net coding units added on the tasks it solved, divided by what the other ranked models added on those same tasks; the plain solved mean and the all-measured mean are shown beside it. Solved-only mean, upstream Solved % and Measured coverage are separate context. Missing footprints are not zeros; harness versions differ.
 
 ## Latest addition: GLM-5.1 · EvalScope
 
@@ -10,7 +10,7 @@ GLM-5.1 comes from a third-party Hugging Face export, [fxiao0369/GLM51-swebench-
 
 Gemini 3.5 Flash / mini-SWE-agent 2.4.2 adds **441/500 eligible footprints**: 359 passing and 82 failed. The remaining 59 are explicitly source-reported `no_generation`, not fabricated failures or zero-footprint patches. Upstream Solved is **71.8%**; mean net units added is **36.6031746031746**. All 441 separate patches match their monolithic predictions. Analysis used the exact existing 0.5.2 commit/source hash and Python 3.14.7, with no identity relabelling. Human-reference comparisons are intentionally not computed for this addition.
 
-See [release/provenance/reproduction notes](../../docs/archive/gemini-3.5-verified-release.md) and [numerical/hash publication evidence](gemini-3-5-publication-evidence.json). Raw patches, source, prompts and trajectories are not distributed. Existing 33-model records, the 500-task population and archived 33-model passing-reference panel remain unchanged. Current 34-configuration reports are [coverage-34.json](coverage-34.json), [scores-34.json](scores-34.json) and [sensitivity-34.json](sensitivity-34.json)/[report](sensitivity-34.md); the original report files below are historical snapshots, not the current footprint ranking.
+See [release/provenance/reproduction notes](../../docs/archive/gemini-3.5-verified-release.md) and [numerical/hash publication evidence](gemini-3-5-publication-evidence.json). Raw patches, source, prompts and trajectories are not distributed. Existing 33-model records, the 500-task population and archived 33-model passing-reference panel remain unchanged. The site shows 35 configurations; the latest saved reports cover 34: [coverage-34.json](coverage-34.json), [scores-34.json](scores-34.json) and [sensitivity-34.json](sensitivity-34.json)/[report](sensitivity-34.md); the original report files below are historical snapshots, not the current footprint ranking.
 
 ## Pinned inputs
 
