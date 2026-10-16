@@ -150,7 +150,7 @@ class SiteTests(unittest.TestCase):
             self.assertIn('<noscript>', page)
             self.assertIn('The charts and leaderboard need JavaScript', page)
             for fragment_tag in ('rel="canonical" href="https://parsimony.lasu.dev/"', 'property="og:site_name" content="Parsimony"',
-                                 'name="twitter:card" content="summary_large_image"', 'property="og:image" content="https://parsimony.lasu.dev/og.png"', 'property="og:url" content="https://parsimony.lasu.dev/"'):
+                                 'name="twitter:card" content="summary_large_image"', 'property="og:image" content="https://parsimony.lasu.dev/og.png?v=2026-10-16"', 'property="og:url" content="https://parsimony.lasu.dev/"'):
                 self.assertIn(fragment_tag, page)
             fragment = render(data, standalone=False)
             self.assertNotIn('<head>', fragment)

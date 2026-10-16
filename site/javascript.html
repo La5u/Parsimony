@@ -12,10 +12,10 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://parsimony.lasu.dev/javascript">
 <meta property="og:site_name" content="Parsimony">
-<meta property="og:image" content="https://parsimony.lasu.dev/og.png">
+<meta property="og:image" content="https://parsimony.lasu.dev/og.png?v=2026-10-16">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Scatterplot of AI models: net code units added on solved DeepSWE Python tasks versus Artificial Analysis Intelligence Index">
+<meta property="og:image:alt" content="Scatterplot of AI models on DeepSWE Python tasks: net code units added relative to other models on the same tasks, versus Artificial Analysis Intelligence Index">
 <meta name="twitter:card" content="summary_large_image">
 <style>
 :root {
@@ -113,9 +113,15 @@ body { overflow-x: clip; }
   background: var(--bg); color: #000;
 }
 #graph circle:focus-visible { outline: 2px solid #000; outline-offset: 4px; }
-th[aria-sort="ascending"] button::after { content: ' ↑'; }
-th[aria-sort="descending"] button::after { content: ' ↓'; }
-th[aria-sort="none"] button::after { content: ' ↕'; }
+/* Sort arrows are SVG masks in the text colour: phones draw the ↕ character as an emoji. */
+th[aria-sort] button::after {
+  content: ''; display: inline-block; width: 0.7em; height: 0.7em; margin-left: 0.3em; vertical-align: -0.05em;
+  background: currentColor; -webkit-mask: var(--sort-icon) center / contain no-repeat; mask: var(--sort-icon) center / contain no-repeat;
+}
+th[aria-sort="ascending"] { --sort-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 9V1M1.5 4.5 5 1l3.5 3.5' fill='none' stroke='%23000' stroke-width='1.4'/%3E%3C/svg%3E"); }
+th[aria-sort="descending"] { --sort-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 1v8M1.5 5.5 5 9l3.5-3.5' fill='none' stroke='%23000' stroke-width='1.4'/%3E%3C/svg%3E"); }
+th[aria-sort="none"] { --sort-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.8 5 1l3 2.8M2 6.2 5 9l3-2.8' fill='none' stroke='%23000' stroke-width='1.4'/%3E%3C/svg%3E"); }
+th[aria-sort="none"] button::after { opacity: 0.45; }
 input:focus-visible, select:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 .example-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
 .example-pair article { border: 1px solid var(--rule); border-radius: 6px; padding: 12px; }
@@ -123,6 +129,14 @@ input:focus-visible, select:focus-visible, a:focus-visible, button:focus-visible
 pre { overflow-x: auto; font-size: 0.85rem; line-height: 1.6; }
 #custom-results p { font-size: 0.85rem; color: var(--muted); }
 footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule); }
+@media (max-width: 600px) {
+  main { padding-block: 24px 40px; }
+  h2 { margin-top: 32px; }
+  #nav { gap: 6px; }
+  #nav .board { padding: 6px 10px; font-size: 0.85rem; }
+  #graph .point-label { font-size: 7px; line-height: 9px; }
+  #board td.left, #board th.left { position: sticky; left: 0; z-index: 1; background: var(--bg); }
+}
 </style>
 </head>
 <body>
@@ -644,10 +658,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     }
   });
   window.addEventListener('scroll', hideTooltip, true);
-  let resizePending = false;
+  // Phones resize the height when the address bar hides; only a width change needs a redraw.
+  let resizePending = false, lastWidth = null;
   window.addEventListener('resize', () => {
     hideTooltip();
-    if (resizePending) return;
+    if (resizePending || $('graph').clientWidth === lastWidth) return;
     resizePending = true;
     const update = () => { resizePending = false; renderGraph(); };
     if (window.requestAnimationFrame) window.requestAnimationFrame(update);
@@ -724,6 +739,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   }
   function renderGraph() {
     hideTooltip();
+    lastWidth = $('graph').clientWidth;
     $('graph-y-control').hidden = chartType === 'bar';
     $('graph-x-label').textContent = chartType === 'bar' ? 'Metric' : 'X axis';
     if (chartType === 'bar') return renderBars();
@@ -744,9 +760,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort().map(company =>
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('');
 
-    // Leave a wider left gutter on narrow screens for true-scale extrapolated points.
-    const W = 720, H = 440, R = 30, T = 18, B = 52;
-    let L = $('graph').clientWidth && $('graph').clientWidth < 600 ? 160 : 90;
+    // Narrow screens draw at their real width (text stays 12px) and a taller shape, so points spread out.
+    const narrow = $('graph').clientWidth > 0 && $('graph').clientWidth < 600;
+    const W = narrow ? Math.max(300, $('graph').clientWidth) : 720, H = narrow ? Math.round(W * 1.15) : 440, R = narrow ? 12 : 30, T = 18, B = 52;
+    let L;
     const excludedAxes = [];
     function extent(axis, key) {
       if (key === 'coverage') return [0, 100];
@@ -772,8 +789,12 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       return {values: out, digits};
     };
     const tickLabel = (v, key, digits) => v.toLocaleString('en-US', {minimumFractionDigits: digits, maximumFractionDigits: digits}).replace('-', '−') + (['resolve_rate', 'coverage'].includes(key) ? '%' : ratioKeys.includes(key) ? '×' : '');
-    // On wide screens the left margin fits the widest y tick label (about 7 units per 12px character).
-    if (L === 90) { const {values, digits} = roundTicks(ymin, ymax); L = 34 + 7 * Math.max(2, ...values.map(v => tickLabel(v, axes.y, digits).length)); }
+    // The left margin fits the widest y tick label (about 7 units per 12px character), widened
+    // when a point left of the fitted x range is plotted to scale so it stays inside the chart.
+    const yTickChars = (({values, digits}) => Math.max(2, ...values.map(v => tickLabel(v, axes.y, digits).length)))(roundTicks(ymin, ymax));
+    L = 34 + 7 * yTickChars;
+    const beyond = Math.max(0, ...points.map(p => (xmin - p.x) / (xmax - xmin)));
+    L = Math.max(L, (8 + beyond * (W - R)) / (1 + beyond));
     const sx = x => L + (x - xmin) / (xmax - xmin) * (W - L - R), sy = y => H - B - (y - ymin) / (ymax - ymin) * (H - T - B);
     if (excludedAxes.length) $('graph-legend').textContent += ' Gemini 3.1 Pro is off the scale.';
     for (const p of points) {
@@ -787,7 +808,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       ? {effort_unlabelled: 'Artificial Analysis entry has no effort label', undated_alias: 'undated model ID matched to the Artificial Analysis snapshot'}[p.match] : '';
     const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; off the chart\'s scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + (p.count ?? 0) + '/' + (denominator(p.m) ?? 0) + ' solved attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}`;
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
-    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="6" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('');
+    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${narrow ? 4 : 6}" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('');
     // Green zone: the half of each axis that is better (lower footprint, higher solved/index).
     const better = {net: -1, solved_net: -1, churn: -1, solved_cx: -1, cx: -1, same_net: -1, same_cx: -1, resolve_rate: 1, aa_coding: 1, aa_intelligence: 1};
     const bx = better[axes.x], by = better[axes.y];
@@ -807,7 +828,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const scale = ($('graph').clientWidth || W) / W;
     const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
     $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. All models are labelled; earlier generations are lighter. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other companies fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(16 ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. All models are labelled; earlier generations are lighter. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other companies fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(${Math.max(16, L - 20 - 7 * yTickChars)} ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
     // Labels sit near their point without covering other labels or points; ranked, current models choose first.
     const graphWidth = $('graph').clientWidth, graphHeight = $('graph').clientHeight;
     const labels = [...document.querySelectorAll('#graph .point-label')];
@@ -816,7 +837,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       const order = labels.map((l, i) => i).sort((a, b) => (!!at(labels[a]).selfRun - !!at(labels[b]).selfRun) || (at(labels[b]).latest - at(labels[a]).latest));
       const xy = p => ({x: p.px / W * graphWidth, y: p.py / H * graphHeight});
       const offsets = placeLabelBoxes(order.map(i => xy(at(labels[i]))), order.map(i => ({w: labels[i].offsetWidth, h: labels[i].offsetHeight})),
-        points.map(xy), 6 * graphWidth / W, graphWidth, graphHeight);
+        points.map(xy), 6 * graphWidth / W, graphWidth, graphHeight,
+        // The rotated Y axis title.
+        [{x: 0, y: T / H * graphHeight, w: (Math.max(16, L - 20 - 7 * yTickChars) + 8) * graphWidth / W, h: (H - T - B) / H * graphHeight}]);
       order.forEach((i, k) => { labels[i].style.transform = `translate(${offsets[k].dx}px, ${offsets[k].dy}px)`; });
     }
     // Hover/focus fades every other company's points and labels.
@@ -835,11 +858,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   }
   // label-placement:start
   // Each label takes the nearest spot around its point that stays inside the chart and covers no point and no label
-  // placed before it; when every spot is taken it takes the least-covered one. Offsets are from the point's center.
-  function placeLabelBoxes(anchors, sizes, dots, radius, width, height) {
+  // placed before it, nor any blocked box; when every spot is taken it takes the least-covered one. Offsets are from the point's center.
+  function placeLabelBoxes(anchors, sizes, dots, radius, width, height, blocked = []) {
     const overlap = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) *
       Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
-    const placed = dots.map(d => ({x: d.x - radius, y: d.y - radius, w: 2 * radius, h: 2 * radius}));
+    const placed = dots.map(d => ({x: d.x - radius, y: d.y - radius, w: 2 * radius, h: 2 * radius})).concat(blocked);
     return anchors.map((a, i) => {
       const {w, h} = sizes[i];
       let best = null, bestCost = Infinity;
