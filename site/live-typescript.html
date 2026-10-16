@@ -43,6 +43,10 @@ p { margin: 0 0 10px; }
 #nav .board { padding: 8px 14px; border: 1px solid #c4c8cc; border-radius: 6px; color: var(--ink); text-decoration: none; font-size: 0.95rem; line-height: 1.2; }
 #nav .board:hover { border-color: var(--ink); }
 #nav .board:focus-visible { outline: 2px solid #000; outline-offset: 2px; }
+#nav-select { display: none; width: auto; }
+#chart-controls { margin: 8px 0 12px; }
+#chart-controls > summary { font-size: 0.85rem; color: var(--link); cursor: pointer; width: fit-content; }
+#chart-controls[open] > summary { margin-bottom: 4px; }
 #nav .board.current { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
 .small { font-size: 0.85rem; }
 a { color: var(--link); }
@@ -73,7 +77,7 @@ button { font: inherit; color: var(--ink); background: var(--bg); border: 1px so
 body { overflow-x: clip; }
 #graph .axis { stroke: var(--muted); }
 #graph text { fill: #000; }
-#graph-legend, #company-legend { color: #000; }
+#graph-legend { color: #000; }
 #graph .tick { fill: #000; font: 12px system-ui, sans-serif; }
 #graph circle { stroke: none; cursor: pointer; }
 #graph .older { fill-opacity: 0.70; }
@@ -106,8 +110,8 @@ body { overflow-x: clip; }
 #self-run-toggle-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
 #harness-toggle-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
 #self-run-toggle, #harness-toggle { width: auto; min-width: 0; padding: 0; margin: 0; border: initial; flex: none; }
-#company-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
-.company-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+#company-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.78rem; color: var(--muted); }
+.company-swatch { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
 .company-swatch.fade-swatch { background: #777; }
 #graph-legend:empty { display: none; }
 #graph-tooltip {
@@ -137,7 +141,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   main { padding-block: 24px 40px; }
   h2 { margin-top: 32px; }
   #nav { gap: 6px; }
-  #nav .board { padding: 6px 10px; font-size: 0.85rem; }
+  /* Ten boards would wrap to five rows: phones get a dropdown instead. */
+  #nav .nav-title { flex-basis: auto; }
+  #nav .board { display: none; }
+  #nav-select { display: block; flex: 1; }
   #graph .point-label { font-size: 7px; line-height: 9px; }
   /* Small dots keep a finger-sized target: the transparent stroke takes taps. */
   #graph circle { stroke: transparent; stroke-width: 14px; }
@@ -152,17 +159,18 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p>Existing benchmarks measure solve rate and cost, but don't punish excess code, which makes a codebase harder to work with in the long term. Parsimony measures how much code AI models add.</p>
   <noscript><p class="small">The charts and leaderboard need JavaScript. The data is on <a href="https://github.com/La5u/Parsimony/tree/main/examples">GitHub</a>.</p></noscript>
 
-  <p class="small" id="units-definition">It takes the patches that benchmarks already publish and counts <b>coding units</b>: syntax elements like statements, calls, comparisons, names and literals. Lines aren't counted, so cramming code isn't rewarded, and deleted code is subtracted: net units = added − removed.</p>
+  <p class="small" id="units-definition">It takes the patches that benchmarks already publish and counts <b>coding units</b>, syntax elements like calls, names and literals rather than lines: net units = added − removed (<a href="https://github.com/La5u/Parsimony/blob/main/docs/method.md">method</a>).</p>
   <nav id="nav" aria-label="Leaderboards" hidden></nav>
   <section aria-labelledby="complexity">
   <h2 id="complexity">Compare models</h2>
-  <p class="small muted" id="external-note" hidden></p>
+  <details id="chart-controls"><summary>Change chart</summary>
   <p><label for="chart-type">Chart</label> <select id="chart-type" aria-label="Chart type">
        <option value="scatter">Scatter: compare two metrics</option><option value="bar">Bars: one metric</option></select>
      <label id="self-run-toggle-label" hidden><input type="checkbox" id="self-run-toggle" checked> Show my runs</label>
      <label id="harness-toggle-label" hidden><input type="checkbox" id="harness-toggle"> Show other harnesses</label></p>
   <p id="axis-controls"><label for="graph-x" id="graph-x-label">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
      <span id="graph-y-control"><label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></span></p>
+  </details>
   <p class="small" id="ratio-note" hidden></p>
   <p class="small muted" id="graph-legend"></p>
   <div class="small" id="company-legend" aria-label="Model companies"></div>
@@ -173,7 +181,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
 
   <details class="small muted"><summary>How to read this</summary>
   <p><span id="rank-help">Models are ranked by mean net units added on the tasks they solved, lowest first. "Net units added (mean)" also includes failed attempts.</span> Solved comes from <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a>; tests aren't rerun. Measured is how many solved attempts could be measured.</p>
-  <p id="external-help" hidden>The Artificial Analysis Intelligence Index is an outside score, matched by model and reasoning effort. It doesn't affect the rank.</p>
+  <p id="external-help" hidden><span id="external-note"></span> It's an outside score, matched by model and reasoning effort, and doesn't affect the rank.<span id="aa-missing"></span></p>
   <p id="self-run-help" hidden>Faded models were run by me on the first 5–10 DeepSWE Python tasks (OpenAI models with pi, and the GPT-6 family with Codex, whose pi runs appear with "Show other harnesses"; Anthropic models with Claude Code) and graded with each task's own tests. They aren't verified or ranked. GPT-5.6 Sol ran both ways: my run added 0.88× the code of its published run.</p>
   </details>
 
@@ -433,7 +441,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     $('nav').hidden = false;
     $('nav').innerHTML = '<span class="nav-title">Leaderboard</span>' + data.nav.map((l) => l.current
       ? `<a class="board current" href="${esc(l.url)}" aria-current="page">${esc(l.label)}</a>`
-      : `<a class="board" href="${esc(l.url)}">${esc(l.label)}</a>`).join('');
+      : `<a class="board" href="${esc(l.url)}">${esc(l.label)}</a>`).join('')
+      + `<select id="nav-select" aria-label="Leaderboard">${data.nav.map(l => `<option value="${esc(l.url)}"${l.current ? ' selected' : ''}>${esc(l.label)}</option>`).join('')}</select>`;
+    $('nav-select').addEventListener('change', e => { location.href = e.target.value; });
   }
   const displayedTasks = data.footprint_tasks || data.tasks;
   const taskCount = new Set(displayedTasks.map((t) => t[0].split('#')[0])).size;
@@ -483,7 +493,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   }
   if (external) {
     $('external-note').hidden = $('external-help').hidden = false;
-    $('external-note').innerHTML = `Y axis: <a href="${esc(external.attribution)}">Artificial Analysis</a> Intelligence Index (${esc(external.fetched_at.slice(0, 10))}).`;
+    $('external-note').innerHTML = `The <a href="${esc(external.attribution)}">Artificial Analysis</a> Intelligence Index is from ${esc(external.fetched_at.slice(0, 10))}.`;
   }
   // Same-task comparison (task difficulty): code relative to the other models on the tasks a model solved.
   const sameTask = data.models.some(m => Number.isFinite(m.same_task_net));
@@ -776,7 +786,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       ? (selected ? 'Status on hover.' : '')
       : 'No data for this view.';
     const unmatched = usesExternalAxis() ? data.models.filter(m => [currentAxes().x, currentAxes().y].some(k => k.startsWith('aa_') && m[k] == null)).length : 0;
-    if (unmatched) $('graph-legend').textContent = `${$('graph-legend').textContent} ${unmatched} model${unmatched > 1 ? 's have' : ' has'} no AA score.`.trim();
+    $('aa-missing').textContent = unmatched ? ` ${unmatched} model${unmatched > 1 ? 's have' : ' has'} no score, so ${unmatched > 1 ? 'they are' : 'it is'} not on this chart.` : '';
     showRatioNote([currentAxes().x, currentAxes().y]);
     $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort().map(company =>
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('')

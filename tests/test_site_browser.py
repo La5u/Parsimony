@@ -30,6 +30,7 @@ class SiteBrowserTests(unittest.TestCase):
             page = Path(directory) / 'index.html'
             page.write_text(render(build(freeze(records, 'browser-audit'), records, draws=10)))
             browser.get(page.as_uri())
+            browser.execute_script("document.getElementById('chart-controls').open = true")  # chart controls start collapsed
             yield browser, Path(directory)
 
     def narrow_viewport(self, browser, directory, url, width):
@@ -103,6 +104,7 @@ class SiteBrowserTests(unittest.TestCase):
 
         with self.rendered_browser() as (browser, directory):
             browser.get((directory / 'index.html').as_uri() + '?keep=1#board')
+            browser.execute_script("document.getElementById('chart-controls').open = true")  # chart controls start collapsed
             rows = browser.find_elements(By.CSS_SELECTOR, '#board tbody tr')
             self.assertEqual([row.find_elements(By.TAG_NAME, 'td')[1].text for row in rows], ['Alpha', 'Beta'])
             self.assertEqual(rows[0].find_elements(By.TAG_NAME, 'td')[0].text, '1')
@@ -310,6 +312,7 @@ class SiteBrowserTests(unittest.TestCase):
             page = Path(directory) / 'index.html'
             page.write_text(render(data))
             browser.get(page.as_uri())
+            browser.execute_script("document.getElementById('chart-controls').open = true")  # chart controls start collapsed
             toggle = browser.find_element(By.ID, 'self-run-toggle-label')
             self.assertFalse(toggle.is_displayed())
             self.assertEqual(browser.execute_script('return arguments[0].getClientRects().length', toggle), 0)

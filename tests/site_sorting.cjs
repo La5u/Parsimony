@@ -137,7 +137,10 @@ assert.doesNotMatch(html, /best-label|class="leader"|Smaller footprint, more sol
 assert.match(html, /transform: translate\(10px,-50%\); line-height: 10px/);
 assert.match(html, /<summary>How to read this<\/summary>/);
 assert.match(html, /id="units-definition">It takes the patches that benchmarks already publish and counts <b>coding units<\/b>/);
-assert.match(html, /cramming code isn't rewarded, and deleted code is subtracted: net units = added − removed\./);
+assert.match(html, /syntax elements like calls, names and literals rather than lines: net units = added − removed \(<a href="https:\/\/github.com\/La5u\/Parsimony\/blob\/main\/docs\/method.md">method<\/a>\)\./);
+// Chart controls start collapsed; phones get the board dropdown.
+assert.match(html, /<details id="chart-controls"><summary>Change chart<\/summary>/);
+assert.match(html, /<select id="nav-select" aria-label="Leaderboard">/);
 assert(html.indexOf('id="units-definition"') < html.indexOf('<summary>How to read this</summary>'));
 assert.doesNotMatch(html, /paint-order|box-shadow|text-shadow/);
 const tooltipCSS = html.match(/#graph-tooltip \{([\s\S]*?)\}/)[1];
@@ -489,7 +492,7 @@ axis('y', 'aa_intelligence');
 const noGamma = structuredClone(withExternal);
 noGamma.models[2].measured_solved_net_mean = 1;
 load(noGamma);
-assert.match(element('graph-legend').textContent, /1 model has no AA score\./);
+assert.match(element('aa-missing').textContent, /1 model has no score, so it is not on this chart\./);
 // Self-run configurations are faded, explained on hover, listed unranked and absent from task views.
 const withSelfRun = structuredClone(data);
 withSelfRun.self_run_models = [{agent: 'self-run-v1_x', name: 'Delta (high)', company: 'OpenAI', self_run: true, latest: true,
