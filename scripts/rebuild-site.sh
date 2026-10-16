@@ -4,7 +4,7 @@
 #   scripts/rebuild-site.sh [OUT_DIR] [--offline]
 #
 # OUT_DIR defaults to site/. The Go page needs a checksum-bound scalar asset that is downloaded
-# from a GitHub release; --offline skips that page. After rebuilding into site/, `git status`
+# from a GitHub release; --offline skips that page and the all-languages DeepSWE page built from it. After rebuilding into site/, `git status`
 # should show no changes unless the template, site.py or data changed.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -19,7 +19,7 @@ done
 mkdir -p "$OUT"
 
 NAV=(--nav 'DeepSWE Python=index.html' --nav 'DeepSWE JavaScript=javascript.html' --nav 'DeepSWE TypeScript=typescript.html'
-     --nav 'DeepSWE Go=go.html' --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html'
+     --nav 'DeepSWE Go=go.html' --nav 'DeepSWE, all languages=deepswe.html' --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html'
      --nav 'Live JavaScript=live-javascript.html' --nav 'Live TypeScript=live-typescript.html' --nav 'Live Go=live-go.html' --nav 'SWEeper PHP=sweeper-php.html')
 AA=examples/external/artificial-analysis-2026-10-08.json
 
@@ -37,6 +37,13 @@ for lang in "${LANGS[@]}"; do
   python -m parsimony.site "$E/score-panel.json" "$E/"*.jsonl --sensitivity "$E/sensitivity.json" \
     --benchmark deepswe "${NAV[@]}" --output "$OUT/$PAGE.html" --external "$AA" "${EXTRA[@]}"
 done
+
+if [ "$OFFLINE" = 0 ]; then
+  # Same-task ratios of the four DeepSWE language boards combined; raw units are never pooled.
+  python -m parsimony.site --merge python=examples/deepswe-python --merge javascript=examples/deepswe-javascript \
+    --merge typescript=examples/deepswe-typescript --merge go="$GO" --benchmark deepswe "${NAV[@]}" \
+    --output "$OUT/deepswe.html" --external "$AA"
+fi
 
 V=examples/mini-swe-agent-500
 python -m parsimony.site "$V/score-panel.json" "$V/"*.jsonl --sensitivity "$V/sensitivity-35.json" \

@@ -11,7 +11,9 @@ from pathlib import Path
 from unittest import mock
 
 from parsimony.scoring import freeze
-from parsimony.site import add_rank_ranges, build, company, label, main, newest_generation, published_sources, render
+from parsimony.benchmark import read_jsonl
+from parsimony.site import (add_rank_ranges, build, build_merged, company, label, main, merged_ratio, newest_generation,
+                            published_sources, render)
 from tests.test_scoring import record
 
 
@@ -452,3 +454,32 @@ class MainTests(unittest.TestCase):
     def test_build_with_sensitivity(self):
         models = self.run_main('--sensitivity', 'TMP/sensitivity.json')
         self.assertEqual({m['agent']: m['rank_range'] for m in models}, {'agent-a': [1, 1], 'agent-b': [1, 2]})
+
+
+class MergedDeepSWETests(unittest.TestCase):
+    def test_merged_ratio_weights_languages_by_shared_tasks(self):
+        # Python 2 tasks at 0.5x, Go 1 task at 2x: (0.5 * 2 + 2 * 1) / 3 = 1. Raw totals would give 7/8.
+        self.assertAlmostEqual(merged_ratio({'python': [(1, 2), (1, 2)], 'go': [(4, 2)]}), 1.0)
+        self.assertAlmostEqual(merged_ratio({'python': [(-1, 2), (-1, 2)], 'go': [(4, 2)]}), (-0.5 * 2 + 2) / 3)
+        self.assertAlmostEqual(merged_ratio({'python': [(1, 2)], 'go': [], 'js': [(1, -1)]}), 0.5)
+        self.assertIsNone(merged_ratio({'python': []}))
+
+    def test_each_language_keeps_its_own_board_ratio(self):
+        root = Path(__file__).resolve().parent.parent / 'examples'
+        boards, expected = [], {}
+        for language in ('javascript', 'typescript'):
+            directory = root / f'deepswe-{language}'
+            panel = json.loads((directory / 'score-panel.json').read_text())
+            records = [r for path in sorted(directory.glob('*.jsonl')) for r in read_jsonl(path)]
+            boards.append((language, panel, records))
+            expected[language] = {m['agent']: m['same_task_net'] for m in build(panel, records, draws=20)['models']}
+        data = build_merged(boards, draws=20)
+        self.assertEqual([(l['key'], l['tasks'], l['attempts']) for l in data['merged']['languages']],
+                         [('javascript', 5, 4), ('typescript', 35, 4)])
+        self.assertEqual(len(data['models']), 26)
+        for m in data['models']:
+            for language, values in m['languages'].items():
+                self.assertEqual(values['net'], expected[language][m['agent']], (m['name'], language))
+            self.assertNotIn('measured_solved_net_mean', m)  # raw units are never pooled across languages
+        values = [m['same_task_net'] for m in data['models']]
+        self.assertEqual(values, sorted(values))

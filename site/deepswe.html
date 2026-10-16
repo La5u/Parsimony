@@ -1,0 +1,959 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parsimony: DeepSWE · all languages</title>
+<meta name="description" content="An open-source benchmark of how much code AI models add.">
+<link rel="canonical" href="https://parsimony.lasu.dev/deepswe">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:title" content="Parsimony: DeepSWE · all languages">
+<meta property="og:description" content="An open-source benchmark of how much code AI models add.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://parsimony.lasu.dev/deepswe">
+<meta property="og:site_name" content="Parsimony">
+<meta property="og:image" content="https://parsimony.lasu.dev/og.png?v=2026-10-16">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Scatterplot of AI models on DeepSWE Python tasks: net code units added relative to other models on the same tasks, versus Artificial Analysis Intelligence Index">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --ink: #1d2125;
+  --muted: #646b72;
+  --rule: #e2e4e6;
+  --link: #2f55c4;
+  --good: #2c7a4b;
+  --bad: #b2433a;
+}
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+  padding-inline: 16px;
+}
+main { max-width: 960px; margin: 0 auto; padding-block: 40px 56px; }
+h1 { font-size: 1.6rem; margin: 0 0 6px; }
+h2 { font-size: 1.1rem; margin: 40px 0 10px; }
+p { margin: 0 0 10px; }
+.muted { color: var(--muted); }
+#nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 4px; }
+#nav .nav-title { flex-basis: 100%; font-weight: 600; font-size: 0.85rem; color: var(--muted); }
+#nav .board { padding: 8px 14px; border: 1px solid #c4c8cc; border-radius: 6px; color: var(--ink); text-decoration: none; font-size: 0.95rem; line-height: 1.2; }
+#nav .board:hover { border-color: var(--ink); }
+#nav .board:focus-visible { outline: 2px solid #000; outline-offset: 2px; }
+#nav-select { display: none; width: auto; }
+#chart-controls { margin: 8px 0 12px; }
+#chart-controls > summary { font-size: 0.85rem; color: var(--link); cursor: pointer; width: fit-content; }
+#chart-controls[open] > summary { margin-bottom: 4px; }
+#nav .board.current { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
+.small { font-size: 0.85rem; }
+a { color: var(--link); }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.93rem; font-variant-numeric: tabular-nums; }
+th, td { padding: 7px 8px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--rule); }
+th { font-weight: 600; color: var(--muted); font-size: 0.8rem; white-space: normal; vertical-align: bottom; line-height: 1.25; }
+th button { text-align: inherit; }
+td.left, th.left { white-space: normal; overflow-wrap: break-word; }
+@media (max-width: 700px) { #board { font-size: 0.85rem; } #board th, #board td { padding: 6px 5px; } #board th { font-size: 0.75rem; } #board td.left, #board th.left { min-width: 8em; } }
+#swipe-hint { display: none; }
+@media (max-width: 700px) { #swipe-hint { display: block; margin: 0 0 6px; } }
+th:first-child, td:first-child, .left { text-align: left; }
+.range { color: var(--muted); font-size: 0.8rem; }
+.r { color: var(--good); }
+.f { color: var(--bad); }
+.u, .m, .n, .e, .o { color: var(--muted); }
+ul { margin: 0; padding-left: 20px; }
+li { margin-bottom: 6px; }
+input, select {
+  width: 100%; max-width: 360px; box-sizing: border-box; font: inherit; padding: 6px 8px;
+  color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px;
+}
+th button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+button { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 5px 9px; cursor: pointer; }
+#graph { position: relative; overflow-x: clip; }
+#graph svg { display: block; width: 100%; height: auto; overflow: visible; }
+body { overflow-x: clip; }
+#graph .axis { stroke: var(--muted); }
+#graph text { fill: #000; }
+#graph-legend { color: #000; }
+#graph .tick { fill: #000; font: 12px system-ui, sans-serif; }
+#graph circle { stroke: none; cursor: pointer; }
+#graph .older { fill-opacity: 0.70; }
+#graph .point-label { position: absolute; font: 400 8px system-ui, sans-serif; color: #000; white-space: nowrap; pointer-events: none; transform: translate(10px,-50%); line-height: 10px; }
+#graph .point-label.older-label { opacity: 0.75; }
+#graph .self-run { fill-opacity: 0.35; }
+#graph .point-label.self-run-label { opacity: 0.45; }
+#graph circle, #graph .point-label { transition: opacity 0.15s; }
+#graph circle.dim, #graph .point-label.dim { opacity: 0.12; }
+#board tr.self-run td { color: var(--muted); }
+#board tr.self-run-head td { text-align: left; color: var(--muted); font-size: 0.8rem; padding-top: 14px; }
+.source-bar { height: 8px; background: var(--link); margin: 4px 0; }
+.source-row { margin-bottom: 16px; }
+#source-evidence { overflow-wrap: anywhere; }
+#graph .best-zone { fill: #16a34a; fill-opacity: 0.12; }
+#graph .bars { display: grid; grid-template-columns: minmax(6em, 15em) minmax(0, 1fr) auto; gap: 3px 10px; align-items: center; font: 12px system-ui, sans-serif; color: #000; }
+#graph .bar-row { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; column-gap: inherit; cursor: pointer; }
+@media (max-width: 600px) { #graph .bars { grid-template-columns: minmax(0, 8.5em) minmax(0, 1fr) auto; gap: 3px 6px; font-size: 11px; } }
+#graph .bar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+#graph .bar-track { position: relative; height: 14px; }
+#graph .bar { position: absolute; top: 0; bottom: 0; border-radius: 2px; }
+#graph .bar-zero { position: absolute; top: -2px; bottom: -2px; width: 1px; background: var(--muted); }
+#graph .bar-group { grid-column: 1 / -1; margin-top: 14px; padding-top: 8px; border-top: 1px solid var(--rule); color: var(--muted); }
+#graph .bar-value { font-variant-numeric: tabular-nums; text-align: right; }
+#graph .bar-row.older .bar { opacity: 0.7; }
+#graph .bar-row.older .bar-name, #graph .bar-row.older .bar-value { opacity: 0.75; }
+#graph .bar-row.self-run .bar { opacity: 0.35; }
+#graph .bar-row.self-run .bar-name, #graph .bar-row.self-run .bar-value { opacity: 0.45; }
+#graph .bar-row:focus-visible .bar-name { outline: 2px solid #000; outline-offset: 2px; }
+#self-run-toggle-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
+#harness-toggle-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
+#self-run-toggle, #harness-toggle { width: auto; min-width: 0; padding: 0; margin: 0; border: initial; flex: none; }
+#company-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.78rem; color: var(--muted); }
+.company-swatch { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+.company-swatch.fade-swatch { background: #777; }
+#graph-legend:empty { display: none; }
+#graph-tooltip {
+  position: fixed; z-index: 1000; pointer-events: none; white-space: pre-line;
+  max-width: min(320px, calc(100vw - 16px)); box-sizing: border-box;
+  padding: 5px 9px;
+  background: var(--bg); color: #000;
+}
+#graph circle:focus-visible { outline: 2px solid #000; outline-offset: 4px; }
+/* Sort arrows are SVG masks in the text colour: phones draw the ↕ character as an emoji. */
+th[aria-sort] button::after {
+  content: ''; display: inline-block; width: 0.7em; height: 0.7em; margin-left: 0.3em; vertical-align: -0.05em;
+  background: currentColor; -webkit-mask: var(--sort-icon) center / contain no-repeat; mask: var(--sort-icon) center / contain no-repeat;
+}
+th[aria-sort="ascending"] { --sort-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 9V1M1.5 4.5 5 1l3.5 3.5' fill='none' stroke='%23000' stroke-width='1.4'/%3E%3C/svg%3E"); }
+th[aria-sort="descending"] { --sort-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 1v8M1.5 5.5 5 9l3.5-3.5' fill='none' stroke='%23000' stroke-width='1.4'/%3E%3C/svg%3E"); }
+th[aria-sort="none"] { --sort-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.8 5 1l3 2.8M2 6.2 5 9l3-2.8' fill='none' stroke='%23000' stroke-width='1.4'/%3E%3C/svg%3E"); }
+th[aria-sort="none"] button::after { opacity: 0.45; }
+input:focus-visible, select:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.example-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.example-pair article { border: 1px solid var(--rule); border-radius: 6px; padding: 12px; }
+.example-pair h3 { margin: 0 0 8px; font-size: 1rem; }
+pre { overflow-x: auto; font-size: 0.85rem; line-height: 1.6; }
+#custom-results p { font-size: 0.85rem; color: var(--muted); }
+footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule); }
+@media (max-width: 600px) {
+  main { padding-block: 24px 40px; }
+  h2 { margin-top: 32px; }
+  #nav { gap: 6px; }
+  /* Ten boards would wrap to five rows: phones get a dropdown instead. */
+  #nav .nav-title { flex-basis: auto; }
+  #nav .board { display: none; }
+  #nav-select { display: block; flex: 1; }
+  #graph .point-label { font-size: 7px; line-height: 9px; }
+  /* Small dots keep a finger-sized target: the transparent stroke takes taps. */
+  #graph circle { stroke: transparent; stroke-width: 14px; }
+  #board td.left, #board th.left { position: sticky; left: 0; z-index: 1; background: var(--bg); }
+}
+</style>
+</head>
+<body>
+
+<main>
+  <h1>Parsimony</h1>
+  <p>Existing benchmarks measure solve rate and cost, but don't punish excess code, which makes a codebase harder to work with in the long term. Parsimony measures how much code AI models add.</p>
+  <noscript><p class="small">The charts and leaderboard need JavaScript. The data is on <a href="https://github.com/La5u/Parsimony/tree/main/examples">GitHub</a>.</p></noscript>
+
+  <p class="small" id="units-definition">It takes the patches that benchmarks already publish and counts <b>coding units</b>, syntax elements like calls, names and literals rather than lines: net units = added − removed (<a href="https://github.com/La5u/Parsimony/blob/main/docs/method.md">method</a>).</p>
+  <nav id="nav" aria-label="Leaderboards" hidden></nav>
+  <section aria-labelledby="complexity">
+  <h2 id="complexity">Compare models</h2>
+  <details id="chart-controls"><summary>Change chart</summary>
+  <p><label for="chart-type">Chart</label> <select id="chart-type" aria-label="Chart type">
+       <option value="scatter">Scatter: compare two metrics</option><option value="bar">Bars: one metric</option></select>
+     <label id="self-run-toggle-label" hidden><input type="checkbox" id="self-run-toggle" checked> Show my runs</label>
+     <label id="harness-toggle-label" hidden><input type="checkbox" id="harness-toggle"> Show other harnesses</label></p>
+  <p id="axis-controls"><label for="graph-x" id="graph-x-label">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
+     <span id="graph-y-control"><label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></span></p>
+  </details>
+  <p class="small" id="ratio-note" hidden></p>
+  <p class="small muted" id="graph-legend"></p>
+  <div class="small" id="company-legend" aria-label="Model companies"></div>
+  <div id="graph" aria-label="Comparison of selected metrics per model"></div>
+  <div class="small" id="graph-tooltip" role="tooltip" hidden></div>
+  <p class="small muted" id="self-run-note" hidden></p>
+  </section>
+
+  <details class="small muted"><summary>How to read this</summary>
+  <p><span id="rank-help">Models are ranked by mean net units added on the tasks they solved, lowest first. "Net units added (mean)" also includes failed attempts.</span> Solved comes from <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a>; tests aren't rerun. Measured is how many solved attempts could be measured.</p>
+  <p id="external-help" hidden><span id="external-note"></span> It's an outside score, matched by model and reasoning effort, and doesn't affect the rank.<span id="aa-missing"></span></p>
+  <p id="self-run-help" hidden>Faded models were run by me on the first <span class="self-run-tasks">few</span> DeepSWE Python tasks (OpenAI models with pi, and the GPT-6 family with Codex, whose pi runs appear with "Show other harnesses"; Anthropic models with Claude Code) and graded with each task's own tests. They aren't verified or ranked. GPT-5.6 Sol ran both ways: my run added 0.88× the code of its published run.</p>
+  </details>
+
+  <h2 id="leaderboard">Leaderboard</h2>
+  <p class="small muted" id="board-intro"></p>
+  <p class="small muted" id="benchmark-notice" hidden></p>
+  <div id="task-picker">
+  <label for="task-search" class="small muted">Task</label><br>
+  <input id="task-search" list="task-ids" autocomplete="off" spellcheck="false" placeholder="All tasks" aria-describedby="task-status">
+  <button type="button" id="task-reset">All tasks</button>
+  <datalist id="task-ids"></datalist>
+  <p class="small muted" id="task-status" role="status" aria-live="polite"></p>
+  </div>
+
+  <p class="small muted" id="swipe-hint">Swipe the table sideways for more columns.</p>
+  <div class="scroll" id="board-scroll">
+    <table id="board">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th class="left">Model</th>
+          <th aria-sort="ascending"><button type="button" data-sort="net">Net units added (mean)</button></th>
+          <th aria-sort="none"><button type="button" data-sort="solved_net">Net units added, solved (mean)</button></th>
+          <th aria-sort="none"><button type="button" data-sort="resolve_rate">Solved</button></th>
+          <th aria-sort="none"><button type="button" data-sort="coverage">Measured</button></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <p class="small" id="task-footer" hidden><a id="task-link" href="#">Maintainers' pull request</a></p>
+  <p class="small muted" id="feedback">Missing a model? <a id="request-model" href="https://github.com/La5u/Parsimony/issues/new?template=model-request.yml">Request it</a>. A number looks wrong? <a id="report-number" href="https://github.com/La5u/Parsimony/issues/new?template=number-looks-wrong.yml">Report it</a>.</p>
+
+  <section id="data-sources" aria-labelledby="sources-heading" hidden>
+    <h2 id="sources-heading">Data sources</h2>
+    <div id="source-counts"></div>
+    <details class="small muted"><summary>Hashes</summary>
+      <p id="metric-source"></p>
+      <div id="source-evidence"></div>
+    </details>
+  </section>
+
+  <h2 id="method">Method</h2>
+  <ul>
+    <li>Each patch is applied to the task's code, and both versions of every changed file are parsed. Nothing is run.</li>
+    <li id="language-scope">Tests, docs and generated files are left out. Only Python is measured.</li>
+    <li id="results-limit">Pass/fail comes from SWE-bench's published results; tests aren't rerun.</li>
+  </ul>
+
+  <h2 id="limits">Limits</h2>
+  <ul>
+    <li>Smaller isn't always better: units measure size, not readability or design.</li>
+    <li>A model whose fixes mostly delete code can rank first with a negative net, and failed attempts that change nothing pull the all-measured mean toward zero.</li>
+    <li>Models that write more code also tend to solve more tasks (Spearman 0.33–0.60 on the boards with 26+ models).</li>
+    <li id="harness-limit">Every model uses the same agent (mini-SWE-agent), but the agent still affects how much code gets written.</li>
+  </ul>
+
+  <section aria-labelledby="custom-heading">
+    <h2 id="custom-heading">Add your own benchmark</h2>
+    <p>Have code-size numbers from another benchmark? Download the example file, fill in your results and open it to get the same chart and table. The file stays in your browser. <a href="https://github.com/La5u/Parsimony/blob/main/docs/custom-benchmarks.md">Format and how to share it</a>.</p>
+    <p><button type="button" id="custom-example">Download example JSON</button> <button type="button" id="custom-clear">Clear</button></p>
+    <label for="custom-file">Open benchmark JSON</label><br>
+    <input type="file" id="custom-file" accept=".json,application/json" aria-describedby="custom-status">
+    <p id="custom-status" class="small" role="status" aria-live="polite"></p>
+    <div id="custom-results" class="scroll"></div>
+  </section>
+
+
+  <section aria-labelledby="example-heading">
+    <h2 id="example-heading">Example: check for a negative number</h2>
+    <p>Both return the same result.</p>
+    <div class="example-pair">
+      <article><pre><code>def has_negative(values):
+    found = False
+    for value in values:
+        if value &lt; 0:
+            found = True
+    return found</code></pre></article>
+      <article><pre><code>def has_negative(values):
+    return any(value &lt; 0 for value in values)</code></pre></article>
+    </div>
+  </section>
+
+  <footer class="small muted">
+    <p id="provenance"></p>
+    <p>Code and data: <a href="https://github.com/La5u/Parsimony">github.com/La5u/Parsimony</a></p>
+    <p>Contact: <a href="mailto:lasushin@proton.me">lasushin@proton.me</a></p>
+  </footer>
+</main>
+
+<script>/* Local, unverified benchmark viewer. No network or persistent storage. */
+(function () {
+  'use strict';
+  const MAX_FILE_BYTES = 5 * 1024 * 1024;
+  const MAX_RESULTS = 10000;
+  const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
+  function object(value, keys, label) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(label + ' must be an object.');
+    if (Object.keys(value).some(key => !keys.includes(key))) throw new Error(label + ' contains an unsupported field.');
+  }
+  function string(value, label) {
+    if (typeof value !== 'string' || !value.trim()) throw new Error(label + ' must be a nonempty string.');
+  }
+  function validateBenchmark(data) {
+    object(data, ['benchmark', 'unit', 'measurement', 'results'], 'Benchmark');
+    string(data.benchmark, 'benchmark');
+    string(data.unit, 'unit');
+    if (!['total', 'net', 'churn'].includes(data.measurement)) throw new Error('measurement must be total, net, or churn.');
+    if (!Array.isArray(data.results) || data.results.length > MAX_RESULTS) throw new Error('results must be an array of at most 10000 entries.');
+    const seen = new Set();
+    data.results.forEach((row, index) => {
+      const label = 'Result ' + (index + 1);
+      object(row, ['model', 'task', 'attempt', 'amount', 'solved'], label);
+      string(row.model, label + ' model');
+      string(row.task, label + ' task');
+      if (own(row, 'attempt') && typeof row.attempt !== 'string') throw new Error(label + ' attempt must be a string.');
+      if (row.amount !== null && (typeof row.amount !== 'number' || !Number.isFinite(row.amount))) throw new Error(label + ' amount must be a finite number or null.');
+      if (data.measurement !== 'net' && row.amount !== null && row.amount < 0) throw new Error(label + ' amount cannot be negative for total or churn.');
+      if (own(row, 'solved') && row.solved !== null && typeof row.solved !== 'boolean') throw new Error(label + ' solved must be boolean or null.');
+      const key = JSON.stringify([row.model, row.task, row.attempt === undefined ? '' : row.attempt]);
+      if (seen.has(key)) throw new Error(label + ' duplicates a model/task/attempt.');
+      seen.add(key);
+    });
+    return data;
+  }
+  function summarizeBenchmark(data) {
+    validateBenchmark(data);
+    const models = new Map();
+    for (const row of data.results) {
+      if (!models.has(row.model)) models.set(row.model, {model: row.model, recorded: 0, measured: 0, solved: 0, known: 0, unknown: 0, solvedMeasured: 0, mean: null, solvedMean: null});
+      const summary = models.get(row.model);
+      summary.recorded++;
+      if (typeof row.solved === 'boolean') summary.known++;
+      else summary.unknown++;
+      if (row.solved === true) summary.solved++;
+      // Weighted updates avoid overflowing a sum of finite input amounts.
+      if (row.amount !== null) {
+        summary.measured++;
+        summary.mean = summary.measured === 1 ? row.amount : summary.mean * ((summary.measured - 1) / summary.measured) + row.amount / summary.measured;
+        if (row.solved === true) {
+          summary.solvedMeasured++;
+          summary.solvedMean = summary.solvedMeasured === 1 ? row.amount : summary.solvedMean * ((summary.solvedMeasured - 1) / summary.solvedMeasured) + row.amount / summary.solvedMeasured;
+        }
+      }
+    }
+    return Array.from(models.values()).sort((a, b) => {
+      if (a.mean === null) return b.mean === null ? a.model.localeCompare(b.model) : 1;
+      if (b.mean === null) return -1;
+      return a.mean - b.mean || a.model.localeCompare(b.model);
+    });
+  }
+  if (typeof module !== 'undefined' && module.exports) module.exports = {validateBenchmark, summarizeBenchmark, MAX_FILE_BYTES, MAX_RESULTS};
+  if (typeof document === 'undefined') return;
+  function initialize() {
+    const fileInput = document.getElementById('custom-file');
+    if (!fileInput) return;
+    const status = document.getElementById('custom-status');
+    const results = document.getElementById('custom-results');
+    let generation = 0;
+    function clear() {
+      generation++;
+      fileInput.value = '';
+      results.replaceChildren();
+      status.textContent = '';
+    }
+    function node(tag, text) {
+      const element = document.createElement(tag);
+      if (text !== undefined) element.textContent = text;
+      return element;
+    }
+    function render(data) {
+      results.replaceChildren();
+      results.appendChild(node('h3', data.benchmark));
+      results.appendChild(node('p', 'Your data · Unit: ' + data.unit + ' · Measurement: ' + data.measurement + '. Not part of the leaderboard.'));
+      const table = node('table');
+      const head = node('thead');
+      const headings = node('tr');
+      ['Model', 'Mean amount', 'Solved-only mean', 'Solved / known outcomes', 'Unknown outcomes', 'Measured / recorded'].forEach(text => headings.appendChild(node('th', text)));
+      head.appendChild(headings);
+      table.appendChild(head);
+      const body = node('tbody');
+      for (const summary of summarizeBenchmark(data)) {
+        const row = node('tr');
+        [summary.model, summary.mean === null ? 'Not measured' : String(summary.mean), summary.solvedMean === null ? 'Not measured' : String(summary.solvedMean), summary.solved + ' / ' + summary.known, String(summary.unknown), summary.measured + ' / ' + summary.recorded].forEach(text => row.appendChild(node('td', text)));
+        body.appendChild(row);
+      }
+      table.appendChild(body);
+      results.appendChild(table);
+    }
+    fileInput.addEventListener('change', async () => {
+      const current = ++generation;
+      results.replaceChildren();
+      status.textContent = '';
+      try {
+        const file = fileInput.files && fileInput.files[0];
+        // Capture the File first, then allow the same path to be selected again.
+        // Reset before awaiting so an older read cannot clear a newer selection.
+        fileInput.value = '';
+        if (!file) return;
+        if (file.size > MAX_FILE_BYTES) throw new Error('File exceeds the 5 MB limit.');
+        status.textContent = 'Reading local file…';
+        const text = await file.text();
+        if (current !== generation) return;
+        const data = validateBenchmark(JSON.parse(text));
+        render(data);
+        status.textContent = 'Loaded. Nothing was uploaded.';
+      } catch (error) {
+        if (current !== generation) return;
+        results.replaceChildren();
+        status.textContent = 'Unable to load benchmark: ' + error.message;
+      }
+    });
+    document.getElementById('custom-clear').addEventListener('click', clear);
+    document.getElementById('custom-example').addEventListener('click', () => {
+      const example = {benchmark: 'Example benchmark', unit: 'lines', measurement: 'net', results: [
+        {model: 'Example model', task: 'task-1', attempt: '1', amount: -2, solved: true},
+        {model: 'Example model', task: 'task-2', amount: null, solved: null}
+      ]};
+      const url = URL.createObjectURL(new Blob([JSON.stringify(example, null, 2) + '\n'], {type: 'application/json'}));
+      const link = node('a');
+      link.href = url;
+      link.download = 'custom-benchmark-example.json';
+      try { link.click(); } finally { setTimeout(() => URL.revokeObjectURL(url), 0); }
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize);
+  else initialize();
+})();
+</script>
+<script id="parsimony-data" type="application/json">{"merged":{"languages":[{"key":"python","name":"Python","tasks":34,"attempts":4,"models":26},{"key":"javascript","name":"JavaScript","tasks":5,"attempts":4,"models":26},{"key":"typescript","name":"TypeScript","tasks":35,"attempts":4,"models":26},{"key":"go","name":"Go","tasks":34,"attempts":4,"models":26}]},"ranking_metric":"same-task-net-ratio-merged-v1","footprint_tasks":[],"task_typical":{},"models":[{"agent":"deepswe-v1.1_mini_swe_agent_gemini_3_1_pro_preview_high","name":"Gemini 3.1 Pro Preview (high)","company":"Google","languages":{"python":{"net":0.663,"net_tasks":8,"complexity":0.687},"javascript":{"net":0.546,"net_tasks":2,"complexity":0.501},"typescript":{"net":0.82,"net_tasks":8,"complexity":0.912},"go":{"net":0.702,"net_tasks":11,"complexity":0.685}},"upstream_solved_attempts":50,"measured_solved_attempts":49,"footprint_population_count":432,"resolve_rate":0.11574074074074074,"same_task_net":0.713,"same_task_net_ci":[0.655,0.766],"same_task_net_tasks":29,"same_task_complexity":0.735,"same_task_complexity_ci":[0.658,0.809],"same_task_complexity_tasks":29,"latest":false,"aa_intelligence":29.7,"aa_coding":68.8,"aa_match":"effort_unlabelled","aa_name":"Gemini 3.1 Pro Preview"},{"agent":"deepswe-v1.1_mini_swe_agent_claude_fable_5_xhigh","name":"Claude Fable 5 (xhigh)","company":"Anthropic","languages":{"python":{"net":0.801,"net_tasks":28,"complexity":0.775},"javascript":{"net":0.8,"net_tasks":4,"complexity":0.744},"typescript":{"net":0.844,"net_tasks":29,"complexity":0.816},"go":{"net":0.82,"net_tasks":31,"complexity":0.786}},"upstream_solved_attempts":301,"measured_solved_attempts":291,"footprint_population_count":432,"resolve_rate":0.6967592592592593,"same_task_net":0.821,"same_task_net_ci":[0.791,0.849],"same_task_net_tasks":92,"same_task_complexity":0.791,"same_task_complexity_ci":[0.762,0.822],"same_task_complexity_tasks":92,"latest":true,"aa_intelligence":null,"aa_coding":null,"aa_match":null,"aa_name":null},{"agent":"deepswe-v1.1_mini_swe_agent_claude_opus_4_8_max","name":"Claude Opus 4.8 (max)","company":"Anthropic","languages":{"python":{"net":0.842,"net_tasks":29,"complexity":0.809},"javascript":{"net":0.83,"net_tasks":3,"complexity":0.809},"typescript":{"net":0.848,"net_tasks":22,"complexity":0.812},"go":{"net":0.858,"net_tasks":29,"complexity":0.831}},"upstream_solved_attempts":242,"measured_solved_attempts":236,"footprint_population_count":432,"resolve_rate":0.5601851851851852,"same_task_net":0.849,"same_task_net_ci":[0.823,0.874],"same_task_net_tasks":83,"same_task_complexity":0.817,"same_task_complexity_ci":[0.791,0.842],"same_task_complexity_tasks":83,"latest":false,"aa_intelligence":41.8,"aa_coding":74.3,"aa_match":"exact","aa_name":"Claude Opus 4.8 (Max)"},{"agent":"deepswe-v1.1_mini_swe_agent_gemini_3_5_flash_high","name":"Gemini 3.5 Flash (high)","company":"Google","languages":{"python":{"net":0.856,"net_tasks":17,"complexity":0.852},"javascript":{"net":0.792,"net_tasks":4,"complexity":0.714},"typescript":{"net":0.83,"net_tasks":20,"complexity":0.845},"go":{"net":0.876,"net_tasks":24,"complexity":0.864}},"upstream_solved_attempts":155,"measured_solved_attempts":149,"footprint_population_count":432,"resolve_rate":0.3587962962962963,"same_task_net":0.852,"same_task_net_ci":[0.809,0.891],"same_task_net_tasks":65,"same_task_complexity":0.846,"same_task_complexity_ci":[0.799,0.892],"same_task_complexity_tasks":65,"latest":false,"aa_intelligence":32.6,"aa_coding":70.1,"aa_match":"exact","aa_name":"Gemini 3.5 Flash (High)"},{"agent":"deepswe-v1.1_mini_swe_agent_kimi_k2_7_code_default","name":"Kimi K2.7 Code","company":"Moonshot AI","languages":{"python":{"net":0.889,"net_tasks":20,"complexity":0.843},"javascript":{"net":0.843,"net_tasks":2,"complexity":0.854},"typescript":{"net":0.812,"net_tasks":19,"complexity":0.778},"go":{"net":0.874,"net_tasks":24,"complexity":0.853}},"upstream_solved_attempts":135,"measured_solved_attempts":133,"footprint_population_count":432,"resolve_rate":0.3125,"same_task_net":0.86,"same_task_net_ci":[0.829,0.891],"same_task_net_tasks":65,"same_task_complexity":0.828,"same_task_complexity_ci":[0.795,0.864],"same_task_complexity_tasks":65,"latest":false,"aa_intelligence":25.8,"aa_coding":60.8,"aa_match":"effort_unlabelled","aa_name":"Kimi K2.7 Code"},{"agent":"deepswe-v1.1_mini_swe_agent_claude_sonnet_5_max","name":"Claude Sonnet 5 (max)","company":"Anthropic","languages":{"python":{"net":0.834,"net_tasks":25,"complexity":0.778},"javascript":{"net":0.942,"net_tasks":5,"complexity":0.857},"typescript":{"net":0.902,"net_tasks":25,"complexity":0.805},"go":{"net":0.865,"net_tasks":27,"complexity":0.824}},"upstream_solved_attempts":228,"measured_solved_attempts":218,"footprint_population_count":432,"resolve_rate":0.5277777777777778,"same_task_net":0.872,"same_task_net_ci":[0.836,0.908],"same_task_net_tasks":82,"same_task_complexity":0.806,"same_task_complexity_ci":[0.773,0.841],"same_task_complexity_tasks":82,"latest":true,"aa_intelligence":38.2,"aa_coding":71.5,"aa_match":"exact","aa_name":"Claude Sonnet 5 (Max)"},{"agent":"deepswe-v1.1_mini_swe_agent_glm_5_2_max","name":"GLM-5.2 (max)","company":"Z.ai","languages":{"python":{"net":0.842,"net_tasks":24,"complexity":0.805},"javascript":{"net":0.932,"net_tasks":2,"complexity":0.923},"typescript":{"net":0.887,"net_tasks":27,"complexity":0.851},"go":{"net":0.887,"net_tasks":28,"complexity":0.864}},"upstream_solved_attempts":191,"measured_solved_attempts":184,"footprint_population_count":432,"resolve_rate":0.44212962962962965,"same_task_net":0.875,"same_task_net_ci":[0.845,0.905],"same_task_net_tasks":81,"same_task_complexity":0.844,"same_task_complexity_ci":[0.812,0.882],"same_task_complexity_tasks":81,"latest":false,"aa_intelligence":33.7,"aa_coding":68.8,"aa_match":"exact","aa_name":"GLM-5.2 (Max)"},{"agent":"deepswe-v1.1_mini_swe_agent_kimi_k3_max","name":"Kimi K3 (max)","company":"Moonshot AI","languages":{"python":{"net":0.848,"net_tasks":30,"complexity":0.831},"javascript":{"net":0.911,"net_tasks":5,"complexity":0.864},"typescript":{"net":0.928,"net_tasks":27,"complexity":0.886},"go":{"net":0.889,"net_tasks":32,"complexity":0.849}},"upstream_solved_attempts":296,"measured_solved_attempts":286,"footprint_population_count":432,"resolve_rate":0.6851851851851852,"same_task_net":0.888,"same_task_net_ci":[0.861,0.917],"same_task_net_tasks":94,"same_task_complexity":0.854,"same_task_complexity_ci":[0.825,0.885],"same_task_complexity_tasks":94,"latest":true,"aa_intelligence":43.6,"aa_coding":76.2,"aa_match":"exact","aa_name":"Kimi K3 (Max)"},{"agent":"deepswe-v1.1_mini_swe_agent_claude_sonnet_4_6_high","name":"Claude Sonnet 4.6 (high)","company":"Anthropic","languages":{"python":{"net":0.867,"net_tasks":19,"complexity":0.848},"javascript":{"net":1.073,"net_tasks":3,"complexity":1.063},"typescript":{"net":0.898,"net_tasks":16,"complexity":0.874},"go":{"net":0.883,"net_tasks":21,"complexity":0.859}},"upstream_solved_attempts":128,"measured_solved_attempts":120,"footprint_population_count":432,"resolve_rate":0.2962962962962963,"same_task_net":0.892,"same_task_net_ci":[0.836,0.943],"same_task_net_tasks":59,"same_task_complexity":0.87,"same_task_complexity_ci":[0.808,0.931],"same_task_complexity_tasks":59,"latest":false,"aa_intelligence":null,"aa_coding":null,"aa_match":null,"aa_name":null},{"agent":"deepswe-v1.1_mini_swe_agent_gemini_3_6_flash_high","name":"Gemini 3.6 Flash (high)","company":"Google","languages":{"python":{"net":0.949,"net_tasks":22,"complexity":0.964},"javascript":{"net":0.858,"net_tasks":4,"complexity":0.955},"typescript":{"net":0.951,"net_tasks":23,"complexity":1.011},"go":{"net":0.914,"net_tasks":30,"complexity":0.908}},"upstream_solved_attempts":205,"measured_solved_attempts":199,"footprint_population_count":432,"resolve_rate":0.47453703703703703,"same_task_net":0.932,"same_task_net_ci":[0.895,0.967],"same_task_net_tasks":79,"same_task_complexity":0.956,"same_task_complexity_ci":[0.915,1.0],"same_task_complexity_tasks":79,"latest":false,"aa_intelligence":34,"aa_coding":69.2,"aa_match":"exact","aa_name":"Gemini 3.6 Flash (High)"},{"agent":"deepswe-v1.1_mini_swe_agent_qwen3_8_max_xhigh","name":"Qwen3.8 Max (xhigh)","company":"Alibaba","languages":{"python":{"net":0.934,"net_tasks":27,"complexity":0.92},"javascript":{"net":0.927,"net_tasks":4,"complexity":0.831},"typescript":{"net":0.954,"net_tasks":27,"complexity":0.954},"go":{"net":0.919,"net_tasks":28,"complexity":0.893}},"upstream_solved_attempts":247,"measured_solved_attempts":239,"footprint_population_count":432,"resolve_rate":0.5717592592592593,"same_task_net":0.935,"same_task_net_ci":[0.912,0.96],"same_task_net_tasks":86,"same_task_complexity":0.918,"same_task_complexity_ci":[0.89,0.947],"same_task_complexity_tasks":86,"latest":true,"aa_intelligence":45.4,"aa_coding":76.2,"aa_match":"undated_alias","aa_name":"Qwen3.8 Max (0902)"},{"agent":"deepswe-v1.1_mini_swe_agent_deepseek_v4_flash_max","name":"DeepSeek V4 Flash (max)","company":"DeepSeek","languages":{"python":{"net":0.931,"net_tasks":27,"complexity":0.901},"javascript":{"net":0.972,"net_tasks":3,"complexity":0.96},"typescript":{"net":0.969,"net_tasks":24,"complexity":0.947},"go":{"net":0.975,"net_tasks":29,"complexity":0.958}},"upstream_solved_attempts":230,"measured_solved_attempts":220,"footprint_population_count":432,"resolve_rate":0.5324074074074074,"same_task_net":0.959,"same_task_net_ci":[0.927,0.991],"same_task_net_tasks":83,"same_task_complexity":0.936,"same_task_complexity_ci":[0.904,0.972],"same_task_complexity_tasks":83,"latest":true,"aa_intelligence":34.3,"aa_coding":69.1,"aa_match":"undated_alias","aa_name":"DeepSeek V4 Flash 0731 (Max)"},{"agent":"deepswe-v1.1_mini_swe_agent_grok_4_5_high","name":"Grok 4.5 (high)","company":"xAI","languages":{"python":{"net":0.976,"net_tasks":28,"complexity":0.958},"javascript":{"net":1.051,"net_tasks":3,"complexity":1.124},"typescript":{"net":0.98,"net_tasks":25,"complexity":0.984},"go":{"net":1.022,"net_tasks":25,"complexity":1.042}},"upstream_solved_attempts":233,"measured_solved_attempts":225,"footprint_population_count":432,"resolve_rate":0.5393518518518519,"same_task_net":0.994,"same_task_net_ci":[0.955,1.037],"same_task_net_tasks":81,"same_task_complexity":0.998,"same_task_complexity_ci":[0.954,1.043],"same_task_complexity_tasks":81,"latest":false,"aa_intelligence":38.8,"aa_coding":72.4,"aa_match":"exact","aa_name":"Grok 4.5 (High)"},{"agent":"deepswe-v1.1_mini_swe_agent_grok_4_6_medium","name":"Grok 4.6 (medium)","company":"xAI","languages":{"python":{"net":1.004,"net_tasks":28,"complexity":1.04},"javascript":{"net":1.124,"net_tasks":5,"complexity":1.173},"typescript":{"net":0.956,"net_tasks":24,"complexity":0.98},"go":{"net":1.027,"net_tasks":30,"complexity":1.11}},"upstream_solved_attempts":289,"measured_solved_attempts":278,"footprint_population_count":432,"resolve_rate":0.6689814814814815,"same_task_net":1.006,"same_task_net_ci":[0.973,1.039],"same_task_net_tasks":87,"same_task_complexity":1.055,"same_task_complexity_ci":[1.016,1.093],"same_task_complexity_tasks":87,"latest":true,"aa_intelligence":42.8,"aa_coding":74.4,"aa_match":"exact","aa_name":"Grok 4.6 (Medium)"},{"agent":"deepswe-v1.1_mini_swe_agent_glm_5_3_max","name":"GLM-5.3 (max)","company":"Z.ai","languages":{"python":{"net":1.075,"net_tasks":29,"complexity":1.093},"javascript":{"net":0.958,"net_tasks":5,"complexity":0.918},"typescript":{"net":0.978,"net_tasks":26,"complexity":0.942},"go":{"net":1.001,"net_tasks":32,"complexity":0.986}},"upstream_solved_attempts":297,"measured_solved_attempts":289,"footprint_population_count":432,"resolve_rate":0.6875,"same_task_net":1.016,"same_task_net_ci":[0.977,1.056],"same_task_net_tasks":92,"same_task_complexity":1.004,"same_task_complexity_ci":[0.963,1.045],"same_task_complexity_tasks":92,"latest":true,"aa_intelligence":44.8,"aa_coding":74.8,"aa_match":"exact","aa_name":"GLM-5.3 (Max)"},{"agent":"deepswe-v1.1_mini_swe_agent_glm_5_3_flash_max","name":"GLM-5.3 Flash (max)","company":"Z.ai","languages":{"python":{"net":1.047,"net_tasks":29,"complexity":1.049},"javascript":{"net":1.063,"net_tasks":4,"complexity":1.054},"typescript":{"net":0.99,"net_tasks":26,"complexity":0.947},"go":{"net":1.004,"net_tasks":31,"complexity":0.987}},"upstream_solved_attempts":273,"measured_solved_attempts":267,"footprint_population_count":432,"resolve_rate":0.6319444444444444,"same_task_net":1.016,"same_task_net_ci":[0.988,1.044],"same_task_net_tasks":90,"same_task_complexity":0.998,"same_task_complexity_ci":[0.966,1.03],"same_task_complexity_tasks":90,"latest":true,"aa_intelligence":41.8,"aa_coding":71.5,"aa_match":"effort_unlabelled","aa_name":"GLM-5.3-Flash"},{"agent":"deepswe-v1.1_mini_swe_agent_gemini_3_7_flash_medium","name":"Gemini 3.7 Flash (medium)","company":"Google","languages":{"python":{"net":1.041,"net_tasks":27,"complexity":1.061},"javascript":{"net":1.018,"net_tasks":5,"complexity":0.915},"typescript":{"net":1.089,"net_tasks":26,"complexity":1.152},"go":{"net":1.014,"net_tasks":29,"complexity":1.012}},"upstream_solved_attempts":281,"measured_solved_attempts":275,"footprint_population_count":432,"resolve_rate":0.6504629629629629,"same_task_net":1.045,"same_task_net_ci":[1.008,1.087],"same_task_net_tasks":87,"same_task_complexity":1.064,"same_task_complexity_ci":[1.018,1.118],"same_task_complexity_tasks":87,"latest":true,"aa_intelligence":39.6,"aa_coding":71.5,"aa_match":"exact","aa_name":"Gemini 3.7 Flash (Medium)"},{"agent":"deepswe-v1.1_mini_swe_agent_gpt_5_6_terra_max","name":"GPT-5.6 Terra (max)","company":"OpenAI","languages":{"python":{"net":1.067,"net_tasks":29,"complexity":1.086},"javascript":{"net":0.931,"net_tasks":4,"complexity":0.995},"typescript":{"net":1.025,"net_tasks":29,"complexity":1.023},"go":{"net":1.108,"net_tasks":32,"complexity":1.148}},"upstream_solved_attempts":303,"measured_solved_attempts":293,"footprint_population_count":432,"resolve_rate":0.7013888888888888,"same_task_net":1.062,"same_task_net_ci":[1.029,1.095],"same_task_net_tasks":94,"same_task_complexity":1.084,"same_task_complexity_ci":[1.047,1.118],"same_task_complexity_tasks":94,"latest":true,"aa_intelligence":42.1,"aa_coding":76.7,"aa_match":"exact","aa_name":"GPT-5.6 Terra (Max)"},{"agent":"deepswe-v1.1_mini_swe_agent_deepseek_v4_pro_max","name":"DeepSeek V4 Pro (max)","company":"DeepSeek","languages":{"python":{"net":1.075,"net_tasks":29,"complexity":1.051},"javascript":{"net":1.066,"net_tasks":4,"complexity":1.127},"typescript":{"net":1.028,"net_tasks":27,"complexity":0.995},"go":{"net":1.081,"net_tasks":32,"complexity":1.102}},"upstream_solved_attempts":271,"measured_solved_attempts":262,"footprint_population_count":432,"resolve_rate":0.6273148148148148,"same_task_net":1.063,"same_task_net_ci":[1.033,1.093],"same_task_net_tasks":92,"same_task_complexity":1.055,"same_task_complexity_ci":[1.021,1.089],"same_task_complexity_tasks":92,"latest":true,"aa_intelligence":36,"aa_coding":68.8,"aa_match":"undated_alias","aa_name":"DeepSeek V4 Pro 0813 (Max)"},{"agent":"deepswe-v1.1_mini_swe_agent_gpt_5_6_sol_max","name":"GPT-5.6 Sol (max)","company":"OpenAI","languages":{"python":{"net":1.06,"net_tasks":29,"complexity":1.067},"javascript":{"net":1.026,"net_tasks":4,"complexity":1.04},"typescript":{"net":1.042,"net_tasks":29,"complexity":1.025},"go":{"net":1.106,"net_tasks":30,"complexity":1.093}},"upstream_solved_attempts":315,"measured_solved_attempts":308,"footprint_population_count":432,"resolve_rate":0.7291666666666666,"same_task_net":1.067,"same_task_net_ci":[1.024,1.121],"same_task_net_tasks":92,"same_task_complexity":1.061,"same_task_complexity_ci":[1.01,1.11],"same_task_complexity_tasks":92,"latest":true,"aa_intelligence":47,"aa_coding":77.4,"aa_match":"exact","aa_name":"GPT-5.6 Sol (Max)"},{"agent":"deepswe-v1.1_mini_swe_agent_gpt_5_5_xhigh","name":"GPT-5.5 (xhigh)","company":"OpenAI","languages":{"python":{"net":1.074,"net_tasks":28,"complexity":1.071},"javascript":{"net":0.885,"net_tasks":4,"complexity":0.948},"typescript":{"net":1.101,"net_tasks":28,"complexity":1.1},"go":{"net":1.088,"net_tasks":32,"complexity":1.122}},"upstream_solved_attempts":290,"measured_solved_attempts":281,"footprint_population_count":432,"resolve_rate":0.6712962962962963,"same_task_net":1.079,"same_task_net_ci":[1.042,1.127],"same_task_net_tasks":92,"same_task_complexity":1.092,"same_task_complexity_ci":[1.052,1.14],"same_task_complexity_tasks":92,"latest":false,"aa_intelligence":38.4,"aa_coding":74.9,"aa_match":"exact","aa_name":"GPT-5.5 (Xhigh)"},{"agent":"deepswe-v1.1_mini_swe_agent_claude_opus_5_max","name":"Claude Opus 5 (max)","company":"Anthropic","languages":{"python":{"net":1.144,"net_tasks":28,"complexity":1.175},"javascript":{"net":1.178,"net_tasks":4,"complexity":1.243},"typescript":{"net":1.05,"net_tasks":28,"complexity":1.037},"go":{"net":1.044,"net_tasks":32,"complexity":1.021}},"upstream_solved_attempts":310,"measured_solved_attempts":300,"footprint_population_count":432,"resolve_rate":0.7175925925925926,"same_task_net":1.082,"same_task_net_ci":[1.047,1.114],"same_task_net_tasks":92,"same_task_complexity":1.082,"same_task_complexity_ci":[1.042,1.124],"same_task_complexity_tasks":92,"latest":true,"aa_intelligence":50.8,"aa_coding":78,"aa_match":"exact","aa_name":"Claude Opus 5 (Max)"},{"agent":"deepswe-v1.1_mini_swe_agent_gpt_5_4_xhigh","name":"GPT-5.4 (xhigh)","company":"OpenAI","languages":{"python":{"net":1.032,"net_tasks":25,"complexity":1.005},"javascript":{"net":1.027,"net_tasks":4,"complexity":0.933},"typescript":{"net":1.123,"net_tasks":25,"complexity":1.064},"go":{"net":1.143,"net_tasks":28,"complexity":1.173}},"upstream_solved_attempts":226,"measured_solved_attempts":218,"footprint_population_count":432,"resolve_rate":0.5231481481481481,"same_task_net":1.097,"same_task_net_ci":[1.057,1.14],"same_task_net_tasks":82,"same_task_complexity":1.077,"same_task_complexity_ci":[1.038,1.127],"same_task_complexity_tasks":82,"latest":false,"aa_intelligence":39,"aa_coding":71.1,"aa_match":"exact","aa_name":"GPT-5.4 (Xhigh)"},{"agent":"deepswe-v1.1_mini_swe_agent_gpt_5_6_luna_max","name":"GPT-5.6 Luna (max)","company":"OpenAI","languages":{"python":{"net":1.143,"net_tasks":30,"complexity":1.167},"javascript":{"net":1.024,"net_tasks":5,"complexity":1.099},"typescript":{"net":1.047,"net_tasks":27,"complexity":1.118},"go":{"net":1.132,"net_tasks":33,"complexity":1.189}},"upstream_solved_attempts":289,"measured_solved_attempts":281,"footprint_population_count":432,"resolve_rate":0.6689814814814815,"same_task_net":1.106,"same_task_net_ci":[1.072,1.141],"same_task_net_tasks":95,"same_task_complexity":1.157,"same_task_complexity_ci":[1.113,1.211],"same_task_complexity_tasks":95,"latest":true,"aa_intelligence":37.3,"aa_coding":71.4,"aa_match":"exact","aa_name":"GPT-5.6 Luna (Max)"},{"agent":"deepswe-v1.1_mini_swe_agent_muse_spark_1_2_xhigh","name":"Muse Spark 1.2 (xhigh)","company":"Meta","languages":{"python":{"net":1.309,"net_tasks":27,"complexity":1.384},"javascript":{"net":1.3,"net_tasks":5,"complexity":1.295},"typescript":{"net":1.302,"net_tasks":24,"complexity":1.438},"go":{"net":1.24,"net_tasks":29,"complexity":1.297}},"upstream_solved_attempts":236,"measured_solved_attempts":229,"footprint_population_count":432,"resolve_rate":0.5462962962962963,"same_task_net":1.283,"same_task_net_ci":[1.224,1.35],"same_task_net_tasks":85,"same_task_complexity":1.364,"same_task_complexity_ci":[1.298,1.441],"same_task_complexity_tasks":85,"latest":true,"aa_intelligence":39.6,"aa_coding":72.2,"aa_match":"exact","aa_name":"Muse Spark 1.2 (Xhigh)"},{"agent":"deepswe-v1.1_mini_swe_agent_muse_spark_1_1_xhigh","name":"Muse Spark 1.1 (xhigh)","company":"Meta","languages":{"python":{"net":1.352,"net_tasks":24,"complexity":1.406},"javascript":{"net":1.304,"net_tasks":5,"complexity":1.48},"typescript":{"net":1.365,"net_tasks":25,"complexity":1.502},"go":{"net":1.282,"net_tasks":28,"complexity":1.292}},"upstream_solved_attempts":230,"measured_solved_attempts":221,"footprint_population_count":432,"resolve_rate":0.5324074074074074,"same_task_net":1.329,"same_task_net_ci":[1.258,1.421],"same_task_net_tasks":82,"same_task_complexity":1.401,"same_task_complexity_ci":[1.314,1.509],"same_task_complexity_tasks":82,"latest":false,"aa_intelligence":33.7,"aa_coding":71.3,"aa_match":"exact","aa_name":"Muse Spark 1.1 (Xhigh)"}],"task_count":108,"population_count":432,"benchmark":{"name":"DeepSWE","url":"https://deepswe.datacurve.ai","reference":"Reference solution","task_url":"https://github.com/datacurve-ai/deep-swe/tree/main/tasks/{task}","task_link":"Task on GitHub","results":"DeepSWE's published results","attempts":4},"sources":[{"name":"DeepSWE \u00b7 Python","benchmark":"deepswe","language":"python","tasks":34,"attempts_per_task":4,"population_per_model":136,"active":true,"board_url":"index.html","report_url":"https://github.com/La5u/Parsimony/blob/main/examples/deepswe-python/README.md","manifest_url":"https://github.com/La5u/Parsimony/blob/main/examples/deepswe-python/population.json","manifest_sha256":"c16b15f80c140ffb4f0a548886962dda4173a02893a65b7faa1d6796940ecf65","dataset_sha256":"41a44998c70248e0a3e2a4cf43a8838b70248537d1f3a458838f2f7e09ecef8a"},{"name":"DeepSWE \u00b7 JavaScript","benchmark":"deepswe","language":"javascript","tasks":5,"attempts_per_task":4,"population_per_model":20,"active":true,"board_url":"javascript.html","report_url":"https://github.com/La5u/Parsimony/blob/main/examples/deepswe-javascript/README.md","manifest_url":"https://github.com/La5u/Parsimony/blob/main/examples/deepswe-javascript/population.json","manifest_sha256":"90a1a6ce286dc6730c764b10dada96b41e93f51aa6cd6fac6377a925e57bb1fb","dataset_sha256":"30091e2eecbe3661144223b5316fa2d9773c19a3f1b00a6641bba0f1c5f2dd47"},{"name":"DeepSWE \u00b7 TypeScript","benchmark":"deepswe","language":"typescript","tasks":35,"attempts_per_task":4,"population_per_model":140,"active":true,"board_url":"typescript.html","report_url":"https://github.com/La5u/Parsimony/blob/main/examples/deepswe-typescript/README.md","manifest_url":"https://github.com/La5u/Parsimony/blob/main/examples/deepswe-typescript/population.json","manifest_sha256":"8cf78a3bf16aa707e9ad20082cec04c2483378798d46d263e2f0d84d6682476a","dataset_sha256":"c03deb677cef4101524071ec7c83ba044b153f8dce96590c75bb3c9c179f54c7"},{"name":"DeepSWE \u00b7 Go","benchmark":"deepswe","language":"go","tasks":34,"attempts_per_task":4,"population_per_model":136,"active":true,"board_url":"go.html","report_url":"https://github.com/La5u/Parsimony/blob/main/examples/deepswe-go-v2/README.md","manifest_url":"https://github.com/La5u/Parsimony/blob/main/examples/deepswe-go-v2/population.json","manifest_sha256":"8fe9fc5904cb31e20f7dc664bed08b58c0644f2435b3de9a94227342e402ba1f","dataset_sha256":"ea57379e61ffbe05423d03c829f13b4ae89ebe28c1b0da85c2a48fd29f52413d"},{"name":"SWE-bench Verified","benchmark":"verified","language":"python","tasks":500,"attempts_per_task":1,"population_per_model":500,"active":false,"board_url":"verified.html","report_url":"https://github.com/La5u/Parsimony/blob/main/examples/mini-swe-agent-500/README.md","manifest_url":"https://github.com/La5u/Parsimony/blob/main/examples/mini-swe-agent-500/population.json","manifest_sha256":"02a66572bb1e80695a3cb77ba2d9392a70b5c3e089fd9987fee4b0da10a5292e","dataset_sha256":"82029e78b26e1da0ddc01653c98db18443fab1993e28dff052a38b01c3fd77f7"},{"name":"SWE-bench Live Lite","benchmark":"live","language":"python","tasks":300,"attempts_per_task":1,"population_per_model":300,"active":false,"board_url":"live.html","report_url":"https://github.com/La5u/Parsimony/blob/main/examples/live-python/README.md","manifest_url":"https://github.com/La5u/Parsimony/blob/main/examples/live-python/population-manifest.json","manifest_sha256":"d612fe71805fc47f95a4405b73e2f9eee208152c77819918a0174a335100b92c","dataset_sha256":"934163af5aff6f55c50c947d5548b26ac22a9e9a257bad7e0dee3712bddc7e78"},{"name":"SWE-bench Live MultiLang \u00b7 JavaScript","benchmark":"live-multilang","language":"javascript","tasks":108,"attempts_per_task":1,"population_per_model":108,"active":false,"board_url":"live-javascript.html","report_url":"https://github.com/La5u/Parsimony/blob/main/examples/live-javascript/README.md","manifest_url":"https://github.com/La5u/Parsimony/blob/main/examples/live-javascript/population-manifest.json","manifest_sha256":"079301c1f232363d231ffee4fdb88db465ceda72ab5c6d551ab92b5257105bb4","dataset_sha256":"145e5edd719e60e7653602a9cd5b86446df0ffbd60c1827b249ffa51c0b26ebb"},{"name":"SWE-bench Live MultiLang \u00b7 TypeScript","benchmark":"live-multilang","language":"typescript","tasks":111,"attempts_per_task":1,"population_per_model":111,"active":false,"board_url":"live-typescript.html","report_url":"https://github.com/La5u/Parsimony/blob/main/examples/live-typescript/README.md","manifest_url":"https://github.com/La5u/Parsimony/blob/main/examples/live-typescript/population-manifest.json","manifest_sha256":"c60792a01efcf8090d3952673eff201167791a103a94e409e1bb6b1ecc930aea","dataset_sha256":"d64f11c58dc0b7ad79bfea5ed401414eedb9c176f0e2711deca0edd5a1b5530c"},{"name":"SWE-bench Live MultiLang \u00b7 Go","benchmark":"live-multilang","language":"go","tasks":138,"attempts_per_task":1,"population_per_model":138,"active":false,"board_url":"live-go.html","report_url":"https://github.com/La5u/Parsimony/blob/main/examples/live-go/README.md","manifest_url":"https://github.com/La5u/Parsimony/blob/main/examples/live-go/population-manifest.json","manifest_sha256":"e30ac4eadc848f7ff4be22290ff4806d8914ae306da3444a1e82d6a36e9984ce","dataset_sha256":"e5094bfd01e3c3d7f45d4584e4a1c2e2eb5cfb67cebdd74fdcb8c96be2c842ad"},{"name":"SWEeper-Bench \u00b7 PHP","benchmark":"sweeper","language":"php","tasks":128,"attempts_per_task":1,"population_per_model":128,"active":false,"board_url":"sweeper-php.html","report_url":"https://github.com/La5u/Parsimony/blob/main/examples/sweeper-php/README.md","manifest_url":"https://github.com/La5u/Parsimony/blob/main/examples/sweeper-php/population-manifest.json","manifest_sha256":"e574ff1188ee53f0838ff6997d03adf21d50306fa5e84f56ab9a468f2b19eaca","dataset_sha256":"56a8ecbdf5aa98ae67a2e7d696b2eb38d2176ed2962b5a9e495f35112d7c1d74"},{"name":"My runs \u00b7 DeepSWE Python tasks","benchmark":"self-run","language":"python","tasks":10,"attempts_per_task":2,"population_per_model":"10\u201320","active":false,"self_run":true,"board_url":"index.html","report_url":"https://github.com/La5u/Parsimony/blob/main/examples/self-run/README.md","manifest_url":"https://github.com/La5u/Parsimony/blob/main/examples/self-run/plan.json","manifest_sha256":"34b7f75933b8017956e0ad8b8340305fd41788e50cf8f2c5177b440aa19a65ce","deepswe_commit":"0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea"}],"nav":[{"label":"DeepSWE Python","url":"index.html","current":false},{"label":"DeepSWE JavaScript","url":"javascript.html","current":false},{"label":"DeepSWE TypeScript","url":"typescript.html","current":false},{"label":"DeepSWE Go","url":"go.html","current":false},{"label":"DeepSWE, all languages","url":"deepswe.html","current":true},{"label":"SWE-bench Verified","url":"verified.html","current":false},{"label":"Live Python","url":"live.html","current":false},{"label":"Live JavaScript","url":"live-javascript.html","current":false},{"label":"Live TypeScript","url":"live-typescript.html","current":false},{"label":"Live Go","url":"live-go.html","current":false},{"label":"SWEeper PHP","url":"sweeper-php.html","current":false}],"external":{"source":"Artificial Analysis","attribution":"https://artificialanalysis.ai/","fetched_at":"2026-10-08T20:46:26Z","response_sha256":"4d9c2af1fbd94deef5ec14f81753966eedcecdf792643c8397972131358a11cd"}}</script>
+<script>
+(function () {
+  const data = JSON.parse(document.getElementById('parsimony-data').textContent);
+  const $ = (id) => document.getElementById(id);
+  const fmt = (v, d = 1) => (v === null || v === undefined) ? '—' : Number(v).toFixed(d).replace('-', '−');
+  const signed = (v) => (v === null || v === undefined) ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+  const n = data.models.length;
+  const bench = data.benchmark || {name: 'SWE-bench Verified', url: 'https://www.swebench.com', reference: "Maintainers' fix",
+    task_url: 'https://github.com/{owner}/{repo}/pull/{number}', task_link: "Maintainers' pull request",
+    results: "SWE-bench's published results", attempts: 1};
+  // DeepSWE across languages: per-language same-task ratios combined; no raw units, no task view.
+  const merged = data.merged || null, languages = merged ? merged.languages : [];
+  const langKeys = languages.map(l => 'lang_' + l.key);
+  const trackName = merged ? 'all languages' : {python: 'Python', javascript: 'JavaScript', typescript: 'TypeScript', go: 'Go', php: 'PHP'}[data.measurement_track?.language || 'python'];
+  $('leaderboard').textContent = `${bench.name} — ${trackName}`;
+  $('bench-link').textContent = bench.name;
+  // Only http(s) or same-site relative URLs may reach an href.
+  const safeUrl = u => /^(https?:\/\/[^\s]|\.{0,2}\/(?!\/)|[^:/?#\s]+(?:[/?#]|$))/i.test(String(u || '')) ? String(u) : '#';
+  $('bench-link').href = safeUrl(bench.url);
+  $('results-limit').textContent = `Pass/fail comes from ${bench.results}; tests aren't rerun.`;
+  $('metric-source').textContent = `${bench.name}: ${bench.results}`;
+  const sources = data.sources || [];
+  $('data-sources').hidden = sources.length === 0;
+  const maxTasks = Math.max(1, ...sources.map(s => s.tasks));
+  const sourceLink = (url, label) => /^(https?:\/\/|\.{0,2}\/(?!\/)|[^:/?#]+\.html(?:[?#]|$))/.test(String(url || ''))
+    ? `<a href="${esc(url)}">${esc(label)}</a>` : esc(label);
+  $('source-counts').innerHTML = sources.map(s => `<div class="source-row">${sourceLink(s.board_url, s.name)}${s.self_run ? ' — run by me, not ranked' : s.active ? ' — this board' : ''}<div class="source-bar" style="width:${Number.isFinite(s.tasks) && s.tasks >= 0 ? s.tasks / maxTasks * 100 : 0}%" aria-hidden="true"></div><span>${s.self_run ? `up to ${esc(s.tasks)} tasks × ${esc(s.attempts_per_task)} attempts` : `${esc(s.tasks)} tasks × ${esc(s.attempts_per_task)} attempt${s.attempts_per_task === 1 ? '' : 's'}`}</span></div>`).join('');
+  $('source-evidence').innerHTML = sources.map(s => `<p>${esc(s.name)}: ${sourceLink(s.report_url, 'Report')} · ${sourceLink(s.manifest_url, 'Manifest')}<br>${s.self_run ? 'Plan' : 'Manifest'} SHA-256: ${esc(s.manifest_sha256)}<br>${s.self_run ? `DeepSWE commit: ${esc(s.deepswe_commit)}` : `Dataset SHA-256: ${esc(s.dataset_sha256)}`}</p>`).join('');
+  $('task-link').textContent = bench.task_link;
+  if ((data.nav || []).length) {
+    $('nav').hidden = false;
+    $('nav').innerHTML = '<span class="nav-title">Leaderboard</span>' + data.nav.map((l) => l.current
+      ? `<a class="board current" href="${esc(l.url)}" aria-current="page">${esc(l.label)}</a>`
+      : `<a class="board" href="${esc(l.url)}">${esc(l.label)}</a>`).join('')
+      + `<select id="nav-select" aria-label="Leaderboard">${data.nav.map(l => `<option value="${esc(l.url)}"${l.current ? ' selected' : ''}>${esc(l.label)}</option>`).join('')}</select>`;
+    $('nav-select').addEventListener('change', e => { location.href = e.target.value; });
+  }
+  const displayedTasks = data.footprint_tasks || data.tasks;
+  const taskCount = new Set(displayedTasks.map((t) => t[0].split('#')[0])).size;
+  const items = bench.attempts > 1 ? `${taskCount} ${bench.name} tasks (${data.population_count || data.task_count} attempts per model)` : `${data.population_count || data.task_count} ${bench.name} tasks`;
+  $('board-intro').textContent = `${n} models on ${items}.`;
+  // Small boards say so, and point to the 500-task board when it is in the switcher.
+  $('task-picker').hidden = !!merged;
+  if (merged) {
+    $('board-intro').textContent = `${n} models on ${bench.name}'s ${languages.map(l => `${l.tasks} ${l.name}`).join(', ').replace(/, ([^,]*)$/, ' and $1')} tasks, ${languages[0]?.attempts ?? 4} attempts each. `
+      + `Each language is compared on its own board; the ratio here averages a model's language ratios, weighted by how many shared tasks each has.`;
+    $('language-scope').textContent = `Tests, docs and generated files are left out. Each language is measured on its own board with its own parser; unit counts are never added across languages, only the ratios are combined.`;
+  } else if (taskCount < 50) {
+    const verified = (data.nav || []).find(l => l.url === 'verified.html' && !l.current);
+    $('board-intro').innerHTML = `${esc(n)} models on ${esc(items)}. Only ${esc(taskCount)} tasks, so the order is rough.`
+      + (verified ? ` <a href="verified.html">SWE-bench Verified</a> has 500 tasks, with older models.` : '');
+  }
+  if (data.measurement_track) {
+    const language = {javascript: 'JavaScript / JSX and TypeScript', typescript: 'TypeScript / TSX and JavaScript', go: 'Go', php: 'PHP'}[data.measurement_track.language];
+    const parser = data.measurement_track.unit_version.startsWith('typescript-compiler')
+      ? `the official TypeScript parser (typescript ${data.measurement_track.versions.typescript}, syntax only)` : 'pinned Tree-sitter grammars';
+    $('language-scope').textContent = `Tests, docs and generated files are left out. This page measures ${language} with ${parser}; counts can't be compared across languages.`;
+  }
+  if (bench.notice) {
+    $('benchmark-notice').hidden = false;
+    $('benchmark-notice').textContent = bench.notice;
+  }
+  const versions = data.harness || [];
+  if (bench.harness_note) {
+    $('harness-limit').textContent = bench.harness_note;
+  } else if ((data.other_harness || []).length) {
+    $('harness-limit').textContent = `Every model except ${data.other_harness.join(', ')} uses mini-SWE-agent (versions ${versions[0]} to ${versions[versions.length - 1]}); the agent affects how much code gets written.`;
+  } else if (versions.length > 1) {
+    $('harness-limit').textContent = `Every model uses mini-SWE-agent, but versions ${versions[0]} to ${versions[versions.length - 1]}; the agent affects how much code gets written.`;
+  } else if (versions.length === 1) {
+    $('harness-limit').textContent = `Every model uses the same agent (mini-SWE-agent ${versions[0]}), but the agent still affects how much code gets written.`;
+  }
+  const external = data.external || null;
+  // Owner-run configurations: shown faded in the all-tasks view, never ranked.
+  const selfRun = data.self_run_models || [];
+  let showSelfRun = true, showOtherHarnesses = false;
+  // A model run through both Codex and pi shows its Codex run unless other harnesses are turned on.
+  const activeSelfRun = () => showSelfRun ? selfRun.filter(m => showOtherHarnesses || !m.alternative_harness) : [];
+  // Rank: mean net units added over measured solved attempts. Measured = measured solved / upstream solved.
+  const netMean = m => m.measured_solved_net_mean;
+  const measuredCount = m => m.measured_solved_attempts;
+  const denominator = m => m.upstream_solved_attempts;
+  const selfRunCounts = selfRun.map(m => m.tasks).filter(Number.isFinite);
+  const selfRunTasks = selfRunCounts.length ? (Math.min(...selfRunCounts) === Math.max(...selfRunCounts) ? `${Math.min(...selfRunCounts)}` : `${Math.min(...selfRunCounts)}–${Math.max(...selfRunCounts)}`) : 'a few';
+  const selfRunNote = m => `Run by me with ${m.harness} on ${m.tasks} of ${taskCount} tasks${m.graded ? `, ${m.upstream_solved_attempts} solved` : ', not graded'}`;
+  if (selfRun.length) {
+    $('self-run-note').hidden = false;
+    $('self-run-help').hidden = false;
+    $('self-run-note').textContent = `My runs: models I ran myself on ${selfRunTasks} of these tasks. Not ranked.`;
+    document.querySelectorAll('.self-run-tasks').forEach(el => { el.textContent = selfRunTasks; });
+  }
+  if (external) {
+    $('external-note').hidden = $('external-help').hidden = false;
+    $('external-note').innerHTML = `The <a href="${esc(external.attribution)}">Artificial Analysis</a> Intelligence Index is from ${esc(external.fetched_at.slice(0, 10))}.`;
+  }
+  // Same-task comparison (task difficulty): code relative to the other models on the tasks a model solved.
+  const sameTask = data.models.some(m => Number.isFinite(m.same_task_net));
+  const rankValue = m => sameTask ? m.same_task_net : netMean(m);
+  const rankOf = m => Number.isFinite(rankValue(m)) ? 1 + data.models.filter(other =>
+    Number.isFinite(rankValue(other)) && rankValue(other) < rankValue(m)).length : null;
+  // One sentence above the chart whenever an axis is a same-task ratio, so 0.8× reads without opening help.
+  const showRatioNote = keys => {
+    const what = keys.some(k => k === 'same_net' || langKeys.includes(k)) ? 'Net units added' : keys.includes('same_cx') ? 'Complexity added' : '';
+    $('ratio-note').hidden = !what;
+    $('ratio-note').textContent = what ? `×: ${what.toLowerCase()} vs. other models on the same solved tasks. 1× = the same, 0.8× = 20% less.` : '';
+  };
+  // Legend entries for the two kinds of lighter dot, so older generations and my runs aren't confused.
+  const fadeLegend = (older, selfRun) =>
+    (older ? '<span><span class="company-swatch fade-swatch" style="opacity:0.7" aria-hidden="true"></span>Lighter: older generation</span>' : '')
+    + (selfRun ? '<span><span class="company-swatch fade-swatch" style="opacity:0.35" aria-hidden="true"></span>Faintest: my runs, not ranked</span>' : '');
+  const ratioKeys = ['same_net', 'same_cx', ...langKeys], footprintKeys = ['net', 'solved_net', 'churn', 'solved_cx', 'cx', ...ratioKeys];
+  const defaultKey = sameTask ? 'same_net' : 'solved_net';
+  if (sameTask) {
+    $('rank-help').textContent = 'Some tasks need much more code than others, and models solve different tasks. So each model is ranked by the code it added on the tasks it solved, divided by what the other models added on those same tasks: 0.8× means 20% less code than they wrote. Only tasks solved by at least 3 other models count, and totals are compared, so tasks where everyone writes a lot weigh more than small ones. "Net units added (mean)" is the plain average and also includes failed attempts. Complexity counts added branches, loops and functions the same way.';
+  }
+  if (merged) {
+    $('rank-help').textContent = `Each language board ranks models by the code they added on the tasks they solved, divided by what the other models added on those same tasks: 0.8× means 20% less code. This page averages each model's ${languages.map(l => l.name).join(', ')} ratios, weighting each language by the model's shared tasks there, so a language with few tasks counts little. Unit counts differ between languages and are never added together. The 95% range resamples tasks within each language.`;
+  }
+  const languageOf = key => languages.find(l => 'lang_' + l.key === key);
+  const ratioOf = (m, key) => key === 'same_cx' ? [m.same_task_complexity_ci, m.same_task_complexity_tasks] : [m.same_task_net_ci, m.same_task_net_tasks];
+  const rangeNote = (m, key) => {
+    if (languageOf(key)) {
+      const count = m.languages?.[languageOf(key).key]?.net_tasks ?? 0;
+      return `${languageOf(key).name} board: ${count} shared task${count === 1 ? '' : 's'}`;
+    }
+    const [ci, count] = ratioOf(m, key);
+    return ci ? `95% range ${fmt(ci[0], 2)}–${fmt(ci[1], 2)}× over ${count} tasks` : `Only ${count ?? 0} shared task${count === 1 ? '' : 's'}: too few for a range`;
+  };
+  const tasks = new Map(displayedTasks.map((t) => [t[0], t]));
+  const labels = {r: 'solved', f: 'failed', u: 'unknown', m: 'not measured', n: 'no attempt', e: 'empty patch', o: 'out of scope', c: 'no passing reference'};
+  let selected = null, sortKey = defaultKey, ascending = true;
+  $('task-ids').innerHTML = displayedTasks.map((t) => `<option value="${esc(t[0])}">`).join('');
+  function metricValue(model, index, key) {
+    if (!selected) {
+      return {resolve_rate: model.resolve_rate == null ? null : model.resolve_rate * 100,
+        coverage: denominator(model) > 0 ? measuredCount(model) / denominator(model) * 100 : null,
+        churn: model.measured_churn_mean, net: model.measured_net_mean, solved_net: model.measured_solved_net_mean,
+        solved_cx: model.measured_solved_complexity_mean, same_net: model.same_task_net, same_cx: model.same_task_complexity,
+        aa_coding: model.aa_coding, aa_intelligence: model.aa_intelligence,
+        ...Object.fromEntries(languages.map(l => ['lang_' + l.key, model.languages?.[l.key]?.net ?? null]))}[key];
+    }
+    const cell = selected[2][index];
+    const eligible = cell.length > 7 ? cell[7] : ['r', 'f', 'c'].includes(cell[0]);
+    return {net: eligible ? cell[1] : null,
+      churn: eligible ? cell[2] : null, cx: eligible ? cell[8] ?? null : null}[key];
+  }
+  function renderBoard() {
+    // Only restore a sort button that actually held focus, never steal focus from search/reset.
+    const focusedSort = [...document.querySelectorAll('#board button[data-sort]')]
+      .find(button => button === document.activeElement)?.dataset.sort;
+    const headers = selected
+      ? [['Model', null], ['Result', null], ['Net units', 'net']]
+      : merged ? [['#', null], ['Model', null], ['Vs. others, all languages', 'same_net'], ...languages.map(l => [l.name, 'lang_' + l.key]), ['Solved', 'resolve_rate'], ...(external ? [['AA Intel.', 'aa_intelligence']] : []), ['Measured', 'coverage']]
+      : [['#', null], ['Model', null], ...(sameTask ? [['Vs. others, same tasks', 'same_net']] : []), ['Net units, solved (mean)', 'solved_net'], ['Net units, all measured (mean)', 'net'], ['Solved', 'resolve_rate'], ...(external ? [['AA Intel.', 'aa_intelligence']] : []), ['Measured', 'coverage']];
+    document.querySelector('#board thead').innerHTML = '<tr>' + headers.map(([name, key]) => `<th${key ? ` aria-sort="${key === sortKey ? ascending ? 'ascending' : 'descending' : 'none'}"` : ''}${name === 'Model' ? ' class="left"' : ''}>${key ? `<button type="button" data-sort="${key}">${name}</button>` : name}</th>`).join('') + '</tr>';
+    const buttons = [...document.querySelectorAll('#board button[data-sort]')];
+    if (focusedSort) buttons.find(button => button.dataset.sort === focusedSort)?.focus({preventScroll: true});
+    buttons.forEach((button) => button.addEventListener('click', () => {
+      const key = button.dataset.sort;
+      ascending = key === sortKey ? !ascending : footprintKeys.includes(key);
+      sortKey = key;
+      renderBoard();
+    }));
+    const order = (a, b) => {
+      const x = metricValue(a.m, a.i, sortKey), y = metricValue(b.m, b.i, sortKey);
+      if (x == null || y == null || Number.isNaN(Number(x)) || Number.isNaN(Number(y))) return (x == null || Number.isNaN(Number(x))) - (y == null || Number.isNaN(Number(y)));
+      return (ascending ? x - y : y - x) || a.m.name.localeCompare(b.m.name);
+    };
+    // Self-run rows cover a task subset: listed after the ranked rows, never interleaved.
+    const extra = selected ? [] : activeSelfRun().map(m => ({m, i: -1})).sort(order);
+    const models = data.models.map((m, i) => ({m, i})).sort(order).concat(extra);
+    document.querySelector('#board tbody').innerHTML = models.map(({m, i}, k) => (k === models.length - extra.length && extra.length
+      ? `<tr class="self-run-head"><td colspan="${headers.length}">My runs · not ranked, ${selfRunTasks} tasks</td></tr>` : '') + (() => {
+      if (selected) {
+        const c = selected[2][i];
+        const outcome = labels[c[6] || c[0]] || c[0];
+        const result = metricValue(m, i, 'net') == null ? `${outcome} · not measured` : outcome;
+        return `<tr><td class="left">${esc(m.name)}</td><td class="left ${esc(c[6] || c[0])}">${esc(result)}</td><td>${signed(metricValue(m, i, 'net'))}</td></tr>`;
+      }
+      const solved = metricValue(m, i, 'resolve_rate');
+      const ratioCell = key => `<td title="${esc(rangeNote(m, key))}">${Number.isFinite(metricValue(m, i, key)) ? fmt(metricValue(m, i, key), 2) + '×' : '—'}</td>`;
+      if (merged) return `<tr><td>${rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td>${ratioCell('same_net')}${langKeys.map(ratioCell).join('')}<td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
+      return `<tr${m.self_run ? ` class="self-run" title="${esc(selfRunNote(m))}"` : ''}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td>${sameTask ? `<td title="${esc(rangeNote(m, 'same_net'))}">${Number.isFinite(m.same_task_net) ? fmt(m.same_task_net, 2) + '×' : '—'}</td>` : ''}<td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.measured_net_mean)}</td><td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
+    })()).join('');
+  }
+  function showTask(id) {
+    if (id && !tasks.has(id)) { $('task-status').textContent = `No task matches “${id}”. Still showing ${selected ? selected[0] : 'all tasks'}.`; return; }
+    if (!!selected !== !!id) { sortKey = id ? 'net' : defaultKey; ascending = true; }
+    selected = id ? tasks.get(id) : null;
+    const typical = selected && (data.task_typical || {})[selected[0].split('#')[0]];
+    $('task-status').textContent = selected ? `Selected task: ${selected[0]}.` + (typical
+      ? ` Typical solved patch: ${signed(typical[0])} net units${typical[1] == null ? '' : `, complexity ${signed(typical[1])}`} (mean of ${typical[2]} model${typical[2] === 1 ? '' : 's'}).` : '') : 'Showing all tasks.';
+    $('task-search').value = selected ? selected[0] : '';
+    $('task-footer').hidden = !selected;
+    if (selected) {
+      const task = selected[0], m = task.match(/^(.+?)__(.+)-(\d+)$/);
+      $('task-link').textContent = bench.task_link;
+      $('task-link').href = safeUrl(data.task_urls?.[task] || (bench.task_url.includes('{task}') ? bench.task_url.replace('{task}', encodeURIComponent(task.split('#')[0])) : m ? bench.task_url.replace('{owner}', m[1]).replace('{repo}', m[2]).replace('{number}', m[3]) : '#'));
+    }
+    feedbackLinks();
+    renderBoard(); renderAxisControls(); renderGraph();
+  }
+  function feedbackLinks() {
+    const issue = (template, fields) => 'https://github.com/La5u/Parsimony/issues/new?' + new URLSearchParams({template, ...fields});
+    const board = `${bench.name} — ${trackName}`;
+    $('request-model').href = issue('model-request.yml', {board});
+    $('report-number').href = issue('number-looks-wrong.yml', selected ? {board, task: selected[0]} : {board});
+  }
+  feedbackLinks();
+  const companyColors = {
+    'Anthropic': '#d97757', 'OpenAI': '#000000', 'Google': '#34a853', 'DeepSeek': '#2756bd',
+    'Alibaba': '#e59215', 'xAI': '#8b5cf6', 'Z.ai': '#c94eaf', 'Moonshot AI': '#00a6b2',
+    'MiniMax': '#dc5263', 'Meta': '#6366f1', 'Mistral AI': '#b18a00', 'Other': '#64748b'
+  };
+  const companyColor = company => companyColors[company] || companyColors.Other;
+  // External capability indices replace Solved as the default Y axis when a pinned snapshot is present.
+  const graphAxes = {all: {x: defaultKey, y: external ? 'aa_intelligence' : 'resolve_rate'}, task: {x: 'net', y: 'churn'}};
+  const currentAxes = () => graphAxes[selected ? 'task' : 'all'];
+  function axisOptions() {
+    const complexity = data.models.some(m => Number.isFinite(m.measured_solved_complexity_mean));
+    if (selected) return [{key: 'net', label: 'Net units added'}, {key: 'churn', label: 'Units changed'},
+      ...(complexity ? [{key: 'cx', label: 'Complexity added'}] : [])];
+    if (merged) return [{key: 'same_net', label: 'Net units vs. other models, all languages (×)'},
+      {key: 'same_cx', label: 'Complexity vs. other models, all languages (×)'},
+      ...languages.map(l => ({key: 'lang_' + l.key, label: `Net units vs. other models, ${l.name} (×)`})),
+      {key: 'resolve_rate', label: 'Solved (%)'}, {key: 'coverage', label: 'Measured (%)'},
+      ...(external ? [{key: 'aa_intelligence', label: 'Artificial Analysis Intelligence Index'},
+        {key: 'aa_coding', label: 'Artificial Analysis Coding Index'}] : [])];
+    return [...(sameTask ? [{key: 'same_net', label: 'Net units vs. other models, same tasks (×)'},
+        {key: 'same_cx', label: 'Complexity vs. other models, same tasks (×)'}] : []),
+      {key: 'solved_net', label: 'Net units added, solved (mean)'}, {key: 'net', label: 'Net units added, all measured (mean)'},
+      {key: 'churn', label: 'Units changed, all measured (mean)'}, {key: 'resolve_rate', label: 'Solved (%)'},
+      {key: 'coverage', label: 'Measured (%)'},
+      ...(complexity ? [{key: 'solved_cx', label: 'Complexity added, solved (mean)'}] : []),
+      ...(external ? [{key: 'aa_intelligence', label: 'Artificial Analysis Intelligence Index'},
+        {key: 'aa_coding', label: 'Artificial Analysis Coding Index'}] : [])];
+  }
+  function renderAxisControls() {
+    for (const axis of ['x', 'y']) {
+      $('graph-' + axis).innerHTML = axisOptions().map(o => `<option value="${o.key}">${esc(o.label)}</option>`).join('');
+      $('graph-' + axis).value = currentAxes()[axis];
+    }
+  }
+  for (const axis of ['x', 'y']) $('graph-' + axis).addEventListener('change', e => {
+    const key = e.target.value, axes = currentAxes(), other = axis === 'x' ? 'y' : 'x';
+    if (!axisOptions().some(o => o.key === key)) return;
+    if (axes[other] === key) axes[other] = axes[axis];
+    axes[axis] = key;
+    renderAxisControls(); renderGraph();
+  });
+  // Chart type: the scatter, or bars of the X-axis metric; ?chart=bar opens the bars (shareable link).
+  // ?selfrun=0 hides the self-run models from the chart and table; ?harnesses=all adds the pi runs of models also run with Codex.
+  let chartType = 'scatter';
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('chart') === 'bar') chartType = 'bar';
+    if (params.get('selfrun') === '0') showSelfRun = false;
+    if (params.get('harnesses') === 'all') showOtherHarnesses = true;
+  } catch (e) {}
+  const setParam = (key, value) => {
+    try {
+      const url = new URL(window.location.href);
+      if (value == null) url.searchParams.delete(key); else url.searchParams.set(key, value);
+      window.history.replaceState(null, '', url);
+    } catch (e) {}
+  };
+  $('chart-type').value = chartType;
+  $('chart-type').addEventListener('change', e => {
+    chartType = e.target.value === 'bar' ? 'bar' : 'scatter';
+    setParam('chart', chartType === 'bar' ? 'bar' : null);
+    renderAxisControls(); renderGraph();
+  });
+  $('self-run-toggle-label').hidden = selfRun.length === 0;
+  $('self-run-toggle').checked = showSelfRun;
+  if (selfRun.length) $('self-run-note').hidden = !showSelfRun;
+  $('self-run-toggle').addEventListener('change', e => {
+    showSelfRun = !!e.target.checked;
+    setParam('selfrun', showSelfRun ? null : '0');
+    $('self-run-note').hidden = !showSelfRun;
+    $('harness-toggle-label').hidden = !showSelfRun || !selfRun.some(m => m.alternative_harness);
+    renderBoard(); renderGraph();
+  });
+  $('harness-toggle-label').hidden = !showSelfRun || !selfRun.some(m => m.alternative_harness);
+  $('harness-toggle').checked = showOtherHarnesses;
+  $('harness-toggle').addEventListener('change', e => {
+    showOtherHarnesses = !!e.target.checked;
+    setParam('harnesses', showOtherHarnesses ? 'all' : null);
+    renderBoard(); renderGraph();
+  });
+  const tooltip = $('graph-tooltip');
+  let tooltipTarget = null, dismissedTooltipTarget = null;
+  function hideTooltip() {
+    tooltip.hidden = true; tooltip.textContent = '';
+    tooltipTarget = dismissedTooltipTarget = null;
+  }
+  window.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !tooltip.hidden) {
+      const target = tooltipTarget;
+      hideTooltip();
+      // Keep it dismissed during pointer movement until exit/blur or a redraw.
+      dismissedTooltipTarget = target;
+    }
+  });
+  window.addEventListener('scroll', hideTooltip, true);
+  // Phones resize the height when the address bar hides; only a width change needs a redraw.
+  let resizePending = false, lastWidth = null;
+  window.addEventListener('resize', () => {
+    hideTooltip();
+    if (resizePending || $('graph').clientWidth === lastWidth) return;
+    resizePending = true;
+    const update = () => { resizePending = false; renderGraph(); };
+    if (window.requestAnimationFrame) window.requestAnimationFrame(update);
+    else update();
+  });
+  const usesExternalAxis = () => !selected && [currentAxes().x, currentAxes().y].some(k => k.startsWith('aa_'));
+  function showTooltipAt(target, event, text) {
+    if (target === dismissedTooltipTarget) return;
+    tooltipTarget = target;
+    tooltip.textContent = text;
+    tooltip.hidden = false;
+    const rect = target.getBoundingClientRect();
+    const w = tooltip.offsetWidth, h = tooltip.offsetHeight, gap = 12;
+    const fit = (left, top) => [Math.max(8, Math.min(left, window.innerWidth - w - 8)), Math.max(8, Math.min(top, window.innerHeight - h - 8))];
+    let place;
+    if (target.matches && target.matches('circle')) {
+      // Scatter: beside the point, on the side that covers the fewest other points and labels.
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2, r = rect.width / 2;
+      const obstacles = [...document.querySelectorAll('#graph circle, #graph .point-label')]
+        .filter(el => el !== target).map(el => el.getBoundingClientRect());
+      const spots = [[cx + r + gap, cy - h / 2], [cx - r - gap - w, cy - h / 2], [cx - w / 2, cy - r - gap - h], [cx - w / 2, cy + r + gap],
+                          [cx + r + gap, cy - r - gap - h], [cx - r - gap - w, cy - r - gap - h], [cx + r + gap, cy + r + gap], [cx - r - gap - w, cy + r + gap]]
+        .map(([left, top]) => fit(left, top));
+      const overlap = ([left, top]) => {
+        const covers = (b, pad = 0) => left < b.right + pad && left + w > b.left - pad && top < b.bottom + pad && top + h > b.top - pad;
+        return (covers(rect, 2) ? 1000 : 0) + obstacles.filter(b => covers(b)).length;
+      };
+      place = spots.reduce((best, c) => overlap(c) < overlap(best) ? c : best);
+    } else {
+      const x = Number.isFinite(event?.clientX) ? event.clientX : rect.left + rect.width / 2;
+      const y = Number.isFinite(event?.clientY) ? event.clientY : rect.bottom;
+      place = fit(x + gap, y + 14 + h > window.innerHeight - 8 ? y - h - gap : y + 14);
+    }
+    tooltip.style.left = `${place[0]}px`;
+    tooltip.style.top = `${place[1]}px`;
+  }
+  function renderBars() {
+    // Bars show the X-axis metric; footprints smallest first, percentages and indices largest first.
+    const key = currentAxes().x, footprint = footprintKeys.includes(key);
+    const units = v => v.toLocaleString('en-US', {maximumFractionDigits: ratioKeys.includes(key) ? 2 : 1}).replace('-', '−');
+    const percent = ['resolve_rate', 'coverage'].includes(key) ? '%' : ratioKeys.includes(key) ? '×' : '';
+    const rows = data.models.map((m, i) => ({m, i, v: metricValue(m, i, key), latest: m.latest !== false}))
+      .concat(selected ? [] : activeSelfRun().map(m => ({m, i: -1, v: metricValue(m, -1, key), latest: true, selfRun: true})))
+      .filter(r => Number.isFinite(r.v)).sort((a, b) => (footprint ? a.v - b.v : b.v - a.v) || a.m.name.localeCompare(b.m.name));
+    // Self-run means cover only their own task subset, so they get their own group, never interleaved.
+    rows.sort((a, b) => !!a.selfRun - !!b.selfRun);
+    const firstSelfRun = rows.findIndex(r => r.selfRun);
+    const metric = axisOptions().find(o => o.key === key).label + (selected ? ' in this attempt' : '');
+    $('graph-legend').textContent = rows.length
+      ? `${metric}.`
+      : 'No data for this view.';
+    showRatioNote([key]);
+    $('company-legend').innerHTML = [...new Set(rows.map(r => r.m.company || 'Other'))].sort().map(company =>
+      `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('')
+      + fadeLegend(rows.some(r => !r.latest && !r.selfRun), rows.some(r => r.selfRun));
+    const lo = Math.min(0, ...rows.map(r => r.v)), hi = Math.max(0, ...rows.map(r => r.v));
+    const span = hi - lo || 1, pct = v => (v - lo) / span * 100;
+    const note = r => {
+      const m = r.m, total = m.footprint_population_count || data.population_count || data.task_count;
+      return `${m.name}${r.selfRun ? ' · self-run' : ''} (${m.company || 'Other'})\n${metric}: ${units(r.v)}${percent}` +
+        (selected ? `\n${labels[selected[2][r.i][6] || selected[2][r.i][0]] || 'unknown'} task attempt` : `\nMeasured ${measuredCount(m) ?? 0}/${denominator(m) ?? 0} solved attempts`) +
+        (ratioKeys.includes(key) ? '\n' + rangeNote(m, key) : '') + (r.selfRun ? '\n' + selfRunNote(m) : '');
+    };
+    $('graph').style.marginBottom = '0px';
+    $('graph').innerHTML = `<div class="bars" role="list" aria-label="${esc(metric)} per model, ${footprint ? 'smallest' : 'largest'} first">` + rows.map((r, k) =>
+      (k === firstSelfRun ? `<div class="bar-group" role="presentation">My runs: ${selfRunTasks} tasks only, so not comparable with the bars above</div>` : '') +
+      `<div class="bar-row${r.latest ? '' : ' older'}${r.selfRun ? ' self-run' : ''}" role="listitem" tabindex="0" data-bar="${k}" aria-label="${esc(note(r).replace(/\n/g, '; '))}">` +
+      `<span class="bar-name">${esc(r.m.name)}</span>` +
+      `<span class="bar-track">${lo < 0 ? `<span class="bar-zero" style="left:${pct(0)}%"></span>` : ''}<span class="bar" style="left:${pct(Math.min(0, r.v))}%;width:${Math.abs(r.v) / span * 100}%;background:${companyColor(r.m.company || 'Other')}"></span></span>` +
+      `<span class="bar-value">${units(r.v)}${percent}</span></div>`).join('') + '</div>';
+    document.querySelectorAll('#graph [data-bar]').forEach(row => {
+      const show = event => showTooltipAt(row, event, note(rows[Number(row.dataset.bar)]));
+      ['mouseenter', 'mousemove', 'focus', 'click'].forEach(event => row.addEventListener(event, show));
+      ['mouseleave', 'blur'].forEach(event => row.addEventListener(event, hideTooltip));
+    });
+  }
+  function renderGraph() {
+    hideTooltip();
+    lastWidth = $('graph').clientWidth;
+    $('graph-y-control').hidden = chartType === 'bar';
+    $('graph-x-label').textContent = chartType === 'bar' ? 'Metric' : 'X axis';
+    if (chartType === 'bar') return renderBars();
+    const axes = currentAxes(), options = axisOptions();
+    const xLabel = options.find(o => o.key === axes.x).label, yLabel = options.find(o => o.key === axes.y).label;
+    const axisFormat = (value, key) => ratioKeys.includes(key) ? fmt(value, 2) + '×' : fmt(value) + (['resolve_rate', 'coverage'].includes(key) ? '%' : '');
+    const points = data.models.map((m, i) => ({x: metricValue(m, i, axes.x), y: metricValue(m, i, axes.y),
+      name: m.name, company: m.company || 'Other', count: measuredCount(m), match: m.aa_match, latest: m.latest !== false,
+      kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : (selected[2][i][6] || selected[2][i][0]) === 'r' ? 'resolved' : 'unknown') : 'all', i, m}))
+      .concat(selected ? [] : activeSelfRun().map(m => ({x: metricValue(m, -1, axes.x), y: metricValue(m, -1, axes.y), name: m.name,
+        company: m.company || 'Other', count: measuredCount(m), match: m.aa_match, latest: true, kind: 'all', i: -1, m, selfRun: true})))
+      .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
+    $('graph-legend').textContent = points.length
+      ? (selected ? 'Status on hover.' : '')
+      : 'No data for this view.';
+    const unmatched = usesExternalAxis() ? data.models.filter(m => [currentAxes().x, currentAxes().y].some(k => k.startsWith('aa_') && m[k] == null)).length : 0;
+    $('aa-missing').textContent = unmatched ? ` ${unmatched} model${unmatched > 1 ? 's have' : ' has'} no score, so ${unmatched > 1 ? 'they are' : 'it is'} not on this chart.` : '';
+    showRatioNote([currentAxes().x, currentAxes().y]);
+    $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort().map(company =>
+      `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('')
+      + fadeLegend(points.some(p => !p.latest && !p.selfRun), points.some(p => p.selfRun));
+
+    // Narrow screens draw at their real width (text stays 12px) and a taller shape, so points spread out.
+    const narrow = $('graph').clientWidth > 0 && $('graph').clientWidth < 600;
+    const W = narrow ? Math.max(300, $('graph').clientWidth) : 720, H = narrow ? Math.round(W * 1.15) : 440, R = narrow ? 12 : 30, T = 18, B = 52;
+    let L;
+    const excludedAxes = [];
+    function extent(axis, key) {
+      if (key === 'coverage') return [0, 100];
+      if (!points.length) return key === 'resolve_rate' ? [0, 100] : [0, 1];
+      const others = points.filter(p => !/^Gemini 3\.1 Pro(?: Preview)?(?: \([^)]*\))?(?: · .*)?$/i.test(p.name));
+      const exclude = !selected && others.length >= 2 && others.length < points.length;
+      const samples = exclude ? others : points;
+      const values = samples.map(p => p[axis]);
+      const changed = exclude && (Math.min(...values) !== Math.min(...points.map(p => p[axis])) || Math.max(...values) !== Math.max(...points.map(p => p[axis])));
+      if (key === 'resolve_rate' && !changed) return [0, 100];
+      if (changed) excludedAxes.push(axis);
+      const low = Math.min(...values), high = Math.max(...values);
+      const padding = high > low ? (high - low) * 0.05 : Math.max(Math.abs(low) * 0.05, 1);
+      return key === 'resolve_rate' ? [Math.max(0, low - padding), Math.min(100, high + padding)] : [low - padding, high + padding];
+    }
+    const [xmin, xmax] = extent('x', axes.x), [ymin, ymax] = extent('y', axes.y);
+    // Ticks sit at round values (1, 2 or 5 × 10^k apart, about five) inside the fitted range, which stays data-driven.
+    const roundTicks = (lo, hi) => {
+      const raw = (hi - lo) / 5, mag = 10 ** Math.floor(Math.log10(raw)), f = raw / mag;
+      const step = (f >= Math.sqrt(50) ? 10 : f >= Math.sqrt(10) ? 5 : f >= Math.sqrt(2) ? 2 : 1) * mag;
+      const digits = (String(+step.toPrecision(12)).split('.')[1] || '').length, out = [];
+      for (let k = Math.ceil(lo / step - 1e-9); k * step <= hi + step * 1e-9; k++) out.push(+(k * step).toFixed(digits));
+      return {values: out, digits};
+    };
+    const tickLabel = (v, key, digits) => v.toLocaleString('en-US', {minimumFractionDigits: digits, maximumFractionDigits: digits}).replace('-', '−') + (['resolve_rate', 'coverage'].includes(key) ? '%' : ratioKeys.includes(key) ? '×' : '');
+    // The left margin fits the widest y tick label (about 7 units per 12px character), widened
+    // when a point left of the fitted x range is plotted to scale so it stays inside the chart.
+    const yTickChars = (({values, digits}) => Math.max(2, ...values.map(v => tickLabel(v, axes.y, digits).length)))(roundTicks(ymin, ymax));
+    L = 34 + 7 * yTickChars;
+    const beyond = Math.max(0, ...points.map(p => (xmin - p.x) / (xmax - xmin)));
+    L = Math.max(L, (8 + beyond * (W - R)) / (1 + beyond));
+    const sx = x => L + (x - xmin) / (xmax - xmin) * (W - L - R), sy = y => H - B - (y - ymin) / (ymax - ymin) * (H - T - B);
+    if (excludedAxes.length) $('graph-legend').textContent += ' Gemini 3.1 Pro is off the scale.';
+    for (const p of points) {
+      p.offscale = p.x < xmin || p.x > xmax || p.y < ymin || p.y > ymax;
+      p.px = sx(p.x);
+      p.py = sy(p.y);
+    }
+    const ticks = (lo, hi, axis) => { const {values, digits} = roundTicks(lo, hi); return values.map(v => axis === 'x' ? `<line class="axis" x1="${sx(v)}" y1="${H-B}" x2="${sx(v)}" y2="${H-B+4}"/><text class="tick" text-anchor="middle" x="${sx(v)}" y="${H-B+19}">${tickLabel(v, axes.x, digits)}</text>` : `<line class="axis" x1="${L-4}" y1="${sy(v)}" x2="${L}" y2="${sy(v)}"/><text class="tick" text-anchor="end" x="${L-8}" y="${sy(v)+4}">${tickLabel(v, axes.y, digits)}</text>`).join(''); };
+    const usesExternal = [axes.x, axes.y].some(k => k.startsWith('aa_'));
+    const matchNote = p => usesExternal && p.match && p.match !== 'exact'
+      ? {effort_unlabelled: 'Artificial Analysis entry has no effort label', undated_alias: 'undated model ID matched to the Artificial Analysis snapshot'}[p.match] : '';
+    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; off the chart\'s scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + (p.count ?? 0) + '/' + (denominator(p.m) ?? 0) + ' solved attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}`;
+    // Newest generations are drawn last (on top) at full color; earlier ones are faded.
+    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${narrow ? 4 : 6}" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('');
+    // Green zone: the half of each axis that is better (lower footprint, higher solved/index).
+    const better = {net: -1, solved_net: -1, churn: -1, solved_cx: -1, cx: -1, same_net: -1, same_cx: -1, resolve_rate: 1, aa_coding: 1, aa_intelligence: 1, ...Object.fromEntries(langKeys.map(k => [k, -1]))};
+    const bx = better[axes.x], by = better[axes.y];
+    let zone = '';
+    if (bx && by && points.length) {
+      const pw = W - L - R, ph = H - T - B, zx = bx < 0 ? L : L + pw / 2, zy = by > 0 ? T : T + ph / 2;
+      zone = `<rect class="best-zone" x="${zx}" y="${zy}" width="${pw / 2}" height="${ph / 2}"/>`;
+    }
+    // All labels share a fixed CSS-pixel offset from the actual point.
+    const overlays = [];
+    const labelled = points;
+    labelled.forEach(p => {
+      // Full names keep the reasoning effort, e.g. 'GPT-6 Sol (high)'.
+      const text = p.name + (p.offscale ? ' (off-scale)' : '');
+      overlays.push(`<span class="point-label${p.latest ? '' : ' older-label'}${p.selfRun ? ' self-run-label' : ''}" data-point="${points.indexOf(p)}" data-company="${esc(p.company)}" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(text)}</span>`);
+    });
+    const scale = ($('graph').clientWidth || W) / W;
+    const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
+    $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. All models are labelled; earlier generations are lighter. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other companies fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(${Math.max(16, L - 20 - 7 * yTickChars)} ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    // Labels sit near their point without covering other labels or points; ranked, current models choose first.
+    const graphWidth = $('graph').clientWidth, graphHeight = $('graph').clientHeight;
+    const labels = [...document.querySelectorAll('#graph .point-label')];
+    if (graphWidth && graphHeight && labels.length) {
+      const at = label => points[Number(label.dataset.point)];
+      const order = labels.map((l, i) => i).sort((a, b) => (!!at(labels[a]).selfRun - !!at(labels[b]).selfRun) || (at(labels[b]).latest - at(labels[a]).latest));
+      const xy = p => ({x: p.px / W * graphWidth, y: p.py / H * graphHeight});
+      const offsets = placeLabelBoxes(order.map(i => xy(at(labels[i]))), order.map(i => ({w: labels[i].offsetWidth, h: labels[i].offsetHeight})),
+        points.map(xy), 6 * graphWidth / W, graphWidth, graphHeight,
+        // The rotated Y axis title.
+        [{x: 0, y: T / H * graphHeight, w: (Math.max(16, L - 20 - 7 * yTickChars) + 8) * graphWidth / W, h: (H - T - B) / H * graphHeight}]);
+      order.forEach((i, k) => { labels[i].style.transform = `translate(${offsets[k].dx}px, ${offsets[k].dy}px)`; });
+    }
+    // Hover/focus fades every other company's points and labels.
+    const focusCompany = company => document.querySelectorAll('#graph [data-company]').forEach(el =>
+      el.classList.toggle('dim', company !== null && el.dataset.company !== company));
+    document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
+      const show = event => {
+        const p = points[Number(circle.dataset.point)];
+        const text = `${p.name}${p.offscale ? ' (off the chart\'s scale)' : ''}\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${matchNote(p) ? '\n' + matchNote(p) : ''}${p.kind === 'all' ? [...new Set([axes.x, axes.y].filter(k => ratioKeys.includes(k)))].map(k => '\n' + rangeNote(p.m, k)).join('') : ''}${p.selfRun ? '\n' + selfRunNote(p.m) : ''}${p.kind !== 'all' ? '\n' + p.kind + ' task attempt' : ''}`;
+        showTooltipAt(circle, event, text);
+        focusCompany(p.company);
+      };
+      ['mouseenter', 'mousemove', 'focus', 'click'].forEach(event => circle.addEventListener(event, show));
+      ['mouseleave', 'blur'].forEach(event => circle.addEventListener(event, () => { hideTooltip(); focusCompany(null); }));
+    });
+  }
+  // label-placement:start
+  // Each label takes the nearest spot around its point that stays inside the chart and covers no point and no label
+  // placed before it, nor any blocked box; when every spot is taken it takes the least-covered one. Offsets are from the point's center.
+  function placeLabelBoxes(anchors, sizes, dots, radius, width, height, blocked = []) {
+    const overlap = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) *
+      Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+    const placed = dots.map(d => ({x: d.x - radius, y: d.y - radius, w: 2 * radius, h: 2 * radius})).concat(blocked);
+    return anchors.map((a, i) => {
+      const {w, h} = sizes[i];
+      let best = null, bestCost = Infinity;
+      for (const gap of [radius + 3, radius + 12, radius + 24]) {
+        const d = gap * 0.7;
+        for (const [dx, dy] of [[gap, -h / 2], [-gap - w, -h / 2], [-w / 2, -gap - h], [-w / 2, gap],
+                                [d, -d - h], [d, d], [-d - w, -d - h], [-d - w, d]]) {
+          const box = {x: a.x + dx, y: a.y + dy, w, h};
+          const outside = Math.max(0, -box.x) + Math.max(0, box.x + w - width) + Math.max(0, -box.y) + Math.max(0, box.y + h - height);
+          const cost = outside * 1000 + placed.reduce((sum, other) => sum + overlap(box, other), 0);
+          if (cost < bestCost) { best = box; bestCost = cost; }
+          if (cost === 0) break;
+        }
+        if (bestCost === 0) break;
+      }
+      placed.push(best);
+      return {dx: best.x - a.x, dy: best.y - a.y};
+    });
+  }
+  // label-placement:end
+  $('task-search').addEventListener('input', e => showTask(e.target.value.trim()));
+  $('task-reset').addEventListener('click', () => showTask(''));
+  showTask('');
+
+  $('provenance').textContent = `Analyzer ${data.analyzer_version}${data.measurement_track ? ', units ' + data.measurement_track.unit_version : ''}.`;
+})();
+</script>
+
+</body>
+</html>

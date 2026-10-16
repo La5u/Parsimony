@@ -6,6 +6,7 @@ const html = fs.readFileSync(process.argv[2], 'utf8');
 const data = JSON.parse(html.match(/type="application\/json">([\s\S]*?)<\/script>/)[1]);
 delete data.external; // Pages built with --external are checked separately below.
 delete data.self_run_models; // Likewise for self-run points.
+delete data.merged; // The all-languages DeepSWE page is checked on its own fixture at the end.
 // Same-task fields are tested on their own fixture below; the base fixture is the plain-mean board.
 const base = Object.fromEntries(Object.entries(data.models[0]).filter(([key]) => !key.startsWith('same_task') && !key.includes('complexity')));
 data.models = [
@@ -785,3 +786,34 @@ console.log('Sorting, chart views, task switching, external/self-run axes and fi
   assert.deepEqual([offsets[3].dx, offsets[3].dy], [9, -5]); // an isolated point keeps its label to the right
   assert.ok(boxes[4].x + boxes[4].w <= 395); // at the right edge the label moves to the left
 }
+
+// All-languages DeepSWE page: per-language ratio columns, no raw-unit columns, no task view.
+const mergedPage = structuredClone(data);
+mergedPage.merged = {languages: [{key: 'python', name: 'Python', tasks: 34, attempts: 4, models: 2},
+  {key: 'go', name: 'Go', tasks: 3, attempts: 4, models: 2}]};
+mergedPage.footprint_tasks = [];
+mergedPage.benchmark = {...mergedPage.benchmark, name: 'DeepSWE', attempts: 4};
+delete mergedPage.measurement_track;
+mergedPage.models = [
+  {agent: 'a', name: 'Alpha', company: 'Anthropic', latest: true, resolve_rate: .5, upstream_solved_attempts: 10, measured_solved_attempts: 9,
+    footprint_population_count: 20, same_task_net: 0.9, same_task_net_ci: [0.8, 1.0], same_task_net_tasks: 30,
+    same_task_complexity: 0.95, same_task_complexity_ci: null, same_task_complexity_tasks: 30,
+    languages: {python: {net: 0.85, net_tasks: 27, complexity: 0.9}, go: {net: 1.2, net_tasks: 3, complexity: 1.1}}},
+  {agent: 'b', name: 'Beta', company: 'OpenAI', latest: true, resolve_rate: .25, upstream_solved_attempts: 5, measured_solved_attempts: 5,
+    footprint_population_count: 20, same_task_net: 1.1, same_task_net_ci: [1.0, 1.2], same_task_net_tasks: 20,
+    same_task_complexity: 1.05, same_task_complexity_ci: null, same_task_complexity_tasks: 20,
+    languages: {python: {net: 1.1, net_tasks: 20, complexity: 1.0}}},
+];
+load(mergedPage);
+assert.equal(element('task-picker').hidden, true);
+assert.match(element('leaderboard').textContent, /— all languages$/);
+assert.match(element('board-intro').textContent, /^2 models on DeepSWE's 34 Python and 3 Go tasks, 4 attempts each\./);
+assert.match(element('language-scope').textContent, /never added across languages/);
+assert.match(element('#board thead').innerHTML, /Vs\. others, all languages[\s\S]*data-sort="lang_python">Python[\s\S]*data-sort="lang_go">Go[\s\S]*Solved[\s\S]*Measured/);
+assert.doesNotMatch(element('#board thead').innerHTML, /Net units, solved/);
+assert.match(element('#board tbody').innerHTML, /^<tr><td>1<\/td><td class="left">Alpha<\/td><td[^>]*>0\.90×<\/td><td title="Python board: 27 shared tasks">0\.85×<\/td><td title="Go board: 3 shared tasks">1\.20×<\/td><td>50\.0%<\/td><td>9\/10<\/td><\/tr><tr><td>2<\/td><td class="left">Beta<\/td><td[^>]*>1\.10×<\/td><td[^>]*>1\.10×<\/td><td[^>]*>—<\/td>/);
+assert.deepEqual(element('graph-x').innerHTML.match(/value="[^"]+"/g), ['value="same_net"', 'value="same_cx"', 'value="lang_python"', 'value="lang_go"', 'value="resolve_rate"', 'value="coverage"']);
+axis('x', 'lang_go');
+assert.match(element('ratio-note').textContent, /^×: net units added vs\. other models/);
+load(cropped);
+assert.equal(element('task-picker').hidden, false);

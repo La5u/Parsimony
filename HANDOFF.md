@@ -45,6 +45,7 @@ Website ranking and columns:
 - The 80/20 Score, its calculator data, bootstrap CI and score-rank endpoints remain only as **explicitly labelled archived graph diagnostics**. Do not reintroduce combined-score rank, and do not use its CI/rank ranges as uncertainty for the net ranking. The Score formula (`parsimony-80-20-v0.5`) is unchanged; the owner has not approved a net-only Score.
 - Churn, Per solve and the dedicated 95% CI column are removed from the UI (data remains stored).
 - Keep benchmarks and language tracks separate; never pool raw units across languages or analyzer versions.
+- **Exception, owner request 2026-10-16:** `site/deepswe.html` ("DeepSWE, all languages", `ranking_metric: same-task-net-ratio-merged-v1`, `build_merged` in `site.py`) combines the four DeepSWE boards' same-task ratios: each model's per-language ratio (exactly the one its own board shows), weighted by its shared tasks in that language; arithmetic mean so negative ratios stay defined; 95% range resamples tasks within each language. Raw units are never pooled, and it has no raw-unit columns or task view. Only DeepSWE is merged (same 26 models, same harness, same peers); the owner was advised against merging Verified/Live/SWEeper because their peer sets and harnesses differ and per-model ratios disagree across them. Built only online, like `go.html`.
 
 Page behaviour:
 

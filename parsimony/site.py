@@ -148,7 +148,7 @@ def published_sources(benchmark, language='python', root=None):
             count = len(tasks)
         sources.append(dict(name=name, benchmark=key, language=lang, tasks=count,
                             attempts_per_task=attempts, population_per_model=len(tasks),
-                            active=(benchmark == key and language == lang), board_url=board_url,
+                            active=(benchmark == key and language in (lang, None)), board_url=board_url,
                             report_url=github + f'examples/{directory}/README.md',
                             manifest_url=github + path, manifest_sha256=hashlib.sha256(raw).hexdigest(),
                             dataset_sha256=manifest['dataset_sha256']))
@@ -274,6 +274,20 @@ def typical_by_task(per_model):
     return sums
 
 
+def same_task_pairs(own, typical, k, leave_out=True):
+    """(own per-task mean, other models' per-task mean) over tasks at least SAME_TASK_MIN_MODELS others solved;
+    k = 0 for net units, 1 for complexity."""
+    pairs = []
+    for t, values in own.items():
+        total = typical.get(t)
+        if values[k] is None or not total or total[k] is None:
+            continue
+        others = total[2] - leave_out
+        if others >= SAME_TASK_MIN_MODELS:
+            pairs.append((values[k], (total[k] - values[k] * leave_out) / others))
+    return pairs
+
+
 def same_task(own, typical, seed, leave_out=True):
     """Code a model wrote relative to the other models on the same solved tasks (1 = the same as them).
 
@@ -283,14 +297,7 @@ def same_task(own, typical, seed, leave_out=True):
     bootstrap over shared tasks."""
     out = {}
     for k, key in ((0, 'net'), (1, 'complexity')):
-        pairs = []
-        for t, values in own.items():
-            total = typical.get(t)
-            if values[k] is None or not total or total[k] is None:
-                continue
-            others = total[2] - leave_out
-            if others >= SAME_TASK_MIN_MODELS:
-                pairs.append((values[k], (total[k] - values[k] * leave_out) / others))
+        pairs = same_task_pairs(own, typical, k, leave_out)
         denominator = sum(b for _, b in pairs)
         ratio = sum(a for a, _ in pairs) / denominator if pairs and denominator > 0 else None
         interval = None
@@ -450,6 +457,72 @@ def build(panel, records, draws=2000, seed=42):
                 bootstrap_tasks=common, draws=draws, models=models, tasks=tasks)
 
 
+LANGUAGE_NAMES = {'python': 'Python', 'javascript': 'JavaScript', 'typescript': 'TypeScript', 'go': 'Go', 'php': 'PHP'}
+
+
+def merged_ratio(pairs_by_language):
+    """Each language's ratio of sums, averaged with its shared-task count as the weight; None without a usable language.
+
+    Units are counted differently per language, so totals are never added across languages; only the
+    unitless ratios are. A plain weighted mean (not a geometric one) stays defined for negative ratios."""
+    ratios = [(sum(a for a, _ in p) / d, len(p)) for p in pairs_by_language.values()
+              if p and (d := sum(b for _, b in p)) > 0]
+    weight = sum(n for _, n in ratios)
+    return sum(r * n for r, n in ratios) / weight if weight else None
+
+
+def build_merged(boards, draws=2000, seed=42):
+    """DeepSWE across languages: each model's same-task ratio on every language board, combined by merged_ratio.
+
+    boards: (language, panel, records) per language board. Every ratio is the one its own board ranks by;
+    the interval resamples tasks within each language."""
+    languages, models = [], {}
+    for language, panel, records in boards:
+        board = build(panel, records, draws=draws, seed=seed)
+        groups = {}
+        for r in records:
+            groups.setdefault(r['agent'], []).append(r)
+        per_model = {m['agent']: solved_by_task(groups[m['agent']]) for m in board['models']}
+        typical = typical_by_task(per_model)
+        tasks = len({row[0].split('#', 1)[0] for row in board['footprint_tasks']})
+        languages.append(dict(key=language, name=LANGUAGE_NAMES.get(language, language), tasks=tasks,
+                              attempts=board['population_count'] // tasks, models=len(board['models'])))
+        for m in board['models']:
+            entry = models.setdefault(m['agent'], dict(
+                agent=m['agent'], name=m['name'], company=m['company'], languages={}, pairs=({}, {}),
+                upstream_solved_attempts=0, measured_solved_attempts=0, footprint_population_count=0))
+            for k in (0, 1):
+                entry['pairs'][k][language] = same_task_pairs(per_model[m['agent']], typical, k)
+            entry['languages'][language] = dict(net=m['same_task_net'], net_tasks=m['same_task_net_tasks'],
+                                                complexity=m['same_task_complexity'])
+            entry['upstream_solved_attempts'] += m['upstream_solved_attempts']
+            entry['measured_solved_attempts'] += m['measured_solved_attempts']
+            entry['footprint_population_count'] += m['footprint_population_count']
+    for m in models.values():
+        pairs = m.pop('pairs')
+        m['resolve_rate'] = m['upstream_solved_attempts'] / m['footprint_population_count']
+        for k, key in ((0, 'net'), (1, 'complexity')):
+            ratio, interval, count = merged_ratio(pairs[k]), None, sum(map(len, pairs[k].values()))
+            if ratio is not None and count >= SAME_TASK_MIN_INTERVAL:
+                rng, values = random.Random(f"{seed}:{m['agent']}:{key}"), []
+                for _ in range(1000):
+                    value = merged_ratio({lang: rng.choices(p, k=len(p)) for lang, p in pairs[k].items() if p})
+                    if value is not None:
+                        values.append(value)
+                interval = [round(quantile(values, 0.025), 3), round(quantile(values, 0.975), 3)]
+            m[f'same_task_{key}'] = None if ratio is None else round(ratio, 3)
+            m[f'same_task_{key}_ci'] = interval
+            m[f'same_task_{key}_tasks'] = count
+    ordered = sorted(models.values(), key=lambda m: (m['same_task_net'] is None, m['same_task_net'] or 0, m['name']))
+    newest = newest_generation([m['name'] for m in ordered])
+    for m in ordered:
+        m['latest'] = m['name'] in newest
+    return dict(merged=dict(languages=languages), ranking_metric='same-task-net-ratio-merged-v1',
+                footprint_tasks=[], task_typical={}, models=ordered,
+                task_count=sum(lang['tasks'] for lang in languages),
+                population_count=sum(lang['tasks'] * lang['attempts'] for lang in languages))
+
+
 SELF_RUN_MODELS = {'gpt-6-luna': 'GPT-6 Luna', 'gpt-6-sol': 'GPT-6 Sol', 'gpt-6.1-sol': 'GPT-6.1 Sol',
                    'gpt-6-astra': 'GPT-6 Astra', 'gpt-5.6-sol': 'GPT-5.6 Sol', 'claude-haiku-5-5': 'Claude Haiku 5.5',
                    'claude-sonnet-5-5': 'Claude Sonnet 5.5', 'claude-opus-5-5': 'Claude Opus 5.5',
@@ -521,8 +594,7 @@ def render(data, standalone=True, page_name=None):
     payload = json.dumps(data, separators=(',', ':')).replace('<', '\\u003c')
     custom_js = CUSTOM_JS.read_text()
     language = (data.get('measurement_track') or {}).get('language') or 'python'
-    language_name = {'python': 'Python', 'javascript': 'JavaScript', 'typescript': 'TypeScript',
-                     'go': 'Go', 'php': 'PHP'}.get(language, language)
+    language_name = 'all languages' if data.get('merged') else LANGUAGE_NAMES.get(language, language)
     benchmark_name = (data.get('benchmark') or {}).get('name', 'SWE-bench Verified')
     title = f'Parsimony: {benchmark_name} · {language_name}'
     stem = Path(page_name).stem if page_name else None
@@ -545,8 +617,11 @@ def render(data, standalone=True, page_name=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('panel')
-    parser.add_argument('records', nargs='+')
+    parser.add_argument('panel', nargs='?')
+    parser.add_argument('records', nargs='*')
+    parser.add_argument('--merge', action='append', default=[], metavar='LANGUAGE=DIR',
+                        help='combine DeepSWE language boards (DIR holds score-panel.json and model JSONL) '
+                        'instead of building one board')
     parser.add_argument('--output', default='site/index.html')
     parser.add_argument('--data', help='also write the page data as JSON here')
     parser.add_argument('--sensitivity', help='sensitivity.json from parsimony.stability; adds rank ranges')
@@ -559,13 +634,24 @@ def main():
                         help='self-run results (examples/self-run/results); plotted faded, never ranked')
     parser.add_argument('--external', help='pinned Artificial Analysis snapshot from parsimony.external; adds axes only')
     args = parser.parse_args()
+    if bool(args.merge) == bool(args.panel and args.records):
+        parser.error('give either a panel and records or --merge boards')
     try:
-        raw = Path(args.panel).read_bytes()
-        data = build(json.loads(raw), [r for path in args.records for r in read_jsonl(path)])
-        data['panel_sha256'] = hashlib.sha256(raw).hexdigest()
+        if args.merge:
+            boards = []
+            for item in args.merge:
+                language, directory = item.split('=', 1)
+                directory = Path(directory)
+                boards.append((language, json.loads((directory / 'score-panel.json').read_text()),
+                               [r for path in sorted(directory.glob('*.jsonl')) for r in read_jsonl(path)]))
+            data = build_merged(boards)
+        else:
+            raw = Path(args.panel).read_bytes()
+            data = build(json.loads(raw), [r for path in args.records for r in read_jsonl(path)])
+            data['panel_sha256'] = hashlib.sha256(raw).hexdigest()
         data['benchmark'] = BENCHMARKS[args.benchmark]
         track = data.get('measurement_track') or {}
-        data['sources'] = published_sources(args.benchmark, track.get('language') or 'python')
+        data['sources'] = published_sources(args.benchmark, None if args.merge else track.get('language') or 'python')
         data['nav'] = [dict(zip(('label', 'url'), item.split('=', 1))) for item in args.nav]
         for item in data['nav']:  # the board this page shows is highlighted in the switcher
             item['current'] = item['url'] == Path(args.output).name
