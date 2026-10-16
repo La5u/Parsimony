@@ -815,5 +815,18 @@ assert.match(element('#board tbody').innerHTML, /^<tr><td>1<\/td><td class="left
 assert.deepEqual(element('graph-x').innerHTML.match(/value="[^"]+"/g), ['value="same_net"', 'value="same_cx"', 'value="lang_python"', 'value="lang_go"', 'value="resolve_rate"', 'value="coverage"']);
 axis('x', 'lang_go');
 assert.match(element('ratio-note').textContent, /^×: net units added vs\. other models/);
+// A model missing from a language is listed faded and unranked; self-runs are Python only.
+const partialPage = structuredClone(mergedPage);
+partialPage.models.push({...partialPage.models[1], agent: 'c', name: 'Gamma', same_task_net: 0.5, same_task_net_ci: null, partial: true,
+  languages: {python: {net: 0.5, net_tasks: 10, complexity: 0.6}}});
+partialPage.self_run_models = [{...partialPage.models[0], agent: 'self', name: 'Delta (high)', self_run: true, harness: 'Codex', tasks: 10,
+  graded: true, same_task_net: 0.7, languages: {python: {net: 0.7, net_tasks: 9, complexity: 0.8}}}];
+load(partialPage);
+const mergedRows = element('#board tbody').innerHTML;
+assert.match(mergedRows, /^<tr><td>1<\/td><td class="left">Alpha[\s\S]*<td>2<\/td><td class="left">Beta[\s\S]*Gamma[\s\S]*My runs[\s\S]*Delta/); // the partial model's 0.5 neither ranks nor sorts first
+assert.match(mergedRows, /<tr class="partial" style="opacity:0\.50" title="On 1 of 2 languages, so not ranked"><td>—<\/td><td class="left">Gamma/);
+assert.match(mergedRows, /<tr class="self-run" title="Run by me with Codex on 10 of 34 Python tasks, 10 solved"><td>—<\/td><td class="left">Delta \(high\)/);
+assert.match(element('self-run-note').textContent, /of the Python tasks, so their ratio is Python only/);
+assert.match(graph(), /data-model="Gamma"[^>]*fill-opacity="0\.50"/);
 load(cropped);
 assert.equal(element('task-picker').hidden, false);

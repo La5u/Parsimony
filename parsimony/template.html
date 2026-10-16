@@ -353,11 +353,17 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const denominator = m => m.upstream_solved_attempts;
   const selfRunCounts = selfRun.map(m => m.tasks).filter(Number.isFinite);
   const selfRunTasks = selfRunCounts.length ? (Math.min(...selfRunCounts) === Math.max(...selfRunCounts) ? `${Math.min(...selfRunCounts)}` : `${Math.min(...selfRunCounts)}–${Math.max(...selfRunCounts)}`) : 'a few';
-  const selfRunNote = m => `Run by me with ${m.harness} on ${m.tasks} of ${taskCount} tasks${m.graded ? `, ${m.upstream_solved_attempts} solved` : ', not graded'}`;
+  const selfRunTaskTotal = merged ? languages.find(l => l.key === 'python')?.tasks : taskCount;
+  // Models missing from some language boards (all-languages page): shown faded by coverage, never ranked.
+  const partialNote = m => `On ${Object.keys(m.languages || {}).length} of ${languages.length} languages, so not ranked`;
+  const partialOpacity = m => m.partial ? (0.25 + 0.5 * Object.keys(m.languages || {}).length / languages.length).toFixed(2) : null;
+  const selfRunNote = m => `Run by me with ${m.harness} on ${m.tasks} of ${selfRunTaskTotal} ${merged ? 'Python ' : ''}tasks${m.graded ? `, ${m.upstream_solved_attempts} solved` : ', not graded'}`;
   if (selfRun.length) {
     $('self-run-note').hidden = false;
     $('self-run-help').hidden = false;
-    $('self-run-note').textContent = `My runs: models I ran myself on ${selfRunTasks} of these tasks. Not ranked.`;
+    $('self-run-note').textContent = merged
+      ? `My runs: models I ran myself on ${selfRunTasks} of the Python tasks, so their ratio is Python only. Not ranked.`
+      : `My runs: models I ran myself on ${selfRunTasks} of these tasks. Not ranked.`;
     document.querySelectorAll('.self-run-tasks').forEach(el => { el.textContent = selfRunTasks; });
   }
   if (external) {
@@ -366,7 +372,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   }
   // Same-task comparison (task difficulty): code relative to the other models on the tasks a model solved.
   const sameTask = data.models.some(m => Number.isFinite(m.same_task_net));
-  const rankValue = m => sameTask ? m.same_task_net : netMean(m);
+  const rankValue = m => m.partial ? null : sameTask ? m.same_task_net : netMean(m);
   const rankOf = m => Number.isFinite(rankValue(m)) ? 1 + data.models.filter(other =>
     Number.isFinite(rankValue(other)) && rankValue(other) < rankValue(m)).length : null;
   // One sentence above the chart whenever an axis is a same-task ratio, so 0.8× reads without opening help.
@@ -439,7 +445,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     };
     // Self-run rows cover a task subset: listed after the ranked rows, never interleaved.
     const extra = selected ? [] : activeSelfRun().map(m => ({m, i: -1})).sort(order);
-    const models = data.models.map((m, i) => ({m, i})).sort(order).concat(extra);
+    // Partial models (missing from a language) follow the ranked rows, like self-runs.
+    const models = data.models.map((m, i) => ({m, i})).sort((a, b) => (!selected && (!!a.m.partial - !!b.m.partial)) || order(a, b)).concat(extra);
     document.querySelector('#board tbody').innerHTML = models.map(({m, i}, k) => (k === models.length - extra.length && extra.length
       ? `<tr class="self-run-head"><td colspan="${headers.length}">My runs · not ranked, ${selfRunTasks} tasks</td></tr>` : '') + (() => {
       if (selected) {
@@ -450,7 +457,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       }
       const solved = metricValue(m, i, 'resolve_rate');
       const ratioCell = key => `<td title="${esc(rangeNote(m, key))}">${Number.isFinite(metricValue(m, i, key)) ? fmt(metricValue(m, i, key), 2) + '×' : '—'}</td>`;
-      if (merged) return `<tr><td>${rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td>${ratioCell('same_net')}${langKeys.map(ratioCell).join('')}<td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
+      if (merged) return `<tr${m.self_run ? ` class="self-run" title="${esc(selfRunNote(m))}"` : m.partial ? ` class="partial" style="opacity:${partialOpacity(m)}" title="${esc(partialNote(m))}"` : ''}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td>${ratioCell('same_net')}${langKeys.map(ratioCell).join('')}<td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
       return `<tr${m.self_run ? ` class="self-run" title="${esc(selfRunNote(m))}"` : ''}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td>${sameTask ? `<td title="${esc(rangeNote(m, 'same_net'))}">${Number.isFinite(m.same_task_net) ? fmt(m.same_task_net, 2) + '×' : '—'}</td>` : ''}<td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.measured_net_mean)}</td><td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
     })()).join('');
   }
@@ -725,9 +732,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const usesExternal = [axes.x, axes.y].some(k => k.startsWith('aa_'));
     const matchNote = p => usesExternal && p.match && p.match !== 'exact'
       ? {effort_unlabelled: 'Artificial Analysis entry has no effort label', undated_alias: 'undated model ID matched to the Artificial Analysis snapshot'}[p.match] : '';
-    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; off the chart\'s scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + (p.count ?? 0) + '/' + (denominator(p.m) ?? 0) + ' solved attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}`;
+    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; off the chart\'s scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + (p.count ?? 0) + '/' + (denominator(p.m) ?? 0) + ' solved attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}${p.m?.partial ? '; ' + partialNote(p.m) : ''}`;
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
-    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${narrow ? 4 : 6}" tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('');
+    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${narrow ? 4 : 6}" ${p.m && partialOpacity(p.m) ? ` fill-opacity="${partialOpacity(p.m)}"` : ''} tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('');
     // Green zone: the half of each axis that is better (lower footprint, higher solved/index).
     const better = {net: -1, solved_net: -1, churn: -1, solved_cx: -1, cx: -1, same_net: -1, same_cx: -1, resolve_rate: 1, aa_coding: 1, aa_intelligence: 1, ...Object.fromEntries(langKeys.map(k => [k, -1]))};
     const bx = better[axes.x], by = better[axes.y];

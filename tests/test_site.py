@@ -29,7 +29,7 @@ class SiteTests(unittest.TestCase):
         go_population = json.loads((root / 'examples/deepswe-go-v2/population.json').read_bytes())
         self.assertEqual(go_population['measurement_track']['unit_version'], 'tree-sitter-go-units-v2')
         self.assertEqual([s['board_url'] for s in sources],
-                         ['index.html', 'javascript.html', 'typescript.html', 'go.html', 'verified.html', 'live.html', 'live-javascript.html', 'live-typescript.html', 'live-go.html', 'sweeper-php.html'])
+                         ['python.html', 'javascript.html', 'typescript.html', 'go.html', 'verified.html', 'live.html', 'live-javascript.html', 'live-typescript.html', 'live-go.html', 'sweeper-php.html'])
         plan = (root / 'examples/self-run/plan.json').read_bytes()
         self.assertTrue(self_run['self_run'])
         self.assertFalse(self_run['active'])
@@ -463,6 +463,19 @@ class MergedDeepSWETests(unittest.TestCase):
         self.assertAlmostEqual(merged_ratio({'python': [(-1, 2), (-1, 2)], 'go': [(4, 2)]}), (-0.5 * 2 + 2) / 3)
         self.assertAlmostEqual(merged_ratio({'python': [(1, 2)], 'go': [], 'js': [(1, -1)]}), 0.5)
         self.assertIsNone(merged_ratio({'python': []}))
+
+    def test_model_missing_from_a_language_is_partial_and_listed_last(self):
+        root = Path(__file__).resolve().parent.parent / 'examples' / 'deepswe-javascript'
+        panel = json.loads((root / 'score-panel.json').read_text())
+        records = [r for path in sorted(root.glob('*.jsonl')) for r in read_jsonl(path)]
+        dropped = records[0]['agent']
+        data = build_merged([('javascript', panel, records),
+                             ('go', panel, [r for r in records if r['agent'] != dropped])], draws=20)
+        partial = [m for m in data['models'] if m.get('partial')]
+        self.assertEqual([m['agent'] for m in partial], [dropped])
+        self.assertEqual(list(partial[0]['languages']), ['javascript'])
+        self.assertIs(data['models'][-1], partial[0])
+        self.assertIn('self_run_typical', data)
 
     def test_each_language_keeps_its_own_board_ratio(self):
         root = Path(__file__).resolve().parent.parent / 'examples'

@@ -116,7 +116,7 @@ def published_sources(benchmark, language='python', root=None):
     root = Path(root) if root is not None else TEMPLATE.parent.parent
     github = 'https://github.com/La5u/Parsimony/blob/main/'
     boards = [
-        ('DeepSWE · Python', 'deepswe', 'python', 'deepswe-python', 'population.json', 'index.html'),
+        ('DeepSWE · Python', 'deepswe', 'python', 'deepswe-python', 'population.json', 'python.html'),
         ('DeepSWE · JavaScript', 'deepswe', 'javascript', 'deepswe-javascript', 'population.json', 'javascript.html'),
         ('DeepSWE · TypeScript', 'deepswe', 'typescript', 'deepswe-typescript', 'population.json', 'typescript.html'),
         ('DeepSWE · Go', 'deepswe', 'go', 'deepswe-go-v2', 'population.json', 'go.html'),
@@ -475,8 +475,10 @@ def build_merged(boards, draws=2000, seed=42):
     """DeepSWE across languages: each model's same-task ratio on every language board, combined by merged_ratio.
 
     boards: (language, panel, records) per language board. Every ratio is the one its own board ranks by;
-    the interval resamples tasks within each language."""
-    languages, models = [], {}
+    the interval resamples tasks within each language. A model missing from some language boards is shown
+    with the languages it has but not ranked (partial). Self-runs (Python only) are compared with the
+    Python board's typical patches (self_run_typical)."""
+    languages, models, self_run_typical = [], {}, {}
     for language, panel, records in boards:
         board = build(panel, records, draws=draws, seed=seed)
         groups = {}
@@ -484,6 +486,8 @@ def build_merged(boards, draws=2000, seed=42):
             groups.setdefault(r['agent'], []).append(r)
         per_model = {m['agent']: solved_by_task(groups[m['agent']]) for m in board['models']}
         typical = typical_by_task(per_model)
+        if language == 'python':
+            self_run_typical = board['task_typical']
         tasks = len({row[0].split('#', 1)[0] for row in board['footprint_tasks']})
         languages.append(dict(key=language, name=LANGUAGE_NAMES.get(language, language), tasks=tasks,
                               attempts=board['population_count'] // tasks, models=len(board['models'])))
@@ -513,12 +517,15 @@ def build_merged(boards, draws=2000, seed=42):
             m[f'same_task_{key}'] = None if ratio is None else round(ratio, 3)
             m[f'same_task_{key}_ci'] = interval
             m[f'same_task_{key}_tasks'] = count
-    ordered = sorted(models.values(), key=lambda m: (m['same_task_net'] is None, m['same_task_net'] or 0, m['name']))
+        if len(m['languages']) < len(languages):
+            m['partial'] = True
+    ordered = sorted(models.values(), key=lambda m: (m.get('partial', False), m['same_task_net'] is None,
+                                                     m['same_task_net'] or 0, m['name']))
     newest = newest_generation([m['name'] for m in ordered])
     for m in ordered:
         m['latest'] = m['name'] in newest
     return dict(merged=dict(languages=languages), ranking_metric='same-task-net-ratio-merged-v1',
-                footprint_tasks=[], task_typical={}, models=ordered,
+                footprint_tasks=[], task_typical={}, models=ordered, self_run_typical=self_run_typical,
                 task_count=sum(lang['tasks'] for lang in languages),
                 population_count=sum(lang['tasks'] * lang['attempts'] for lang in languages))
 
@@ -655,9 +662,14 @@ def main():
         data['nav'] = [dict(zip(('label', 'url'), item.split('=', 1))) for item in args.nav]
         for item in data['nav']:  # the board this page shows is highlighted in the switcher
             item['current'] = item['url'] == Path(args.output).name
+        self_run_typical = data.pop('self_run_typical', None)
         if args.self_run:
             data['self_run_models'] = self_run_models([r for path in args.self_run for r in read_jsonl(path)],
-                                                      data['task_typical'])
+                                                      self_run_typical or data['task_typical'])
+            if args.merge:  # self-runs cover Python tasks only
+                for m in data['self_run_models']:
+                    m['languages'] = {'python': dict(net=m['same_task_net'], net_tasks=m['same_task_net_tasks'],
+                                                     complexity=m['same_task_complexity'])}
         if args.external:
             snapshot = json.loads(Path(args.external).read_text())
             data['external'] = attach(data['models'], snapshot)

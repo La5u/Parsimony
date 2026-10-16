@@ -131,7 +131,7 @@ python -m parsimony.stability examples/live-python/score-panel.json $RECORDS \
 python -m parsimony.site examples/live-python/score-panel.json $RECORDS \
   --benchmark live --sensitivity examples/live-python/stability.json \
   --output site/live.html --data examples/live-python/site-data.json \
-  --nav 'DeepSWE Python=index.html' --nav 'DeepSWE JavaScript=javascript.html' \
+  --nav 'DeepSWE, all languages=index.html' --nav 'DeepSWE Python=python.html' --nav 'DeepSWE JavaScript=javascript.html' \
   --nav 'DeepSWE TypeScript=typescript.html' --nav 'DeepSWE Go=go.html' \
   --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html'
 ```

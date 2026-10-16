@@ -59,17 +59,17 @@ jobs:
             examples/live-python/claude-opus-4.8.jsonl examples/live-python/gpt-5.5-agav.jsonl \
             --output /tmp/live-scores.json
           cmp examples/live-python/scores.json /tmp/live-scores.json
-      - name: Rebuild offline website pages and compare with committed copies
-        # The Go and all-languages DeepSWE pages need a networked release asset; scripts/rebuild-site.sh without --offline builds them.
+      - name: Rebuild website pages and compare with committed copies
+        # Downloads the checksum-bound DeepSWE Go release asset (Go and all-languages pages); no analysis.
         if: matrix.python-version == '3.14'
         run: |
-          scripts/rebuild-site.sh /tmp/site --offline
-          for page in index javascript typescript verified live live-javascript live-typescript live-go sweeper-php; do cmp "site/$page.html" "/tmp/site/$page.html"; done
+          scripts/rebuild-site.sh /tmp/site
+          for page in index python javascript typescript go verified live live-javascript live-typescript live-go sweeper-php; do cmp "site/$page.html" "/tmp/site/$page.html"; done
           cmp examples/live-python/site-data.json /tmp/site/live-data.json
       - name: Static website regression checks
         run: |
           node tests/custom_benchmark.cjs
-          for page in index javascript typescript go deepswe verified live live-javascript live-typescript live-go sweeper-php; do
+          for page in index python javascript typescript go verified live live-javascript live-typescript live-go sweeper-php; do
             node tests/site_sorting.cjs "site/$page.html"
           done
 

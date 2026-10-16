@@ -1,6 +1,6 @@
 # DeepSWE: 26 current models × 34 Python tasks × 4 attempts (analyzer 0.5.2)
 
-**Beta research preview, not an official ranking.** [DeepSWE](https://deepswe.datacurve.ai) ([paper](https://arxiv.org/abs/2607.07946), [tasks](https://github.com/datacurve-ai/deep-swe)) is a 2026 benchmark of original, long-horizon tasks from active open-source repositories. Every model runs with mini-SWE-agent, four attempts per task, and DeepSWE publishes each run's final patch and pass/fail. This folder measures the Python tasks; it is the [site](../../site/index.html)'s main board. The [35-model SWE-bench Verified results](../mini-swe-agent-500/README.md) are the second board.
+**Beta research preview, not an official ranking.** [DeepSWE](https://deepswe.datacurve.ai) ([paper](https://arxiv.org/abs/2607.07946), [tasks](https://github.com/datacurve-ai/deep-swe)) is a 2026 benchmark of original, long-horizon tasks from active open-source repositories. Every model runs with mini-SWE-agent, four attempts per task, and DeepSWE publishes each run's final patch and pass/fail. This folder measures the Python tasks; it has its own [board](../../site/python.html) and is one of the four languages combined on the site's front page. The [35-model SWE-bench Verified results](../mini-swe-agent-500/README.md) are the second board.
 
 ## Pinned inputs
 
@@ -19,7 +19,7 @@ python -m parsimony.deepswe panel *.jsonl --name deepswe-v1.1-python-26-pooled-8
 python -m parsimony.release audit population.json *.jsonl --dataset deepswe-python.jsonl --output coverage.json
 python -m parsimony.scoring score score-panel.json *.jsonl --output scores.json
 python -m parsimony.stability score-panel.json *.jsonl --output sensitivity.json
-python -m parsimony.site score-panel.json *.jsonl --sensitivity sensitivity.json --benchmark deepswe --output site/index.html
+python -m parsimony.site score-panel.json *.jsonl --sensitivity sensitivity.json --benchmark deepswe --output site/python.html
 ```
 
 ## How DeepSWE is scored
