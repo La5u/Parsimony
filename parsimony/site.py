@@ -50,6 +50,7 @@ NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude
          'live-multilang-gemini-3.1-pro-preview-ami-agent-0.7.0': 'Gemini 3.1 Pro Preview · AMI Agent 0.7.0',
          'live-multilang-gemini-3.6-flash-ami-agent-0.7.0': 'Gemini 3.6 Flash · AMI Agent 0.7.0',
          'live-multilang-qwen3.8-27b-ami-agent-0.7.2': 'Qwen3.8-27B · AMI Agent 0.7.2',
+         'live-multilang-deepseek-v4.1-flash-tianxicode-0.1.486': 'DeepSeek V4.1 Flash · TianxiCode 0.1.486',
          'live-multilang-claude-4-5-sonnet-claudecode': 'Claude Sonnet 4.5 · Claude Code',
          'live-multilang-deepseek-v3.1-terminus-claudecode': 'DeepSeek V3.1 Terminus · Claude Code',
          'live-multilang-deepseek-v4-pro-claudecode': 'DeepSeek V4 Pro · Claude Code',

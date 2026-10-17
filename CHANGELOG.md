@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — DeepSeek V4.1 Flash · TianxiCode on Live Go — 2026-10-17
+
+**Data.** Live Go gains a seventh configuration: DeepSeek V4.1 Flash · TianxiCode 0.1.486 (submission pinned at `641b727`, added upstream 2026-10-16), 88/138 solved, measured with the same 0.10.0-beta analyzer at `9dd189a` as the other six. 24 tasks whose `trajs/*/patch.diff` differs from `preds.json` are set aside unmeasured; the panel frozen with the six AMI runs is unchanged and the new run is scored against it. **Importer.** `import_run` finds this run's separate patches under `trajs/`.
+
 ## Unreleased — SWE-bench Live Go board — 2026-10-14
 
 **Data.** New board `site/live-go.html`: six AMI Agent submissions to SWE-bench Live MultiLang Go (Claude Opus 4.6, Sonnet 4.6, Haiku 4.5, Gemini 3.1 Pro Preview, Gemini 3.6 Flash, Qwen3.8-27B) on all 138 tasks, measured with 0.10.0-beta at `9dd189a` and `tree-sitter-go-units-v2`. Retry settings differ by configuration and are disclosed. Separate from the DeepSWE Go board.
