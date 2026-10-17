@@ -343,8 +343,8 @@ def import_run(cache: Cache, *, submission_revision: str, config_path: str,
     population_ids = submitted_ids + [task for task in by_id if task not in submitted]
     prediction_is_list = (prediction_bytes is not None
                           and prediction_bytes.decode('utf-8-sig').lstrip().startswith('['))
-    patch_root = (base + '/logs/rollouts'
-                  if config_path.strip('/') == 'submissions/lite/tianxicode/deepseek-flash' else base)
+    patch_root = base + {'submissions/lite/tianxicode/deepseek-flash': '/logs/rollouts',
+                         'submissions/multilang/go/tianxi/deepseek-flash': '/trajs'}.get(config_path.strip('/'), '')
     for task_id in population_ids:
         meta = by_id[task_id]
         task_path = f'{patch_root}/{quote(task_id, safe="")}/patch.diff'

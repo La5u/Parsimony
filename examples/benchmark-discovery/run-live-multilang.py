@@ -40,6 +40,22 @@ GO_CONFIGS = [
 COHORTS += [(f'{name}_go', f'multilang/go/ami-agent/{path}', agent, model, 'go',
              f"live-multilang-{model.lower().replace(' ', '-')}-{agent.lower().replace(' ', '-')}")
             for name, path, agent, model in GO_CONFIGS]
+# Added upstream after REVISION; pinned separately so the earlier cohorts stay byte-identical.
+# Its patch.diff files are cross-checked against preds.json. On these 24 tasks the two differ in content
+# and the logs don't show which one was evaluated, so they are left unmeasured (not_selected), never zero.
+LATER_REVISIONS = {'tianxicode_deepseek_v4_1_flash_go': '641b727c8a5e3e5d0af08a348e632b12c3f11aef'}
+PATCH_DISAGREEMENTS = {'tianxicode_deepseek_v4_1_flash_go': {
+    'akuity__kargo-4687', 'caddyserver__caddy-7189', 'chenhg5__cc-connect-303',
+    'cucumber__godog-695', 'envoyproxy__gateway-8521', 'github__gh-aw-22943',
+    'github__gh-aw-23348', 'github__gh-aw-23870', 'github__gh-aw-24043',
+    'github__gh-aw-24521', 'github__gh-aw-26074', 'gohugoio__hugo-14757',
+    'jesseduffield__lazygit-4750', 'kubernetes-sigs__kueue-8597', 'kyverno__kyverno-15834',
+    'libp2p__go-libp2p-3306', 'moby__moby-50281', 'nats-io__nats-server-7175',
+    'nextlevelbuilder__goclaw-841', 'oauth2-proxy__oauth2-proxy-2524', 'open-telemetry__opentelemetry-collector-contrib-42164',
+    'open-telemetry__opentelemetry-collector-contrib-46272', 'open-telemetry__opentelemetry-ebpf-profiler-734', 'tmc__langchaingo-1350',
+}}
+COHORTS += [('tianxicode_deepseek_v4_1_flash_go', 'multilang/go/tianxi/deepseek-flash', 'TianxiCode 0.1.486',
+             'DeepSeek V4.1 Flash', 'go', 'live-multilang-deepseek-v4.1-flash-tianxicode-0.1.486')]
 # Cross-language runs (all_languages): only their Go tasks are imported; other languages are set aside.
 HARNESS = {'claudecode': 'Claude Code', 'openhands': 'OpenHands', 'sweagent': 'SWE-agent'}
 ALL_LANGUAGE_RUNS = [
@@ -54,6 +70,13 @@ ALL_LANGUAGE_RUNS = [
 COHORTS += [(f"all_{harness}_{folder.replace('-', '_').replace('.', '_')}_go", f'multilang/all_languages/{harness}/{folder}',
              HARNESS[harness], model, 'go', f"live-multilang-{folder}-{harness}")
             for harness, folder, model in ALL_LANGUAGE_RUNS]
+
+
+def selected_tasks(repo, name):
+    if name not in PATCH_DISAGREEMENTS:
+        return None
+    tasks = json.loads((repo / 'examples/live-go/population-manifest.json').read_text())['tasks']
+    return sorted(set(tasks) - PATCH_DISAGREEMENTS[name])
 
 
 def save(path, value):
@@ -113,10 +136,11 @@ def main():
         audit_path = root / (name + '.preimages.json')
         if args.phase == 'inventory':
             split = {'javascript': 'js', 'typescript': 'ts', 'go': 'go'}[language]
-            run = import_run(cache, submission_revision=REVISION, config_path='submissions/' + config,
+            run = import_run(cache, submission_revision=LATER_REVISIONS.get(name, REVISION),
+                             config_path='submissions/' + config, verify_patch_files=name in LATER_REVISIONS,
                              dataset='SWE-bench-Live/MultiLang', dataset_revision=MULTILANG_REVISION,
                              dataset_files=[(language, f'data/{split}-00000-of-00001.parquet')],
-                             agent=source_agent, model=model,
+                             agent=source_agent, model=model, task_ids=selected_tasks(repo, name),
                              set_aside_outside=config.startswith('multilang/all_languages/'))
             save(inventory, run)
             print(name, 'population', len(run['records']), flush=True)
