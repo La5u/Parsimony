@@ -156,6 +156,14 @@ class MilestoneTests(unittest.TestCase):
         a, = analyze(self.population, self.root / 'data', self.gits, 'milestone-claude-code-model-a', 'python')
         self.assertEqual((a['provenance']['patch_files'], a['provenance']['deleted_files']), (1, 0))
 
+    def test_snapshot_missing_most_start_files_is_not_measured(self):
+        cell = self.data / 'mstone_trial' / '_codex_model-b_run_001' / 'M01' / 'evaluation'
+        snapshot(cell / 'source_snapshot.tar', {'pkg/new.py': 'x = 1\n'})
+        with patch.object(milestone, 'PARTIAL_MIN_FILES', 1):
+            b, = analyze(self.population, self.root / 'data', self.gits, 'milestone-codex-model-b', 'python')
+        self.assertEqual((b['analysis_status'], b['metrics'], b['resolved']), ('partial_snapshot', None, False))
+        self.assertEqual(b['provenance']['missing_start_files'], 2)
+
     def test_git_lists_regular_files_under_source_dirs(self):
         repo = Git(self.gits / REPO_DIR)
         files = repo.files(repo.resolve('refs/start/M01'), ['pkg/'])

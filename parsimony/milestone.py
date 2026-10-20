@@ -31,6 +31,10 @@ REPOS = {'navidrome_navidrome_v0.57.0_v0.58.0': ('navidrome', 'go'),
          'zeromicro_go-zero_v1.6.0_v1.9.3': ('go-zero', 'go'),
          'scikit-learn_scikit-learn_1.5.2_1.6.0': ('scikit-learn', 'python'),
          'element-hq_element-web_v1.11.95_v1.11.97': ('element-web', 'typescript')}
+# A snapshot missing more than this share of the start state's in-scope files, and more than
+# PARTIAL_MIN_FILES of them, is incomplete. Real deletions in this data touch at most a few files.
+PARTIAL_SNAPSHOT = 0.25
+PARTIAL_MIN_FILES = 20
 SHA = re.compile(r'^[0-9a-f]{40}$')
 SAFE = re.compile(r'^[A-Za-z0-9_.-]+$')
 
@@ -230,8 +234,15 @@ def analyze(dataset_path, data, gits, agent, language):
         end_files = git.files(row['provenance']['end_tag_commit'], dirs)
         in_scope = {p for p in base_files if implementation(p, language)}
         before = {p: git.blob(base_files[p]) for p in in_scope | (set(after) & set(base_files))}
+        missing = in_scope - set(after)
+        record['provenance']['missing_start_files'] = len(missing)
+        if len(missing) > max(PARTIAL_MIN_FILES, PARTIAL_SNAPSHOT * len(in_scope)):
+            # The agent's commit lacked whole source directories (the harness logs them as
+            # non-existent); the evaluator overlays snapshots, so this is not evidence of deletion.
+            record['analysis_status'] = 'partial_snapshot'
+            continue
         state = dict(after)
-        for p in in_scope - set(after):
+        for p in missing:
             state[p] = before[p] if (p not in kept and p in end_files) else None
         try:
             patch, paths = diff(before, state, language)
