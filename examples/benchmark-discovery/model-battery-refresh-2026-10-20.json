@@ -1,0 +1,85 @@
+{
+  "date": "2026-10-20",
+  "method": "Public metadata only: DeepSWE artifact hashes, upstream commit/PR listings for SWE-bench experiments, SWE-bench-Live and PolyBench, SWEeper Hugging Face revisions, plus a web search for new models and benchmarks. Candidate artifacts downloaded to external folders only; nothing measured or published; no paid runs.",
+  "deepswe": {
+    "release": "v1.1",
+    "artifacts_unchanged": true,
+    "artifact_sha256_prefixes": {
+      "trials.json": "310cb428fe8914cf",
+      "leaderboard-live.json": "a7c15d66288fd249",
+      "release.json": "0b77963ed8c54ef4"
+    },
+    "trials_json_last_modified": "2026-10-15T06:56:10Z (re-uploaded, same bytes)",
+    "newer_releases_probed": {"v1.2": 404, "v1.3": 404, "v2": 404, "v2.0": 404},
+    "verdict": "No new DeepSWE configuration."
+  },
+  "swe_bench_verified": {
+    "main": "40f164d5b8f1d249bf95a6df8b74b577fd8e519d",
+    "main_unchanged": true,
+    "open_pr_507": {
+      "title": "Add Benzi on DeepSeek V4.1-Flash, Oct 2026 (SWE-bench Verified): 412/500 (82.4%)",
+      "head": "oooscoos/experiments@a257636ecfed9f73a8bb70ae3d8a35e45854418b",
+      "files": ["README.md", "all_preds.jsonl", "logo.png", "metadata.yaml"],
+      "all_preds_sha256": "d3d87dc0dd0d74c2690b20820758f83a52a4a9672a251cba025e001e4e36fead",
+      "predictions": 500,
+      "nonempty_patches": 498,
+      "per_instance_results": "absent (also absent from oooscoos/Benzi swebench-october)",
+      "label_note": "metadata tags model deepseek-v4-flash but displays DeepSeek V4.1-Flash; resolve before labelling",
+      "verdict": "Owner decision 2026-10-20: wait for merge with official per-instance results, then import as a Verified row."
+    },
+    "other_open_prs": "LifeGraph (#503, #504, #509, #510, #511) and Omniverse Apex 7.00 (#505) are partial or Lite runs; Yuki + DeepSeek V4.1 Flash 1017 (#512) is SWE-bench Lite, not a Parsimony population."
+  },
+  "swe_bench_live": {
+    "main": "8c67bd5",
+    "since_641b727": ["submissions/multilang/rust/tianxicode/deepseek-flash"],
+    "verdict": "Only a Rust run (unsupported language); Java TianxiCode (b1b455a) also awaits an analyzer. No open PRs."
+  },
+  "polybench": {"submission": "e7062f4a848ca7775bc1c1313f7aa419bd6a3ec1", "unchanged": true},
+  "sweeper": {
+    "traces_revision": "7d103ed06e6c4a61ed8d84607816ded1257f5ae6",
+    "dataset_revision": "f10cd684be52322667f1373c8295624e13791b8f",
+    "changes_since_pin": "metadata only (arXiv link, task-category tags); runs.csv byte-identical to 15e41de",
+    "main_configurations": 15,
+    "all_main_published": true,
+    "unimported_ablations": {
+      "harness": "gpt-5.6-luna xhigh on claude-code, cursor, kimi-code, muse-code; 40 tasks each",
+      "prompt_specified": "deepseek-v4.1-flash, glm-5.3, gpt-5.6-luna, gpt-5.6-sol, gpt-5.6-terra; 200 tasks each",
+      "template_non_browser": "glm-5.3, gpt-5.6-luna; 200 tasks each",
+      "time_budget": "glm-5.3, gpt-5.6-luna, gpt-5.6-sol, gpt-5.6-terra; 40 tasks x 4 budgets"
+    }
+  },
+  "new_models_without_public_patches": {
+    "source": "web search 2026-10-20; release pages not individually verified",
+    "models": ["Claude Opus 5.5", "Claude Sonnet 5.5", "Claude Haiku 5.5", "Gemini 4 Argon", "DeepSeek V4.1 Flash 1017", "Grok 4.7", "Mistral Large 4", "Muse Spark Open", "Muse Wonder", "Nemotron 3.5 Super/Lightning/Bolt", "Beam 1.0", "MiMo-V2.6 Pro/Flash", "Step 5 Preview", "LFM2.5-24B-A2B"],
+    "owner_decision": "Only public data; no self-runs for these (2026-10-20)."
+  },
+  "new_benchmarks": {
+    "programbench": {
+      "registry": "https://github.com/ProgramBench/submissions (pushed 2026-10-14)",
+      "task": "rebuild 200 programs from scratch; model chooses the output language",
+      "submissions": 25,
+      "artifacts": "per-submission fork pinned in pointer.yaml with per-task submission.tar.gz (Hugging Face), eval.json, traj.json; registry _stats/score.json is per-test booleans; ignored_tests.json",
+      "language_mix_examples": {
+        "opus-5-xhigh": {"rs": 103, "go": 47, "c": 26, "cpp": 15, "py": 4, "unknown": 3},
+        "gpt-5-6-sol-xhigh": {"py": 167, "c": 14, "go": 14, "cpp": 3, "java": 1, "sh": 1}
+      },
+      "all_tests_pass_after_ignored_tests": {
+        "opus-5-xhigh": {"rs": 7, "go": 1, "c": 1},
+        "gpt-5-6-sol-xhigh": {"py": 1, "c": 1},
+        "muse-spark-1.3-max": {"rs": 3, "go": 1, "c": 1},
+        "gemini-3-6-flash": {"c": 1}
+      },
+      "verdict": "Not importable under the current method: 0-2 fully passing tasks per model in supported languages, models write different languages on the same task, and there is no before-state. Needs owner decisions on a partial-credit outcome rule, a from-scratch size metric and a Rust analyzer."
+    },
+    "swe_refactor_bench": {
+      "runs_page": "https://lab.einsia.ai/swe-refactor-bench/runs/",
+      "trajectories_sha256": "e4514ea182336f76b4152f5422cd59a9d8cdc2710706ce5467f929b9d1f2387d",
+      "runs": 520,
+      "accepted": 28,
+      "tasks": 20,
+      "verdict": "Not importable: trajectories carry no final diff or snapshot (also none in github.com/Einsia/SWE-Refactor-Bench); tasks are mostly cross-language or build-system migrations."
+    },
+    "swe_milestone": "Gated on Hugging Face (contact-sharing consent); skipped by owner 2026-10-20.",
+    "excluded": "ProgramDistill (no evaluation trajectories), LoLBench (gold solutions only), SWE-Nexus (no model patch export found)."
+  }
+}
