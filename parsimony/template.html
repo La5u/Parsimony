@@ -313,7 +313,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   // Small boards say so, and point to the 500-task board when it is in the switcher.
   $('task-picker').hidden = !!merged;
   if (merged) {
-    $('board-intro').textContent = `${n} models on ${bench.name}'s ${languages.map(l => `${l.tasks} ${l.name}`).join(', ').replace(/, ([^,]*)$/, ' and $1')} tasks, ${languages[0]?.attempts ?? 4} attempts each. `
+    $('board-intro').textContent = `${n} models on ${bench.name}'s ${languages.map(l => `${l.tasks} ${l.name}`).join(', ').replace(/, ([^,]*)$/, ' and $1')} tasks, ${languages[0]?.attempts ?? 4} attempt${(languages[0]?.attempts ?? 4) === 1 ? '' : 's'} each. `
       + `Each language is compared on its own board; the ratio here averages a model's language ratios, weighted by how many shared tasks each has.`;
     $('language-scope').textContent = `Tests, docs and generated files are left out. Each language is measured on its own board with its own parser; unit counts are never added across languages, only the ratios are combined.`;
   } else if (taskCount < 50) {

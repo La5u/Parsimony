@@ -79,7 +79,17 @@ NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude
          'sweeper-kimi-k3-kimi-code': 'Kimi K3 (high) · Kimi Code',
          'sweeper-muse-spark-1.3-muse-code': 'Muse Spark 1.3 (xhigh) · Muse Code',
          'sweeper-qwen3.8-flash-codex': 'Qwen3.8 Flash (xhigh) · Codex',
-         'sweeper-qwen3.8-max-codex': 'Qwen3.8 Max (none) · Codex'}
+         'sweeper-qwen3.8-max-codex': 'Qwen3.8 Max (none) · Codex',
+         'milestone-claude-code-opus-4.5': 'Claude Opus 4.5 · Claude Code',
+         'milestone-claude-code-opus-4.6': 'Claude Opus 4.6 · Claude Code',
+         'milestone-claude-code-sonnet-4.5': 'Claude Sonnet 4.5 · Claude Code',
+         'milestone-claude-code-sonnet-4.6': 'Claude Sonnet 4.6 · Claude Code',
+         'milestone-codex-gpt-5.2': 'GPT-5.2 · Codex',
+         'milestone-codex-gpt-5.2-codex': 'GPT-5.2 Codex · Codex',
+         'milestone-codex-gpt-5.3-codex': 'GPT-5.3 Codex · Codex',
+         'milestone-gemini-cli-gemini-3-flash': 'Gemini 3 Flash · Gemini CLI',
+         'milestone-gemini-cli-gemini-3-pro': 'Gemini 3 Pro · Gemini CLI',
+         'milestone-gemini-cli-gemini-3.1-pro': 'Gemini 3.1 Pro · Gemini CLI'}
 
 
 BENCHMARKS = {
@@ -104,6 +114,10 @@ BENCHMARKS = {
                     results="SWEeper's browser-agent verdicts (target + preservation)", attempts=1,
                     harness_note='Each model uses its own agent, so this compares model + agent setups, not models alone.',
                     notice="Outcomes are SWEeper's browser-agent verdicts (target + preservation), reported by the benchmark, not checked independently."),
+    'milestone': dict(name='SWE-Milestone', url='https://swe-milestone.com', reference="Maintainers' commits",
+                      task_url='{task}', task_link="Maintainers' commit", results="SWE-Milestone's own test verdicts", attempts=1,
+                      harness_note='Each model uses its own agent, so this compares model + agent setups, not models alone.',
+                      notice="Feature work, one milestone at a time. Pass/fail is SWE-Milestone's own test verdict, not checked independently."),
     'polybench': dict(name='SWE-PolyBench Verified', url='https://amazon-science.github.io/SWE-PolyBench/',
                       reference="Maintainers' fix", task_url='https://github.com/{owner}/{repo}/pull/{number}',
                       task_link="Maintainers' pull request", results='public submitter evaluation reports', attempts=1,
@@ -127,6 +141,9 @@ def published_sources(benchmark, language='python', root=None):
         ('SWE-bench Live MultiLang · TypeScript', 'live-multilang', 'typescript', 'live-typescript', 'population-manifest.json', 'live-typescript.html'),
         ('SWE-bench Live MultiLang · Go', 'live-multilang', 'go', 'live-go', 'population-manifest.json', 'live-go.html'),
         ('SWEeper-Bench · PHP', 'sweeper', 'php', 'sweeper-php', 'population-manifest.json', 'sweeper-php.html'),
+        ('SWE-Milestone · Go', 'milestone', 'go', 'swe-milestone-go', 'population-manifest.json', 'swe-milestone.html'),
+        ('SWE-Milestone · TypeScript', 'milestone', 'typescript', 'swe-milestone-typescript', 'population-manifest.json', 'swe-milestone.html'),
+        ('SWE-Milestone · Python', 'milestone', 'python', 'swe-milestone-python', 'population-manifest.json', 'swe-milestone.html'),
     ]
     sources = []
     for name, key, lang, directory, filename, board_url in boards:
@@ -656,7 +673,8 @@ def main():
                 language, directory = item.split('=', 1)
                 directory = Path(directory)
                 boards.append((language, json.loads((directory / 'score-panel.json').read_text()),
-                               [r for path in sorted(directory.glob('*.jsonl')) for r in read_jsonl(path)]))
+                               [r for path in sorted(directory.glob('*.jsonl')) if path.name != 'population.jsonl'
+                                for r in read_jsonl(path)]))
             data = build_merged(boards)
         else:
             raw = Path(args.panel).read_bytes()

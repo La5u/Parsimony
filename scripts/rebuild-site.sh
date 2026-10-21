@@ -20,7 +20,8 @@ mkdir -p "$OUT"
 
 NAV=(--nav 'DeepSWE, all languages=index.html' --nav 'DeepSWE Python=python.html' --nav 'DeepSWE JavaScript=javascript.html'
      --nav 'DeepSWE TypeScript=typescript.html' --nav 'DeepSWE Go=go.html' --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html'
-     --nav 'Live JavaScript=live-javascript.html' --nav 'Live TypeScript=live-typescript.html' --nav 'Live Go=live-go.html' --nav 'SWEeper PHP=sweeper-php.html')
+     --nav 'Live JavaScript=live-javascript.html' --nav 'Live TypeScript=live-typescript.html' --nav 'Live Go=live-go.html' --nav 'SWEeper PHP=sweeper-php.html'
+     --nav 'SWE-Milestone, features=swe-milestone.html')
 AA=examples/external/artificial-analysis-2026-10-08.json
 
 LANGS=(python javascript typescript)
@@ -65,3 +66,7 @@ for lang in javascript typescript go; do
   python -m parsimony.site "$M/score-panel.json" "$M/"*-*.jsonl --sensitivity "$M/stability.json" \
     --benchmark live-multilang "${NAV[@]}" --output "$OUT/live-$lang.html"
 done
+
+# SWE-Milestone feature work: Go, TypeScript and Python boards combined by same-task ratios, as on index.html.
+python -m parsimony.site --merge go=examples/swe-milestone-go --merge typescript=examples/swe-milestone-typescript \
+  --merge python=examples/swe-milestone-python --benchmark milestone "${NAV[@]}" --output "$OUT/swe-milestone.html"
