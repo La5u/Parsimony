@@ -4,16 +4,54 @@ How Parsimony measures a patch, and the commands behind every published number. 
 
 ## How a patch is measured
 
-1. **Correctness gate.** Only tasks listed as resolved in the published results earn efficiency credit. The resolve rate is published resolved / 500. Parsimony trusts published evaluation and does not revalidate correctness.
+The parsing and scope details below describe Python. Other language tracks have separate rules; see [language tracks](language-tracks.md).
+
+1. **Correctness gate.** Only attempts listed as resolved in the published results enter the website's solved-footprint comparison. The resolve rate uses the benchmark's full task/attempt population (500 for SWE-bench Verified), not just measured attempts. Parsimony trusts published evaluation and does not revalidate correctness.
 2. **Before vs. after.** Each touched implementation file is fetched at the dataset's exact `base_commit`, and the patch is applied in memory with strict position/context validation. Unapplicable patches are recorded as errors, never scored as zero. Network failures are recorded as retryable `fetch_error`.
 3. **Coding units.** Each side is parsed with `ast` (docstrings removed) and walked in source order. A unit is one syntactic element: a statement (`if`, `return`, assignment, `def`), an expression (call, attribute access, arithmetic or boolean operation), each comparison, a name or a literal. Each statement block also ends with one `EndBlock` unit, so nesting and moving code into or out of a block count. Punctuation, brackets, commas, load/store markers, comments, formatting and name length are not units: `if x.count(y) > 0: foo(a, b)` is 12 units. Units are unknown (null), never zero, when a file does not parse on both sides (`lexical_files`).
 4. **Alignment.** Unit counts come from an exact minimum edit script (Myers diff) over the unit sequence. Rewrites needing more than 500 edits use a line-anchored approximation and are flagged (`approximate_files`).
 5. **Footprint.** `net_units = added − deleted`, `churn = added + deleted`. Negative net is genuine shrinking. A renamed name or changed literal is one changed unit; the `structural_churn` diagnostic ignores identifier/literal values. The pre-0.5 metric, normalized lexical tokens (`net_tokens`, `token_churn`), remains a diagnostic. `files_changed` counts implementation files whose normalized code differs.
-6. **Scope.** Only `.py` implementation files count. Excluded: test/doc/example/benchmark directories, test filenames, `setup.py`/`conftest.py`, generated files (a header comment in the base commit), protobuf output, migration scripts, vendored and build output. Django's `db/migrations/` and `test/` framework packages count as implementation. Every record lists `touched_files` and `excluded_files`. See `implementation()` for the exact rules.
+6. **Scope.** Only `.py` implementation files count. Excluded: test/doc/example/benchmark directories, test filenames, `setup.py`/`conftest.py`, generated files (a header comment in the base commit), protobuf output, migration scripts, vendored and build output. Django's `db/migrations/` and `test/` framework packages count as implementation. Newly added root-level Python files are also excluded as presumed scratch scripts; this heuristic can omit legitimate implementation. Every record lists `touched_files` and `excluded_files`. See `implementation()` and `measure()` in `parsimony/analysis.py` for the exact rules.
 7. **Structure (diagnostic).** Full-file AST-node delta and a simple cyclomatic proxy delta (functions/lambdas, branches, loops, handlers, extra boolean operands, comprehension loops/filters, non-default match cases). These are null if either side does not parse.
 8. **Human comparison.** The dataset's human `patch` (not `test_patch`) is measured identically. `model_human_ratio` = model churn / human churn, or null when the human churn is zero.
 
 `leaderboard` reports medians (net, churn, human ratio, files, AST and complexity deltas), sample counts and resolve rate, sorted by median net units. `--shared` uses the intersection of resolved **and** analyzable tasks, which avoids task-mix confounding but can favor easy tasks.
+
+## Website ranking: same-task net ratio v1
+
+The website ranking is separate from the CLI median leaderboard above and the archived experimental score below. Its implementation is in `parsimony/site.py` (`solved_by_task`, `same_task_pairs`, `same_task`, and `merged_ratio`).
+
+For each model and base task:
+
+1. Keep only resolved, measured, full-file, in-scope attempts. Average their net units within each model/task; DeepSWE's repeated attempts are pooled here.
+2. Keep the task for that model only if at least **3 other ranked models** have eligible measurements on it.
+3. Take the mean of those other models' per-task means as the task's comparison footprint. Each peer model has equal weight, regardless of its number of successful attempts.
+4. Divide the sum of the model's eligible per-task means by the sum of the corresponding comparison footprints. The ratio is unavailable if there are no eligible tasks or the denominator is nonpositive. Smaller ratios rank first; negative ratios can occur when a model deletes more than it adds.
+
+This is a **ratio of sums**, not a mean of per-task ratios: tasks with larger comparison footprints contribute more. Each model has its own eligible task set and peer mixture. Matching within tasks reduces task-size confounding but does not make the ranking a comparison on a common task population. Results describe footprint conditional on observed successful repairs, not general coding quality or a model's expected footprint on arbitrary tasks. Adding or removing peer models can change ratios and task eligibility.
+
+The website also reports plain means over solved attempts and over all measured attempts; neither is the same-task ranking metric. Missing, unparseable and excluded-only attempts do not count as zero.
+
+### Conditional 95% ranges
+
+With at least **5 eligible base tasks**, each model's range uses 1,000 bootstrap draws of its task-level pairs, with replacement. The comparison footprints are held fixed, and draws with nonpositive comparison totals are discarded. The displayed range is the 2.5th to 97.5th percentile of the remaining ratios. Below 5 tasks no range is given. A range is not a confidence interval for rank or a guarantee that two models differ.
+
+These ranges cover task resampling conditional on the eligible measurements. They do **not** cover missing-measurement bias, peer-panel selection, within-task attempt variability, repository clustering, differing retry policies or incorrect upstream outcomes. Existing `parsimony.stability` reports concern the archived combined score, not this ranking.
+
+### Combined DeepSWE board
+
+The front page averages each model's per-language ratios, weighted by that model's eligible task count in each usable language (positive comparison total). Raw unit counts are never pooled across languages. Ranges resample tasks within each language. Models absent from a language board are shown as partial and not ranked. Because task eligibility differs by model, language weights can differ too.
+
+### Offline ranking diagnostics
+
+[Published diagnostics](../examples/ranking-diagnostics/README.md) cover each language board separately: leave-one-task/repository/peer-out sensitivity, pairwise matched-task means, comparison-denominator concentration and missing-success coverage. These are descriptive checks, not confidence intervals or a new ranking. They do not evaluate the combined-language aggregate.
+
+```sh
+scripts/diagnose-rankings.sh /tmp/ranking-diagnostics --offline
+# Omit --offline to also download the checksum-bound DeepSWE Go scalars and diagnose that board.
+```
+
+JSON reports include exact input hashes, unavailable perturbations and top influences; Markdown summaries show coverage and rank-sensitivity ranges. No target code is fetched or run. Harness/retry differences remain source-reported limitations, not inferred corrections.
 
 ## Command line
 

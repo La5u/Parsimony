@@ -64,8 +64,10 @@ Python 3.12 or newer; the Python analyzer has no dependencies.
 ```sh
 git clone --depth 1 https://github.com/La5u/Parsimony && cd Parsimony
 scripts/check.sh                    # tests and page checks, offline
-scripts/rebuild-site.sh --offline   # rebuild the pages from committed data
+scripts/rebuild-site.sh --offline   # rebuild all except index.html and DeepSWE go.html
 ```
+
+The offline rebuild leaves `site/index.html` and `site/go.html` unchanged (or absent in a new output directory). Omit `--offline` to rebuild them too; this downloads a checksum-bound DeepSWE Go data asset.
 
 JavaScript and TypeScript need Node.js and `npm ci`; Go needs `pip install '.[languages]'` and a C compiler. Without them those tests are skipped. To measure a published SWE-bench submission yourself:
 
@@ -82,7 +84,8 @@ More commands (failed patches, frozen populations, caching, snapshots) are in [d
 - **Models that write more code also tend to solve more tasks** (Spearman 0.33–0.60 on the boards with 26+ models).
 - **The agent matters**, not only the model. DeepSWE and Verified use mini-SWE-agent for every model except GLM-5.1 on Verified (EvalScope); Live configurations each use their own agent.
 - **Pass/fail comes from the benchmarks.** Tests aren't rerun.
-- **Some attempts can't be measured** (missing files, parse errors). They're left out, and the Measured column shows how many.
+- **Some attempts can't be measured** (missing files, parse errors). They're left out, and the Measured column shows how many. Missingness can bias comparisons; unavailable attempts are not zero-footprint attempts.
+- **The ranking is conditional on successful, measured repairs.** Each model has its own comparison task set and peer mixture; same-task normalization reduces task-size confounding but does not remove selection bias. Large patches can dominate the ratio. The 95% ranges cover task resampling, not all sources of uncertainty; see [the ranking specification](docs/method.md#website-ranking-same-task-net-ratio-v1).
 
 ## Contributing
 

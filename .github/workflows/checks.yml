@@ -59,6 +59,15 @@ jobs:
             examples/live-python/claude-opus-4.8.jsonl examples/live-python/gpt-5.5-agav.jsonl \
             --output /tmp/live-scores.json
           cmp examples/live-python/scores.json /tmp/live-scores.json
+      - name: Reproduce current-ratio diagnostics (arithmetic only)
+        if: matrix.python-version == '3.14'
+        run: |
+          scripts/diagnose-rankings.sh /tmp/ranking-diagnostics
+          for report in examples/ranking-diagnostics/*.json; do
+            name=$(basename "$report" .json)
+            cmp "$report" "/tmp/ranking-diagnostics/$name.json"
+            cmp "examples/ranking-diagnostics/$name.md" "/tmp/ranking-diagnostics/$name.md"
+          done
       - name: Rebuild website pages and compare with committed copies
         # Downloads the checksum-bound DeepSWE Go release asset (Go and all-languages pages); no analysis.
         if: matrix.python-version == '3.14'

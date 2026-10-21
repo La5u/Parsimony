@@ -2,6 +2,14 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — Current-ranking diagnostics and quiet coverage disclosures
+
+**Diagnostics.** Add `python -m parsimony.diagnostics` and `scripts/diagnose-rankings.sh`: reproducible task/repository/peer omission checks, matched-task comparisons, denominator concentration, missing-success coverage and hashed inputs for each of the ten language boards. Reports live under `examples/ranking-diagnostics/`; they do not evaluate the combined-language aggregate. CI checks regenerated reports. **Site.** Add limitations to the existing collapsed help and success-coverage explanations to Measured-cell hover text, without new columns or controls. Rebuilt pages retain identical embedded ranking data. No analyzer rules or measurements changed.
+
+## Unreleased — Audit documentation and offline rebuild disclosure
+
+**Documentation.** Specify the website's same-task ratio, eligibility, weighting and conditional bootstrap ranges separately from the CLI leaderboard and archived score. Disclose the root-level Python exclusion and selection/missingness limitations; correct stale ranking and TODO descriptions. **Tooling.** Offline site rebuilds now explicitly report that DeepSWE Go and the combined front page are skipped, with an orchestration regression test. No analyzer rules, measurements, ranking calculations or generated pages changed.
+
 ## Unreleased — DeepSeek V4.1 Flash · TianxiCode on Live Go — 2026-10-17
 
 **Data.** Live Go gains a seventh configuration: DeepSeek V4.1 Flash · TianxiCode 0.1.486 (submission pinned at `641b727`, added upstream 2026-10-16), 88/138 solved, measured with the same 0.10.0-beta analyzer at `9dd189a` as the other six. 24 tasks whose `trajs/*/patch.diff` differs from `preds.json` are set aside unmeasured; the panel frozen with the six AMI runs is unchanged and the new run is scored against it. **Importer.** `import_run` finds this run's separate patches under `trajs/`.

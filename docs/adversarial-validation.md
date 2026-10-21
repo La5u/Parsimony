@@ -59,7 +59,7 @@ Three regression examples use `pkg/core.py`, an in-scope implementation file, wi
 
   Delegation earns −10 net units with 12 units of churn. The helper's existing body is not newly delivered code, so it adds no diff footprint; nothing moves into an excluded directory. Churn is not the sum of whole deleted/added statements: sequence alignment retains shared names. This example is ordinary reuse by source inspection, not runtime certification or proof that indirection is more maintainable.
 
-The same net-credit direction covers both lost checks and plausible reuse. A compact patch alone cannot establish correctness, readability, or maintainability. Outcomes and review are separate evidence; these regressions document the metric, not a proposal to penalize deletions, change ranking, or execute target code. The current ranking uses plain mean net units; references above to churn's 20% weight concern the archived Score only.
+The same net-credit direction covers both lost checks and plausible reuse. A compact patch alone cannot establish correctness, readability, or maintainability. Outcomes and review are separate evidence; these regressions document the metric, not a proposal to penalize deletions, change ranking, or execute target code. The current website ranking uses the [same-task net ratio](method.md#website-ranking-same-task-net-ratio-v1), not plain mean net units; references above to churn's 20% weight concern the archived Score only.
 
 ## Not tested here
 

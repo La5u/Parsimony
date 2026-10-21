@@ -32,6 +32,8 @@ if [ "$OFFLINE" = 0 ]; then
   cp examples/deepswe-go-v2/release-1.0/*.jsonl "$GO/"
   cp examples/deepswe-go-v2/release-1.0/sensitivity.json "$GO/sensitivity.json"
   LANGS+=(go)
+else
+  printf '%s\n' 'Offline rebuild: skipping DeepSWE go.html and index.html; existing copies are left unchanged, and missing copies are not created.' >&2
 fi
 
 for lang in "${LANGS[@]}"; do

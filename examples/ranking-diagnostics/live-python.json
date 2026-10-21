@@ -1,0 +1,636 @@
+{
+  "diagnostic_version": "same-task-net-diagnostics-v1",
+  "ranking_metric": "same-task-net-ratio-v1",
+  "panel": "live-lite-python-300-80-20-v0.5",
+  "limitations": [
+    "Descriptive sensitivity, not confidence intervals or a replacement ranking.",
+    "Successful measured repairs only; missing footprints are not imputed.",
+    "Each task/repository deletion preserves peer eligibility rules; peer deletion recomputes them.",
+    "Peer rank changes exclude the mechanical effect of removing a competing candidate.",
+    "Pairwise comparisons use all shared solved measured base tasks, without the three-peer gate.",
+    "Repository omission tests influence; it is not a repository-cluster bootstrap.",
+    "Harness, retry policy and upstream outcome validity are not inferred from model labels.",
+    "Combined-language ranking is not evaluated; run this separately for each language board."
+  ],
+  "base_tasks": 244,
+  "repositories": 63,
+  "models": {
+    "live-lite-claude-opus-4.8-aiwork": {
+      "name": "Claude Opus 4.8 \u00b7 AiWork.Code",
+      "ratio": 1.1634062140391255,
+      "rank": 3,
+      "coverage": {
+        "resolved_records": 102,
+        "published_resolved_attempts": 102,
+        "eligible_solved_attempts": 102,
+        "eligible_solved_base_tasks": 102,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {}
+      },
+      "comparison_tasks": 73,
+      "reported_harnesses": [
+        "AiWork.Code"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 2896.6666666666665,
+      "largest_abs_comparison_task": "pydata__xarray-10076",
+      "largest_abs_comparison_share": 0.15822784810126583,
+      "nonpositive_comparison_tasks": 18,
+      "leave_one_task_out": {
+        "scenarios": 244,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          4
+        ],
+        "ratio_range": [
+          0.9490088858509911,
+          1.2214259236377116
+        ],
+        "max_abs_ratio_change": 0.2143973281881344,
+        "top_influences": [
+          {
+            "removed": "pydata__xarray-10076",
+            "ratio": 0.9490088858509911,
+            "rank": 1,
+            "comparison_tasks": 72,
+            "ratio_change": -0.2143973281881344,
+            "rank_change": -2
+          },
+          {
+            "removed": "aiogram__aiogram-1594",
+            "ratio": 1.2214259236377116,
+            "rank": 4,
+            "comparison_tasks": 72,
+            "ratio_change": 0.058019709598586156,
+            "rank_change": 1
+          },
+          {
+            "removed": "sphinx-doc__sphinx-13253",
+            "ratio": 1.2087472584182686,
+            "rank": 3,
+            "comparison_tasks": 72,
+            "ratio_change": 0.0453410443791431,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 63,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          4
+        ],
+        "ratio_range": [
+          0.9490088858509911,
+          1.2214259236377116
+        ],
+        "max_abs_ratio_change": 0.2143973281881344,
+        "top_influences": [
+          {
+            "removed": "pydata/xarray",
+            "ratio": 0.9490088858509911,
+            "rank": 1,
+            "comparison_tasks": 72,
+            "ratio_change": -0.2143973281881344,
+            "rank_change": -2
+          },
+          {
+            "removed": "aiogram/aiogram",
+            "ratio": 1.2214259236377116,
+            "rank": 4,
+            "comparison_tasks": 72,
+            "ratio_change": 0.058019709598586156,
+            "rank_change": 1
+          },
+          {
+            "removed": "sphinx-doc/sphinx",
+            "ratio": 1.2087472584182686,
+            "rank": 3,
+            "comparison_tasks": 72,
+            "ratio_change": 0.0453410443791431,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 3,
+        "unavailable_scenarios": 3,
+        "rank_range": null,
+        "ratio_range": null,
+        "max_abs_ratio_change": null,
+        "top_influences": [
+          {
+            "removed": "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
+            "ratio": null,
+            "rank": null,
+            "comparison_tasks": 0,
+            "ratio_change": null,
+            "rank_change": null
+          },
+          {
+            "removed": "live-lite-gpt-5.5-agav-0.2.0-beta.2",
+            "ratio": null,
+            "rank": null,
+            "comparison_tasks": 0,
+            "ratio_change": null,
+            "rank_change": null
+          },
+          {
+            "removed": "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+            "ratio": null,
+            "rank": null,
+            "comparison_tasks": 0,
+            "ratio_change": null,
+            "rank_change": null
+          }
+        ]
+      }
+    },
+    "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423": {
+      "name": "DeepSeek V4.1 Flash \u00b7 TianxiCode 0.1.423",
+      "ratio": 0.8703465982028241,
+      "rank": 2,
+      "coverage": {
+        "resolved_records": 204,
+        "published_resolved_attempts": 204,
+        "eligible_solved_attempts": 202,
+        "eligible_solved_base_tasks": 202,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {
+          "out_of_scope": 2
+        }
+      },
+      "comparison_tasks": 73,
+      "reported_harnesses": [
+        "TianxiCode 0.1.423"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 3116.0,
+      "largest_abs_comparison_task": "pydata__xarray-10076",
+      "largest_abs_comparison_share": 0.24475823705605476,
+      "nonpositive_comparison_tasks": 16,
+      "leave_one_task_out": {
+        "scenarios": 244,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          4
+        ],
+        "ratio_range": [
+          0.791492329149233,
+          1.091643059490085
+        ],
+        "max_abs_ratio_change": 0.22129646128726088,
+        "top_influences": [
+          {
+            "removed": "pydata__xarray-10076",
+            "ratio": 1.091643059490085,
+            "rank": 4,
+            "comparison_tasks": 72,
+            "ratio_change": 0.22129646128726088,
+            "rank_change": 2
+          },
+          {
+            "removed": "sphinx-doc__sphinx-13253",
+            "ratio": 0.791492329149233,
+            "rank": 1,
+            "comparison_tasks": 72,
+            "ratio_change": -0.07885426905359116,
+            "rank_change": -1
+          },
+          {
+            "removed": "aiogram__aiogram-1594",
+            "ratio": 0.8494647887323943,
+            "rank": 2,
+            "comparison_tasks": 72,
+            "ratio_change": -0.020881809470429835,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 63,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          4
+        ],
+        "ratio_range": [
+          0.791492329149233,
+          1.091643059490085
+        ],
+        "max_abs_ratio_change": 0.22129646128726088,
+        "top_influences": [
+          {
+            "removed": "pydata/xarray",
+            "ratio": 1.091643059490085,
+            "rank": 4,
+            "comparison_tasks": 72,
+            "ratio_change": 0.22129646128726088,
+            "rank_change": 2
+          },
+          {
+            "removed": "sphinx-doc/sphinx",
+            "ratio": 0.791492329149233,
+            "rank": 1,
+            "comparison_tasks": 72,
+            "ratio_change": -0.07885426905359116,
+            "rank_change": -1
+          },
+          {
+            "removed": "joke2k/faker",
+            "ratio": 0.8470207409183551,
+            "rank": 2,
+            "comparison_tasks": 70,
+            "ratio_change": -0.02332585728446901,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 3,
+        "unavailable_scenarios": 3,
+        "rank_range": null,
+        "ratio_range": null,
+        "max_abs_ratio_change": null,
+        "top_influences": [
+          {
+            "removed": "live-lite-claude-opus-4.8-aiwork",
+            "ratio": null,
+            "rank": null,
+            "comparison_tasks": 0,
+            "ratio_change": null,
+            "rank_change": null
+          },
+          {
+            "removed": "live-lite-gpt-5.5-agav-0.2.0-beta.2",
+            "ratio": null,
+            "rank": null,
+            "comparison_tasks": 0,
+            "ratio_change": null,
+            "rank_change": null
+          },
+          {
+            "removed": "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+            "ratio": null,
+            "rank": null,
+            "comparison_tasks": 0,
+            "ratio_change": null,
+            "rank_change": null
+          }
+        ]
+      }
+    },
+    "live-lite-gpt-5.5-agav-0.2.0-beta.2": {
+      "name": "GPT-5.5 \u00b7 agav 0.2.0-beta.2",
+      "ratio": 0.7920553401110995,
+      "rank": 1,
+      "coverage": {
+        "resolved_records": 186,
+        "published_resolved_attempts": 186,
+        "eligible_solved_attempts": 185,
+        "eligible_solved_base_tasks": 185,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {
+          "out_of_scope": 1
+        }
+      },
+      "comparison_tasks": 73,
+      "reported_harnesses": [
+        "agav"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 3180.3333333333335,
+      "largest_abs_comparison_task": "pydata__xarray-10076",
+      "largest_abs_comparison_share": 0.23980714809768366,
+      "nonpositive_comparison_tasks": 16,
+      "leave_one_task_out": {
+        "scenarios": 244,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          3
+        ],
+        "ratio_range": [
+          0.7675341861490957,
+          0.9827657521025783
+        ],
+        "max_abs_ratio_change": 0.19071041199147887,
+        "top_influences": [
+          {
+            "removed": "pydata__xarray-10076",
+            "ratio": 0.9827657521025783,
+            "rank": 3,
+            "comparison_tasks": 72,
+            "ratio_change": 0.19071041199147887,
+            "rank_change": 2
+          },
+          {
+            "removed": "aiogram__aiogram-1594",
+            "ratio": 0.7675341861490957,
+            "rank": 1,
+            "comparison_tasks": 72,
+            "ratio_change": -0.024521153962003717,
+            "rank_change": 0
+          },
+          {
+            "removed": "joke2k__faker-2190",
+            "ratio": 0.7678200692041522,
+            "rank": 1,
+            "comparison_tasks": 72,
+            "ratio_change": -0.024235270906947215,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 63,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          3
+        ],
+        "ratio_range": [
+          0.7522211253701875,
+          0.9827657521025783
+        ],
+        "max_abs_ratio_change": 0.19071041199147887,
+        "top_influences": [
+          {
+            "removed": "pydata/xarray",
+            "ratio": 0.9827657521025783,
+            "rank": 3,
+            "comparison_tasks": 72,
+            "ratio_change": 0.19071041199147887,
+            "rank_change": 2
+          },
+          {
+            "removed": "conan-io/conan",
+            "ratio": 0.7522211253701875,
+            "rank": 1,
+            "comparison_tasks": 61,
+            "ratio_change": -0.03983421474091198,
+            "rank_change": 0
+          },
+          {
+            "removed": "joke2k/faker",
+            "ratio": 0.7657551930524585,
+            "rank": 1,
+            "comparison_tasks": 70,
+            "ratio_change": -0.02630014705864092,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 3,
+        "unavailable_scenarios": 3,
+        "rank_range": null,
+        "ratio_range": null,
+        "max_abs_ratio_change": null,
+        "top_influences": [
+          {
+            "removed": "live-lite-claude-opus-4.8-aiwork",
+            "ratio": null,
+            "rank": null,
+            "comparison_tasks": 0,
+            "ratio_change": null,
+            "rank_change": null
+          },
+          {
+            "removed": "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
+            "ratio": null,
+            "rank": null,
+            "comparison_tasks": 0,
+            "ratio_change": null,
+            "rank_change": null
+          },
+          {
+            "removed": "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+            "ratio": null,
+            "rank": null,
+            "comparison_tasks": 0,
+            "ratio_change": null,
+            "rank_change": null
+          }
+        ]
+      }
+    },
+    "live-lite-gpt-5.6-sol-slingshot-3.4.0": {
+      "name": "GPT-5.6 Sol \u00b7 Slingshot 3.4.0",
+      "ratio": 1.20648761771887,
+      "rank": 4,
+      "coverage": {
+        "resolved_records": 211,
+        "published_resolved_attempts": 211,
+        "eligible_solved_attempts": 205,
+        "eligible_solved_base_tasks": 205,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {
+          "out_of_scope": 3,
+          "unverified_preimage": 3
+        }
+      },
+      "comparison_tasks": 73,
+      "reported_harnesses": [
+        "Slingshot 3.4.0"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 2867.0,
+      "largest_abs_comparison_task": "pydata__xarray-10076",
+      "largest_abs_comparison_share": 0.15602836879432624,
+      "nonpositive_comparison_tasks": 17,
+      "leave_one_task_out": {
+        "scenarios": 244,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          2,
+          4
+        ],
+        "ratio_range": [
+          0.9794737567158012,
+          1.2576350822239624
+        ],
+        "max_abs_ratio_change": 0.22701386100306875,
+        "top_influences": [
+          {
+            "removed": "pydata__xarray-10076",
+            "ratio": 0.9794737567158012,
+            "rank": 2,
+            "comparison_tasks": 72,
+            "ratio_change": -0.22701386100306875,
+            "rank_change": -2
+          },
+          {
+            "removed": "aiogram__aiogram-1594",
+            "ratio": 1.203248031496063,
+            "rank": 3,
+            "comparison_tasks": 72,
+            "ratio_change": -0.003239586222806956,
+            "rank_change": -1
+          },
+          {
+            "removed": "sphinx-doc__sphinx-13253",
+            "ratio": 1.2576350822239624,
+            "rank": 4,
+            "comparison_tasks": 72,
+            "ratio_change": 0.051147464505092444,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 63,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          2,
+          4
+        ],
+        "ratio_range": [
+          0.9794737567158012,
+          1.2576350822239624
+        ],
+        "max_abs_ratio_change": 0.22701386100306875,
+        "top_influences": [
+          {
+            "removed": "pydata/xarray",
+            "ratio": 0.9794737567158012,
+            "rank": 2,
+            "comparison_tasks": 72,
+            "ratio_change": -0.22701386100306875,
+            "rank_change": -2
+          },
+          {
+            "removed": "aiogram/aiogram",
+            "ratio": 1.203248031496063,
+            "rank": 3,
+            "comparison_tasks": 72,
+            "ratio_change": -0.003239586222806956,
+            "rank_change": -1
+          },
+          {
+            "removed": "sphinx-doc/sphinx",
+            "ratio": 1.2576350822239624,
+            "rank": 4,
+            "comparison_tasks": 72,
+            "ratio_change": 0.051147464505092444,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 3,
+        "unavailable_scenarios": 3,
+        "rank_range": null,
+        "ratio_range": null,
+        "max_abs_ratio_change": null,
+        "top_influences": [
+          {
+            "removed": "live-lite-claude-opus-4.8-aiwork",
+            "ratio": null,
+            "rank": null,
+            "comparison_tasks": 0,
+            "ratio_change": null,
+            "rank_change": null
+          },
+          {
+            "removed": "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
+            "ratio": null,
+            "rank": null,
+            "comparison_tasks": 0,
+            "ratio_change": null,
+            "rank_change": null
+          },
+          {
+            "removed": "live-lite-gpt-5.5-agav-0.2.0-beta.2",
+            "ratio": null,
+            "rank": null,
+            "comparison_tasks": 0,
+            "ratio_change": null,
+            "rank_change": null
+          }
+        ]
+      }
+    }
+  },
+  "pairwise": [
+    {
+      "a": "live-lite-claude-opus-4.8-aiwork",
+      "b": "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
+      "shared_solved_measured_tasks": 96,
+      "a_net_mean": 50.708333333333336,
+      "b_net_mean": 43.25,
+      "mean_difference_a_minus_b": 7.458333333333333,
+      "ratio_a_over_b": 1.1724470134874758
+    },
+    {
+      "a": "live-lite-claude-opus-4.8-aiwork",
+      "b": "live-lite-gpt-5.5-agav-0.2.0-beta.2",
+      "shared_solved_measured_tasks": 89,
+      "a_net_mean": 58.71910112359551,
+      "b_net_mean": 47.50561797752809,
+      "mean_difference_a_minus_b": 11.213483146067416,
+      "ratio_a_over_b": 1.2360454115421002
+    },
+    {
+      "a": "live-lite-claude-opus-4.8-aiwork",
+      "b": "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+      "shared_solved_measured_tasks": 84,
+      "a_net_mean": 53.773809523809526,
+      "b_net_mean": 53.79761904761905,
+      "mean_difference_a_minus_b": -0.023809523809523808,
+      "ratio_a_over_b": 0.9995574242088958
+    },
+    {
+      "a": "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
+      "b": "live-lite-gpt-5.5-agav-0.2.0-beta.2",
+      "shared_solved_measured_tasks": 163,
+      "a_net_mean": 59.785276073619634,
+      "b_net_mean": 57.76687116564417,
+      "mean_difference_a_minus_b": 2.01840490797546,
+      "ratio_a_over_b": 1.0349405267629566
+    },
+    {
+      "a": "live-lite-deepseek-v4.1-flash-tianxicode-0.1.423",
+      "b": "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+      "shared_solved_measured_tasks": 169,
+      "a_net_mean": 50.739644970414204,
+      "b_net_mean": 52.798816568047336,
+      "mean_difference_a_minus_b": -2.059171597633136,
+      "ratio_a_over_b": 0.9609996637902051
+    },
+    {
+      "a": "live-lite-gpt-5.5-agav-0.2.0-beta.2",
+      "b": "live-lite-gpt-5.6-sol-slingshot-3.4.0",
+      "shared_solved_measured_tasks": 159,
+      "a_net_mean": 51.9811320754717,
+      "b_net_mean": 55.17610062893082,
+      "mean_difference_a_minus_b": -3.1949685534591197,
+      "ratio_a_over_b": 0.942095064402143
+    }
+  ],
+  "inputs": [
+    {
+      "file": "score-panel.json",
+      "sha256": "57584e474cb5feec08f8b65f13b2a801169d9fc07d32e6f56c877d067d9b0f31"
+    },
+    {
+      "file": "claude-opus-4.8.jsonl",
+      "sha256": "e1269a83fd5e5a19e02a5883832da8befb2e761f9977d61f3b5e9b94dfa70646"
+    },
+    {
+      "file": "deepseek-v4.1-flash.jsonl",
+      "sha256": "a22eaf6fbda9df87bc97c50cb4647e2ab65367d9b84fb7d34b52660fdfa26cbe"
+    },
+    {
+      "file": "gpt-5.5-agav.jsonl",
+      "sha256": "1e398322396af536e5c58bd07241689bdb8309511229a9c64ce72eaf84a59e53"
+    },
+    {
+      "file": "gpt-5.6-sol.jsonl",
+      "sha256": "5c5608f3ad8556e662893905853ab218b21680cc74eeeaf8802d06203f1dbd59"
+    }
+  ]
+}

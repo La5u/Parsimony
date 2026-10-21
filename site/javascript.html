@@ -181,6 +181,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
 
   <details class="small muted"><summary>How to read this</summary>
   <p><span id="rank-help">Models are ranked by mean net units added on the tasks they solved, lowest first. "Net units added (mean)" also includes failed attempts.</span> Solved comes from <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a>; tests aren't rerun. Measured is how many solved attempts could be measured.</p>
+  <p>Each model has its own solved, measured comparison tasks and peer mixture. Missing measurements are not zero; large patches can dominate the ratio. Hover over a ratio for its shared-task count and conditional 95% range, or over Measured for success coverage. These ranges do not cover missingness, peer selection or differing harness/retry policies; configurations are not controlled model-only comparisons. <a href="https://github.com/La5u/Parsimony/blob/main/docs/method.md#website-ranking-same-task-net-ratio-v1">Ranking details and offline diagnostics</a>.</p>
   <p id="external-help" hidden><span id="external-note"></span> It's an outside score, matched by model and reasoning effort, and doesn't affect the rank.<span id="aa-missing"></span></p>
   <p id="self-run-help" hidden>Faded models were run by me on the first <span class="self-run-tasks">few</span> DeepSWE Python tasks (OpenAI models with pi, and the GPT-6 family with Codex, whose pi runs appear with "Show other harnesses"; Anthropic models with Claude Code) and graded with each task's own tests. They aren't verified or ranked. GPT-5.6 Sol ran both ways: my run added 0.88× the code of its published run.</p>
   </details>
@@ -492,10 +493,12 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   let showSelfRun = true, showOtherHarnesses = false;
   // A model run through both Codex and pi shows its Codex run unless other harnesses are turned on.
   const activeSelfRun = () => showSelfRun ? selfRun.filter(m => showOtherHarnesses || !m.alternative_harness) : [];
-  // Rank: mean net units added over measured solved attempts. Measured = measured solved / upstream solved.
+  // Fallback metric without same-task ratios. Measured = measured solved / upstream solved.
   const netMean = m => m.measured_solved_net_mean;
   const measuredCount = m => m.measured_solved_attempts;
   const denominator = m => m.upstream_solved_attempts;
+  const coverageNote = m => denominator(m) == null ? 'Success coverage unavailable'
+    : `${measuredCount(m) ?? 0} of ${denominator(m)} published solved attempts measured in scope. Missing measurements are not zero and can bias the comparison.`;
   const selfRunCounts = selfRun.map(m => m.tasks).filter(Number.isFinite);
   const selfRunTasks = selfRunCounts.length ? (Math.min(...selfRunCounts) === Math.max(...selfRunCounts) ? `${Math.min(...selfRunCounts)}` : `${Math.min(...selfRunCounts)}–${Math.max(...selfRunCounts)}`) : 'a few';
   const selfRunTaskTotal = merged ? languages.find(l => l.key === 'python')?.tasks : taskCount;
@@ -610,8 +613,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       const solved = metricValue(m, i, 'resolve_rate');
       const ratioCell = key => `<td title="${esc(rangeNote(m, key))}">${Number.isFinite(metricValue(m, i, key)) ? fmt(metricValue(m, i, key), 2) + '×' : '—'}</td>`;
       const rowAttrs = m.self_run ? ` class="self-run" title="${esc(selfRunNote(m))}"` : unranked(m) ? ` class="partial" style="opacity:${partialOpacity(m)}" title="${esc(unrankedNote(m))}"` : '';
-      if (merged) return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td>${ratioCell('same_net')}${langKeys.map(ratioCell).join('')}<td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
-      return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td>${sameTask ? `<td title="${esc(rangeNote(m, 'same_net'))}">${Number.isFinite(m.same_task_net) ? fmt(m.same_task_net, 2) + '×' : '—'}</td>` : ''}<td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.measured_net_mean)}</td><td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
+      if (merged) return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td>${ratioCell('same_net')}${langKeys.map(ratioCell).join('')}<td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td title="${esc(coverageNote(m))}">${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
+      return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td>${sameTask ? `<td title="${esc(rangeNote(m, 'same_net'))}">${Number.isFinite(m.same_task_net) ? fmt(m.same_task_net, 2) + '×' : '—'}</td>` : ''}<td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.measured_net_mean)}</td><td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td title="${esc(coverageNote(m))}">${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
     })()).join('');
   }
   function showTask(id) {

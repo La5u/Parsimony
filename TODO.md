@@ -19,7 +19,9 @@ Details: [language expansion opportunities](docs/archive/language-expansion-oppo
 
 ## Measurement and professional-release follow-up
 
-- [ ] Version strict malformed-patch and duplicate/conflicting-file-section rejection; evaluate historical artifacts before updating published measurements.
+- [x] Version strict malformed-patch and duplicate/conflicting-file-section rejection (analyzer 0.9). Historical cohorts retain their recorded analyzer identities; any remeasurement remains a separate, validated release.
+- [x] Add descriptive diagnostics for the current same-task ratio: task/repository influence, peer-panel perturbations, matched-task comparisons and missing-success coverage. [Reports and reproduction](examples/ranking-diagnostics/README.md). Existing combined-score stability reports do not validate the website ranking; the new omission ranges are not confidence intervals and do not resolve missingness bias.
+- [ ] Audit excluded files in successful patches, especially new root-level Python files and imports into excluded directories, before deciding whether to version scope changes.
 - [ ] Define reproducible analyzer resource limits and explicit unavailable outcomes.
 - [ ] Complete mobile scatter, screen-reader, contrast/zoom and hosted security-header checks without regressing approved graph behavior.
 - [ ] Stress-test near-limit custom imports and define a responsiveness budget.

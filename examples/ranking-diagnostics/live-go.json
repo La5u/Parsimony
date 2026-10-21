@@ -1,0 +1,1236 @@
+{
+  "diagnostic_version": "same-task-net-diagnostics-v1",
+  "ranking_metric": "same-task-net-ratio-v1",
+  "panel": "live-multilang-go-v1",
+  "limitations": [
+    "Descriptive sensitivity, not confidence intervals or a replacement ranking.",
+    "Successful measured repairs only; missing footprints are not imputed.",
+    "Each task/repository deletion preserves peer eligibility rules; peer deletion recomputes them.",
+    "Peer rank changes exclude the mechanical effect of removing a competing candidate.",
+    "Pairwise comparisons use all shared solved measured base tasks, without the three-peer gate.",
+    "Repository omission tests influence; it is not a repository-cluster bootstrap.",
+    "Harness, retry policy and upstream outcome validity are not inferred from model labels.",
+    "Combined-language ranking is not evaluated; run this separately for each language board."
+  ],
+  "base_tasks": 118,
+  "repositories": 83,
+  "models": {
+    "live-multilang-claude-haiku-4.5-ami-agent-0.7.0": {
+      "name": "Claude Haiku 4.5 \u00b7 AMI Agent 0.7.0",
+      "ratio": 0.8268552323911884,
+      "rank": 1,
+      "coverage": {
+        "resolved_records": 90,
+        "published_resolved_attempts": 90,
+        "eligible_solved_attempts": 82,
+        "eligible_solved_base_tasks": 82,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {
+          "out_of_scope": 7,
+          "unverified_preimage": 1
+        }
+      },
+      "comparison_tasks": 73,
+      "reported_harnesses": [
+        "AMI Agent 0.7.0"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 6500.533333333334,
+      "largest_abs_comparison_task": "crowdsecurity__crowdsec-3744",
+      "largest_abs_comparison_share": 0.21805903105386223,
+      "nonpositive_comparison_tasks": 11,
+      "leave_one_task_out": {
+        "scenarios": 118,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          2
+        ],
+        "ratio_range": [
+          0.7916636477492677,
+          0.9150048199565876
+        ],
+        "max_abs_ratio_change": 0.08814958756539915,
+        "top_influences": [
+          {
+            "removed": "crowdsecurity__crowdsec-3744",
+            "ratio": 0.9150048199565876,
+            "rank": 2,
+            "comparison_tasks": 72,
+            "ratio_change": 0.08814958756539915,
+            "rank_change": 1
+          },
+          {
+            "removed": "kumahq__kuma-15918",
+            "ratio": 0.8774500724535045,
+            "rank": 2,
+            "comparison_tasks": 72,
+            "ratio_change": 0.05059484006231607,
+            "rank_change": 1
+          },
+          {
+            "removed": "caddyserver__caddy-7567",
+            "ratio": 0.7916636477492677,
+            "rank": 1,
+            "comparison_tasks": 72,
+            "ratio_change": -0.03519158464192074,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 83,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          2
+        ],
+        "ratio_range": [
+          0.7916636477492677,
+          0.9150048199565876
+        ],
+        "max_abs_ratio_change": 0.08814958756539915,
+        "top_influences": [
+          {
+            "removed": "crowdsecurity/crowdsec",
+            "ratio": 0.9150048199565876,
+            "rank": 2,
+            "comparison_tasks": 72,
+            "ratio_change": 0.08814958756539915,
+            "rank_change": 1
+          },
+          {
+            "removed": "kumahq/kuma",
+            "ratio": 0.8774500724535045,
+            "rank": 2,
+            "comparison_tasks": 72,
+            "ratio_change": 0.05059484006231607,
+            "rank_change": 1
+          },
+          {
+            "removed": "caddyserver/caddy",
+            "ratio": 0.7916636477492677,
+            "rank": 1,
+            "comparison_tasks": 72,
+            "ratio_change": -0.03519158464192074,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 6,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          1
+        ],
+        "ratio_range": [
+          0.7748264586082267,
+          0.8617389033140258
+        ],
+        "max_abs_ratio_change": 0.05202877378296167,
+        "top_influences": [
+          {
+            "removed": "live-multilang-gemini-3.6-flash-ami-agent-0.7.0",
+            "ratio": 0.7748264586082267,
+            "rank": 1,
+            "comparison_tasks": 67,
+            "ratio_change": -0.05202877378296167,
+            "rank_change": 0
+          },
+          {
+            "removed": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+            "ratio": 0.7789250869375739,
+            "rank": 1,
+            "comparison_tasks": 61,
+            "ratio_change": -0.047930145453614514,
+            "rank_change": 0
+          },
+          {
+            "removed": "live-multilang-deepseek-v4.1-flash-tianxicode-0.1.486",
+            "ratio": 0.8617389033140258,
+            "rank": 1,
+            "comparison_tasks": 65,
+            "ratio_change": 0.034883670922837395,
+            "rank_change": 0
+          }
+        ]
+      }
+    },
+    "live-multilang-claude-opus-4.6-ami-agent-0.7.0": {
+      "name": "Claude Opus 4.6 \u00b7 AMI Agent 0.7.0",
+      "ratio": 0.8755812425507585,
+      "rank": 2,
+      "coverage": {
+        "resolved_records": 103,
+        "published_resolved_attempts": 103,
+        "eligible_solved_attempts": 97,
+        "eligible_solved_base_tasks": 97,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {
+          "out_of_scope": 6
+        }
+      },
+      "comparison_tasks": 81,
+      "reported_harnesses": [
+        "AMI Agent 0.7.0"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 7229.483333333334,
+      "largest_abs_comparison_task": "crowdsecurity__crowdsec-3744",
+      "largest_abs_comparison_share": 0.18694281979578992,
+      "nonpositive_comparison_tasks": 11,
+      "leave_one_task_out": {
+        "scenarios": 118,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          3
+        ],
+        "ratio_range": [
+          0.8404672552397021,
+          0.9088150981487415
+        ],
+        "max_abs_ratio_change": 0.035113987311056416,
+        "top_influences": [
+          {
+            "removed": "crowdsecurity__crowdsec-3744",
+            "ratio": 0.9088150981487415,
+            "rank": 1,
+            "comparison_tasks": 80,
+            "ratio_change": 0.033233855597982975,
+            "rank_change": -1
+          },
+          {
+            "removed": "kumahq__kuma-15918",
+            "ratio": 0.8511451567050257,
+            "rank": 1,
+            "comparison_tasks": 80,
+            "ratio_change": -0.02443608584573287,
+            "rank_change": -1
+          },
+          {
+            "removed": "centrifugal__centrifugo-1129",
+            "ratio": 0.8938085506030786,
+            "rank": 3,
+            "comparison_tasks": 80,
+            "ratio_change": 0.01822730805232009,
+            "rank_change": 1
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 83,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          3
+        ],
+        "ratio_range": [
+          0.84669941439615,
+          0.9088150981487415
+        ],
+        "max_abs_ratio_change": 0.033233855597982975,
+        "top_influences": [
+          {
+            "removed": "crowdsecurity/crowdsec",
+            "ratio": 0.9088150981487415,
+            "rank": 1,
+            "comparison_tasks": 80,
+            "ratio_change": 0.033233855597982975,
+            "rank_change": -1
+          },
+          {
+            "removed": "kumahq/kuma",
+            "ratio": 0.8511451567050257,
+            "rank": 1,
+            "comparison_tasks": 80,
+            "ratio_change": -0.02443608584573287,
+            "rank_change": -1
+          },
+          {
+            "removed": "centrifugal/centrifugo",
+            "ratio": 0.8938085506030786,
+            "rank": 3,
+            "comparison_tasks": 80,
+            "ratio_change": 0.01822730805232009,
+            "rank_change": 1
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 6,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          3
+        ],
+        "ratio_range": [
+          0.8239950116437398,
+          0.8971721715397639
+        ],
+        "max_abs_ratio_change": 0.05158623090701875,
+        "top_influences": [
+          {
+            "removed": "live-multilang-qwen3.8-27b-ami-agent-0.7.2",
+            "ratio": 0.8971721715397639,
+            "rank": 3,
+            "comparison_tasks": 79,
+            "ratio_change": 0.021590928989005387,
+            "rank_change": 1
+          },
+          {
+            "removed": "live-multilang-gemini-3.6-flash-ami-agent-0.7.0",
+            "ratio": 0.8239950116437398,
+            "rank": 2,
+            "comparison_tasks": 72,
+            "ratio_change": -0.05158623090701875,
+            "rank_change": 0
+          },
+          {
+            "removed": "live-multilang-claude-haiku-4.5-ami-agent-0.7.0",
+            "ratio": 0.8368341978457683,
+            "rank": 1,
+            "comparison_tasks": 69,
+            "ratio_change": -0.03874704470499024,
+            "rank_change": 0
+          }
+        ]
+      }
+    },
+    "live-multilang-claude-sonnet-4.6-ami-agent-0.7.0": {
+      "name": "Claude Sonnet 4.6 \u00b7 AMI Agent 0.7.0",
+      "ratio": 1.1264555221628725,
+      "rank": 5,
+      "coverage": {
+        "resolved_records": 99,
+        "published_resolved_attempts": 99,
+        "eligible_solved_attempts": 91,
+        "eligible_solved_base_tasks": 91,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {
+          "out_of_scope": 5,
+          "unverified_preimage": 3
+        }
+      },
+      "comparison_tasks": 77,
+      "reported_harnesses": [
+        "AMI Agent 0.7.0"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 6848.916666666667,
+      "largest_abs_comparison_task": "crowdsecurity__crowdsec-3744",
+      "largest_abs_comparison_share": 0.1684572985995352,
+      "nonpositive_comparison_tasks": 12,
+      "leave_one_task_out": {
+        "scenarios": 118,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          5,
+          5
+        ],
+        "ratio_range": [
+          1.042287319657019,
+          1.152315995314814
+        ],
+        "max_abs_ratio_change": 0.08416820250585344,
+        "top_influences": [
+          {
+            "removed": "crowdsecurity__crowdsec-3744",
+            "ratio": 1.042287319657019,
+            "rank": 5,
+            "comparison_tasks": 76,
+            "ratio_change": -0.08416820250585344,
+            "rank_change": 0
+          },
+          {
+            "removed": "rqlite__rqlite-2197",
+            "ratio": 1.0719634885572964,
+            "rank": 5,
+            "comparison_tasks": 76,
+            "ratio_change": -0.054492033605576085,
+            "rank_change": 0
+          },
+          {
+            "removed": "kumahq__kuma-15918",
+            "ratio": 1.096362331432025,
+            "rank": 5,
+            "comparison_tasks": 76,
+            "ratio_change": -0.030093190730847486,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 83,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          4,
+          5
+        ],
+        "ratio_range": [
+          1.042287319657019,
+          1.152315995314814
+        ],
+        "max_abs_ratio_change": 0.08416820250585344,
+        "top_influences": [
+          {
+            "removed": "rqlite/rqlite",
+            "ratio": 1.0695106085357384,
+            "rank": 4,
+            "comparison_tasks": 75,
+            "ratio_change": -0.05694491362713405,
+            "rank_change": -1
+          },
+          {
+            "removed": "crowdsecurity/crowdsec",
+            "ratio": 1.042287319657019,
+            "rank": 5,
+            "comparison_tasks": 76,
+            "ratio_change": -0.08416820250585344,
+            "rank_change": 0
+          },
+          {
+            "removed": "kumahq/kuma",
+            "ratio": 1.096362331432025,
+            "rank": 5,
+            "comparison_tasks": 76,
+            "ratio_change": -0.030093190730847486,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 6,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          4,
+          5
+        ],
+        "ratio_range": [
+          1.0633508347219165,
+          1.231423065755088
+        ],
+        "max_abs_ratio_change": 0.1049675435922155,
+        "top_influences": [
+          {
+            "removed": "live-multilang-deepseek-v4.1-flash-tianxicode-0.1.486",
+            "ratio": 1.231423065755088,
+            "rank": 5,
+            "comparison_tasks": 65,
+            "ratio_change": 0.1049675435922155,
+            "rank_change": 0
+          },
+          {
+            "removed": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+            "ratio": 1.0633508347219165,
+            "rank": 4,
+            "comparison_tasks": 61,
+            "ratio_change": -0.06310468744095599,
+            "rank_change": 0
+          },
+          {
+            "removed": "live-multilang-claude-haiku-4.5-ami-agent-0.7.0",
+            "ratio": 1.067980146074006,
+            "rank": 4,
+            "comparison_tasks": 65,
+            "ratio_change": -0.05847537608886655,
+            "rank_change": 0
+          }
+        ]
+      }
+    },
+    "live-multilang-deepseek-v4.1-flash-tianxicode-0.1.486": {
+      "name": "DeepSeek V4.1 Flash \u00b7 TianxiCode 0.1.486",
+      "ratio": 1.241877853082919,
+      "rank": 7,
+      "coverage": {
+        "resolved_records": 88,
+        "published_resolved_attempts": 88,
+        "eligible_solved_attempts": 82,
+        "eligible_solved_base_tasks": 82,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {
+          "not_selected": 1,
+          "out_of_scope": 5
+        }
+      },
+      "comparison_tasks": 66,
+      "reported_harnesses": [
+        "TianxiCode 0.1.486"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 5242.866666666667,
+      "largest_abs_comparison_task": "crowdsecurity__crowdsec-3744",
+      "largest_abs_comparison_share": 0.2120023396869397,
+      "nonpositive_comparison_tasks": 10,
+      "leave_one_task_out": {
+        "scenarios": 118,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          6,
+          7
+        ],
+        "ratio_range": [
+          1.1044771302474565,
+          1.3279050063545066
+        ],
+        "max_abs_ratio_change": 0.13740072283546256,
+        "top_influences": [
+          {
+            "removed": "crowdsecurity__crowdsec-3744",
+            "ratio": 1.1044771302474565,
+            "rank": 6,
+            "comparison_tasks": 65,
+            "ratio_change": -0.13740072283546256,
+            "rank_change": -1
+          },
+          {
+            "removed": "centrifugal__centrifugo-1129",
+            "ratio": 1.1931574918587904,
+            "rank": 6,
+            "comparison_tasks": 65,
+            "ratio_change": -0.048720361224128705,
+            "rank_change": -1
+          },
+          {
+            "removed": "kubernetes-sigs__controller-runtime-3247",
+            "ratio": 1.218451993412738,
+            "rank": 6,
+            "comparison_tasks": 65,
+            "ratio_change": -0.02342585967018107,
+            "rank_change": -1
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 83,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          6,
+          7
+        ],
+        "ratio_range": [
+          1.1044771302474565,
+          1.3279050063545066
+        ],
+        "max_abs_ratio_change": 0.13740072283546256,
+        "top_influences": [
+          {
+            "removed": "crowdsecurity/crowdsec",
+            "ratio": 1.1044771302474565,
+            "rank": 6,
+            "comparison_tasks": 65,
+            "ratio_change": -0.13740072283546256,
+            "rank_change": -1
+          },
+          {
+            "removed": "centrifugal/centrifugo",
+            "ratio": 1.1931574918587904,
+            "rank": 6,
+            "comparison_tasks": 65,
+            "ratio_change": -0.048720361224128705,
+            "rank_change": -1
+          },
+          {
+            "removed": "submariner-io/submariner",
+            "ratio": 1.2208275345252113,
+            "rank": 6,
+            "comparison_tasks": 65,
+            "ratio_change": -0.02105031855770778,
+            "rank_change": -1
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 6,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          5,
+          6
+        ],
+        "ratio_range": [
+          1.2304281257222092,
+          1.462174129235432
+        ],
+        "max_abs_ratio_change": 0.2202962761525129,
+        "top_influences": [
+          {
+            "removed": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+            "ratio": 1.2947630845939582,
+            "rank": 5,
+            "comparison_tasks": 54,
+            "ratio_change": 0.05288523151103908,
+            "rank_change": -1
+          },
+          {
+            "removed": "live-multilang-gemini-3.6-flash-ami-agent-0.7.0",
+            "ratio": 1.2687638689466125,
+            "rank": 5,
+            "comparison_tasks": 59,
+            "ratio_change": 0.026886015863693435,
+            "rank_change": -1
+          },
+          {
+            "removed": "live-multilang-gemini-3.1-pro-preview-ami-agent-0.7.0",
+            "ratio": 1.258562820185683,
+            "rank": 5,
+            "comparison_tasks": 65,
+            "ratio_change": 0.016684967102764015,
+            "rank_change": -1
+          }
+        ]
+      }
+    },
+    "live-multilang-gemini-3.1-pro-preview-ami-agent-0.7.0": {
+      "name": "Gemini 3.1 Pro Preview \u00b7 AMI Agent 0.7.0",
+      "ratio": 1.013184743368388,
+      "rank": 4,
+      "coverage": {
+        "resolved_records": 72,
+        "published_resolved_attempts": 72,
+        "eligible_solved_attempts": 64,
+        "eligible_solved_base_tasks": 64,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {
+          "out_of_scope": 4,
+          "unverified_preimage": 4
+        }
+      },
+      "comparison_tasks": 61,
+      "reported_harnesses": [
+        "AMI Agent 0.7.0"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 3822.6,
+      "largest_abs_comparison_task": "cucumber__godog-695",
+      "largest_abs_comparison_share": 0.08611939517605818,
+      "nonpositive_comparison_tasks": 6,
+      "leave_one_task_out": {
+        "scenarios": 118,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          4,
+          4
+        ],
+        "ratio_range": [
+          0.9816372969254379,
+          1.0665444902605967
+        ],
+        "max_abs_ratio_change": 0.05335974689220868,
+        "top_influences": [
+          {
+            "removed": "rqlite__rqlite-2182",
+            "ratio": 1.0665444902605967,
+            "rank": 4,
+            "comparison_tasks": 60,
+            "ratio_change": 0.05335974689220868,
+            "rank_change": 0
+          },
+          {
+            "removed": "NVIDIA__gpu-operator-2258",
+            "ratio": 0.9816372969254379,
+            "rank": 4,
+            "comparison_tasks": 60,
+            "ratio_change": -0.031547446442950156,
+            "rank_change": 0
+          },
+          {
+            "removed": "dlvhdr__gh-dash-813",
+            "ratio": 0.9871782427221305,
+            "rank": 4,
+            "comparison_tasks": 60,
+            "ratio_change": -0.026006500646257535,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 83,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          4,
+          5
+        ],
+        "ratio_range": [
+          0.9816372969254379,
+          1.088379356853837
+        ],
+        "max_abs_ratio_change": 0.07519461348544887,
+        "top_influences": [
+          {
+            "removed": "rqlite/rqlite",
+            "ratio": 1.088379356853837,
+            "rank": 5,
+            "comparison_tasks": 59,
+            "ratio_change": 0.07519461348544887,
+            "rank_change": 1
+          },
+          {
+            "removed": "NVIDIA/gpu-operator",
+            "ratio": 0.9816372969254379,
+            "rank": 4,
+            "comparison_tasks": 60,
+            "ratio_change": -0.031547446442950156,
+            "rank_change": 0
+          },
+          {
+            "removed": "gohugoio/hugo",
+            "ratio": 1.0405835988596344,
+            "rank": 4,
+            "comparison_tasks": 58,
+            "ratio_change": 0.02739885549124632,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 6,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          3,
+          4
+        ],
+        "ratio_range": [
+          0.9673540770968447,
+          1.0293551756363037
+        ],
+        "max_abs_ratio_change": 0.04583066627154331,
+        "top_influences": [
+          {
+            "removed": "live-multilang-gemini-3.6-flash-ami-agent-0.7.0",
+            "ratio": 0.9673540770968447,
+            "rank": 3,
+            "comparison_tasks": 58,
+            "ratio_change": -0.04583066627154331,
+            "rank_change": 0
+          },
+          {
+            "removed": "live-multilang-claude-haiku-4.5-ami-agent-0.7.0",
+            "ratio": 0.9787047143596411,
+            "rank": 3,
+            "comparison_tasks": 59,
+            "ratio_change": -0.034480029008746915,
+            "rank_change": 0
+          },
+          {
+            "removed": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+            "ratio": 0.9809877681646823,
+            "rank": 3,
+            "comparison_tasks": 58,
+            "ratio_change": -0.03219697520370579,
+            "rank_change": 0
+          }
+        ]
+      }
+    },
+    "live-multilang-gemini-3.6-flash-ami-agent-0.7.0": {
+      "name": "Gemini 3.6 Flash \u00b7 AMI Agent 0.7.0",
+      "ratio": 0.8914841744966803,
+      "rank": 3,
+      "coverage": {
+        "resolved_records": 78,
+        "published_resolved_attempts": 78,
+        "eligible_solved_attempts": 72,
+        "eligible_solved_base_tasks": 72,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {
+          "out_of_scope": 5,
+          "unverified_preimage": 1
+        }
+      },
+      "comparison_tasks": 68,
+      "reported_harnesses": [
+        "AMI Agent 0.7.0"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 6227.816666666667,
+      "largest_abs_comparison_task": "crowdsecurity__crowdsec-3744",
+      "largest_abs_comparison_share": 0.21833494349277033,
+      "nonpositive_comparison_tasks": 9,
+      "leave_one_task_out": {
+        "scenarios": 118,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          2,
+          3
+        ],
+        "ratio_range": [
+          0.8638198029094322,
+          0.9443173881486148
+        ],
+        "max_abs_ratio_change": 0.052833213651934496,
+        "top_influences": [
+          {
+            "removed": "gastownhall__beads-2992",
+            "ratio": 0.8638198029094322,
+            "rank": 2,
+            "comparison_tasks": 67,
+            "ratio_change": -0.027664371587248104,
+            "rank_change": -1
+          },
+          {
+            "removed": "centrifugal__centrifugo-1129",
+            "ratio": 0.8657005886611032,
+            "rank": 2,
+            "comparison_tasks": 67,
+            "ratio_change": -0.02578358583557705,
+            "rank_change": -1
+          },
+          {
+            "removed": "kubernetes-sigs__controller-runtime-3494",
+            "ratio": 0.8781326635176679,
+            "rank": 2,
+            "comparison_tasks": 67,
+            "ratio_change": -0.013351510979012327,
+            "rank_change": -1
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 83,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          2,
+          3
+        ],
+        "ratio_range": [
+          0.8638198029094322,
+          0.9443173881486148
+        ],
+        "max_abs_ratio_change": 0.052833213651934496,
+        "top_influences": [
+          {
+            "removed": "gastownhall/beads",
+            "ratio": 0.8638198029094322,
+            "rank": 2,
+            "comparison_tasks": 67,
+            "ratio_change": -0.027664371587248104,
+            "rank_change": -1
+          },
+          {
+            "removed": "centrifugal/centrifugo",
+            "ratio": 0.8657005886611032,
+            "rank": 2,
+            "comparison_tasks": 67,
+            "ratio_change": -0.02578358583557705,
+            "rank_change": -1
+          },
+          {
+            "removed": "kubernetes-sigs/controller-runtime",
+            "ratio": 0.8835459842171252,
+            "rank": 2,
+            "comparison_tasks": 66,
+            "ratio_change": -0.007938190279555113,
+            "rank_change": -1
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 6,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          3
+        ],
+        "ratio_range": [
+          0.8372645043727409,
+          0.8988884104930026
+        ],
+        "max_abs_ratio_change": 0.054219670123939356,
+        "top_influences": [
+          {
+            "removed": "live-multilang-claude-haiku-4.5-ami-agent-0.7.0",
+            "ratio": 0.8372645043727409,
+            "rank": 1,
+            "comparison_tasks": 62,
+            "ratio_change": -0.054219670123939356,
+            "rank_change": -1
+          },
+          {
+            "removed": "live-multilang-gemini-3.1-pro-preview-ami-agent-0.7.0",
+            "ratio": 0.882152418644096,
+            "rank": 2,
+            "comparison_tasks": 65,
+            "ratio_change": -0.009331755852584278,
+            "rank_change": -1
+          },
+          {
+            "removed": "live-multilang-qwen3.8-27b-ami-agent-0.7.2",
+            "ratio": 0.8953771557055761,
+            "rank": 2,
+            "comparison_tasks": 66,
+            "ratio_change": 0.003892981208895807,
+            "rank_change": -1
+          }
+        ]
+      }
+    },
+    "live-multilang-qwen3.8-27b-ami-agent-0.7.2": {
+      "name": "Qwen3.8-27B \u00b7 AMI Agent 0.7.2",
+      "ratio": 1.2394566553534292,
+      "rank": 6,
+      "coverage": {
+        "resolved_records": 41,
+        "published_resolved_attempts": 41,
+        "eligible_solved_attempts": 39,
+        "eligible_solved_base_tasks": 39,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {
+          "out_of_scope": 2
+        }
+      },
+      "comparison_tasks": 33,
+      "reported_harnesses": [
+        "AMI Agent 0.7.2"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 2155.7833333333333,
+      "largest_abs_comparison_task": "open-telemetry__opentelemetry-go-6393",
+      "largest_abs_comparison_share": 0.1914230712733964,
+      "nonpositive_comparison_tasks": 4,
+      "leave_one_task_out": {
+        "scenarios": 118,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          6,
+          7
+        ],
+        "ratio_range": [
+          1.1498602160527716,
+          1.3109194131091941
+        ],
+        "max_abs_ratio_change": 0.08959643930065764,
+        "top_influences": [
+          {
+            "removed": "tikv__pd-9618",
+            "ratio": 1.3109194131091941,
+            "rank": 7,
+            "comparison_tasks": 32,
+            "ratio_change": 0.07146275775576494,
+            "rank_change": 1
+          },
+          {
+            "removed": "open-telemetry__opentelemetry-go-6393",
+            "ratio": 1.2942335089447063,
+            "rank": 7,
+            "comparison_tasks": 32,
+            "ratio_change": 0.05477685359127715,
+            "rank_change": 1
+          },
+          {
+            "removed": "rqlite__rqlite-2182",
+            "ratio": 1.291501312915863,
+            "rank": 7,
+            "comparison_tasks": 32,
+            "ratio_change": 0.052044657562433816,
+            "rank_change": 1
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 83,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          6,
+          7
+        ],
+        "ratio_range": [
+          1.1498602160527716,
+          1.3109194131091941
+        ],
+        "max_abs_ratio_change": 0.08959643930065764,
+        "top_influences": [
+          {
+            "removed": "tikv/pd",
+            "ratio": 1.3109194131091941,
+            "rank": 7,
+            "comparison_tasks": 32,
+            "ratio_change": 0.07146275775576494,
+            "rank_change": 1
+          },
+          {
+            "removed": "open-telemetry/opentelemetry-go",
+            "ratio": 1.2942335089447063,
+            "rank": 7,
+            "comparison_tasks": 32,
+            "ratio_change": 0.05477685359127715,
+            "rank_change": 1
+          },
+          {
+            "removed": "rqlite/rqlite",
+            "ratio": 1.2887976397922742,
+            "rank": 7,
+            "comparison_tasks": 31,
+            "ratio_change": 0.04934098443884505,
+            "rank_change": 1
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 6,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          5,
+          6
+        ],
+        "ratio_range": [
+          1.273101922939225,
+          1.4831001691081194
+        ],
+        "max_abs_ratio_change": 0.24364351375469018,
+        "top_influences": [
+          {
+            "removed": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+            "ratio": 1.331026642281647,
+            "rank": 6,
+            "comparison_tasks": 31,
+            "ratio_change": 0.09156998692821783,
+            "rank_change": 1
+          },
+          {
+            "removed": "live-multilang-gemini-3.6-flash-ami-agent-0.7.0",
+            "ratio": 1.2943848560043323,
+            "rank": 6,
+            "comparison_tasks": 31,
+            "ratio_change": 0.05492820065090309,
+            "rank_change": 1
+          },
+          {
+            "removed": "live-multilang-claude-haiku-4.5-ami-agent-0.7.0",
+            "ratio": 1.280289852749032,
+            "rank": 6,
+            "comparison_tasks": 31,
+            "ratio_change": 0.04083319739560287,
+            "rank_change": 1
+          }
+        ]
+      }
+    }
+  },
+  "pairwise": [
+    {
+      "a": "live-multilang-claude-haiku-4.5-ami-agent-0.7.0",
+      "b": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+      "shared_solved_measured_tasks": 75,
+      "a_net_mean": 69.38666666666667,
+      "b_net_mean": 90.94666666666667,
+      "mean_difference_a_minus_b": -21.56,
+      "ratio_a_over_b": 0.7629379856326052
+    },
+    {
+      "a": "live-multilang-claude-haiku-4.5-ami-agent-0.7.0",
+      "b": "live-multilang-claude-sonnet-4.6-ami-agent-0.7.0",
+      "shared_solved_measured_tasks": 71,
+      "a_net_mean": 73.87323943661971,
+      "b_net_mean": 114.52112676056338,
+      "mean_difference_a_minus_b": -40.647887323943664,
+      "ratio_a_over_b": 0.6450621079817981
+    },
+    {
+      "a": "live-multilang-claude-haiku-4.5-ami-agent-0.7.0",
+      "b": "live-multilang-deepseek-v4.1-flash-tianxicode-0.1.486",
+      "shared_solved_measured_tasks": 57,
+      "a_net_mean": 62.75438596491228,
+      "b_net_mean": 93.47368421052632,
+      "mean_difference_a_minus_b": -30.719298245614034,
+      "ratio_a_over_b": 0.6713588588588588
+    },
+    {
+      "a": "live-multilang-claude-haiku-4.5-ami-agent-0.7.0",
+      "b": "live-multilang-gemini-3.1-pro-preview-ami-agent-0.7.0",
+      "shared_solved_measured_tasks": 56,
+      "a_net_mean": 55.125,
+      "b_net_mean": 61.357142857142854,
+      "mean_difference_a_minus_b": -6.232142857142857,
+      "ratio_a_over_b": 0.8984284051222352
+    },
+    {
+      "a": "live-multilang-claude-haiku-4.5-ami-agent-0.7.0",
+      "b": "live-multilang-gemini-3.6-flash-ami-agent-0.7.0",
+      "shared_solved_measured_tasks": 59,
+      "a_net_mean": 78.28813559322033,
+      "b_net_mean": 78.61016949152543,
+      "mean_difference_a_minus_b": -0.3220338983050847,
+      "ratio_a_over_b": 0.9959034066407935
+    },
+    {
+      "a": "live-multilang-claude-haiku-4.5-ami-agent-0.7.0",
+      "b": "live-multilang-qwen3.8-27b-ami-agent-0.7.2",
+      "shared_solved_measured_tasks": 30,
+      "a_net_mean": 55.233333333333334,
+      "b_net_mean": 75.5,
+      "mean_difference_a_minus_b": -20.266666666666666,
+      "ratio_a_over_b": 0.7315673289183223
+    },
+    {
+      "a": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+      "b": "live-multilang-claude-sonnet-4.6-ami-agent-0.7.0",
+      "shared_solved_measured_tasks": 85,
+      "a_net_mean": 130.2235294117647,
+      "b_net_mean": 118.05882352941177,
+      "mean_difference_a_minus_b": 12.16470588235294,
+      "ratio_a_over_b": 1.1030393622321872
+    },
+    {
+      "a": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+      "b": "live-multilang-deepseek-v4.1-flash-tianxicode-0.1.486",
+      "shared_solved_measured_tasks": 70,
+      "a_net_mean": 97.38571428571429,
+      "b_net_mean": 90.8,
+      "mean_difference_a_minus_b": 6.585714285714285,
+      "ratio_a_over_b": 1.0725298930144744
+    },
+    {
+      "a": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+      "b": "live-multilang-gemini-3.1-pro-preview-ami-agent-0.7.0",
+      "shared_solved_measured_tasks": 60,
+      "a_net_mean": 57.583333333333336,
+      "b_net_mean": 62.416666666666664,
+      "mean_difference_a_minus_b": -4.833333333333333,
+      "ratio_a_over_b": 0.9225634178905207
+    },
+    {
+      "a": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+      "b": "live-multilang-gemini-3.6-flash-ami-agent-0.7.0",
+      "shared_solved_measured_tasks": 66,
+      "a_net_mean": 82.54545454545455,
+      "b_net_mean": 79.86363636363636,
+      "mean_difference_a_minus_b": 2.6818181818181817,
+      "ratio_a_over_b": 1.0335799658508822
+    },
+    {
+      "a": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+      "b": "live-multilang-qwen3.8-27b-ami-agent-0.7.2",
+      "shared_solved_measured_tasks": 31,
+      "a_net_mean": 61.935483870967744,
+      "b_net_mean": 86.09677419354838,
+      "mean_difference_a_minus_b": -24.161290322580644,
+      "ratio_a_over_b": 0.7193705507680779
+    },
+    {
+      "a": "live-multilang-claude-sonnet-4.6-ami-agent-0.7.0",
+      "b": "live-multilang-deepseek-v4.1-flash-tianxicode-0.1.486",
+      "shared_solved_measured_tasks": 64,
+      "a_net_mean": 92.640625,
+      "b_net_mean": 98.03125,
+      "mean_difference_a_minus_b": -5.390625,
+      "ratio_a_over_b": 0.945011157156519
+    },
+    {
+      "a": "live-multilang-claude-sonnet-4.6-ami-agent-0.7.0",
+      "b": "live-multilang-gemini-3.1-pro-preview-ami-agent-0.7.0",
+      "shared_solved_measured_tasks": 55,
+      "a_net_mean": 63.21818181818182,
+      "b_net_mean": 61.85454545454545,
+      "mean_difference_a_minus_b": 1.3636363636363635,
+      "ratio_a_over_b": 1.0220458553791887
+    },
+    {
+      "a": "live-multilang-claude-sonnet-4.6-ami-agent-0.7.0",
+      "b": "live-multilang-gemini-3.6-flash-ami-agent-0.7.0",
+      "shared_solved_measured_tasks": 63,
+      "a_net_mean": 102.2063492063492,
+      "b_net_mean": 84.0,
+      "mean_difference_a_minus_b": 18.206349206349206,
+      "ratio_a_over_b": 1.216742252456538
+    },
+    {
+      "a": "live-multilang-claude-sonnet-4.6-ami-agent-0.7.0",
+      "b": "live-multilang-qwen3.8-27b-ami-agent-0.7.2",
+      "shared_solved_measured_tasks": 30,
+      "a_net_mean": 57.96666666666667,
+      "b_net_mean": 78.66666666666667,
+      "mean_difference_a_minus_b": -20.7,
+      "ratio_a_over_b": 0.736864406779661
+    },
+    {
+      "a": "live-multilang-deepseek-v4.1-flash-tianxicode-0.1.486",
+      "b": "live-multilang-gemini-3.1-pro-preview-ami-agent-0.7.0",
+      "shared_solved_measured_tasks": 49,
+      "a_net_mean": 59.857142857142854,
+      "b_net_mean": 56.734693877551024,
+      "mean_difference_a_minus_b": 3.122448979591837,
+      "ratio_a_over_b": 1.0550359712230215
+    },
+    {
+      "a": "live-multilang-deepseek-v4.1-flash-tianxicode-0.1.486",
+      "b": "live-multilang-gemini-3.6-flash-ami-agent-0.7.0",
+      "shared_solved_measured_tasks": 53,
+      "a_net_mean": 96.66037735849056,
+      "b_net_mean": 73.47169811320755,
+      "mean_difference_a_minus_b": 23.18867924528302,
+      "ratio_a_over_b": 1.315613764766307
+    },
+    {
+      "a": "live-multilang-deepseek-v4.1-flash-tianxicode-0.1.486",
+      "b": "live-multilang-qwen3.8-27b-ami-agent-0.7.2",
+      "shared_solved_measured_tasks": 28,
+      "a_net_mean": 68.71428571428571,
+      "b_net_mean": 62.535714285714285,
+      "mean_difference_a_minus_b": 6.178571428571429,
+      "ratio_a_over_b": 1.0988006853226728
+    },
+    {
+      "a": "live-multilang-gemini-3.1-pro-preview-ami-agent-0.7.0",
+      "b": "live-multilang-gemini-3.6-flash-ami-agent-0.7.0",
+      "shared_solved_measured_tasks": 56,
+      "a_net_mean": 369.73214285714283,
+      "b_net_mean": 365.48214285714283,
+      "mean_difference_a_minus_b": 4.25,
+      "ratio_a_over_b": 1.0116284751062685
+    },
+    {
+      "a": "live-multilang-gemini-3.1-pro-preview-ami-agent-0.7.0",
+      "b": "live-multilang-qwen3.8-27b-ami-agent-0.7.2",
+      "shared_solved_measured_tasks": 28,
+      "a_net_mean": 51.17857142857143,
+      "b_net_mean": 59.5,
+      "mean_difference_a_minus_b": -8.321428571428571,
+      "ratio_a_over_b": 0.8601440576230492
+    },
+    {
+      "a": "live-multilang-gemini-3.6-flash-ami-agent-0.7.0",
+      "b": "live-multilang-qwen3.8-27b-ami-agent-0.7.2",
+      "shared_solved_measured_tasks": 28,
+      "a_net_mean": 52.642857142857146,
+      "b_net_mean": 67.89285714285714,
+      "mean_difference_a_minus_b": -15.25,
+      "ratio_a_over_b": 0.7753813782219884
+    }
+  ],
+  "inputs": [
+    {
+      "file": "score-panel.json",
+      "sha256": "2324c3d084c381dd62b3fe93495c19afae8fb148a129d69fd39ba678a9cc7bf4"
+    },
+    {
+      "file": "claude-haiku-4.5-ami.jsonl",
+      "sha256": "9b9ddccafaecc23f78e97da17852516cfbaaac802fc05ced05fb7b0007141cdb"
+    },
+    {
+      "file": "claude-opus-4.6-ami.jsonl",
+      "sha256": "b73fa9f36ee9016a4d4d1b087caf9f00369ad35b2269504ce6d0a40de31a3906"
+    },
+    {
+      "file": "claude-sonnet-4.6-ami.jsonl",
+      "sha256": "f80e735fb11810db8fa7773616d3e3059c42b1668563f99b08a67bcbb16fdcca"
+    },
+    {
+      "file": "deepseek-v4.1-flash-tianxicode-0.1.486.jsonl",
+      "sha256": "7e66974a54d81599e144252bd23df3f69ec883a843168b805cfe645fb25a0e56"
+    },
+    {
+      "file": "gemini-3.1-pro-preview-ami.jsonl",
+      "sha256": "5f5ee003bdddab97f4bf5d2e81be7ceba7bae672dc4b80f6fd1343354cfc66f3"
+    },
+    {
+      "file": "gemini-3.6-flash-ami.jsonl",
+      "sha256": "48bf0381223ecc995dbe06d64e0375a596caf67765412f12499c19d553f84d46"
+    },
+    {
+      "file": "qwen3.8-27b-ami-0.7.2.jsonl",
+      "sha256": "ac950dc69d5ed0f072c0cbf9262b275a92e5c88589264b92c07cebec2908d8de"
+    }
+  ]
+}

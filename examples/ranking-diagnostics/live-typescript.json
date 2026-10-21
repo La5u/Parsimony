@@ -1,0 +1,846 @@
+{
+  "diagnostic_version": "same-task-net-diagnostics-v1",
+  "ranking_metric": "same-task-net-ratio-v1",
+  "panel": "live-multilang-typescript-v1",
+  "limitations": [
+    "Descriptive sensitivity, not confidence intervals or a replacement ranking.",
+    "Successful measured repairs only; missing footprints are not imputed.",
+    "Each task/repository deletion preserves peer eligibility rules; peer deletion recomputes them.",
+    "Peer rank changes exclude the mechanical effect of removing a competing candidate.",
+    "Pairwise comparisons use all shared solved measured base tasks, without the three-peer gate.",
+    "Repository omission tests influence; it is not a repository-cluster bootstrap.",
+    "Harness, retry policy and upstream outcome validity are not inferred from model labels.",
+    "Combined-language ranking is not evaluated; run this separately for each language board."
+  ],
+  "base_tasks": 76,
+  "repositories": 49,
+  "models": {
+    "live-multilang-claude-opus-4.6-ami-agent-0.7.0": {
+      "name": "Claude Opus 4.6 \u00b7 AMI Agent 0.7.0",
+      "ratio": 0.8010171646535282,
+      "rank": 3,
+      "coverage": {
+        "resolved_records": 62,
+        "published_resolved_attempts": 62,
+        "eligible_solved_attempts": 56,
+        "eligible_solved_base_tasks": 56,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {
+          "error": 2,
+          "out_of_scope": 1,
+          "unverified_preimage": 3
+        }
+      },
+      "comparison_tasks": 33,
+      "reported_harnesses": [
+        "AMI Agent 0.7.0"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 1048.6666666666667,
+      "largest_abs_comparison_task": "gsd-build__gsd-2-4400",
+      "largest_abs_comparison_share": 0.20430705657978385,
+      "nonpositive_comparison_tasks": 3,
+      "leave_one_task_out": {
+        "scenarios": 76,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          2,
+          3
+        ],
+        "ratio_range": [
+          0.7562802996914941,
+          0.9097936024997945
+        ],
+        "max_abs_ratio_change": 0.10877643784626623,
+        "top_influences": [
+          {
+            "removed": "react-hook-form__react-hook-form-12983",
+            "ratio": 0.9097936024997945,
+            "rank": 2,
+            "comparison_tasks": 32,
+            "ratio_change": 0.10877643784626623,
+            "rank_change": -1
+          },
+          {
+            "removed": "openai__openai-agents-js-340",
+            "ratio": 0.7675289029360393,
+            "rank": 2,
+            "comparison_tasks": 32,
+            "ratio_change": -0.033488261717488976,
+            "rank_change": -1
+          },
+          {
+            "removed": "excalidraw__excalidraw-9760",
+            "ratio": 0.77500842034355,
+            "rank": 2,
+            "comparison_tasks": 32,
+            "ratio_change": -0.026008744309978238,
+            "rank_change": -1
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 49,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          2,
+          3
+        ],
+        "ratio_range": [
+          0.7467343976777939,
+          0.9081135561901562
+        ],
+        "max_abs_ratio_change": 0.10709639153662798,
+        "top_influences": [
+          {
+            "removed": "react-hook-form/react-hook-form",
+            "ratio": 0.9081135561901562,
+            "rank": 2,
+            "comparison_tasks": 31,
+            "ratio_change": 0.10709639153662798,
+            "rank_change": -1
+          },
+          {
+            "removed": "openai/openai-agents-js",
+            "ratio": 0.7467343976777939,
+            "rank": 2,
+            "comparison_tasks": 28,
+            "ratio_change": -0.05428276697573431,
+            "rank_change": -1
+          },
+          {
+            "removed": "excalidraw/excalidraw",
+            "ratio": 0.77500842034355,
+            "rank": 2,
+            "comparison_tasks": 32,
+            "ratio_change": -0.026008744309978238,
+            "rank_change": -1
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 4,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          2,
+          2
+        ],
+        "ratio_range": [
+          0.6746472851646003,
+          0.8253138075313807
+        ],
+        "max_abs_ratio_change": 0.12636987948892797,
+        "top_influences": [
+          {
+            "removed": "live-multilang-gpt-5.5-slingshot-3.0.0",
+            "ratio": 0.7565577542567878,
+            "rank": 2,
+            "comparison_tasks": 22,
+            "ratio_change": -0.044459410396740395,
+            "rank_change": -1
+          },
+          {
+            "removed": "live-multilang-gpt-5.5-slingshot-2.6.0",
+            "ratio": 0.8253138075313807,
+            "rank": 2,
+            "comparison_tasks": 21,
+            "ratio_change": 0.024296642877852492,
+            "rank_change": -1
+          },
+          {
+            "removed": "live-multilang-gpt-5.6-sol-slingshot-3.4.0",
+            "ratio": 0.6746472851646003,
+            "rank": 2,
+            "comparison_tasks": 21,
+            "ratio_change": -0.12636987948892797,
+            "rank_change": 0
+          }
+        ]
+      }
+    },
+    "live-multilang-claude-sonnet-4.5-slingshot-2.6.0": {
+      "name": "Claude Sonnet 4.5 \u00b7 Slingshot 2.6.0",
+      "ratio": 0.701195219123506,
+      "rank": 1,
+      "coverage": {
+        "resolved_records": 28,
+        "published_resolved_attempts": 28,
+        "eligible_solved_attempts": 27,
+        "eligible_solved_base_tasks": 27,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {
+          "unverified_preimage": 1
+        }
+      },
+      "comparison_tasks": 23,
+      "reported_harnesses": [
+        "Slingshot 2.6.0"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 815.75,
+      "largest_abs_comparison_task": "gsd-build__gsd-2-4400",
+      "largest_abs_comparison_share": 0.25283481458780266,
+      "nonpositive_comparison_tasks": 1,
+      "leave_one_task_out": {
+        "scenarios": 76,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          2
+        ],
+        "ratio_range": [
+          0.6599622878692646,
+          0.7827739075364154
+        ],
+        "max_abs_ratio_change": 0.08157868841290938,
+        "top_influences": [
+          {
+            "removed": "mui__base-ui-2290",
+            "ratio": 0.7333763718528082,
+            "rank": 2,
+            "comparison_tasks": 22,
+            "ratio_change": 0.03218115272930222,
+            "rank_change": 1
+          },
+          {
+            "removed": "react-hook-form__react-hook-form-12983",
+            "ratio": 0.7827739075364154,
+            "rank": 1,
+            "comparison_tasks": 22,
+            "ratio_change": 0.08157868841290938,
+            "rank_change": 0
+          },
+          {
+            "removed": "vueuse__vueuse-5336",
+            "ratio": 0.6599622878692646,
+            "rank": 1,
+            "comparison_tasks": 22,
+            "ratio_change": -0.041232931254241434,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 49,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          2
+        ],
+        "ratio_range": [
+          0.6315018315018315,
+          0.7864362569285948
+        ],
+        "max_abs_ratio_change": 0.08524103780508874,
+        "top_influences": [
+          {
+            "removed": "mui/base-ui",
+            "ratio": 0.7333763718528082,
+            "rank": 2,
+            "comparison_tasks": 22,
+            "ratio_change": 0.03218115272930222,
+            "rank_change": 1
+          },
+          {
+            "removed": "react-hook-form/react-hook-form",
+            "ratio": 0.7864362569285948,
+            "rank": 1,
+            "comparison_tasks": 21,
+            "ratio_change": 0.08524103780508874,
+            "rank_change": 0
+          },
+          {
+            "removed": "openai/openai-agents-js",
+            "ratio": 0.6315018315018315,
+            "rank": 1,
+            "comparison_tasks": 18,
+            "ratio_change": -0.06969338762167454,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 4,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          1
+        ],
+        "ratio_range": [
+          0.6265822784810127,
+          0.7642820380854349
+        ],
+        "max_abs_ratio_change": 0.07461294064249335,
+        "top_influences": [
+          {
+            "removed": "live-multilang-gpt-5.6-sol-slingshot-3.4.0",
+            "ratio": 0.6265822784810127,
+            "rank": 1,
+            "comparison_tasks": 21,
+            "ratio_change": -0.07461294064249335,
+            "rank_change": 0
+          },
+          {
+            "removed": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+            "ratio": 0.6349514563106796,
+            "rank": 1,
+            "comparison_tasks": 22,
+            "ratio_change": -0.0662437628128264,
+            "rank_change": 0
+          },
+          {
+            "removed": "live-multilang-gpt-5.5-slingshot-2.6.0",
+            "ratio": 0.7642820380854349,
+            "rank": 1,
+            "comparison_tasks": 21,
+            "ratio_change": 0.06308681896192891,
+            "rank_change": 0
+          }
+        ]
+      }
+    },
+    "live-multilang-gpt-5.5-slingshot-2.6.0": {
+      "name": "GPT-5.5 \u00b7 Slingshot 2.6.0",
+      "ratio": 1.454232028960524,
+      "rank": 5,
+      "coverage": {
+        "resolved_records": 46,
+        "published_resolved_attempts": 46,
+        "eligible_solved_attempts": 45,
+        "eligible_solved_base_tasks": 45,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {
+          "unverified_preimage": 1
+        }
+      },
+      "comparison_tasks": 34,
+      "reported_harnesses": [
+        "Slingshot 2.6.0"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 966.8333333333334,
+      "largest_abs_comparison_task": "gsd-build__gsd-2-4400",
+      "largest_abs_comparison_share": 0.1541113601103258,
+      "nonpositive_comparison_tasks": 4,
+      "leave_one_task_out": {
+        "scenarios": 76,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          4,
+          5
+        ],
+        "ratio_range": [
+          1.2506503314592599,
+          1.572072955481467
+        ],
+        "max_abs_ratio_change": 0.2035816975012641,
+        "top_influences": [
+          {
+            "removed": "gsd-build__gsd-2-4400",
+            "ratio": 1.285102914204198,
+            "rank": 4,
+            "comparison_tasks": 33,
+            "ratio_change": -0.16912911475632586,
+            "rank_change": -1
+          },
+          {
+            "removed": "react-hook-form__react-hook-form-12983",
+            "ratio": 1.2506503314592599,
+            "rank": 5,
+            "comparison_tasks": 33,
+            "ratio_change": -0.2035816975012641,
+            "rank_change": 0
+          },
+          {
+            "removed": "aws-amplify__amplify-ui-6665",
+            "ratio": 1.572072955481467,
+            "rank": 5,
+            "comparison_tasks": 33,
+            "ratio_change": 0.11784092652094302,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 49,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          4,
+          5
+        ],
+        "ratio_range": [
+          1.2563882695935518,
+          1.572072955481467
+        ],
+        "max_abs_ratio_change": 0.19784375936697218,
+        "top_influences": [
+          {
+            "removed": "gsd-build/gsd-2",
+            "ratio": 1.285102914204198,
+            "rank": 4,
+            "comparison_tasks": 33,
+            "ratio_change": -0.16912911475632586,
+            "rank_change": -1
+          },
+          {
+            "removed": "react-hook-form/react-hook-form",
+            "ratio": 1.2563882695935518,
+            "rank": 5,
+            "comparison_tasks": 32,
+            "ratio_change": -0.19784375936697218,
+            "rank_change": 0
+          },
+          {
+            "removed": "aws-amplify/amplify-ui",
+            "ratio": 1.572072955481467,
+            "rank": 5,
+            "comparison_tasks": 33,
+            "ratio_change": 0.11784092652094302,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 4,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          4,
+          4
+        ],
+        "ratio_range": [
+          1.4272890484739675,
+          1.8531510107015459
+        ],
+        "max_abs_ratio_change": 0.3989189817410219,
+        "top_influences": [
+          {
+            "removed": "live-multilang-gpt-5.5-slingshot-3.0.0",
+            "ratio": 1.8531510107015459,
+            "rank": 4,
+            "comparison_tasks": 22,
+            "ratio_change": 0.3989189817410219,
+            "rank_change": 0
+          },
+          {
+            "removed": "live-multilang-gpt-5.6-sol-slingshot-3.4.0",
+            "ratio": 1.62843295638126,
+            "rank": 4,
+            "comparison_tasks": 21,
+            "ratio_change": 0.17420092742073612,
+            "rank_change": 0
+          },
+          {
+            "removed": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+            "ratio": 1.539282250242483,
+            "rank": 4,
+            "comparison_tasks": 22,
+            "ratio_change": 0.08505022128195905,
+            "rank_change": 0
+          }
+        ]
+      }
+    },
+    "live-multilang-gpt-5.5-slingshot-3.0.0": {
+      "name": "GPT-5.5 \u00b7 Slingshot 3.0.0",
+      "ratio": 1.2597025132501283,
+      "rank": 4,
+      "coverage": {
+        "resolved_records": 52,
+        "published_resolved_attempts": 52,
+        "eligible_solved_attempts": 51,
+        "eligible_solved_base_tasks": 51,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {
+          "unverified_preimage": 1
+        }
+      },
+      "comparison_tasks": 33,
+      "reported_harnesses": [
+        "Slingshot 3.0.0"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 974.8333333333334,
+      "largest_abs_comparison_task": "gsd-build__gsd-2-4400",
+      "largest_abs_comparison_share": 0.1943922037955206,
+      "nonpositive_comparison_tasks": 5,
+      "leave_one_task_out": {
+        "scenarios": 76,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          4,
+          5
+        ],
+        "ratio_range": [
+          1.0818850267379678,
+          1.317911714770798
+        ],
+        "max_abs_ratio_change": 0.17781748651216045,
+        "top_influences": [
+          {
+            "removed": "gsd-build__gsd-2-4400",
+            "ratio": 1.317911714770798,
+            "rank": 5,
+            "comparison_tasks": 32,
+            "ratio_change": 0.05820920152066966,
+            "rank_change": 1
+          },
+          {
+            "removed": "react-hook-form__react-hook-form-12983",
+            "ratio": 1.0818850267379678,
+            "rank": 4,
+            "comparison_tasks": 32,
+            "ratio_change": -0.17781748651216045,
+            "rank_change": 0
+          },
+          {
+            "removed": "kepano__defuddle-243",
+            "ratio": 1.3026678932842686,
+            "rank": 4,
+            "comparison_tasks": 32,
+            "ratio_change": 0.0429653800341403,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 49,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          4,
+          5
+        ],
+        "ratio_range": [
+          1.0618837130227814,
+          1.317911714770798
+        ],
+        "max_abs_ratio_change": 0.19781880022734688,
+        "top_influences": [
+          {
+            "removed": "gsd-build/gsd-2",
+            "ratio": 1.317911714770798,
+            "rank": 5,
+            "comparison_tasks": 32,
+            "ratio_change": 0.05820920152066966,
+            "rank_change": 1
+          },
+          {
+            "removed": "react-hook-form/react-hook-form",
+            "ratio": 1.0618837130227814,
+            "rank": 4,
+            "comparison_tasks": 31,
+            "ratio_change": -0.19781880022734688,
+            "rank_change": 0
+          },
+          {
+            "removed": "openai/openai-agents-js",
+            "ratio": 1.3105435754745105,
+            "rank": 4,
+            "comparison_tasks": 28,
+            "ratio_change": 0.05084106222438223,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 4,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          3,
+          4
+        ],
+        "ratio_range": [
+          1.1897940913160252,
+          1.5655430711610487
+        ],
+        "max_abs_ratio_change": 0.30584055791092046,
+        "top_influences": [
+          {
+            "removed": "live-multilang-gpt-5.5-slingshot-2.6.0",
+            "ratio": 1.5655430711610487,
+            "rank": 4,
+            "comparison_tasks": 21,
+            "ratio_change": 0.30584055791092046,
+            "rank_change": 0
+          },
+          {
+            "removed": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+            "ratio": 1.1897940913160252,
+            "rank": 3,
+            "comparison_tasks": 22,
+            "ratio_change": -0.06990842193410307,
+            "rank_change": 0
+          },
+          {
+            "removed": "live-multilang-claude-sonnet-4.5-slingshot-2.6.0",
+            "ratio": 1.2053206002728512,
+            "rank": 3,
+            "comparison_tasks": 32,
+            "ratio_change": -0.054381912977277125,
+            "rank_change": 0
+          }
+        ]
+      }
+    },
+    "live-multilang-gpt-5.6-sol-slingshot-3.4.0": {
+      "name": "GPT-5.6 Sol \u00b7 Slingshot 3.4.0",
+      "ratio": 0.7838426308281402,
+      "rank": 2,
+      "coverage": {
+        "resolved_records": 70,
+        "published_resolved_attempts": 70,
+        "eligible_solved_attempts": 66,
+        "eligible_solved_base_tasks": 66,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {
+          "error": 1,
+          "out_of_scope": 1,
+          "unverified_preimage": 2
+        }
+      },
+      "comparison_tasks": 34,
+      "reported_harnesses": [
+        "Slingshot 3.4.0"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 1109.9166666666667,
+      "largest_abs_comparison_task": "gsd-build__gsd-2-4400",
+      "largest_abs_comparison_share": 0.1729859599068999,
+      "nonpositive_comparison_tasks": 2,
+      "leave_one_task_out": {
+        "scenarios": 76,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          3
+        ],
+        "ratio_range": [
+          0.7198163733741392,
+          0.9363835788154183
+        ],
+        "max_abs_ratio_change": 0.15254094798727813,
+        "top_influences": [
+          {
+            "removed": "react-hook-form__react-hook-form-12983",
+            "ratio": 0.9363835788154183,
+            "rank": 3,
+            "comparison_tasks": 33,
+            "ratio_change": 0.15254094798727813,
+            "rank_change": 1
+          },
+          {
+            "removed": "mui__base-ui-2290",
+            "ratio": 0.7198163733741392,
+            "rank": 1,
+            "comparison_tasks": 33,
+            "ratio_change": -0.06402625745400103,
+            "rank_change": -1
+          },
+          {
+            "removed": "MetaMask__metamask-mobile-17198",
+            "ratio": 0.8140361491340845,
+            "rank": 3,
+            "comparison_tasks": 33,
+            "ratio_change": 0.0301935183059443,
+            "rank_change": 1
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 49,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          3
+        ],
+        "ratio_range": [
+          0.7200762994754412,
+          0.9471912813526724
+        ],
+        "max_abs_ratio_change": 0.16334865052453218,
+        "top_influences": [
+          {
+            "removed": "react-hook-form/react-hook-form",
+            "ratio": 0.9471912813526724,
+            "rank": 3,
+            "comparison_tasks": 32,
+            "ratio_change": 0.16334865052453218,
+            "rank_change": 1
+          },
+          {
+            "removed": "mui/base-ui",
+            "ratio": 0.7200762994754412,
+            "rank": 1,
+            "comparison_tasks": 32,
+            "ratio_change": -0.06376633135269905,
+            "rank_change": -1
+          },
+          {
+            "removed": "openai/openai-agents-js",
+            "ratio": 0.7549363193435337,
+            "rank": 3,
+            "comparison_tasks": 29,
+            "ratio_change": -0.02890631148460654,
+            "rank_change": 1
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 4,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          3
+        ],
+        "ratio_range": [
+          0.7127371273712737,
+          0.938610662358643
+        ],
+        "max_abs_ratio_change": 0.15476803153050278,
+        "top_influences": [
+          {
+            "removed": "live-multilang-gpt-5.5-slingshot-2.6.0",
+            "ratio": 0.938610662358643,
+            "rank": 3,
+            "comparison_tasks": 21,
+            "ratio_change": 0.15476803153050278,
+            "rank_change": 1
+          },
+          {
+            "removed": "live-multilang-gpt-5.5-slingshot-3.0.0",
+            "ratio": 0.8705547652916074,
+            "rank": 3,
+            "comparison_tasks": 22,
+            "ratio_change": 0.08671213446346715,
+            "rank_change": 1
+          },
+          {
+            "removed": "live-multilang-claude-sonnet-4.5-slingshot-2.6.0",
+            "ratio": 0.7127371273712737,
+            "rank": 1,
+            "comparison_tasks": 32,
+            "ratio_change": -0.0711055034568665,
+            "rank_change": 0
+          }
+        ]
+      }
+    }
+  },
+  "pairwise": [
+    {
+      "a": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+      "b": "live-multilang-claude-sonnet-4.5-slingshot-2.6.0",
+      "shared_solved_measured_tasks": 23,
+      "a_net_mean": 27.73913043478261,
+      "b_net_mean": 23.956521739130434,
+      "mean_difference_a_minus_b": 3.782608695652174,
+      "ratio_a_over_b": 1.1578947368421053
+    },
+    {
+      "a": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+      "b": "live-multilang-gpt-5.5-slingshot-2.6.0",
+      "shared_solved_measured_tasks": 34,
+      "a_net_mean": 26.41176470588235,
+      "b_net_mean": 43.205882352941174,
+      "mean_difference_a_minus_b": -16.794117647058822,
+      "ratio_a_over_b": 0.6113002042205582
+    },
+    {
+      "a": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+      "b": "live-multilang-gpt-5.5-slingshot-3.0.0",
+      "shared_solved_measured_tasks": 37,
+      "a_net_mean": 25.89189189189189,
+      "b_net_mean": 39.108108108108105,
+      "mean_difference_a_minus_b": -13.216216216216216,
+      "ratio_a_over_b": 0.6620594333102972
+    },
+    {
+      "a": "live-multilang-claude-opus-4.6-ami-agent-0.7.0",
+      "b": "live-multilang-gpt-5.6-sol-slingshot-3.4.0",
+      "shared_solved_measured_tasks": 48,
+      "a_net_mean": 40.416666666666664,
+      "b_net_mean": 86.66666666666667,
+      "mean_difference_a_minus_b": -46.25,
+      "ratio_a_over_b": 0.46634615384615385
+    },
+    {
+      "a": "live-multilang-claude-sonnet-4.5-slingshot-2.6.0",
+      "b": "live-multilang-gpt-5.5-slingshot-2.6.0",
+      "shared_solved_measured_tasks": 23,
+      "a_net_mean": 24.869565217391305,
+      "b_net_mean": 47.34782608695652,
+      "mean_difference_a_minus_b": -22.47826086956522,
+      "ratio_a_over_b": 0.5252525252525253
+    },
+    {
+      "a": "live-multilang-claude-sonnet-4.5-slingshot-2.6.0",
+      "b": "live-multilang-gpt-5.5-slingshot-3.0.0",
+      "shared_solved_measured_tasks": 24,
+      "a_net_mean": 40.916666666666664,
+      "b_net_mean": 47.833333333333336,
+      "mean_difference_a_minus_b": -6.916666666666667,
+      "ratio_a_over_b": 0.8554006968641115
+    },
+    {
+      "a": "live-multilang-claude-sonnet-4.5-slingshot-2.6.0",
+      "b": "live-multilang-gpt-5.6-sol-slingshot-3.4.0",
+      "shared_solved_measured_tasks": 26,
+      "a_net_mean": 39.5,
+      "b_net_mean": 41.65384615384615,
+      "mean_difference_a_minus_b": -2.1538461538461537,
+      "ratio_a_over_b": 0.948291782086796
+    },
+    {
+      "a": "live-multilang-gpt-5.5-slingshot-2.6.0",
+      "b": "live-multilang-gpt-5.5-slingshot-3.0.0",
+      "shared_solved_measured_tasks": 44,
+      "a_net_mean": 109.43181818181819,
+      "b_net_mean": 104.31818181818181,
+      "mean_difference_a_minus_b": 5.113636363636363,
+      "ratio_a_over_b": 1.0490196078431373
+    },
+    {
+      "a": "live-multilang-gpt-5.5-slingshot-2.6.0",
+      "b": "live-multilang-gpt-5.6-sol-slingshot-3.4.0",
+      "shared_solved_measured_tasks": 42,
+      "a_net_mean": 107.42857142857143,
+      "b_net_mean": 93.80952380952381,
+      "mean_difference_a_minus_b": 13.619047619047619,
+      "ratio_a_over_b": 1.1451776649746193
+    },
+    {
+      "a": "live-multilang-gpt-5.5-slingshot-3.0.0",
+      "b": "live-multilang-gpt-5.6-sol-slingshot-3.4.0",
+      "shared_solved_measured_tasks": 47,
+      "a_net_mean": 110.72340425531915,
+      "b_net_mean": 104.27659574468085,
+      "mean_difference_a_minus_b": 6.446808510638298,
+      "ratio_a_over_b": 1.0618241175270353
+    }
+  ],
+  "inputs": [
+    {
+      "file": "score-panel.json",
+      "sha256": "3aeb70ae2c6179e4aba237ee47f7e161ec89862cd7aa7831d6ab92b24d794bc6"
+    },
+    {
+      "file": "claude-opus-4.6-ami.jsonl",
+      "sha256": "76f416605f72ddfba15c975e1f63242a51fc6bc111bcf03537288b13b5dbd67f"
+    },
+    {
+      "file": "claude-sonnet-4.5-slingshot-2.6.0.jsonl",
+      "sha256": "1125c22a08ecd0b445bfc70539d4c3256799ced8973b65d470c7e75d22bbedff"
+    },
+    {
+      "file": "gpt-5.5-slingshot-2.6.0.jsonl",
+      "sha256": "aa7d454f3b40d95b1d9c93731d58e4f0731a04e92e7ffa71b7d3ea9357ab23fd"
+    },
+    {
+      "file": "gpt-5.5-slingshot-3.0.0.jsonl",
+      "sha256": "ddb2666679958b599c23e48a3e102aaf8cd89e08f005950293c2bcca2709e39f"
+    },
+    {
+      "file": "gpt-5.6-sol-slingshot-3.4.0.jsonl",
+      "sha256": "b69f39e71b9ac1eae7280133e9249f6fd78ece1fff8f332dcb4c79eb936c36d1"
+    }
+  ]
+}

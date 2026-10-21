@@ -201,8 +201,8 @@ assert.deepEqual(names(), ['Beta', 'Alpha', 'Gamma']);
 assert.equal(element('header-solved_net').attributes['aria-sort'], 'ascending');
 assert.deepEqual([...element('#board thead').innerHTML.matchAll(/<th[^>]*>(?:<button[^>]*>)?([^<]+)/g)].map(m => m[1]),
   ['#', 'Model', 'Net units, solved (mean)', 'Net units, all measured (mean)', 'Solved', 'Measured']);
-assert.match(rows()[0], /<td>1<\/td><td class="left">Beta<\/td><td>3.0<\/td><td>0.0<\/td><td>30.0%<\/td><td>1\/4<\/td>/);
-assert.match(rows()[2], /<td>—<\/td><td class="left">Gamma<\/td><td>—<\/td><td>—<\/td><td>50.0%<\/td><td>0\/4<\/td>/);
+assert.match(rows()[0], /<td>1<\/td><td class="left">Beta<\/td><td>3.0<\/td><td>0.0<\/td><td>30.0%<\/td><td title="[^"]*">1\/4<\/td>/);
+assert.match(rows()[2], /<td>—<\/td><td class="left">Gamma<\/td><td>—<\/td><td>—<\/td><td>50.0%<\/td><td title="[^"]*">0\/4<\/td>/);
 assert.doesNotMatch(element('#board thead').innerHTML, /Per solve|churn|95% CI|data-sort="ci"/i);
 assert(rows().every(row => [...row.matchAll(/<td\b/g)].length === 6));
 assert.doesNotMatch(element('#board thead').innerHTML, /Score|churn|95% CI/i);
@@ -522,7 +522,7 @@ axis('x', 'net'); axis('y', 'churn');
 assert.match(graph(), /<circle[^>]*data-model="Delta \(high\)"[^>]*class="all-point self-run"/);
 assert.match(graph(), /class="point-label self-run-label"[^>]*>Delta/);
 assert.match(graph(), /Delta \(high\) \(OpenAI\)[^"]*Run by me with pi on 2 of \d+ tasks, not graded/);
-assert.match(element('#board tbody').innerHTML, /<tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta \(high\)<\/td><td>—<\/td><td>−5.0<\/td><td>—<\/td><td>—<\/td>/);
+assert.match(element('#board tbody').innerHTML, /<tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta \(high\)<\/td><td>—<\/td><td>−5.0<\/td><td>—<\/td><td title="Success coverage unavailable">—<\/td>/);
 assert.match(element('#board tbody').innerHTML, /<td>2<\/td><td class="left">Alpha/); // Self-run never takes a rank.
 assert.match(element('#board tbody').innerHTML, /Beta[\s\S]*<tr class="self-run-head"><td colspan="6">My runs · not ranked, 2 tasks<\/td><\/tr><tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta/); // after ranked rows, even with the smallest mean
 assert.match(element('self-run-note').textContent, /^My runs: models I ran myself on 2 of these tasks\. Not ranked\./);
@@ -538,7 +538,7 @@ Object.assign(gradedSelfRun.self_run_models[0], {graded: true, upstream_solved_a
 load(gradedSelfRun);
 assert.match(graph(), /<circle[^>]*data-model="Delta \(high\)"[^>]*class="all-point self-run"/);
 assert.match(graph(), /Run by me with pi on 2 of \d+ tasks, 2 solved/);
-assert.match(element('#board tbody').innerHTML, /<tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta \(high\)<\/td><td>12.0<\/td><td>−5.0<\/td><td>50.0%<\/td><td>2\/2<\/td>/);
+assert.match(element('#board tbody').innerHTML, /<tr class="self-run"[^>]*><td>—<\/td><td class="left">Delta \(high\)<\/td><td>12.0<\/td><td>−5.0<\/td><td>50.0%<\/td><td title="[^"]*">2\/2<\/td>/);
 assert.equal(element('self-run-note').hidden, false);
 // Bars use the X metric, ascending for footprints; self-run stays in a separate group.
 load(withSelfRun);
@@ -748,6 +748,7 @@ assert.match(element('#board tbody').innerHTML, /<td>2<\/td><td class="left">Alp
 assert.match(element('rank-help').textContent, /same tasks/);
 assert.match(element('board-intro').innerHTML, /tasks, so the order is rough\./); // small boards say their order is rough
 assert.match(element('rank-help').textContent, /tasks where everyone writes a lot weigh more/);
+assert.match(element('#board tbody').innerHTML, /title="1 of 4 published solved attempts measured in scope\. Missing measurements are not zero and can bias the comparison\."/);
 assert.match(element('graph-x').innerHTML, /value="same_cx">Complexity vs\. other models, same tasks/);
 assert.match(element('graph-x').innerHTML, /value="solved_cx">Complexity added, solved \(mean\)/);
 assert.equal((graph().match(/<line class="range/g) || []).length, 0); // ranges are in the tooltip only, also for self-runs
@@ -811,7 +812,7 @@ assert.match(element('board-intro').textContent, /^2 models on DeepSWE's 34 Pyth
 assert.match(element('language-scope').textContent, /never added across languages/);
 assert.match(element('#board thead').innerHTML, /Vs\. others, all languages[\s\S]*data-sort="lang_python">Python[\s\S]*data-sort="lang_go">Go[\s\S]*Solved[\s\S]*Measured/);
 assert.doesNotMatch(element('#board thead').innerHTML, /Net units, solved/);
-assert.match(element('#board tbody').innerHTML, /^<tr><td>1<\/td><td class="left">Alpha<\/td><td[^>]*>0\.90×<\/td><td title="Python board: 27 shared tasks">0\.85×<\/td><td title="Go board: 3 shared tasks">1\.20×<\/td><td>50\.0%<\/td><td>9\/10<\/td><\/tr><tr><td>2<\/td><td class="left">Beta<\/td><td[^>]*>1\.10×<\/td><td[^>]*>1\.10×<\/td><td[^>]*>—<\/td>/);
+assert.match(element('#board tbody').innerHTML, /^<tr><td>1<\/td><td class="left">Alpha<\/td><td[^>]*>0\.90×<\/td><td title="Python board: 27 shared tasks">0\.85×<\/td><td title="Go board: 3 shared tasks">1\.20×<\/td><td>50\.0%<\/td><td title="9 of 10 published solved attempts measured in scope\. Missing measurements are not zero and can bias the comparison\.">9\/10<\/td><\/tr><tr><td>2<\/td><td class="left">Beta<\/td><td[^>]*>1\.10×<\/td><td[^>]*>1\.10×<\/td><td[^>]*>—<\/td>/);
 assert.deepEqual(element('graph-x').innerHTML.match(/value="[^"]+"/g), ['value="same_net"', 'value="same_cx"', 'value="lang_python"', 'value="lang_go"', 'value="resolve_rate"', 'value="coverage"']);
 axis('x', 'lang_go');
 assert.match(element('ratio-note').textContent, /^×: net units added vs\. other models/);
