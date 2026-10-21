@@ -27,31 +27,31 @@ Same-task ratio, as on the website: a model's net units added on the milestones 
 
 | Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
 |---:|---|---:|---|---:|---:|---:|---:|---:|
-| 1 | Gemini 3 Pro · Gemini CLI | 0.69× | -5.93–1.02× | 8 | +155.5 | +340.6 | 44.4% | 8/8 |
-| 2 | GPT-5.2 Codex · Codex | 0.86× | — | 3 | +471.0 | +462.5 | 16.7% | 3/3 |
-| 3 | Gemini 3 Flash · Gemini CLI | 0.87× | 0.76–0.96× | 6 | +441.8 | +358.0 | 38.9% | 6/7 |
-| 4 | Gemini 3.1 Pro · Gemini CLI | 0.89× | 0.80–0.98× | 8 | +619.2 | +417.1 | 44.4% | 8/8 |
-| 5 | GPT-5.2 · Codex | 0.92× | -2.32–2.76× | 6 | +179.5 | +522.8 | 33.3% | 6/6 |
-| 6 | Claude Sonnet 4.5 · Claude Code | 0.98× | 0.89–1.08× | 6 | +541.0 | +517.9 | 33.3% | 6/6 |
-| 7 | Claude Opus 4.5 · Claude Code | 1.00× | 0.95–1.05× | 8 | +851.0 | +553.3 | 44.4% | 8/8 |
-| 8 | Claude Sonnet 4.6 · Claude Code | 1.03× | 0.14–1.40× | 11 | +560.7 | +448.4 | 72.2% | 13/13 |
-| 9 | GPT-5.3 Codex · Codex | 1.14× | 1.02–1.38× | 9 | +833.1 | +545.7 | 61.1% | 11/11 |
-| 10 | Claude Opus 4.6 · Claude Code | 1.15× | 0.85–4.43× | 11 | +636.9 | +448.7 | 66.7% | 12/12 |
+| 1 | Claude Sonnet 4.6 · Claude Code | 1.03× | 0.14–1.40× | 11 | +560.7 | +448.4 | 72.2% | 13/13 |
+| 2 | GPT-5.3 Codex · Codex | 1.14× | 1.02–1.38× | 9 | +833.1 | +545.7 | 61.1% | 11/11 |
+| 3 | Claude Opus 4.6 · Claude Code | 1.15× | 0.85–4.43× | 11 | +636.9 | +448.7 | 66.7% | 12/12 |
+| — | Gemini 3 Pro · Gemini CLI | 0.69× | -5.93–1.02× | 8 | +155.5 | +340.6 | 44.4% | 8/8 |
+| — | GPT-5.2 Codex · Codex | 0.86× | — | 3 | +471.0 | +462.5 | 16.7% | 3/3 |
+| — | Gemini 3 Flash · Gemini CLI | 0.87× | 0.76–0.96× | 6 | +441.8 | +358.0 | 38.9% | 6/7 |
+| — | Gemini 3.1 Pro · Gemini CLI | 0.89× | 0.80–0.98× | 8 | +619.2 | +417.1 | 44.4% | 8/8 |
+| — | GPT-5.2 · Codex | 0.92× | -2.32–2.76× | 6 | +179.5 | +522.8 | 33.3% | 6/6 |
+| — | Claude Sonnet 4.5 · Claude Code | 0.98× | 0.89–1.08× | 6 | +541.0 | +517.9 | 33.3% | 6/6 |
+| — | Claude Opus 4.5 · Claude Code | 1.00× | 0.95–1.05× | 8 | +851.0 | +553.3 | 44.4% | 8/8 |
 
 Combined across Go, TypeScript and Python (each language's ratio weighted by its shared milestones; units are never added across languages):
 
 | Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
 |---:|---|---:|---|---:|---:|---:|---:|---:|
 | 1 | Gemini 3 Pro · Gemini CLI | 0.81× | -1.15–1.00× | 20 | — | — | 35.0% | 21/21 |
-| 2 | Claude Sonnet 4.5 · Claude Code | 0.91× | 0.80–1.04× | 12 | — | — | 20.0% | 12/12 |
-| 3 | GPT-5.3 Codex · Codex | 0.94× | 0.68–1.48× | 19 | — | — | 40.0% | 24/24 |
-| 4 | Gemini 3 Flash · Gemini CLI | 0.94× | 0.89–1.06× | 14 | — | — | 25.0% | 14/15 |
-| 5 | Claude Opus 4.6 · Claude Code | 0.95× | 0.21–2.19× | 26 | — | — | 50.0% | 30/30 |
-| 6 | Claude Opus 4.5 · Claude Code | 0.95× | 0.57–1.29× | 22 | — | — | 38.3% | 23/23 |
-| 7 | Gemini 3.1 Pro · Gemini CLI | 1.02× | 0.91–1.09× | 21 | — | — | 38.3% | 23/23 |
-| 8 | Claude Sonnet 4.6 · Claude Code | 1.09× | 0.52–1.31× | 25 | — | — | 50.0% | 30/30 |
-| 9 | GPT-5.2 · Codex | 1.15× | 0.50–2.10× | 16 | — | — | 30.0% | 18/18 |
-| 10 | GPT-5.2 Codex · Codex | 1.33× | 0.85–1.66× | 10 | — | — | 21.7% | 13/13 |
+| 2 | GPT-5.3 Codex · Codex | 0.94× | 0.68–1.48× | 19 | — | — | 40.0% | 24/24 |
+| 3 | Claude Opus 4.6 · Claude Code | 0.95× | 0.21–2.19× | 26 | — | — | 50.0% | 30/30 |
+| 4 | Claude Opus 4.5 · Claude Code | 0.95× | 0.57–1.29× | 22 | — | — | 38.3% | 23/23 |
+| 5 | Gemini 3.1 Pro · Gemini CLI | 1.02× | 0.91–1.09× | 21 | — | — | 38.3% | 23/23 |
+| 6 | Claude Sonnet 4.6 · Claude Code | 1.09× | 0.52–1.31× | 25 | — | — | 50.0% | 30/30 |
+| 7 | GPT-5.2 · Codex | 1.15× | 0.50–2.10× | 16 | — | — | 30.0% | 18/18 |
+| — | Claude Sonnet 4.5 · Claude Code | 0.91× | 0.80–1.04× | 12 | — | — | 20.0% | 12/12 |
+| — | Gemini 3 Flash · Gemini CLI | 0.94× | 0.89–1.06× | 14 | — | — | 25.0% | 14/15 |
+| — | GPT-5.2 Codex · Codex | 1.33× | 0.85–1.66× | 10 | — | — | 21.7% | 13/13 |
 
 ## Sources
 

@@ -12,8 +12,8 @@ from unittest import mock
 
 from parsimony.scoring import freeze
 from parsimony.benchmark import read_jsonl
-from parsimony.site import (add_rank_ranges, build, build_merged, company, label, main, merged_ratio, newest_generation,
-                            published_sources, render)
+from parsimony.site import (add_rank_ranges, build, build_merged, company, label, main, merged_ratio, min_rank_tasks,
+                            newest_generation, published_sources, render)
 from tests.test_scoring import record
 
 
@@ -457,6 +457,24 @@ class MainTests(unittest.TestCase):
         self.assertEqual({m['agent']: m['rank_range'] for m in models}, {'agent-a': [1, 1], 'agent-b': [1, 2]})
 
 
+class RankMinimumTests(unittest.TestCase):
+    def test_minimum_is_fifteen_or_half_the_page(self):
+        self.assertEqual([min_rank_tasks(n) for n in (5, 12, 29, 30, 34, 500)], [3, 6, 15, 15, 15, 15])
+
+    def test_models_below_the_minimum_are_listed_after_the_ranked_ones(self):
+        directory = Path(__file__).resolve().parent.parent / 'examples' / 'deepswe-python'
+        panel = json.loads((directory / 'score-panel.json').read_text())
+        records = [r for path in sorted(directory.glob('*.jsonl')) for r in read_jsonl(path)]
+        data = build(panel, records, draws=20)
+        self.assertEqual(data['min_rank_tasks'], 15)
+        gemini = next(m for m in data['models'] if m['agent'].endswith('gemini_3_1_pro_preview_high'))
+        self.assertTrue(gemini['few_tasks'])
+        self.assertEqual(gemini['same_task_net_tasks'], 8)
+        ranked = [m for m in data['models'] if not m.get('few_tasks') and m['same_task_net'] is not None]
+        self.assertTrue(all(m['same_task_net_tasks'] >= 15 for m in ranked))
+        self.assertLess(data['models'].index(ranked[-1]), data['models'].index(gemini))
+
+
 class MergedDeepSWETests(unittest.TestCase):
     def test_merged_ratio_weights_languages_by_shared_tasks(self):
         # Python 2 tasks at 0.5x, Go 1 task at 2x: (0.5 * 2 + 2 * 1) / 3 = 1. Raw totals would give 7/8.
@@ -490,10 +508,14 @@ class MergedDeepSWETests(unittest.TestCase):
         data = build_merged(boards, draws=20)
         self.assertEqual([(l['key'], l['tasks'], l['attempts']) for l in data['merged']['languages']],
                          [('javascript', 5, 4), ('typescript', 35, 4)])
-        self.assertEqual(len(data['models']), 26)
+        self.assertEqual(len(data['models']), 38)  # 26 v1.1 configurations + 12 DeepSWE 1.0
         for m in data['models']:
             for language, values in m['languages'].items():
                 self.assertEqual(values['net'], expected[language][m['agent']], (m['name'], language))
             self.assertNotIn('measured_solved_net_mean', m)  # raw units are never pooled across languages
-        values = [m['same_task_net'] for m in data['models']]
-        self.assertEqual(values, sorted(values))
+        ranked = [m['same_task_net'] for m in data['models']
+                  if not m.get('few_tasks') and not m.get('partial') and m['same_task_net'] is not None]
+        self.assertEqual(ranked, sorted(ranked))
+        # Models below the minimum follow the ranked ones.
+        flags = [bool(m.get('few_tasks') or m.get('partial') or m['same_task_net'] is None) for m in data['models']]
+        self.assertEqual(flags, sorted(flags))

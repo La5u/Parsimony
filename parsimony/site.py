@@ -9,7 +9,7 @@ import statistics
 from pathlib import Path
 
 from .benchmark import read_jsonl
-from .deepswe import display_name
+from .deepswe import cluster, display_name
 from .external import attach
 from .scoring import UNCALIBRATED, VERSION, measured, out_of_scope, quantile, score_records
 
@@ -201,6 +201,7 @@ def company(agent):
         (('qwen',), 'Alibaba'), (('grok',), 'xAI'), (('glm',), 'Z.ai'),
         (('kimi',), 'Moonshot AI'), (('minimax',), 'MiniMax'),
         (('llama', 'muse'), 'Meta'), (('devstral', 'mistral', 'codestral'), 'Mistral AI'),
+        (('mimo',), 'Xiaomi'),
     ):
         if name.startswith(prefixes):
             return owner
@@ -267,6 +268,12 @@ def bootstrap(board, draws, seed):
 SAME_TASK_MIN_MODELS = 3
 # Below this many shared tasks no interval is given: a bootstrap over 2-4 tasks is overconfident.
 SAME_TASK_MIN_INTERVAL = 5
+# A model is ranked only with at least this many shared tasks, or half the page's tasks if that is fewer.
+SAME_TASK_MIN_RANK = 15
+
+
+def min_rank_tasks(page_tasks):
+    return min(SAME_TASK_MIN_RANK, -(-page_tasks // 2))
 
 
 def solved_by_task(records):
@@ -403,9 +410,14 @@ def build(panel, records, draws=2000, seed=42):
     typical = typical_by_task(per_model)
     for m in models:
         m.update(same_task(per_model[m['agent']], typical, f"{seed}:{m['agent']}"))
+    # Too few shared tasks to rank: listed after the ranked models, like partial models on combined pages.
+    minimum = min_rank_tasks(len({cluster(t) for t in panel['tasks']}))
+    for m in models:
+        if m['same_task_net'] is not None and m['same_task_net_tasks'] < minimum:
+            m['few_tasks'] = True
     # Rank order: code relative to other models on the same solved tasks, then the plain solved mean;
     # unmeasured models last.
-    models.sort(key=lambda m: (m['measured_solved_net_mean'] is None, m['same_task_net'] is None,
+    models.sort(key=lambda m: (m['measured_solved_net_mean'] is None, m.get('few_tasks', False), m['same_task_net'] is None,
                                m['same_task_net'] or 0, m['measured_solved_net_mean'] or 0, m['name']))
     # Chart emphasis only: older generations and their labels are slightly lighter; rank ignores this.
     newest = newest_generation([m['name'] for m in models])
@@ -462,7 +474,7 @@ def build(panel, records, draws=2000, seed=42):
     return dict(**(dict(calibration_policy=UNCALIBRATED,
                         uncalibrated_tasks=[t for t, refs in panel['tasks'].items() if not refs]) if bounded else {}),
                 measurement_track=panel.get('measurement_track'),
-                ranking_metric='same-task-net-ratio-v1', footprint_tasks=footprint_tasks,
+                ranking_metric='same-task-net-ratio-v1', footprint_tasks=footprint_tasks, min_rank_tasks=minimum,
                 # Typical solved patch per task: mean net units, mean complexity, number of models.
                 task_typical={t: [round(net / n, 1), None if cx is None else round(cx / n, 1), n]
                               for t, (net, cx, n) in sorted(typical.items())},
@@ -537,12 +549,15 @@ def build_merged(boards, draws=2000, seed=42):
             m[f'same_task_{key}_tasks'] = count
         if len(m['languages']) < len(languages):
             m['partial'] = True
-    ordered = sorted(models.values(), key=lambda m: (m.get('partial', False), m['same_task_net'] is None,
+        elif m['same_task_net'] is not None and m['same_task_net_tasks'] < min_rank_tasks(sum(lang['tasks'] for lang in languages)):
+            m['few_tasks'] = True
+    ordered = sorted(models.values(), key=lambda m: (m.get('partial', False), m.get('few_tasks', False), m['same_task_net'] is None,
                                                      m['same_task_net'] or 0, m['name']))
     newest = newest_generation([m['name'] for m in ordered])
     for m in ordered:
         m['latest'] = m['name'] in newest
     return dict(merged=dict(languages=languages), ranking_metric='same-task-net-ratio-merged-v1',
+                min_rank_tasks=min_rank_tasks(sum(lang['tasks'] for lang in languages)),
                 footprint_tasks=[], task_typical={}, models=ordered, self_run_typical=self_run_typical,
                 task_count=sum(lang['tasks'] for lang in languages),
                 population_count=sum(lang['tasks'] * lang['attempts'] for lang in languages))

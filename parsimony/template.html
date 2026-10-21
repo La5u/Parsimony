@@ -356,7 +356,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const selfRunTaskTotal = merged ? languages.find(l => l.key === 'python')?.tasks : taskCount;
   // Models missing from some language boards (all-languages page): shown faded by coverage, never ranked.
   const partialNote = m => `On ${Object.keys(m.languages || {}).length} of ${languages.length} languages, so not ranked`;
-  const partialOpacity = m => m.partial ? (0.25 + 0.5 * Object.keys(m.languages || {}).length / languages.length).toFixed(2) : null;
+  const partialOpacity = m => m.partial ? (0.25 + 0.5 * Object.keys(m.languages || {}).length / languages.length).toFixed(2) : m.few_tasks ? '0.5' : null;
+  // Too few shared solved tasks to rank: listed after the ranked models, faded.
+  const fewTasksNote = m => `Only ${m.same_task_net_tasks} shared solved task${m.same_task_net_tasks === 1 ? '' : 's'} (ranking needs ${data.min_rank_tasks}), so not ranked`;
+  const unranked = m => !!(m.partial || m.few_tasks);
+  const unrankedNote = m => m.partial ? partialNote(m) : fewTasksNote(m);
   // Contributed runs follow the same plan, measurement and grading as mine; they are named after who ran them.
   const contributed = selfRun.some(m => m.contributor);
   const runsLabel = contributed ? 'My and contributed runs' : 'My runs';
@@ -375,7 +379,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   }
   // Same-task comparison (task difficulty): code relative to the other models on the tasks a model solved.
   const sameTask = data.models.some(m => Number.isFinite(m.same_task_net));
-  const rankValue = m => m.partial ? null : sameTask ? m.same_task_net : netMean(m);
+  const rankValue = m => unranked(m) ? null : sameTask ? m.same_task_net : netMean(m);
   const rankOf = m => Number.isFinite(rankValue(m)) ? 1 + data.models.filter(other =>
     Number.isFinite(rankValue(other)) && rankValue(other) < rankValue(m)).length : null;
   // One sentence above the chart whenever an axis is a same-task ratio, so 0.8× reads without opening help.
@@ -391,10 +395,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const ratioKeys = ['same_net', 'same_cx', ...langKeys], footprintKeys = ['net', 'solved_net', 'churn', 'solved_cx', 'cx', ...ratioKeys];
   const defaultKey = sameTask ? 'same_net' : 'solved_net';
   if (sameTask) {
-    $('rank-help').textContent = 'Some tasks need much more code than others, and models solve different tasks. So each model is ranked by the code it added on the tasks it solved, divided by what the other models added on those same tasks: 0.8× means 20% less code than they wrote. Only tasks solved by at least 3 other models count, and totals are compared, so tasks where everyone writes a lot weigh more than small ones. "Net units added (mean)" is the plain average and also includes failed attempts. Complexity counts added branches, loops and functions the same way.';
+    $('rank-help').textContent = 'Some tasks need much more code than others, and models solve different tasks. So each model is ranked by the code it added on the tasks it solved, divided by what the other models added on those same tasks: 0.8× means 20% less code than they wrote. Only tasks solved by at least 3 other models count, and totals are compared, so tasks where everyone writes a lot weigh more than small ones. "Net units added (mean)" is the plain average and also includes failed attempts. Complexity counts added branches, loops and functions the same way.' + (data.min_rank_tasks ? ` A model needs at least ${data.min_rank_tasks} such tasks to be ranked; with fewer it is listed faded at the end.` : '');
   }
   if (merged) {
-    $('rank-help').textContent = `Each language board ranks models by the code they added on the tasks they solved, divided by what the other models added on those same tasks: 0.8× means 20% less code. This page averages each model's ${languages.map(l => l.name).join(', ')} ratios, weighting each language by the model's shared tasks there, so a language with few tasks counts little. Unit counts differ between languages and are never added together. The 95% range resamples tasks within each language.`;
+    $('rank-help').textContent = `Each language board ranks models by the code they added on the tasks they solved, divided by what the other models added on those same tasks: 0.8× means 20% less code. This page averages each model's ${languages.map(l => l.name).join(', ')} ratios, weighting each language by the model's shared tasks there, so a language with few tasks counts little. Unit counts differ between languages and are never added together. The 95% range resamples tasks within each language. A model needs at least ${data.min_rank_tasks} shared tasks across languages to be ranked; with fewer it is listed faded at the end.`;
   }
   const languageOf = key => languages.find(l => 'lang_' + l.key === key);
   const ratioOf = (m, key) => key === 'same_cx' ? [m.same_task_complexity_ci, m.same_task_complexity_tasks] : [m.same_task_net_ci, m.same_task_net_tasks];
@@ -449,7 +453,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     // Self-run rows cover a task subset: listed after the ranked rows, never interleaved.
     const extra = selected ? [] : activeSelfRun().map(m => ({m, i: -1})).sort(order);
     // Partial models (missing from a language) follow the ranked rows, like self-runs.
-    const models = data.models.map((m, i) => ({m, i})).sort((a, b) => (!selected && (!!a.m.partial - !!b.m.partial)) || order(a, b)).concat(extra);
+    const models = data.models.map((m, i) => ({m, i})).sort((a, b) => (!selected && (unranked(a.m) - unranked(b.m))) || order(a, b)).concat(extra);
     document.querySelector('#board tbody').innerHTML = models.map(({m, i}, k) => (k === models.length - extra.length && extra.length
       ? `<tr class="self-run-head"><td colspan="${headers.length}">${runsLabel} · not ranked, ${selfRunTasks} tasks</td></tr>` : '') + (() => {
       if (selected) {
@@ -460,8 +464,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       }
       const solved = metricValue(m, i, 'resolve_rate');
       const ratioCell = key => `<td title="${esc(rangeNote(m, key))}">${Number.isFinite(metricValue(m, i, key)) ? fmt(metricValue(m, i, key), 2) + '×' : '—'}</td>`;
-      if (merged) return `<tr${m.self_run ? ` class="self-run" title="${esc(selfRunNote(m))}"` : m.partial ? ` class="partial" style="opacity:${partialOpacity(m)}" title="${esc(partialNote(m))}"` : ''}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td>${ratioCell('same_net')}${langKeys.map(ratioCell).join('')}<td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
-      return `<tr${m.self_run ? ` class="self-run" title="${esc(selfRunNote(m))}"` : ''}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td>${sameTask ? `<td title="${esc(rangeNote(m, 'same_net'))}">${Number.isFinite(m.same_task_net) ? fmt(m.same_task_net, 2) + '×' : '—'}</td>` : ''}<td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.measured_net_mean)}</td><td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
+      const rowAttrs = m.self_run ? ` class="self-run" title="${esc(selfRunNote(m))}"` : unranked(m) ? ` class="partial" style="opacity:${partialOpacity(m)}" title="${esc(unrankedNote(m))}"` : '';
+      if (merged) return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td>${ratioCell('same_net')}${langKeys.map(ratioCell).join('')}<td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
+      return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td>${sameTask ? `<td title="${esc(rangeNote(m, 'same_net'))}">${Number.isFinite(m.same_task_net) ? fmt(m.same_task_net, 2) + '×' : '—'}</td>` : ''}<td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.measured_net_mean)}</td><td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td>${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
     })()).join('');
   }
   function showTask(id) {
@@ -736,7 +741,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const usesExternal = [axes.x, axes.y].some(k => k.startsWith('aa_'));
     const matchNote = p => usesExternal && p.match && p.match !== 'exact'
       ? {effort_unlabelled: 'Artificial Analysis entry has no effort label', undated_alias: 'undated model ID matched to the Artificial Analysis snapshot'}[p.match] : '';
-    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; off the chart\'s scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + (p.count ?? 0) + '/' + (denominator(p.m) ?? 0) + ' solved attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}${p.m?.partial ? '; ' + partialNote(p.m) : ''}`;
+    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; off the chart\'s scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + (p.count ?? 0) + '/' + (denominator(p.m) ?? 0) + ' solved attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}${p.m && unranked(p.m) ? '; ' + unrankedNote(p.m) : ''}`;
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
     const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${narrow ? 4 : 6}" ${p.m && partialOpacity(p.m) ? ` fill-opacity="${partialOpacity(p.m)}"` : ''} tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('');
     // Green zone: the half of each axis that is better (lower footprint, higher solved/index).

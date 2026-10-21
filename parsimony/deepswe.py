@@ -32,7 +32,7 @@ ATTEMPTS = 4
 
 EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max', 'default')
 VENDORS = {'claude': 'Claude', 'gpt': 'GPT', 'gemini': 'Gemini', 'glm': 'GLM', 'kimi': 'Kimi', 'grok': 'Grok',
-           'deepseek': 'DeepSeek', 'qwen3': 'Qwen3', 'muse': 'Muse'}
+           'deepseek': 'DeepSeek', 'qwen3': 'Qwen3', 'muse': 'Muse', 'minimax': 'MiniMax', 'mimo': 'MiMo'}
 
 
 def display_name(agent):
@@ -46,11 +46,14 @@ def display_name(agent):
         elif not words:
             words.append(VENDORS.get(token, token.capitalize()))
         else:
-            words.append(token.upper() if re.fullmatch(r'[a-z]\d+', token) else token.capitalize())
+            words.append(token.upper() if re.fullmatch(r'[a-z]\d+', token) else
+                         token if token == 'mini' else token.capitalize())
     name = words[0] + ('-' + words[1] if words[0] in ('GPT', 'GLM') and len(words) > 1 else '')
     rest = words[2:] if words[0] in ('GPT', 'GLM') else words[1:]
     name = ' '.join([name, *rest])
-    return f'{name} ({effort})' if effort and effort != 'default' else name
+    name = f'{name} ({effort})' if effort and effort != 'default' else name
+    # Release 1.0 runs (gated archive) sit on the v1.1 boards; say which release they come from.
+    return name + ' · DeepSWE 1.0' if agent.startswith('deepswe-v1.0_') else name
 
 
 def cluster(item):

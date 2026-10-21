@@ -27,31 +27,31 @@ Same-task ratio, as on the website: a model's net units added on the milestones 
 
 | Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
 |---:|---|---:|---|---:|---:|---:|---:|---:|
-| 1 | Claude Sonnet 4.5 · Claude Code | 0.59× | — | 2 | +1.5 | +684.8 | 6.7% | 2/2 |
-| 2 | Claude Opus 4.6 · Claude Code | 0.68× | -0.89–0.83× | 9 | +190.6 | +659.2 | 40.0% | 12/12 |
-| 3 | GPT-5.3 Codex · Codex | 0.80× | -0.04–2.74× | 6 | +338.6 | +778.8 | 26.7% | 8/8 |
-| 4 | Gemini 3.1 Pro · Gemini CLI | 0.95× | 0.81–1.01× | 8 | +483.1 | +596.5 | 33.3% | 10/10 |
-| 5 | Gemini 3 Pro · Gemini CLI | 0.98× | 0.83–1.21× | 8 | +396.9 | +573.4 | 30.0% | 9/9 |
-| 6 | Claude Opus 4.5 · Claude Code | 0.99× | 0.26–1.60× | 9 | +124.9 | +664.6 | 30.0% | 9/9 |
-| 7 | GPT-5.2 · Codex | 1.02× | 0.87–2.20× | 5 | +387.7 | +1,043.7 | 23.3% | 7/7 |
-| 8 | Gemini 3 Flash · Gemini CLI | 1.07× | — | 4 | +263.8 | +552.3 | 13.3% | 4/4 |
-| 9 | Claude Sonnet 4.6 · Claude Code | 1.29× | 0.58–1.77× | 8 | +415.3 | +726.0 | 36.7% | 11/11 |
-| 10 | GPT-5.2 Codex · Codex | 1.86× | — | 4 | +225.4 | +795.6 | 16.7% | 5/5 |
+| — | Claude Sonnet 4.5 · Claude Code | 0.59× | — | 2 | +1.5 | +684.8 | 6.7% | 2/2 |
+| — | Claude Opus 4.6 · Claude Code | 0.68× | -0.89–0.83× | 9 | +190.6 | +659.2 | 40.0% | 12/12 |
+| — | GPT-5.3 Codex · Codex | 0.80× | -0.04–2.74× | 6 | +338.6 | +778.8 | 26.7% | 8/8 |
+| — | Gemini 3.1 Pro · Gemini CLI | 0.95× | 0.81–1.01× | 8 | +483.1 | +596.5 | 33.3% | 10/10 |
+| — | Gemini 3 Pro · Gemini CLI | 0.98× | 0.83–1.21× | 8 | +396.9 | +573.4 | 30.0% | 9/9 |
+| — | Claude Opus 4.5 · Claude Code | 0.99× | 0.26–1.60× | 9 | +124.9 | +664.6 | 30.0% | 9/9 |
+| — | GPT-5.2 · Codex | 1.02× | 0.87–2.20× | 5 | +387.7 | +1,043.7 | 23.3% | 7/7 |
+| — | Gemini 3 Flash · Gemini CLI | 1.07× | — | 4 | +263.8 | +552.3 | 13.3% | 4/4 |
+| — | Claude Sonnet 4.6 · Claude Code | 1.29× | 0.58–1.77× | 8 | +415.3 | +726.0 | 36.7% | 11/11 |
+| — | GPT-5.2 Codex · Codex | 1.86× | — | 4 | +225.4 | +795.6 | 16.7% | 5/5 |
 
 Combined across Go, TypeScript and Python (each language's ratio weighted by its shared milestones; units are never added across languages):
 
 | Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
 |---:|---|---:|---|---:|---:|---:|---:|---:|
 | 1 | Gemini 3 Pro · Gemini CLI | 0.81× | -1.15–1.00× | 20 | — | — | 35.0% | 21/21 |
-| 2 | Claude Sonnet 4.5 · Claude Code | 0.91× | 0.80–1.04× | 12 | — | — | 20.0% | 12/12 |
-| 3 | GPT-5.3 Codex · Codex | 0.94× | 0.68–1.48× | 19 | — | — | 40.0% | 24/24 |
-| 4 | Gemini 3 Flash · Gemini CLI | 0.94× | 0.89–1.06× | 14 | — | — | 25.0% | 14/15 |
-| 5 | Claude Opus 4.6 · Claude Code | 0.95× | 0.21–2.19× | 26 | — | — | 50.0% | 30/30 |
-| 6 | Claude Opus 4.5 · Claude Code | 0.95× | 0.57–1.29× | 22 | — | — | 38.3% | 23/23 |
-| 7 | Gemini 3.1 Pro · Gemini CLI | 1.02× | 0.91–1.09× | 21 | — | — | 38.3% | 23/23 |
-| 8 | Claude Sonnet 4.6 · Claude Code | 1.09× | 0.52–1.31× | 25 | — | — | 50.0% | 30/30 |
-| 9 | GPT-5.2 · Codex | 1.15× | 0.50–2.10× | 16 | — | — | 30.0% | 18/18 |
-| 10 | GPT-5.2 Codex · Codex | 1.33× | 0.85–1.66× | 10 | — | — | 21.7% | 13/13 |
+| 2 | GPT-5.3 Codex · Codex | 0.94× | 0.68–1.48× | 19 | — | — | 40.0% | 24/24 |
+| 3 | Claude Opus 4.6 · Claude Code | 0.95× | 0.21–2.19× | 26 | — | — | 50.0% | 30/30 |
+| 4 | Claude Opus 4.5 · Claude Code | 0.95× | 0.57–1.29× | 22 | — | — | 38.3% | 23/23 |
+| 5 | Gemini 3.1 Pro · Gemini CLI | 1.02× | 0.91–1.09× | 21 | — | — | 38.3% | 23/23 |
+| 6 | Claude Sonnet 4.6 · Claude Code | 1.09× | 0.52–1.31× | 25 | — | — | 50.0% | 30/30 |
+| 7 | GPT-5.2 · Codex | 1.15× | 0.50–2.10× | 16 | — | — | 30.0% | 18/18 |
+| — | Claude Sonnet 4.5 · Claude Code | 0.91× | 0.80–1.04× | 12 | — | — | 20.0% | 12/12 |
+| — | Gemini 3 Flash · Gemini CLI | 0.94× | 0.89–1.06× | 14 | — | — | 25.0% | 14/15 |
+| — | GPT-5.2 Codex · Codex | 1.33× | 0.85–1.66× | 10 | — | — | 21.7% | 13/13 |
 
 ## Sources
 

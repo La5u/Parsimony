@@ -7,7 +7,7 @@
 - Analyzer `0.5.2-beta`, commit `1b50e56`, Python 3.14.7.
 - DeepSWE tasks: `datacurve-ai/deep-swe` at `0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea` (34 Python tasks). Runs: release `v1.1`, run index `trials.json` SHA256 `310cb428fe8914cff21b8edcb0b17256884efca55666bd6d6646d223c77d2ce6` (runs from June to September 2026).
 - Dataset (items with reference solutions) SHA256 `41a44998c70248e0a3e2a4cf43a8838b70248537d1f3a458838f2f7e09ecef8a`. Scoring `parsimony-80-20-v0.5`, panel `deepswe-v1.1-python-26-pooled-80-20-v0.5`.
-- SHA256: [population.json](population.json) `c16b15f8…`, [score-panel.json](score-panel.json) `c280b21b…`, [scores.json](scores.json) `f3879074…`, [coverage.json](coverage.json) `fbda1b7a…`, [sensitivity.json](sensitivity.json) `940a896e…`.
+- SHA256: [population.json](population.json) `c16b15f8…`, [score-panel.json](score-panel.json) `c280b21b…`, [scores.json](scores.json) `3382b497…`, [coverage.json](coverage.json) `9bb953a1…`, [sensitivity.json](sensitivity.json) `be889397…` (the last three regenerated 2026-10-21 with the release 1.0 runs).
 
 ```sh
 git clone https://github.com/datacurve-ai/deep-swe && git -C deep-swe checkout 0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea
@@ -35,32 +35,44 @@ As on the website: a model's net units added on the tasks it solved, divided by 
 
 | Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
 |---:|---|---:|---|---:|---:|---:|---:|---:|
-| 1 | Gemini 3.1 Pro Preview (high) | 0.66× | 0.56–0.77× | 8 | +1,479.5 | +1,156.3 | 8.1% | 11/11 |
-| 2 | Claude Fable 5 (xhigh) | 0.80× | 0.75–0.85× | 28 | +1,557.5 | +1,509.1 | 74.3% | 97/101 |
-| 3 | Claude Sonnet 5 (max) | 0.83× | 0.79–0.88× | 25 | +1,665.9 | +1,563.5 | 59.6% | 78/81 |
-| 4 | Claude Opus 4.8 (max) | 0.84× | 0.80–0.89× | 29 | +1,621.9 | +1,592.2 | 63.2% | 83/86 |
-| 4 | GLM-5.2 (max) | 0.84× | 0.81–0.89× | 24 | +1,733.2 | +1,591.3 | 41.9% | 53/57 |
-| 6 | Kimi K3 (max) | 0.85× | 0.79–0.90× | 30 | +1,641.2 | +1,601.1 | 67.6% | 89/92 |
-| 7 | Gemini 3.5 Flash (high) | 0.86× | 0.78–0.94× | 17 | +1,621.5 | +1,707.6 | 29.4% | 38/40 |
-| 8 | Claude Sonnet 4.6 (high) | 0.87× | 0.77–0.99× | 19 | +1,684.5 | +1,587.9 | 29.4% | 36/40 |
-| 9 | Kimi K2.7 Code | 0.89× | 0.84–0.94× | 20 | +1,737.3 | +1,600.1 | 24.3% | 32/33 |
-| 10 | DeepSeek V4 Flash (max) | 0.93× | 0.88–1.00× | 27 | +1,748.7 | +1,770.3 | 48.5% | 63/66 |
-| 11 | Qwen3.8 Max (xhigh) | 0.93× | 0.89–0.98× | 27 | +1,697.8 | +1,770.5 | 55.1% | 74/75 |
-| 12 | Gemini 3.6 Flash (high) | 0.95× | 0.87–1.02× | 22 | +1,741.9 | +1,835.1 | 41.9% | 53/57 |
-| 13 | Grok 4.5 (high) | 0.98× | 0.91–1.05× | 28 | +1,819.8 | +1,886.7 | 58.8% | 79/80 |
-| 14 | Grok 4.6 (medium) | 1.00× | 0.96–1.04× | 28 | +1,825.9 | +1,981.0 | 67.6% | 89/92 |
-| 15 | GPT-5.4 (xhigh) | 1.03× | 0.96–1.11× | 25 | +1,913.5 | +2,058.9 | 46.3% | 59/63 |
-| 16 | Gemini 3.7 Flash (medium) | 1.04× | 0.96–1.15× | 27 | +1,904.2 | +2,038.1 | 60.3% | 80/82 |
-| 17 | GLM-5.3 Flash (max) | 1.05× | 0.99–1.10× | 29 | +2,006.5 | +1,998.5 | 69.9% | 93/95 |
-| 18 | GPT-5.6 Sol (max) | 1.06× | 0.99–1.13× | 29 | +1,964.2 | +2,031.8 | 74.3% | 98/101 |
-| 19 | GPT-5.6 Terra (max) | 1.07× | 1.02–1.11× | 29 | +2,028.7 | +2,096.5 | 68.4% | 90/93 |
-| 20 | GPT-5.5 (xhigh) | 1.07× | 1.01–1.14× | 28 | +1,936.7 | +2,102.4 | 66.9% | 87/91 |
-| 21 | DeepSeek V4 Pro (max) | 1.07× | 1.02–1.14× | 29 | +2,043.7 | +2,074.7 | 59.6% | 77/81 |
-| 21 | GLM-5.3 (max) | 1.07× | 0.98–1.16× | 29 | +2,090.0 | +2,035.5 | 66.2% | 87/90 |
-| 23 | GPT-5.6 Luna (max) | 1.14× | 1.08–1.21× | 30 | +2,202.3 | +2,203.8 | 65.4% | 85/89 |
-| 24 | Claude Opus 5 (max) | 1.14× | 1.07–1.22× | 28 | +2,183.4 | +2,124.4 | 74.3% | 97/101 |
-| 25 | Muse Spark 1.2 (xhigh) | 1.31× | 1.22–1.41× | 27 | +2,484.1 | +2,463.2 | 50.7% | 66/69 |
-| 26 | Muse Spark 1.1 (xhigh) | 1.35× | 1.24–1.50× | 24 | +2,562.3 | +2,412.7 | 52.9% | 68/72 |
+| 1 | Claude Fable 5 (xhigh) | 0.81× | 0.75–0.87× | 28 | +1,557.5 | +1,509.1 | 74.3% | 97/101 |
+| 2 | Claude Opus 4.6 (max) · DeepSWE 1.0 | 0.83× | 0.76–0.91× | 18 | +1,774.6 | +1,696.0 | 27.2% | 35/37 |
+| 3 | Claude Sonnet 5 (max) | 0.84× | 0.80–0.89× | 25 | +1,665.9 | +1,563.5 | 59.6% | 78/81 |
+| 4 | Claude Opus 4.8 (max) | 0.85× | 0.81–0.89× | 29 | +1,621.9 | +1,592.2 | 63.2% | 83/86 |
+| 5 | GLM-5.2 (max) | 0.85× | 0.81–0.90× | 24 | +1,733.2 | +1,591.3 | 41.9% | 53/57 |
+| 6 | Kimi K3 (max) | 0.86× | 0.80–0.91× | 30 | +1,641.2 | +1,601.1 | 67.6% | 89/92 |
+| 7 | Gemini 3.5 Flash (high) | 0.86× | 0.79–0.94× | 17 | +1,621.5 | +1,707.6 | 29.4% | 38/40 |
+| 8 | Claude Sonnet 4.6 (high) | 0.87× | 0.77–0.98× | 19 | +1,684.5 | +1,587.9 | 29.4% | 36/40 |
+| 9 | Kimi K2.7 Code | 0.90× | 0.85–0.95× | 20 | +1,737.3 | +1,600.1 | 24.3% | 32/33 |
+| 10 | DeepSeek V4 Flash (max) | 0.94× | 0.89–1.01× | 27 | +1,748.7 | +1,770.3 | 48.5% | 63/66 |
+| 11 | Qwen3.8 Max (xhigh) | 0.94× | 0.90–0.99× | 27 | +1,697.8 | +1,770.5 | 55.1% | 74/75 |
+| 12 | Gemini 3.6 Flash (high) | 0.96× | 0.88–1.02× | 22 | +1,741.9 | +1,835.1 | 41.9% | 53/57 |
+| 13 | Grok 4.5 (high) | 0.99× | 0.93–1.06× | 28 | +1,819.8 | +1,886.7 | 58.8% | 79/80 |
+| 14 | Claude Opus 4.7 (max) · DeepSWE 1.0 | 1.00× | 0.94–1.07× | 27 | +1,853.9 | +1,867.7 | 50.0% | 63/68 |
+| 15 | Grok 4.6 (medium) | 1.01× | 0.97–1.06× | 28 | +1,825.9 | +1,981.0 | 67.6% | 89/92 |
+| 16 | GPT-5.4 (xhigh) | 1.04× | 0.97–1.12× | 25 | +1,913.5 | +2,058.9 | 46.3% | 59/63 |
+| 17 | Gemini 3.7 Flash (medium) | 1.05× | 0.97–1.16× | 27 | +1,904.2 | +2,038.1 | 60.3% | 80/82 |
+| 18 | GLM-5.3 Flash (max) | 1.06× | 1.00–1.12× | 29 | +2,006.5 | +1,998.5 | 69.9% | 93/95 |
+| 19 | GPT-5.6 Sol (max) | 1.07× | 1.00–1.14× | 29 | +1,964.2 | +2,031.8 | 74.3% | 98/101 |
+| 20 | GPT-5.6 Terra (max) | 1.07× | 1.02–1.12× | 29 | +2,028.7 | +2,096.5 | 68.4% | 90/93 |
+| 21 | GPT-5.5 (xhigh) | 1.08× | 1.01–1.15× | 28 | +1,936.7 | +2,102.4 | 66.9% | 87/91 |
+| 22 | DeepSeek V4 Pro (max) | 1.08× | 1.02–1.15× | 29 | +2,043.7 | +2,074.7 | 59.6% | 77/81 |
+| 23 | GLM-5.3 (max) | 1.08× | 0.99–1.17× | 29 | +2,090.0 | +2,035.5 | 66.2% | 87/90 |
+| 24 | GPT-5.6 Luna (max) | 1.15× | 1.08–1.22× | 30 | +2,202.3 | +2,203.8 | 65.4% | 85/89 |
+| 25 | Claude Opus 5 (max) | 1.15× | 1.08–1.23× | 28 | +2,183.4 | +2,124.4 | 74.3% | 97/101 |
+| 26 | Muse Spark 1.2 (xhigh) | 1.31× | 1.23–1.41× | 27 | +2,484.1 | +2,463.2 | 50.7% | 66/69 |
+| 27 | Muse Spark 1.1 (xhigh) | 1.36× | 1.25–1.50× | 24 | +2,562.3 | +2,412.7 | 52.9% | 68/72 |
+| — | Gemini 3 Flash Preview · DeepSWE 1.0 | 0.50× | — | 2 | +869.5 | +1,073.0 | 2.9% | 2/4 |
+| — | Gemini 3.1 Pro Preview (high) | 0.68× | 0.58–0.78× | 8 | +1,479.5 | +1,156.3 | 8.1% | 11/11 |
+| — | Kimi K2.6 · DeepSWE 1.0 | 0.81× | 0.72–0.92× | 14 | +1,543.8 | +1,612.5 | 18.4% | 23/25 |
+| — | Qwen3.6 Plus · DeepSWE 1.0 | 0.85× | — | 1 | +1,604.0 | +1,883.3 | 0.7% | 1/1 |
+| — | MiMo V2.5 Pro · DeepSWE 1.0 | 0.88× | 0.83–0.93× | 12 | +1,339.8 | +1,667.1 | 15.4% | 20/21 |
+| — | Grok Build 0.1 · DeepSWE 1.0 | 0.96× | 0.82–1.13× | 8 | +1,675.7 | +1,646.2 | 11.0% | 15/15 |
+| — | MiniMax M3 · DeepSWE 1.0 | 1.03× | 0.92–1.13× | 12 | +2,111.0 | +1,976.7 | 17.6% | 22/24 |
+| — | GPT-5.4 mini (xhigh) · DeepSWE 1.0 | 1.05× | 0.93–1.16× | 14 | +1,891.8 | +1,934.7 | 21.3% | 27/29 |
+| — | GLM-5.1 · DeepSWE 1.0 | 1.21× | 0.75–2.16× | 8 | +1,953.0 | +1,843.8 | 9.6% | 11/13 |
+| — | Claude Haiku 4.5 · DeepSWE 1.0 | — | — | — | — | +1,219.4 | 0.0% | 0/0 |
+| — | MiniMax M2.7 · DeepSWE 1.0 | — | — | — | — | +1,684.6 | 0.0% | 0/0 |
 
 ## Archived Score diagnostic (not the ranking)
 
@@ -135,3 +147,12 @@ Every solved run was measured. *Not measured* counts runs DeepSWE marks as error
 ## Limits
 
 Everything in the [main README](../../README.md#limits-and-interpretation) applies. 33 tasks is small; tasks are long features rather than bug fixes; only Python is measured (79 of DeepSWE's 113 tasks are TypeScript, Go, JavaScript or Rust); scores are relative to these 26 models; and correctness is taken from DeepSWE's published results.
+
+## DeepSWE release 1.0 runs (added 2026-10-21)
+
+12 more configurations come from DeepSWE's own archive of **release 1.0** (gated Hugging Face dataset [`datacurve/deep-swe-leaderboard` at `0618ccd`](https://huggingface.co/datasets/datacurve/deep-swe-leaderboard/tree/0618ccdd613e1f0043604f8f4474321e7fe12e29), CC-BY-4.0; access asks you to share your Hugging Face username and email), for models absent from v1.1: Claude Haiku 4.5, Claude Opus 4.6 (max), Claude Opus 4.7 (max), Gemini 3 Flash Preview, GLM-5.1, GPT-5.4 mini (xhigh), Grok Build 0.1, Kimi K2.6, MiMo V2.5 Pro, MiniMax M2.7, MiniMax M3 and Qwen3.6 Plus. Files `v1_0_*.jsonl`; names end in "· DeepSWE 1.0".
+
+- Same 113 task IDs and base commits as v1.1, and the same mini-SWE-agent harness. v1.1 re-ran every model and rewrote every verifier. On the nine setups present in both releases, pass rates agree within a few points, and per-task differences match chance except on four tasks (`narwhals-rolling-window-suite`, `vulture-persistent-analysis-cache`, `skrub-duration-encoding`, `claude-code-by-agents-recursive-delegation`). Release 1.0 outcomes on those four tasks are recorded as unknown, never as pass or fail.
+- Measured at this board's analyzer commit with Python 3.14.7, so units are comparable; the frozen panel is unchanged and the new runs are scored against it. Coverage, scores and stability were regenerated with the current scoring code (existing models' archived scores differ only in the last floating-point digit).
+- Driver: [`examples/benchmark-discovery/add-deepswe-1.0.py`](../benchmark-discovery/add-deepswe-1.0.py).
+- A model is ranked only with at least 15 shared solved tasks (or half the board's tasks if fewer); otherwise it is listed after the ranked models.

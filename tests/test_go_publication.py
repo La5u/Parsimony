@@ -41,17 +41,19 @@ class GoPublicationTests(unittest.TestCase):
         data = json.loads(embedded.group(1))
         self.assertEqual(data['analyzer_version'], '0.8.0-beta')
         self.assertEqual(data['measurement_track']['unit_version'], 'tree-sitter-go-units-v2')
-        self.assertEqual(len(data['models']), 26)
+        self.assertEqual(len(data['models']), 38)  # 26 release-asset v1.1 configurations + 12 DeepSWE 1.0
         self.assertEqual(data['population_count'], 136)
         comparison = json.loads((RELEASE / 'comparison-summary.json').read_bytes())
-        for model in data['models']:
+        v11 = [m for m in data['models'] if not m['agent'].startswith('deepswe-v1.0_')]
+        self.assertEqual(len(v11), 26)
+        for model in v11:
             filename = model['agent'].split('_mini_swe_agent_', 1)[1] + '.jsonl'
             measured = comparison[filename]['new']
             self.assertEqual(model['measured_attempts'], measured['eligible'])
             self.assertEqual(model['measured_net_mean'], measured['measured_net_mean'])
             self.assertEqual(model['measured_solved_net_mean'], measured['measured_solved_net_mean'])
             self.assertEqual(model['upstream_solved_attempts'], measured['outcomes']['resolved'])
-        self.assertEqual(sum(m['measured_attempts'] for m in data['models']), 3508)
+        self.assertEqual(sum(m['measured_attempts'] for m in v11), 3508)
         source = next(s for s in data['sources'] if s['language'] == 'go')
         self.assertIn('/examples/deepswe-go-v2/', source['report_url'])
         self.assertEqual(source['manifest_sha256'], hashlib.sha256((RELEASE / 'population.json').read_bytes()).hexdigest())

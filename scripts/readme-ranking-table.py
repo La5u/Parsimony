@@ -16,11 +16,12 @@ def table(page):
     rank, prev, ranked = 0, None, 0
     for m in ms:
         r = m.get('same_task_net')
-        if r is not None:
+        unranked = m.get('few_tasks') or m.get('partial')  # listed, not ranked
+        if r is not None and not unranked:
             ranked += 1
             if r != prev: rank, prev = ranked, r
         ci = m.get('same_task_net_ci')
-        out.append(f"| {rank if r is not None else '—'} | {m['name']} | {'—' if r is None else f'{r:.2f}×'} | "
+        out.append(f"| {rank if r is not None and not unranked else '—'} | {m['name']} | {'—' if r is None else f'{r:.2f}×'} | "
                    f"{f'{ci[0]:.2f}–{ci[1]:.2f}×' if ci else '—'} | {m.get('same_task_net_tasks') or '—'} | {f(m.get('measured_solved_net_mean'))} | {f(m.get('measured_net_mean'))} | "
                    f"{'—' if m.get('resolve_rate') is None else f'{100 * m['resolve_rate']:.1f}%'} | {m.get('measured_solved_attempts', 0)}/{m.get('upstream_solved_attempts', 0)} |")
     return '\n'.join(out)

@@ -1,12 +1,12 @@
-# Score sensitivity: 26 models
+# Score sensitivity: 38 models
 
-Analysis, not a score release. Baseline `parsimony-80-20-v0.5` (net 0.8 / churn 0.2, failure cap 25), panel `deepswe-v1.1-typescript-26-pooled-80-20-v0.7`: 132 tasks. Scores average all tasks; an unscored task counts at the middle of its range, and comparisons also check its best and worst case (110 tasks have a point score for every model).
+Analysis, not a score release. Baseline `parsimony-80-20-v0.5` (net 0.8 / churn 0.2, failure cap 25), panel `deepswe-v1.1-typescript-26-pooled-80-20-v0.7`: 132 tasks. Scores average all tasks; an unscored task counts at the middle of its range, and comparisons also check its best and worst case (70 tasks have a point score for every model).
 
-**Verdict.** Read the ranking with its uncertainty, not as exact positions: Claude Fable 5 (xhigh) > Kimi K3 (max) ≈ Claude Opus 4.8 (max) ≈ GPT-5.6 Sol (max) ≈ GPT-5.6 Terra (max) ≈ GLM-5.3 (max) ≈ Grok 4.6 (medium) ≈ DeepSeek V4 Pro (max) ≈ Qwen3.8 Max (xhigh) ≈ GLM-5.2 (max) ≈ GPT-5.6 Luna (max) ≈ Claude Opus 5 (max) ≈ GPT-5.5 (xhigh) ≈ Claude Sonnet 5 (max) ≈ DeepSeek V4 Flash (max) ≈ GLM-5.3 Flash (max) ≈ Gemini 3.7 Flash (medium) ≈ Grok 4.5 (high) ≈ Gemini 3.6 Flash (high) ≈ Gemini 3.5 Flash (high) ≈ Kimi K2.7 Code ≈ Claude Sonnet 4.6 (high) ≈ GPT-5.4 (xhigh) ≈ Muse Spark 1.1 (xhigh) ≈ Muse Spark 1.2 (xhigh) ≈ Gemini 3.1 Pro Preview (high) (≈ marks an adjacent pair that is statistically tied or reversed by some variation).
+**Verdict.** Read the ranking with its uncertainty, not as exact positions: Claude Fable 5 (xhigh) > Kimi K3 (max) ≈ Claude Opus 4.8 (max) ≈ GPT-5.6 Sol (max) ≈ GPT-5.6 Terra (max) ≈ GLM-5.3 (max) ≈ Grok 4.6 (medium) ≈ DeepSeek V4 Pro (max) ≈ Qwen3.8 Max (xhigh) ≈ GLM-5.2 (max) ≈ GPT-5.6 Luna (max) ≈ Claude Opus 5 (max) ≈ GPT-5.5 (xhigh) ≈ Claude Sonnet 5 (max) ≈ DeepSeek V4 Flash (max) ≈ GLM-5.3 Flash (max) ≈ Claude Opus 4.7 (max) · DeepSWE 1.0 ≈ Gemini 3.7 Flash (medium) ≈ Grok 4.5 (high) ≈ Gemini 3.6 Flash (high) ≈ Claude Opus 4.6 (max) · DeepSWE 1.0 ≈ Gemini 3.5 Flash (high) ≈ Kimi K2.7 Code ≈ Claude Sonnet 4.6 (high) ≈ MiMo V2.5 Pro · DeepSWE 1.0 ≈ GPT-5.4 (xhigh) ≈ Kimi K2.6 · DeepSWE 1.0 ≈ GLM-5.1 · DeepSWE 1.0 ≈ Muse Spark 1.1 (xhigh) ≈ Muse Spark 1.2 (xhigh) ≈ Gemini 3.1 Pro Preview (high) ≈ MiniMax M3 · DeepSWE 1.0 ≈ Gemini 3 Flash Preview · DeepSWE 1.0 ≈ Grok Build 0.1 · DeepSWE 1.0 ≈ GPT-5.4 mini (xhigh) · DeepSWE 1.0 ≈ Claude Haiku 4.5 · DeepSWE 1.0 ≈ MiniMax M2.7 · DeepSWE 1.0 ≈ Qwen3.6 Plus · DeepSWE 1.0 (≈ marks an adjacent pair that is statistically tied or reversed by some variation).
 
-- **Stable under every variation and statistically separated** (1 of 25 adjacent pairs): Claude Fable 5 (xhigh) > Kimi K3 (max).
-- **Statistically indistinguishable** (paired 95% CI on the difference includes 0; 24 pairs): Kimi K3 (max) vs Claude Opus 4.8 (max), Claude Opus 4.8 (max) vs GPT-5.6 Sol (max), GPT-5.6 Sol (max) vs GPT-5.6 Terra (max), GPT-5.6 Terra (max) vs GLM-5.3 (max), GLM-5.3 (max) vs Grok 4.6 (medium), Grok 4.6 (medium) vs DeepSeek V4 Pro (max), DeepSeek V4 Pro (max) vs Qwen3.8 Max (xhigh), Qwen3.8 Max (xhigh) vs GLM-5.2 (max), GLM-5.2 (max) vs GPT-5.6 Luna (max), GPT-5.6 Luna (max) vs Claude Opus 5 (max), Claude Opus 5 (max) vs GPT-5.5 (xhigh), GPT-5.5 (xhigh) vs Claude Sonnet 5 (max), Claude Sonnet 5 (max) vs DeepSeek V4 Flash (max), DeepSeek V4 Flash (max) vs GLM-5.3 Flash (max), GLM-5.3 Flash (max) vs Gemini 3.7 Flash (medium), Gemini 3.7 Flash (medium) vs Grok 4.5 (high), Grok 4.5 (high) vs Gemini 3.6 Flash (high), Gemini 3.6 Flash (high) vs Gemini 3.5 Flash (high), Gemini 3.5 Flash (high) vs Kimi K2.7 Code, Kimi K2.7 Code vs Claude Sonnet 4.6 (high), Claude Sonnet 4.6 (high) vs GPT-5.4 (xhigh), GPT-5.4 (xhigh) vs Muse Spark 1.1 (xhigh), Muse Spark 1.1 (xhigh) vs Muse Spark 1.2 (xhigh), Muse Spark 1.2 (xhigh) vs Gemini 3.1 Pro Preview (high).
-- **Midpoint rank never changes under any variation**: Claude Fable 5 (xhigh) (1), Kimi K3 (max) (2), Muse Spark 1.1 (xhigh) (24), Muse Spark 1.2 (xhigh) (25), Gemini 3.1 Pro Preview (high) (26).
+- **Stable under every variation and statistically separated** (1 of 37 adjacent pairs): Claude Fable 5 (xhigh) > Kimi K3 (max).
+- **Statistically indistinguishable** (paired 95% CI on the difference includes 0; 36 pairs): Kimi K3 (max) vs Claude Opus 4.8 (max), Claude Opus 4.8 (max) vs GPT-5.6 Sol (max), GPT-5.6 Sol (max) vs GPT-5.6 Terra (max), GPT-5.6 Terra (max) vs GLM-5.3 (max), GLM-5.3 (max) vs Grok 4.6 (medium), Grok 4.6 (medium) vs DeepSeek V4 Pro (max), DeepSeek V4 Pro (max) vs Qwen3.8 Max (xhigh), Qwen3.8 Max (xhigh) vs GLM-5.2 (max), GLM-5.2 (max) vs GPT-5.6 Luna (max), GPT-5.6 Luna (max) vs Claude Opus 5 (max), Claude Opus 5 (max) vs GPT-5.5 (xhigh), GPT-5.5 (xhigh) vs Claude Sonnet 5 (max), Claude Sonnet 5 (max) vs DeepSeek V4 Flash (max), DeepSeek V4 Flash (max) vs GLM-5.3 Flash (max), GLM-5.3 Flash (max) vs Claude Opus 4.7 (max) · DeepSWE 1.0, Claude Opus 4.7 (max) · DeepSWE 1.0 vs Gemini 3.7 Flash (medium), Gemini 3.7 Flash (medium) vs Grok 4.5 (high), Grok 4.5 (high) vs Gemini 3.6 Flash (high), Gemini 3.6 Flash (high) vs Claude Opus 4.6 (max) · DeepSWE 1.0, Claude Opus 4.6 (max) · DeepSWE 1.0 vs Gemini 3.5 Flash (high), Gemini 3.5 Flash (high) vs Kimi K2.7 Code, Kimi K2.7 Code vs Claude Sonnet 4.6 (high), Claude Sonnet 4.6 (high) vs MiMo V2.5 Pro · DeepSWE 1.0, MiMo V2.5 Pro · DeepSWE 1.0 vs GPT-5.4 (xhigh), GPT-5.4 (xhigh) vs Kimi K2.6 · DeepSWE 1.0, Kimi K2.6 · DeepSWE 1.0 vs GLM-5.1 · DeepSWE 1.0, GLM-5.1 · DeepSWE 1.0 vs Muse Spark 1.1 (xhigh), Muse Spark 1.1 (xhigh) vs Muse Spark 1.2 (xhigh), Muse Spark 1.2 (xhigh) vs Gemini 3.1 Pro Preview (high), Gemini 3.1 Pro Preview (high) vs MiniMax M3 · DeepSWE 1.0, MiniMax M3 · DeepSWE 1.0 vs Gemini 3 Flash Preview · DeepSWE 1.0, Gemini 3 Flash Preview · DeepSWE 1.0 vs Grok Build 0.1 · DeepSWE 1.0, Grok Build 0.1 · DeepSWE 1.0 vs GPT-5.4 mini (xhigh) · DeepSWE 1.0, GPT-5.4 mini (xhigh) · DeepSWE 1.0 vs Claude Haiku 4.5 · DeepSWE 1.0, Claude Haiku 4.5 · DeepSWE 1.0 vs MiniMax M2.7 · DeepSWE 1.0, MiniMax M2.7 · DeepSWE 1.0 vs Qwen3.6 Plus · DeepSWE 1.0.
+- **Midpoint rank never changes under any variation**: Claude Fable 5 (xhigh) (1), Kimi K3 (max) (2), Gemini 3 Flash Preview · DeepSWE 1.0 (33).
 
 ## Ranking
 
@@ -14,66 +14,90 @@ Rank range is the best and worst rank across all weight, cap, panel and reposito
 
 | Rank | Model | Score | 95% CI | Bounds (all tasks) | Rank range | Bootstrap rank 95% | P(top) |
 |---:|---|---:|---|---|---|---|---:|
-| 1 | Claude Fable 5 (xhigh) | 42.3 | 30.1–54.2 | 42.3 | 1–1 | 1–2 | 0.93 |
-| 2 | Kimi K3 (max) | 33.1 | 23.0–43.0 | 33.1 | 2–2 | 2–8 | 0.02 |
-| 3 | Claude Opus 4.8 (max) | 31.0 | 14.6–47.3 | 26.8–35.3 | 3–4 | 2–10 | 0.01 |
-| 4 | GPT-5.6 Sol (max) | 29.5 | 19.6–40.1 | 29.5 | 3–4 | 1–11 | 0.03 |
-| 5 | GPT-5.6 Terra (max) | 26.3 | 16.5–36.5 | 25.8–26.7 | 5–6 | 2–15 | 0.00 |
-| 6 | GLM-5.3 (max) | 24.5 | 15.4–34.0 | 24.5 | 5–10 | 3–18 | 0.00 |
-| 7 | Grok 4.6 (medium) | 24.1 | 14.0–34.9 | 24.1 | 6–12 | 3–18 | 0.00 |
-| 8 | DeepSeek V4 Pro (max) | 23.8 | 15.6–32.3 | 23.8 | 6–10 | 3–16 | 0.00 |
-| 9 | Qwen3.8 Max (xhigh) | 23.5 | 13.9–32.7 | 22.1–24.9 | 7–12 | 4–17 | 0.00 |
-| 10 | GLM-5.2 (max) | 23.2 | 15.4–30.8 | 23.2 | 6–12 | 3–17 | 0.00 |
-| 11 | GPT-5.6 Luna (max) | 22.6 | 11.5–34.7 | 20.7–24.5 | 8–14 | 3–19 | 0.00 |
-| 12 | Claude Opus 5 (max) | 22.0 | 12.7–31.8 | 20.6–23.5 | 9–16 | 4–19 | 0.00 |
-| 13 | GPT-5.5 (xhigh) | 21.3 | 12.1–29.9 | 21.3 | 11–16 | 5–20 | 0.00 |
-| 14 | Claude Sonnet 5 (max) | 21.1 | 12.5–30.0 | 20.1–22.0 | 12–16 | 4–20 | 0.00 |
-| 15 | DeepSeek V4 Flash (max) | 20.5 | 11.2–30.0 | 20.5 | 13–16 | 5–20 | 0.00 |
-| 16 | GLM-5.3 Flash (max) | 19.6 | 10.8–28.3 | 19.1–20.1 | 15–17 | 6–22 | 0.00 |
-| 17 | Gemini 3.7 Flash (medium) | 17.5 | 10.7–24.4 | 17.5 | 16–18 | 10–21 | 0.00 |
-| 18 | Grok 4.5 (high) | 16.6 | 8.2–25.7 | 16.6 | 17–18 | 10–23 | 0.00 |
-| 19 | Gemini 3.6 Flash (high) | 14.2 | 6.8–22.0 | 14.2 | 19–21 | 13–23 | 0.00 |
-| 20 | Gemini 3.5 Flash (high) | 13.9 | 5.2–22.9 | 13.9 | 19–22 | 12–23 | 0.00 |
-| 21 | Kimi K2.7 Code | 13.8 | 4.5–23.1 | 13.8 | 19–21 | 10–24 | 0.00 |
-| 22 | Claude Sonnet 4.6 (high) | 10.9 | 2.3–20.2 | 10.4–11.5 | 21–23 | 15–26 | 0.00 |
-| 23 | GPT-5.4 (xhigh) | 9.7 | 2.8–16.9 | 9.7 | 22–23 | 18–25 | 0.00 |
-| 24 | Muse Spark 1.1 (xhigh) | 6.0 | -1.5–13.4 | 6.0 | 24–24 | 20–26 | 0.00 |
-| 25 | Muse Spark 1.2 (xhigh) | 5.1 | -1.1–11.2 | 5.1 | 25–25 | 22–26 | 0.00 |
-| 26 | Gemini 3.1 Pro Preview (high) | 1.9 | -5.1–9.8 | 1.6–2.3 | 26–26 | 23–26 | 0.00 |
+| 1 | Claude Fable 5 (xhigh) | 42.3 | 30.1–54.2 | 42.3 | 1–1 | 1.0–2.0 | 0.93 |
+| 2 | Kimi K3 (max) | 33.1 | 23.0–43.0 | 33.1 | 2–2 | 2.0–8.0 | 0.02 |
+| 3 | Claude Opus 4.8 (max) | 31.0 | 14.6–47.3 | 26.8–35.3 | 3–4 | 2.0–10.0 | 0.01 |
+| 4 | GPT-5.6 Sol (max) | 29.5 | 19.6–40.1 | 29.5 | 3–4 | 1.0–12.0 | 0.03 |
+| 5 | GPT-5.6 Terra (max) | 26.3 | 16.5–36.5 | 25.8–26.7 | 5–6 | 2.0–15.0 | 0.00 |
+| 6 | GLM-5.3 (max) | 24.5 | 15.4–34.0 | 24.5 | 5–10 | 3.0–19.0 | 0.00 |
+| 7 | Grok 4.6 (medium) | 24.1 | 14.0–34.9 | 24.1 | 6–12 | 3.0–20.0 | 0.00 |
+| 8 | DeepSeek V4 Pro (max) | 23.8 | 15.6–32.3 | 23.8 | 6–10 | 3.0–17.0 | 0.00 |
+| 9 | Qwen3.8 Max (xhigh) | 23.5 | 14.0–32.7 | 22.1–24.9 | 7–12 | 4.0–18.0 | 0.00 |
+| 10 | GLM-5.2 (max) | 23.2 | 15.4–30.8 | 23.2 | 6–12 | 3.0–17.0 | 0.00 |
+| 11 | GPT-5.6 Luna (max) | 22.6 | 11.5–34.7 | 20.7–24.5 | 8–14 | 3.0–20.0 | 0.00 |
+| 12 | Claude Opus 5 (max) | 22.0 | 12.7–31.8 | 20.6–23.5 | 9–16 | 4.975000000000001–21.0 | 0.00 |
+| 13 | GPT-5.5 (xhigh) | 21.3 | 12.1–29.9 | 21.3 | 11–16 | 5.0–23.0 | 0.00 |
+| 14 | Claude Sonnet 5 (max) | 21.1 | 12.5–30.0 | 20.1–22.0 | 12–16 | 4.0–22.0 | 0.00 |
+| 15 | DeepSeek V4 Flash (max) | 20.5 | 11.3–30.0 | 20.5 | 13–16 | 5.0–22.0 | 0.00 |
+| 16 | GLM-5.3 Flash (max) | 19.6 | 10.8–28.3 | 19.1–20.1 | 15–17 | 6.0–25.0 | 0.00 |
+| 17 | Claude Opus 4.7 (max) · DeepSWE 1.0 | 17.5 | 8.0–28.6 | 15.4–19.6 | 17–19 | 7.0–23.0 | 0.00 |
+| 18 | Gemini 3.7 Flash (medium) | 17.5 | 10.7–24.4 | 17.5 | 16–19 | 10.0–24.0 | 0.00 |
+| 19 | Grok 4.5 (high) | 16.6 | 8.2–25.7 | 16.6 | 17–20 | 10.0–26.0 | 0.00 |
+| 20 | Gemini 3.6 Flash (high) | 14.2 | 6.8–22.0 | 14.2 | 20–23 | 13.0–27.0 | 0.00 |
+| 21 | Claude Opus 4.6 (max) · DeepSWE 1.0 | 13.9 | 0.0–29.5 | 9.5–18.2 | 19–23 | 10.0–28.0 | 0.00 |
+| 22 | Gemini 3.5 Flash (high) | 13.9 | 5.2–22.9 | 13.9 | 20–24 | 12.0–27.0 | 0.00 |
+| 23 | Kimi K2.7 Code | 13.8 | 4.5–23.1 | 13.8 | 20–23 | 11.0–26.0 | 0.00 |
+| 24 | Claude Sonnet 4.6 (high) | 10.9 | 2.3–20.2 | 10.4–11.5 | 23–26 | 16.0–30.0 | 0.00 |
+| 25 | MiMo V2.5 Pro · DeepSWE 1.0 | 10.0 | -0.9–22.7 | 8.0–12.0 | 24–26 | 16.0–30.0 | 0.00 |
+| 26 | GPT-5.4 (xhigh) | 9.7 | 2.8–16.9 | 9.7 | 24–26 | 18.975–31.0 | 0.00 |
+| 27 | Kimi K2.6 · DeepSWE 1.0 | 6.7 | -4.4–19.8 | 4.6–8.9 | 27–30 | 20.0–31.0 | 0.00 |
+| 28 | GLM-5.1 · DeepSWE 1.0 | 6.2 | -5.3–19.6 | 4.0–8.4 | 27–30 | 21.0–33.0 | 0.00 |
+| 29 | Muse Spark 1.1 (xhigh) | 6.0 | -1.4–13.4 | 6.0 | 27–29 | 22.0–33.0 | 0.00 |
+| 30 | Muse Spark 1.2 (xhigh) | 5.1 | -1.1–11.2 | 5.1 | 28–30 | 25.0–32.0 | 0.00 |
+| 31 | Gemini 3.1 Pro Preview (high) | 1.9 | -5.1–9.8 | 1.6–2.3 | 31–32 | 26.0–34.0 | 0.00 |
+| 32 | MiniMax M3 · DeepSWE 1.0 | 1.6 | -5.8–12.5 | -0.3–3.5 | 31–32 | 28.0–34.0 | 0.00 |
+| 33 | Gemini 3 Flash Preview · DeepSWE 1.0 | -0.9 | -12.4–15.8 | -8.7–6.9 | 33–33 | 30.0–35.0 | 0.00 |
+| 34 | Grok Build 0.1 · DeepSWE 1.0 | -3.1 | -11.0–8.7 | -5.9–-0.3 | 34–35 | 31.0–36.0 | 0.00 |
+| 35 | GPT-5.4 mini (xhigh) · DeepSWE 1.0 | -3.3 | -9.9–7.8 | -5.6–-1.0 | 34–35 | 31.0–36.0 | 0.00 |
+| 36 | Claude Haiku 4.5 · DeepSWE 1.0 | -7.4 | -11.2–2.1 | -9.7–-5.0 | 36–37 | 35.0–36.0 | 0.00 |
+| 37 | MiniMax M2.7 · DeepSWE 1.0 | -8.6 | -11.9–0.6 | -10.6–-6.6 | 37–38 | 37.0–38.0 | 0.00 |
+| 38 | Qwen3.6 Plus · DeepSWE 1.0 | -9.3 | -13.5–1.2 | -11.9–-6.8 | 36–38 | 37.0–38.0 | 0.00 |
 
 ## Adjacent pairs
 
 | Pair | Difference | Paired 95% CI | P(a > b) | Variations that reverse it | Bounds separate |
 |---|---:|---|---:|---|---|
-| Claude Fable 5 (xhigh) > Kimi K3 (max) | 9.19 | 0.19 to 18.46 | 0.98 | none | yes |
-| Kimi K3 (max) > Claude Opus 4.8 (max) | 2.05 | -13.53 to 16.13 | 0.36 | none | no |
-| Claude Opus 4.8 (max) > GPT-5.6 Sol (max) | 1.54 | -15.15 to 17.19 | 0.33 | failure cap=50, without dynamodb-toolbox/dynamodb-toolbox | no |
-| GPT-5.6 Sol (max) > GPT-5.6 Terra (max) | 3.25 | -3.99 to 10.15 | 0.80 | none | yes |
-| GPT-5.6 Terra (max) > GLM-5.3 (max) | 1.71 | -10.78 to 14.44 | 0.58 | without open-circle/valibot | yes |
-| GLM-5.3 (max) > Grok 4.6 (medium) | 0.42 | -8.79 to 8.89 | 0.55 | failure cap=0, failure cap=10, without bombshell-dev/clack, without capricorn86/happy-dom, without gvergnaud/ts-pattern, without keajs/kea, without platers/obsidian-linter, without pmndrs/koota, without slab/quill, without sql-formatter-org/sql-formatter | yes |
-| Grok 4.6 (medium) > DeepSeek V4 Pro (max) | 0.31 | -10.99 to 10.57 | 0.52 | net weight=0.5, failure cap=50, panel without Kimi K2.7 Code, without arktypeio/arktype, without bombshell-dev/clack, without dahlia/optique, without drizzle-team/drizzle-orm, without dynamodb-toolbox/dynamodb-toolbox, without flightcontrolhq/superjson, without keajs/kea, without kysely-org/kysely, without pmndrs/koota, without true-myth/true-myth | yes |
-| DeepSeek V4 Pro (max) > Qwen3.8 Max (xhigh) | 0.34 | -9.86 to 10.59 | 0.43 | net weight=1, failure cap=0, failure cap=10, without TanStack/query, without baryhuang/claude-code-by-agents, without c4spar/cliffy, without dynamodb-toolbox/dynamodb-toolbox, without gvergnaud/ts-pattern, without jeffijoe/awilix, without open-circle/valibot, without slab/quill, without vitest-dev/vitest | no |
+| Claude Fable 5 (xhigh) > Kimi K3 (max) | 9.19 | 0.25 to 18.46 | 0.98 | none | yes |
+| Kimi K3 (max) > Claude Opus 4.8 (max) | 2.05 | -13.51 to 16.13 | 0.36 | none | no |
+| Claude Opus 4.8 (max) > GPT-5.6 Sol (max) | 1.54 | -15.11 to 17.19 | 0.33 | failure cap=50, without dynamodb-toolbox/dynamodb-toolbox | no |
+| GPT-5.6 Sol (max) > GPT-5.6 Terra (max) | 3.25 | -3.95 to 10.15 | 0.80 | none | yes |
+| GPT-5.6 Terra (max) > GLM-5.3 (max) | 1.71 | -10.77 to 14.44 | 0.58 | without open-circle/valibot | yes |
+| GLM-5.3 (max) > Grok 4.6 (medium) | 0.42 | -8.72 to 8.89 | 0.55 | failure cap=0, failure cap=10, without bombshell-dev/clack, without capricorn86/happy-dom, without gvergnaud/ts-pattern, without keajs/kea, without platers/obsidian-linter, without pmndrs/koota, without slab/quill, without sql-formatter-org/sql-formatter | yes |
+| Grok 4.6 (medium) > DeepSeek V4 Pro (max) | 0.31 | -10.89 to 10.57 | 0.52 | net weight=0.5, failure cap=50, panel without Kimi K2.7 Code, without arktypeio/arktype, without bombshell-dev/clack, without dahlia/optique, without drizzle-team/drizzle-orm, without dynamodb-toolbox/dynamodb-toolbox, without flightcontrolhq/superjson, without keajs/kea, without kysely-org/kysely, without pmndrs/koota, without true-myth/true-myth | yes |
+| DeepSeek V4 Pro (max) > Qwen3.8 Max (xhigh) | 0.34 | -9.82 to 10.59 | 0.43 | net weight=1, failure cap=0, failure cap=10, without TanStack/query, without baryhuang/claude-code-by-agents, without c4spar/cliffy, without dynamodb-toolbox/dynamodb-toolbox, without gvergnaud/ts-pattern, without jeffijoe/awilix, without open-circle/valibot, without slab/quill, without vitest-dev/vitest | no |
 | Qwen3.8 Max (xhigh) > GLM-5.2 (max) | 0.24 | -10.21 to 11.03 | 0.38 | net weight=0.5, net weight=0.6, failure cap=50, panel without GPT-5.4 (xhigh), without Effect-TS/effect, without arktypeio/arktype, without capricorn86/happy-dom, without dahlia/optique, without flightcontrolhq/superjson, without kysely-org/kysely, without platers/obsidian-linter, without pmndrs/koota, without true-myth/true-myth, without unjs/ofetch | no |
 | GLM-5.2 (max) > GPT-5.6 Luna (max) | 0.60 | -11.02 to 12.36 | 0.41 | without bombshell-dev/clack, without c4spar/cliffy, without capricorn86/happy-dom, without eicrud/eicrud, without jeffijoe/awilix, without keajs/kea, without platers/obsidian-linter | no |
-| GPT-5.6 Luna (max) > Claude Opus 5 (max) | 0.60 | -15.01 to 16.41 | 0.35 | failure cap=50, without TanStack/query, without baryhuang/claude-code-by-agents, without drizzle-team/drizzle-orm, without flightcontrolhq/superjson, without meriyah/meriyah, without open-circle/valibot, without sql-formatter-org/sql-formatter, without vadimdemedes/ink | no |
-| Claude Opus 5 (max) > GPT-5.5 (xhigh) | 0.74 | -12.01 to 13.70 | 0.47 | without bombshell-dev/clack, without capricorn86/happy-dom, without gvergnaud/ts-pattern, without platers/obsidian-linter, without pmndrs/koota, without unjs/ofetch | no |
-| GPT-5.5 (xhigh) > Claude Sonnet 5 (max) | 0.20 | -11.58 to 12.25 | 0.44 | net weight=0.5, net weight=0.6, failure cap=0, failure cap=10, panel without GLM-5.3 Flash (max), without Effect-TS/effect, without baryhuang/claude-code-by-agents, without drizzle-team/drizzle-orm, without flightcontrolhq/superjson, without jeffijoe/awilix, without keajs/kea, without kysely-org/kysely, without meriyah/meriyah, without open-circle/valibot | no |
-| Claude Sonnet 5 (max) > DeepSeek V4 Flash (max) | 0.58 | -10.84 to 11.72 | 0.47 | net weight=0.5, failure cap=0, without bombshell-dev/clack, without capricorn86/happy-dom, without flightcontrolhq/superjson, without slab/quill, without sql-formatter-org/sql-formatter, without true-myth/true-myth, without vadimdemedes/ink | no |
-| DeepSeek V4 Flash (max) > GLM-5.3 Flash (max) | 0.93 | -10.04 to 12.03 | 0.54 | without baryhuang/claude-code-by-agents, without dahlia/optique, without eicrud/eicrud, without vitest-dev/vitest | yes |
-| GLM-5.3 Flash (max) > Gemini 3.7 Flash (medium) | 2.11 | -8.30 to 12.40 | 0.62 | without capricorn86/happy-dom | yes |
+| GPT-5.6 Luna (max) > Claude Opus 5 (max) | 0.60 | -14.96 to 16.41 | 0.35 | failure cap=50, without TanStack/query, without baryhuang/claude-code-by-agents, without drizzle-team/drizzle-orm, without flightcontrolhq/superjson, without meriyah/meriyah, without open-circle/valibot, without sql-formatter-org/sql-formatter, without vadimdemedes/ink | no |
+| Claude Opus 5 (max) > GPT-5.5 (xhigh) | 0.74 | -11.98 to 13.70 | 0.47 | without bombshell-dev/clack, without capricorn86/happy-dom, without gvergnaud/ts-pattern, without platers/obsidian-linter, without pmndrs/koota, without unjs/ofetch | no |
+| GPT-5.5 (xhigh) > Claude Sonnet 5 (max) | 0.20 | -11.56 to 12.25 | 0.44 | net weight=0.5, net weight=0.6, failure cap=0, failure cap=10, panel without GLM-5.3 Flash (max), without Effect-TS/effect, without baryhuang/claude-code-by-agents, without drizzle-team/drizzle-orm, without flightcontrolhq/superjson, without jeffijoe/awilix, without keajs/kea, without kysely-org/kysely, without meriyah/meriyah, without open-circle/valibot | no |
+| Claude Sonnet 5 (max) > DeepSeek V4 Flash (max) | 0.58 | -10.73 to 11.72 | 0.47 | net weight=0.5, failure cap=0, without bombshell-dev/clack, without capricorn86/happy-dom, without flightcontrolhq/superjson, without slab/quill, without sql-formatter-org/sql-formatter, without true-myth/true-myth, without vadimdemedes/ink | no |
+| DeepSeek V4 Flash (max) > GLM-5.3 Flash (max) | 0.93 | -10.00 to 12.03 | 0.54 | without baryhuang/claude-code-by-agents, without dahlia/optique, without eicrud/eicrud, without vitest-dev/vitest | yes |
+| GLM-5.3 Flash (max) > Claude Opus 4.7 (max) · DeepSWE 1.0 | 2.06 | -14.19 to 15.84 | 0.47 | none | no |
+| Claude Opus 4.7 (max) · DeepSWE 1.0 > Gemini 3.7 Flash (medium) | 0.06 | -11.97 to 11.47 | 0.34 | net weight=0.9, net weight=1, failure cap=50, panel without Claude Fable 5 (xhigh), panel without Claude Opus 4.8 (max), panel without Claude Sonnet 5 (max), panel without DeepSeek V4 Pro (max), panel without Gemini 3.5 Flash (high), panel without Gemini 3.6 Flash (high), panel without GLM-5.2 (max), panel without GLM-5.3 (max), panel without Grok 4.6 (medium), panel without Muse Spark 1.1 (xhigh), panel without Qwen3.8 Max (xhigh), without TanStack/query, without arktypeio/arktype, without capricorn86/happy-dom, without drizzle-team/drizzle-orm, without eicrud/eicrud, without jeffijoe/awilix, without meriyah/meriyah, without open-circle/valibot, without platers/obsidian-linter, without pmndrs/koota, without unjs/ofetch, without vadimdemedes/ink | no |
 | Gemini 3.7 Flash (medium) > Grok 4.5 (high) | 0.82 | -9.46 to 10.55 | 0.58 | failure cap=0, failure cap=10, without baryhuang/claude-code-by-agents, without eicrud/eicrud, without flightcontrolhq/superjson, without keajs/kea, without kysely-org/kysely, without platers/obsidian-linter, without pmndrs/koota, without vitest-dev/vitest | yes |
-| Grok 4.5 (high) > Gemini 3.6 Flash (high) | 2.48 | -8.74 to 13.66 | 0.66 | none | yes |
-| Gemini 3.6 Flash (high) > Gemini 3.5 Flash (high) | 0.32 | -7.93 to 8.68 | 0.56 | net weight=0.5, net weight=0.6, failure cap=0, without arktypeio/arktype, without c4spar/cliffy, without dahlia/optique, without drizzle-team/drizzle-orm, without eicrud/eicrud, without keajs/kea, without platers/obsidian-linter, without sql-formatter-org/sql-formatter, without vadimdemedes/ink, without vitest-dev/vitest | yes |
-| Gemini 3.5 Flash (high) > Kimi K2.7 Code | 0.08 | -10.20 to 10.51 | 0.52 | net weight=0.9, net weight=1, failure cap=0, failure cap=10, panel without Claude Sonnet 4.6 (high), panel without DeepSeek V4 Flash (max), panel without Gemini 3.6 Flash (high), panel without Gemini 3.7 Flash (medium), panel without Kimi K2.7 Code, without baryhuang/claude-code-by-agents, without bombshell-dev/clack, without dynamodb-toolbox/dynamodb-toolbox, without gvergnaud/ts-pattern, without keajs/kea, without kysely-org/kysely, without meriyah/meriyah, without pmndrs/koota, without slab/quill, without sql-formatter-org/sql-formatter, without unjs/ofetch | yes |
-| Kimi K2.7 Code > Claude Sonnet 4.6 (high) | 2.83 | -8.38 to 13.27 | 0.65 | none | yes |
-| Claude Sonnet 4.6 (high) > GPT-5.4 (xhigh) | 1.24 | -9.80 to 12.49 | 0.55 | without c4spar/cliffy, without jeffijoe/awilix, without platers/obsidian-linter | yes |
-| GPT-5.4 (xhigh) > Muse Spark 1.1 (xhigh) | 3.68 | -5.16 to 12.14 | 0.79 | none | yes |
-| Muse Spark 1.1 (xhigh) > Muse Spark 1.2 (xhigh) | 0.95 | -4.10 to 5.61 | 0.65 | none | yes |
-| Muse Spark 1.2 (xhigh) > Gemini 3.1 Pro Preview (high) | 3.13 | -4.15 to 10.26 | 0.78 | none | yes |
+| Grok 4.5 (high) > Gemini 3.6 Flash (high) | 2.48 | -8.71 to 13.66 | 0.66 | none | yes |
+| Gemini 3.6 Flash (high) > Claude Opus 4.6 (max) · DeepSWE 1.0 | 0.30 | -14.74 to 16.03 | 0.24 | net weight=0.5, net weight=0.6, failure cap=0, failure cap=10, panel without GPT-5.4 (xhigh), without arktypeio/arktype, without baryhuang/claude-code-by-agents, without bombshell-dev/clack, without c4spar/cliffy, without dahlia/optique, without drizzle-team/drizzle-orm, without dynamodb-toolbox/dynamodb-toolbox, without keajs/kea, without platers/obsidian-linter, without pmndrs/koota, without sql-formatter-org/sql-formatter, without vitest-dev/vitest | no |
+| Claude Opus 4.6 (max) · DeepSWE 1.0 > Gemini 3.5 Flash (high) | 0.02 | -17.09 to 13.47 | 0.26 | net weight=1, failure cap=50, panel without Claude Sonnet 5 (max), panel without DeepSeek V4 Pro (max), panel without Gemini 3.1 Pro Preview (high), panel without Gemini 3.5 Flash (high), panel without GLM-5.2 (max), panel without GPT-5.5 (xhigh), panel without Grok 4.6 (medium), panel without Kimi K3 (max), panel without Qwen3.8 Max (xhigh), without TanStack/query, without capricorn86/happy-dom, without dahlia/optique, without eicrud/eicrud, without flightcontrolhq/superjson, without gvergnaud/ts-pattern, without jeffijoe/awilix, without kysely-org/kysely, without open-circle/valibot, without platers/obsidian-linter, without sql-formatter-org/sql-formatter, without true-myth/true-myth, without vadimdemedes/ink | no |
+| Gemini 3.5 Flash (high) > Kimi K2.7 Code | 0.08 | -10.16 to 10.51 | 0.52 | net weight=0.9, net weight=1, failure cap=0, failure cap=10, panel without Claude Sonnet 4.6 (high), panel without DeepSeek V4 Flash (max), panel without Gemini 3.6 Flash (high), panel without Gemini 3.7 Flash (medium), panel without Kimi K2.7 Code, without baryhuang/claude-code-by-agents, without bombshell-dev/clack, without dynamodb-toolbox/dynamodb-toolbox, without gvergnaud/ts-pattern, without keajs/kea, without kysely-org/kysely, without meriyah/meriyah, without pmndrs/koota, without slab/quill, without sql-formatter-org/sql-formatter, without unjs/ofetch | yes |
+| Kimi K2.7 Code > Claude Sonnet 4.6 (high) | 2.83 | -8.37 to 13.27 | 0.65 | none | yes |
+| Claude Sonnet 4.6 (high) > MiMo V2.5 Pro · DeepSWE 1.0 | 0.91 | -11.45 to 14.17 | 0.39 | without c4spar/cliffy, without dynamodb-toolbox/dynamodb-toolbox, without sql-formatter-org/sql-formatter, without vitest-dev/vitest | no |
+| MiMo V2.5 Pro · DeepSWE 1.0 > GPT-5.4 (xhigh) | 0.33 | -13.13 to 15.60 | 0.38 | net weight=1, failure cap=50, without TanStack/query, without baryhuang/claude-code-by-agents, without bombshell-dev/clack, without c4spar/cliffy, without eicrud/eicrud, without gvergnaud/ts-pattern, without jeffijoe/awilix, without platers/obsidian-linter | no |
+| GPT-5.4 (xhigh) > Kimi K2.6 · DeepSWE 1.0 | 2.96 | -12.14 to 15.72 | 0.56 | none | yes |
+| Kimi K2.6 · DeepSWE 1.0 > GLM-5.1 · DeepSWE 1.0 | 0.54 | -14.94 to 15.55 | 0.23 | without arktypeio/arktype, without jeffijoe/awilix, without platers/obsidian-linter, without true-myth/true-myth, without unjs/ofetch | no |
+| GLM-5.1 · DeepSWE 1.0 > Muse Spark 1.1 (xhigh) | 0.18 | -11.25 to 13.09 | 0.33 | net weight=1, failure cap=50, panel without GPT-5.6 Sol (max), without TanStack/query, without baryhuang/claude-code-by-agents, without c4spar/cliffy, without drizzle-team/drizzle-orm, without eicrud/eicrud, without jeffijoe/awilix, without keajs/kea, without platers/obsidian-linter, without pmndrs/koota, without slab/quill, without unjs/ofetch | no |
+| Muse Spark 1.1 (xhigh) > Muse Spark 1.2 (xhigh) | 0.95 | -4.04 to 5.62 | 0.65 | none | yes |
+| Muse Spark 1.2 (xhigh) > Gemini 3.1 Pro Preview (high) | 3.13 | -4.14 to 10.26 | 0.78 | none | yes |
+| Gemini 3.1 Pro Preview (high) > MiniMax M3 · DeepSWE 1.0 | 0.35 | -9.39 to 11.62 | 0.31 | failure cap=0, failure cap=10, without baryhuang/claude-code-by-agents, without bombshell-dev/clack, without drizzle-team/drizzle-orm, without gvergnaud/ts-pattern, without meriyah/meriyah, without pmndrs/koota, without sql-formatter-org/sql-formatter, without true-myth/true-myth, without unjs/ofetch | no |
+| MiniMax M3 · DeepSWE 1.0 > Gemini 3 Flash Preview · DeepSWE 1.0 | 2.48 | -17.75 to 21.37 | 0.05 | none | no |
+| Gemini 3 Flash Preview · DeepSWE 1.0 > Grok Build 0.1 · DeepSWE 1.0 | 2.21 | -18.94 to 23.20 | 0.01 | none | no |
+| Grok Build 0.1 · DeepSWE 1.0 > GPT-5.4 mini (xhigh) · DeepSWE 1.0 | 0.21 | -15.90 to 16.15 | 0.15 | net weight=1, failure cap=0, failure cap=10, without TanStack/query, without c4spar/cliffy, without dahlia/optique, without drizzle-team/drizzle-orm, without true-myth/true-myth | no |
+| GPT-5.4 mini (xhigh) · DeepSWE 1.0 > Claude Haiku 4.5 · DeepSWE 1.0 | 4.06 | -10.58 to 18.32 | 0.48 | none | no |
+| Claude Haiku 4.5 · DeepSWE 1.0 > MiniMax M2.7 · DeepSWE 1.0 | 1.21 | -11.46 to 13.41 | 0.32 | failure cap=0 | no |
+| MiniMax M2.7 · DeepSWE 1.0 > Qwen3.6 Plus · DeepSWE 1.0 | 0.73 | -12.34 to 13.60 | 0.18 | failure cap=0 | no |
 
 ## Weights and failure cap
 
-Score on the common tasks; rank in parentheses.
+Bound-midpoint score over all tasks; rank in parentheses.
 
 | Model | `baseline` | `net_weight=0.5` | `net_weight=0.6` | `net_weight=0.7` | `net_weight=0.9` | `net_weight=1` | `net_floor=0` | `failure_cap=0` | `failure_cap=10` | `failure_cap=50` |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -93,16 +117,28 @@ Score on the common tasks; rank in parentheses.
 | Claude Sonnet 5 (max) | 21.1 (14) | 20.8 (14) | 20.9 (13) | 21.0 (14) | 21.2 (14) | 21.3 (14) | 21.1 (14) | 26.5 (14) | 24.3 (13) | 15.7 (14) |
 | DeepSeek V4 Flash (max) | 20.5 (15) | 20.9 (13) | 20.8 (15) | 20.6 (15) | 20.4 (15) | 20.3 (15) | 20.5 (15) | 26.6 (13) | 24.1 (15) | 14.5 (15) |
 | GLM-5.3 Flash (max) | 19.6 (16) | 19.9 (16) | 19.8 (16) | 19.7 (16) | 19.5 (16) | 19.4 (16) | 19.6 (16) | 25.4 (16) | 23.0 (16) | 13.8 (16) |
-| Gemini 3.7 Flash (medium) | 17.5 (17) | 17.2 (17) | 17.3 (17) | 17.4 (17) | 17.6 (17) | 17.6 (17) | 17.5 (17) | 22.2 (18) | 20.3 (18) | 12.7 (17) |
-| Grok 4.5 (high) | 16.6 (18) | 16.5 (18) | 16.5 (18) | 16.6 (18) | 16.7 (18) | 16.8 (18) | 16.6 (18) | 23.2 (17) | 20.6 (17) | 10.1 (18) |
-| Gemini 3.6 Flash (high) | 14.2 (19) | 14.0 (20) | 14.1 (20) | 14.1 (19) | 14.2 (19) | 14.3 (19) | 14.2 (19) | 20.8 (21) | 18.2 (20) | 7.5 (19) |
-| Gemini 3.5 Flash (high) | 13.9 (20) | 14.2 (19) | 14.1 (19) | 14.0 (20) | 13.7 (21) | 13.6 (21) | 13.9 (20) | 21.0 (20) | 18.1 (21) | 6.7 (20) |
-| Kimi K2.7 Code | 13.8 (21) | 13.7 (21) | 13.7 (21) | 13.7 (21) | 13.8 (20) | 13.8 (20) | 13.8 (21) | 21.6 (19) | 18.5 (19) | 5.9 (21) |
-| Claude Sonnet 4.6 (high) | 10.9 (22) | 11.2 (22) | 11.1 (22) | 11.0 (22) | 10.9 (22) | 10.8 (22) | 10.9 (22) | 18.8 (22) | 15.7 (22) | 3.0 (22) |
-| GPT-5.4 (xhigh) | 9.7 (23) | 8.9 (23) | 9.2 (23) | 9.4 (23) | 9.9 (23) | 10.2 (23) | 9.7 (23) | 16.4 (23) | 13.7 (23) | 3.0 (23) |
-| Muse Spark 1.1 (xhigh) | 6.0 (24) | 6.0 (24) | 6.0 (24) | 6.0 (24) | 6.0 (24) | 6.0 (24) | 6.0 (24) | 13.4 (24) | 10.4 (24) | -1.4 (24) |
-| Muse Spark 1.2 (xhigh) | 5.1 (25) | 5.5 (25) | 5.3 (25) | 5.2 (25) | 4.9 (25) | 4.8 (25) | 5.1 (25) | 11.7 (25) | 9.0 (25) | -1.5 (25) |
-| Gemini 3.1 Pro Preview (high) | 1.9 (26) | 1.9 (26) | 1.9 (26) | 1.9 (26) | 1.9 (26) | 2.0 (26) | 1.9 (26) | 9.5 (26) | 6.5 (26) | -5.6 (26) |
+| Claude Opus 4.7 (max) · DeepSWE 1.0 | 17.5 (17) | 18.3 (17) | 18.0 (17) | 17.8 (17) | 17.3 (18) | 17.0 (18) | 17.5 (17) | 23.3 (17) | 21.0 (17) | 11.7 (18) |
+| Gemini 3.7 Flash (medium) | 17.5 (18) | 17.2 (18) | 17.3 (18) | 17.4 (18) | 17.6 (17) | 17.6 (17) | 17.5 (18) | 22.2 (19) | 20.3 (19) | 12.7 (17) |
+| Grok 4.5 (high) | 16.6 (19) | 16.5 (19) | 16.5 (19) | 16.6 (19) | 16.7 (19) | 16.8 (19) | 16.6 (19) | 23.2 (18) | 20.6 (18) | 10.1 (19) |
+| Gemini 3.6 Flash (high) | 14.2 (20) | 14.0 (22) | 14.1 (22) | 14.1 (20) | 14.2 (20) | 14.3 (20) | 14.2 (20) | 20.8 (23) | 18.2 (22) | 7.5 (20) |
+| Claude Opus 4.6 (max) · DeepSWE 1.0 | 13.9 (21) | 14.2 (20) | 14.1 (20) | 14.0 (21) | 13.7 (22) | 13.6 (23) | 13.9 (21) | 21.7 (20) | 18.5 (20) | 6.1 (22) |
+| Gemini 3.5 Flash (high) | 13.9 (22) | 14.2 (21) | 14.1 (21) | 14.0 (22) | 13.7 (23) | 13.6 (22) | 13.9 (22) | 21.0 (22) | 18.1 (23) | 6.7 (21) |
+| Kimi K2.7 Code | 13.8 (23) | 13.7 (23) | 13.7 (23) | 13.7 (23) | 13.8 (21) | 13.8 (21) | 13.8 (23) | 21.6 (21) | 18.5 (21) | 5.9 (23) |
+| Claude Sonnet 4.6 (high) | 10.9 (24) | 11.2 (24) | 11.1 (24) | 11.0 (24) | 10.9 (24) | 10.8 (24) | 10.9 (24) | 18.8 (24) | 15.7 (24) | 3.0 (24) |
+| MiMo V2.5 Pro · DeepSWE 1.0 | 10.0 (25) | 10.1 (25) | 10.1 (25) | 10.1 (25) | 10.0 (25) | 10.0 (26) | 10.0 (25) | 18.5 (25) | 15.1 (25) | 1.6 (26) |
+| GPT-5.4 (xhigh) | 9.7 (26) | 8.9 (26) | 9.2 (26) | 9.4 (26) | 9.9 (26) | 10.2 (25) | 9.7 (26) | 16.4 (26) | 13.7 (26) | 3.0 (25) |
+| Kimi K2.6 · DeepSWE 1.0 | 6.7 (27) | 6.5 (27) | 6.6 (27) | 6.7 (27) | 6.8 (27) | 6.9 (27) | 6.7 (27) | 15.3 (27) | 11.9 (27) | -1.9 (29) |
+| GLM-5.1 · DeepSWE 1.0 | 6.2 (28) | 6.5 (28) | 6.4 (28) | 6.3 (28) | 6.1 (28) | 6.0 (29) | 6.2 (28) | 15.2 (28) | 11.6 (28) | -2.8 (30) |
+| Muse Spark 1.1 (xhigh) | 6.0 (29) | 6.0 (29) | 6.0 (29) | 6.0 (29) | 6.0 (29) | 6.0 (28) | 6.0 (29) | 13.4 (29) | 10.4 (29) | -1.4 (27) |
+| Muse Spark 1.2 (xhigh) | 5.1 (30) | 5.5 (30) | 5.3 (30) | 5.2 (30) | 4.9 (30) | 4.8 (30) | 5.1 (30) | 11.7 (30) | 9.0 (30) | -1.5 (28) |
+| Gemini 3.1 Pro Preview (high) | 1.9 (31) | 1.9 (31) | 1.9 (31) | 1.9 (31) | 1.9 (31) | 2.0 (31) | 1.9 (31) | 9.5 (32) | 6.5 (32) | -5.6 (31) |
+| MiniMax M3 · DeepSWE 1.0 | 1.6 (32) | 1.8 (32) | 1.8 (32) | 1.7 (32) | 1.5 (32) | 1.4 (32) | 1.6 (32) | 11.2 (31) | 7.4 (31) | -8.0 (32) |
+| Gemini 3 Flash Preview · DeepSWE 1.0 | -0.9 (33) | -1.0 (33) | -1.0 (33) | -0.9 (33) | -0.8 (33) | -0.8 (33) | -0.9 (33) | 7.7 (33) | 4.3 (33) | -9.5 (33) |
+| Grok Build 0.1 · DeepSWE 1.0 | -3.1 (34) | -3.0 (34) | -3.0 (34) | -3.1 (34) | -3.1 (34) | -3.2 (35) | -3.1 (34) | 6.8 (35) | 2.8 (35) | -13.0 (34) |
+| GPT-5.4 mini (xhigh) · DeepSWE 1.0 | -3.3 (35) | -3.8 (35) | -3.6 (35) | -3.5 (35) | -3.1 (35) | -3.0 (34) | -3.3 (35) | 7.0 (34) | 2.9 (34) | -13.6 (35) |
+| Claude Haiku 4.5 · DeepSWE 1.0 | -7.4 (36) | -7.4 (36) | -7.4 (36) | -7.4 (36) | -7.4 (36) | -7.3 (36) | -7.4 (36) | 1.5 (37) | -2.0 (36) | -16.2 (36) |
+| MiniMax M2.7 · DeepSWE 1.0 | -8.6 (37) | -8.6 (37) | -8.6 (37) | -8.6 (37) | -8.6 (37) | -8.5 (37) | -8.6 (37) | 1.5 (38) | -2.5 (37) | -18.7 (37) |
+| Qwen3.6 Plus · DeepSWE 1.0 | -9.3 (38) | -9.3 (38) | -9.3 (38) | -9.3 (38) | -9.3 (38) | -9.3 (38) | -9.3 (38) | 2.0 (36) | -2.5 (38) | -20.6 (38) |
 
 ## Panel composition
 
@@ -110,32 +146,32 @@ Each panel model's references removed in turn (every model still scored); tasks 
 
 | Panel without | References removed | Tasks orphaned | Ranking changes vs baseline |
 |---|---:|---:|---|
-| Claude Fable 5 (xhigh) | 332 | 0 | none |
-| Claude Opus 4.8 (max) | 244 | 0 | none |
+| Claude Fable 5 (xhigh) | 332 | 0 | Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17 |
+| Claude Opus 4.8 (max) | 244 | 0 | Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17 |
 | Claude Opus 5 (max) | 328 | 0 | none |
-| Claude Sonnet 4.6 (high) | 160 | 0 | Gemini 3.5 Flash (high) 20→21, Kimi K2.7 Code 21→20 |
-| Claude Sonnet 5 (max) | 248 | 0 | none |
-| DeepSeek V4 Flash (max) | 264 | 0 | Gemini 3.5 Flash (high) 20→21, Kimi K2.7 Code 21→20 |
-| DeepSeek V4 Pro (max) | 324 | 0 | none |
-| Gemini 3.1 Pro Preview (high) | 64 | 0 | none |
-| Gemini 3.5 Flash (high) | 188 | 0 | none |
-| Gemini 3.6 Flash (high) | 220 | 0 | Gemini 3.5 Flash (high) 20→21, Kimi K2.7 Code 21→20 |
-| Gemini 3.7 Flash (medium) | 328 | 0 | Gemini 3.5 Flash (high) 20→21, Kimi K2.7 Code 21→20 |
-| GLM-5.2 (max) | 232 | 0 | none |
+| Claude Sonnet 4.6 (high) | 160 | 0 | Gemini 3.5 Flash (high) 22→23, Kimi K2.7 Code 23→22 |
+| Claude Sonnet 5 (max) | 248 | 0 | Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17, Claude Opus 4.6 (max) · DeepSWE 1.0 21→22, Gemini 3.5 Flash (high) 22→21 |
+| DeepSeek V4 Flash (max) | 264 | 0 | Gemini 3.5 Flash (high) 22→23, Kimi K2.7 Code 23→22 |
+| DeepSeek V4 Pro (max) | 324 | 0 | Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17, Claude Opus 4.6 (max) · DeepSWE 1.0 21→22, Gemini 3.5 Flash (high) 22→21 |
+| Gemini 3.1 Pro Preview (high) | 64 | 0 | Claude Opus 4.6 (max) · DeepSWE 1.0 21→22, Gemini 3.5 Flash (high) 22→21 |
+| Gemini 3.5 Flash (high) | 188 | 0 | Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17, Claude Opus 4.6 (max) · DeepSWE 1.0 21→23, Gemini 3.5 Flash (high) 22→21, Kimi K2.7 Code 23→22 |
+| Gemini 3.6 Flash (high) | 220 | 0 | Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17, Claude Opus 4.6 (max) · DeepSWE 1.0 21→22, Gemini 3.5 Flash (high) 22→23, Kimi K2.7 Code 23→21 |
+| Gemini 3.7 Flash (medium) | 328 | 0 | Claude Opus 4.6 (max) · DeepSWE 1.0 21→22, Gemini 3.5 Flash (high) 22→23, Kimi K2.7 Code 23→21 |
+| GLM-5.2 (max) | 232 | 0 | Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17, Claude Opus 4.6 (max) · DeepSWE 1.0 21→22, Gemini 3.5 Flash (high) 22→21 |
 | GLM-5.3 Flash (max) | 272 | 0 | GPT-5.5 (xhigh) 13→14, Claude Sonnet 5 (max) 14→13 |
-| GLM-5.3 (max) | 320 | 0 | none |
-| GPT-5.4 (xhigh) | 264 | 0 | Qwen3.8 Max (xhigh) 9→10, GLM-5.2 (max) 10→9 |
-| GPT-5.5 (xhigh) | 328 | 0 | none |
+| GLM-5.3 (max) | 320 | 0 | Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17 |
+| GPT-5.4 (xhigh) | 264 | 0 | Qwen3.8 Max (xhigh) 9→10, GLM-5.2 (max) 10→9, Gemini 3.6 Flash (high) 20→21, Claude Opus 4.6 (max) · DeepSWE 1.0 21→20 |
+| GPT-5.5 (xhigh) | 328 | 0 | Claude Opus 4.6 (max) · DeepSWE 1.0 21→22, Gemini 3.5 Flash (high) 22→21 |
 | GPT-5.6 Luna (max) | 308 | 0 | none |
-| GPT-5.6 Sol (max) | 352 | 0 | none |
+| GPT-5.6 Sol (max) | 352 | 0 | GLM-5.1 · DeepSWE 1.0 28→29, Muse Spark 1.1 (xhigh) 29→28 |
 | GPT-5.6 Terra (max) | 336 | 0 | none |
 | Grok 4.5 (high) | 244 | 0 | none |
-| Grok 4.6 (medium) | 292 | 0 | none |
-| Kimi K2.7 Code | 152 | 0 | Grok 4.6 (medium) 7→8, DeepSeek V4 Pro (max) 8→7, Gemini 3.5 Flash (high) 20→21, Kimi K2.7 Code 21→20 |
-| Kimi K3 (max) | 308 | 0 | none |
-| Muse Spark 1.1 (xhigh) | 252 | 0 | none |
+| Grok 4.6 (medium) | 292 | 0 | Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17, Claude Opus 4.6 (max) · DeepSWE 1.0 21→22, Gemini 3.5 Flash (high) 22→21 |
+| Kimi K2.7 Code | 152 | 0 | Grok 4.6 (medium) 7→8, DeepSeek V4 Pro (max) 8→7, Gemini 3.5 Flash (high) 22→23, Kimi K2.7 Code 23→22 |
+| Kimi K3 (max) | 308 | 0 | Claude Opus 4.6 (max) · DeepSWE 1.0 21→22, Gemini 3.5 Flash (high) 22→21 |
+| Muse Spark 1.1 (xhigh) | 252 | 0 | Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17 |
 | Muse Spark 1.2 (xhigh) | 268 | 0 | none |
-| Qwen3.8 Max (xhigh) | 272 | 0 | none |
+| Qwen3.8 Max (xhigh) | 272 | 0 | Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17, Claude Opus 4.6 (max) · DeepSWE 1.0 21→22, Gemini 3.5 Flash (high) 22→21 |
 | (dedup panel) | 0 | 0 | none |
 
 ## Task mix
@@ -145,35 +181,35 @@ Leave one repository out (task count in parentheses):
 | Without | Ranking changes vs baseline |
 |---|---|
 | Effect-TS/effect (4) | Qwen3.8 Max (xhigh) 9→10, GLM-5.2 (max) 10→9, Claude Opus 5 (max) 12→13, GPT-5.5 (xhigh) 13→14, Claude Sonnet 5 (max) 14→12 |
-| TanStack/query (4) | DeepSeek V4 Pro (max) 8→10, Qwen3.8 Max (xhigh) 9→8, GLM-5.2 (max) 10→11, GPT-5.6 Luna (max) 11→14, Claude Opus 5 (max) 12→9, GPT-5.5 (xhigh) 13→12, Claude Sonnet 5 (max) 14→13 |
-| arktypeio/arktype (4) | Grok 4.6 (medium) 7→10, DeepSeek V4 Pro (max) 8→7, Qwen3.8 Max (xhigh) 9→11, GLM-5.2 (max) 10→8, GPT-5.6 Luna (max) 11→9, Gemini 3.6 Flash (high) 19→20, Gemini 3.5 Flash (high) 20→19 |
-| baryhuang/claude-code-by-agents (4) | DeepSeek V4 Pro (max) 8→9, Qwen3.8 Max (xhigh) 9→8, GLM-5.2 (max) 10→11, GPT-5.6 Luna (max) 11→13, Claude Opus 5 (max) 12→10, GPT-5.5 (xhigh) 13→14, Claude Sonnet 5 (max) 14→12, DeepSeek V4 Flash (max) 15→16, GLM-5.3 Flash (max) 16→15, Gemini 3.7 Flash (medium) 17→18, Grok 4.5 (high) 18→17, Gemini 3.6 Flash (high) 19→20, Gemini 3.5 Flash (high) 20→21, Kimi K2.7 Code 21→19 |
-| bombshell-dev/clack (4) | GLM-5.3 (max) 6→9, DeepSeek V4 Pro (max) 8→6, Qwen3.8 Max (xhigh) 9→8, GLM-5.2 (max) 10→11, GPT-5.6 Luna (max) 11→10, Claude Opus 5 (max) 12→13, GPT-5.5 (xhigh) 13→12, Claude Sonnet 5 (max) 14→15, DeepSeek V4 Flash (max) 15→14, Gemini 3.6 Flash (high) 19→20, Gemini 3.5 Flash (high) 20→21, Kimi K2.7 Code 21→19 |
-| c4spar/cliffy (4) | Grok 4.6 (medium) 7→8, DeepSeek V4 Pro (max) 8→10, Qwen3.8 Max (xhigh) 9→7, GLM-5.2 (max) 10→11, GPT-5.6 Luna (max) 11→9, Gemini 3.6 Flash (high) 19→21, Gemini 3.5 Flash (high) 20→19, Kimi K2.7 Code 21→20, Claude Sonnet 4.6 (high) 22→23, GPT-5.4 (xhigh) 23→22 |
-| capricorn86/happy-dom (8) | GLM-5.3 (max) 6→9, Grok 4.6 (medium) 7→6, DeepSeek V4 Pro (max) 8→7, Qwen3.8 Max (xhigh) 9→11, GPT-5.6 Luna (max) 11→8, Claude Opus 5 (max) 12→14, GPT-5.5 (xhigh) 13→12, Claude Sonnet 5 (max) 14→15, DeepSeek V4 Flash (max) 15→13, GLM-5.3 Flash (max) 16→17, Gemini 3.7 Flash (medium) 17→16 |
-| dahlia/optique (4) | GLM-5.3 (max) 6→8, Grok 4.6 (medium) 7→9, DeepSeek V4 Pro (max) 8→7, Qwen3.8 Max (xhigh) 9→10, GLM-5.2 (max) 10→6, DeepSeek V4 Flash (max) 15→16, GLM-5.3 Flash (max) 16→15, Gemini 3.6 Flash (high) 19→21, Gemini 3.5 Flash (high) 20→19, Kimi K2.7 Code 21→20 |
-| drizzle-team/drizzle-orm (4) | Grok 4.6 (medium) 7→9, DeepSeek V4 Pro (max) 8→7, Qwen3.8 Max (xhigh) 9→8, GPT-5.6 Luna (max) 11→12, Claude Opus 5 (max) 12→11, GPT-5.5 (xhigh) 13→14, Claude Sonnet 5 (max) 14→13, Gemini 3.6 Flash (high) 19→20, Gemini 3.5 Flash (high) 20→19 |
-| dynamodb-toolbox/dynamodb-toolbox (8) | Claude Opus 4.8 (max) 3→4, GPT-5.6 Sol (max) 4→3, Grok 4.6 (medium) 7→11, DeepSeek V4 Pro (max) 8→9, Qwen3.8 Max (xhigh) 9→7, GLM-5.2 (max) 10→8, GPT-5.6 Luna (max) 11→10, Gemini 3.5 Flash (high) 20→21, Kimi K2.7 Code 21→20 |
-| eicrud/eicrud (4) | GLM-5.2 (max) 10→12, GPT-5.6 Luna (max) 11→10, Claude Opus 5 (max) 12→11, DeepSeek V4 Flash (max) 15→16, GLM-5.3 Flash (max) 16→15, Gemini 3.7 Flash (medium) 17→18, Grok 4.5 (high) 18→17, Gemini 3.6 Flash (high) 19→20, Gemini 3.5 Flash (high) 20→19 |
-| flightcontrolhq/superjson (4) | GLM-5.3 (max) 6→7, Grok 4.6 (medium) 7→9, DeepSeek V4 Pro (max) 8→6, Qwen3.8 Max (xhigh) 9→10, GLM-5.2 (max) 10→8, GPT-5.6 Luna (max) 11→12, Claude Opus 5 (max) 12→11, GPT-5.5 (xhigh) 13→16, DeepSeek V4 Flash (max) 15→13, GLM-5.3 Flash (max) 16→15, Gemini 3.7 Flash (medium) 17→18, Grok 4.5 (high) 18→17 |
-| gvergnaud/ts-pattern (4) | GLM-5.3 (max) 6→7, Grok 4.6 (medium) 7→6, DeepSeek V4 Pro (max) 8→9, Qwen3.8 Max (xhigh) 9→8, Claude Opus 5 (max) 12→13, GPT-5.5 (xhigh) 13→12, Gemini 3.5 Flash (high) 20→21, Kimi K2.7 Code 21→20 |
-| jeffijoe/awilix (4) | DeepSeek V4 Pro (max) 8→10, Qwen3.8 Max (xhigh) 9→8, GLM-5.2 (max) 10→12, GPT-5.6 Luna (max) 11→9, Claude Opus 5 (max) 12→11, GPT-5.5 (xhigh) 13→15, Claude Sonnet 5 (max) 14→13, DeepSeek V4 Flash (max) 15→14, Claude Sonnet 4.6 (high) 22→23, GPT-5.4 (xhigh) 23→22 |
-| keajs/kea (4) | GLM-5.3 (max) 6→8, DeepSeek V4 Pro (max) 8→6, GLM-5.2 (max) 10→11, GPT-5.6 Luna (max) 11→10, GPT-5.5 (xhigh) 13→15, Claude Sonnet 5 (max) 14→13, DeepSeek V4 Flash (max) 15→14, Gemini 3.7 Flash (medium) 17→18, Grok 4.5 (high) 18→17, Gemini 3.6 Flash (high) 19→21, Kimi K2.7 Code 21→19 |
-| kysely-org/kysely (4) | GLM-5.3 (max) 6→8, Grok 4.6 (medium) 7→12, DeepSeek V4 Pro (max) 8→6, Qwen3.8 Max (xhigh) 9→10, GLM-5.2 (max) 10→7, GPT-5.6 Luna (max) 11→9, Claude Opus 5 (max) 12→11, GPT-5.5 (xhigh) 13→15, Claude Sonnet 5 (max) 14→13, DeepSeek V4 Flash (max) 15→14, Gemini 3.7 Flash (medium) 17→18, Grok 4.5 (high) 18→17, Gemini 3.6 Flash (high) 19→20, Gemini 3.5 Flash (high) 20→21, Kimi K2.7 Code 21→19 |
-| meriyah/meriyah (4) | GPT-5.6 Luna (max) 11→13, Claude Opus 5 (max) 12→11, GPT-5.5 (xhigh) 13→15, Claude Sonnet 5 (max) 14→12, DeepSeek V4 Flash (max) 15→14, Gemini 3.5 Flash (high) 20→21, Kimi K2.7 Code 21→20 |
-| open-circle/valibot (4) | GPT-5.6 Terra (max) 5→6, GLM-5.3 (max) 6→5, DeepSeek V4 Pro (max) 8→9, Qwen3.8 Max (xhigh) 9→8, GPT-5.6 Luna (max) 11→13, Claude Opus 5 (max) 12→11, GPT-5.5 (xhigh) 13→15, Claude Sonnet 5 (max) 14→12, DeepSeek V4 Flash (max) 15→14 |
-| platers/obsidian-linter (12) | GLM-5.3 (max) 6→7, Grok 4.6 (medium) 7→6, DeepSeek V4 Pro (max) 8→9, Qwen3.8 Max (xhigh) 9→12, GPT-5.6 Luna (max) 11→8, Claude Opus 5 (max) 12→13, GPT-5.5 (xhigh) 13→11, Gemini 3.7 Flash (medium) 17→18, Grok 4.5 (high) 18→17, Gemini 3.6 Flash (high) 19→21, Gemini 3.5 Flash (high) 20→19, Kimi K2.7 Code 21→20, Claude Sonnet 4.6 (high) 22→23, GPT-5.4 (xhigh) 23→22 |
-| pmndrs/koota (16) | GLM-5.3 (max) 6→10, Grok 4.6 (medium) 7→9, DeepSeek V4 Pro (max) 8→7, Qwen3.8 Max (xhigh) 9→8, GLM-5.2 (max) 10→6, Claude Opus 5 (max) 12→16, GPT-5.5 (xhigh) 13→12, Claude Sonnet 5 (max) 14→13, DeepSeek V4 Flash (max) 15→14, GLM-5.3 Flash (max) 16→15, Gemini 3.7 Flash (medium) 17→18, Grok 4.5 (high) 18→17, Gemini 3.6 Flash (high) 19→20, Gemini 3.5 Flash (high) 20→21, Kimi K2.7 Code 21→19 |
-| slab/quill (4) | GLM-5.3 (max) 6→7, Grok 4.6 (medium) 7→6, DeepSeek V4 Pro (max) 8→9, Qwen3.8 Max (xhigh) 9→8, Claude Sonnet 5 (max) 14→16, DeepSeek V4 Flash (max) 15→14, GLM-5.3 Flash (max) 16→15, Gemini 3.5 Flash (high) 20→21, Kimi K2.7 Code 21→20 |
-| sql-formatter-org/sql-formatter (4) | GLM-5.3 (max) 6→7, Grok 4.6 (medium) 7→6, GPT-5.6 Luna (max) 11→12, Claude Opus 5 (max) 12→11, Claude Sonnet 5 (max) 14→15, DeepSeek V4 Flash (max) 15→14, Gemini 3.6 Flash (high) 19→21, Kimi K2.7 Code 21→19 |
-| true-myth/true-myth (4) | Grok 4.6 (medium) 7→9, DeepSeek V4 Pro (max) 8→7, Qwen3.8 Max (xhigh) 9→10, GLM-5.2 (max) 10→8, Claude Sonnet 5 (max) 14→15, DeepSeek V4 Flash (max) 15→14 |
-| unjs/ofetch (4) | Qwen3.8 Max (xhigh) 9→11, GLM-5.2 (max) 10→9, GPT-5.6 Luna (max) 11→10, Claude Opus 5 (max) 12→13, GPT-5.5 (xhigh) 13→12, Gemini 3.5 Flash (high) 20→22, Kimi K2.7 Code 21→20, Claude Sonnet 4.6 (high) 22→21 |
-| vadimdemedes/ink (4) | GLM-5.2 (max) 10→11, GPT-5.6 Luna (max) 11→12, Claude Opus 5 (max) 12→10, Claude Sonnet 5 (max) 14→15, DeepSeek V4 Flash (max) 15→14, Gemini 3.6 Flash (high) 19→20, Gemini 3.5 Flash (high) 20→19 |
-| vitest-dev/vitest (4) | Grok 4.6 (medium) 7→8, DeepSeek V4 Pro (max) 8→9, Qwen3.8 Max (xhigh) 9→7, DeepSeek V4 Flash (max) 15→16, GLM-5.3 Flash (max) 16→15, Gemini 3.7 Flash (medium) 17→18, Grok 4.5 (high) 18→17, Gemini 3.6 Flash (high) 19→21, Gemini 3.5 Flash (high) 20→19, Kimi K2.7 Code 21→20 |
+| TanStack/query (4) | DeepSeek V4 Pro (max) 8→10, Qwen3.8 Max (xhigh) 9→8, GLM-5.2 (max) 10→11, GPT-5.6 Luna (max) 11→14, Claude Opus 5 (max) 12→9, GPT-5.5 (xhigh) 13→12, Claude Sonnet 5 (max) 14→13, Claude Opus 4.7 (max) · DeepSWE 1.0 17→19, Gemini 3.7 Flash (medium) 18→17, Grok 4.5 (high) 19→18, Claude Opus 4.6 (max) · DeepSWE 1.0 21→23, Gemini 3.5 Flash (high) 22→21, Kimi K2.7 Code 23→22, MiMo V2.5 Pro · DeepSWE 1.0 25→26, GPT-5.4 (xhigh) 26→25, GLM-5.1 · DeepSWE 1.0 28→30, Muse Spark 1.1 (xhigh) 29→28, Muse Spark 1.2 (xhigh) 30→29, Grok Build 0.1 · DeepSWE 1.0 34→35, GPT-5.4 mini (xhigh) · DeepSWE 1.0 35→34 |
+| arktypeio/arktype (4) | Grok 4.6 (medium) 7→10, DeepSeek V4 Pro (max) 8→7, Qwen3.8 Max (xhigh) 9→11, GLM-5.2 (max) 10→8, GPT-5.6 Luna (max) 11→9, Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17, Gemini 3.6 Flash (high) 20→22, Claude Opus 4.6 (max) · DeepSWE 1.0 21→20, Gemini 3.5 Flash (high) 22→21, Kimi K2.6 · DeepSWE 1.0 27→28, GLM-5.1 · DeepSWE 1.0 28→27 |
+| baryhuang/claude-code-by-agents (4) | DeepSeek V4 Pro (max) 8→9, Qwen3.8 Max (xhigh) 9→8, GLM-5.2 (max) 10→11, GPT-5.6 Luna (max) 11→13, Claude Opus 5 (max) 12→10, GPT-5.5 (xhigh) 13→14, Claude Sonnet 5 (max) 14→12, DeepSeek V4 Flash (max) 15→16, GLM-5.3 Flash (max) 16→15, Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→19, Grok 4.5 (high) 19→17, Gemini 3.6 Flash (high) 20→22, Gemini 3.5 Flash (high) 22→23, Kimi K2.7 Code 23→20, MiMo V2.5 Pro · DeepSWE 1.0 25→26, GPT-5.4 (xhigh) 26→25, Kimi K2.6 · DeepSWE 1.0 27→28, GLM-5.1 · DeepSWE 1.0 28→29, Muse Spark 1.1 (xhigh) 29→27, Gemini 3.1 Pro Preview (high) 31→32, MiniMax M3 · DeepSWE 1.0 32→31 |
+| bombshell-dev/clack (4) | GLM-5.3 (max) 6→9, DeepSeek V4 Pro (max) 8→6, Qwen3.8 Max (xhigh) 9→8, GLM-5.2 (max) 10→11, GPT-5.6 Luna (max) 11→10, Claude Opus 5 (max) 12→13, GPT-5.5 (xhigh) 13→12, Claude Sonnet 5 (max) 14→15, DeepSeek V4 Flash (max) 15→14, Gemini 3.6 Flash (high) 20→22, Gemini 3.5 Flash (high) 22→23, Kimi K2.7 Code 23→20, MiMo V2.5 Pro · DeepSWE 1.0 25→26, GPT-5.4 (xhigh) 26→25, Gemini 3.1 Pro Preview (high) 31→32, MiniMax M3 · DeepSWE 1.0 32→31 |
+| c4spar/cliffy (4) | Grok 4.6 (medium) 7→8, DeepSeek V4 Pro (max) 8→10, Qwen3.8 Max (xhigh) 9→7, GLM-5.2 (max) 10→11, GPT-5.6 Luna (max) 11→9, Gemini 3.6 Flash (high) 20→23, Claude Opus 4.6 (max) · DeepSWE 1.0 21→20, Gemini 3.5 Flash (high) 22→21, Kimi K2.7 Code 23→22, Claude Sonnet 4.6 (high) 24→26, GPT-5.4 (xhigh) 26→24, GLM-5.1 · DeepSWE 1.0 28→29, Muse Spark 1.1 (xhigh) 29→28, Grok Build 0.1 · DeepSWE 1.0 34→35, GPT-5.4 mini (xhigh) · DeepSWE 1.0 35→34 |
+| capricorn86/happy-dom (8) | GLM-5.3 (max) 6→9, Grok 4.6 (medium) 7→6, DeepSeek V4 Pro (max) 8→7, Qwen3.8 Max (xhigh) 9→11, GPT-5.6 Luna (max) 11→8, Claude Opus 5 (max) 12→14, GPT-5.5 (xhigh) 13→12, Claude Sonnet 5 (max) 14→15, DeepSeek V4 Flash (max) 15→13, GLM-5.3 Flash (max) 16→17, Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→16, Claude Opus 4.6 (max) · DeepSWE 1.0 21→23, Gemini 3.5 Flash (high) 22→21, Kimi K2.7 Code 23→22 |
+| dahlia/optique (4) | GLM-5.3 (max) 6→8, Grok 4.6 (medium) 7→9, DeepSeek V4 Pro (max) 8→7, Qwen3.8 Max (xhigh) 9→10, GLM-5.2 (max) 10→6, DeepSeek V4 Flash (max) 15→16, GLM-5.3 Flash (max) 16→15, Gemini 3.6 Flash (high) 20→23, Gemini 3.5 Flash (high) 22→20, Kimi K2.7 Code 23→22, Grok Build 0.1 · DeepSWE 1.0 34→35, GPT-5.4 mini (xhigh) · DeepSWE 1.0 35→34 |
+| drizzle-team/drizzle-orm (4) | Grok 4.6 (medium) 7→9, DeepSeek V4 Pro (max) 8→7, Qwen3.8 Max (xhigh) 9→8, GPT-5.6 Luna (max) 11→12, Claude Opus 5 (max) 12→11, GPT-5.5 (xhigh) 13→14, Claude Sonnet 5 (max) 14→13, Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17, Grok 4.5 (high) 19→20, Gemini 3.6 Flash (high) 20→22, Claude Opus 4.6 (max) · DeepSWE 1.0 21→19, Gemini 3.5 Flash (high) 22→21, GLM-5.1 · DeepSWE 1.0 28→29, Muse Spark 1.1 (xhigh) 29→28, Gemini 3.1 Pro Preview (high) 31→32, MiniMax M3 · DeepSWE 1.0 32→31, Grok Build 0.1 · DeepSWE 1.0 34→35, GPT-5.4 mini (xhigh) · DeepSWE 1.0 35→34 |
+| dynamodb-toolbox/dynamodb-toolbox (8) | Claude Opus 4.8 (max) 3→4, GPT-5.6 Sol (max) 4→3, Grok 4.6 (medium) 7→11, DeepSeek V4 Pro (max) 8→9, Qwen3.8 Max (xhigh) 9→7, GLM-5.2 (max) 10→8, GPT-5.6 Luna (max) 11→10, Gemini 3.6 Flash (high) 20→21, Claude Opus 4.6 (max) · DeepSWE 1.0 21→20, Gemini 3.5 Flash (high) 22→23, Kimi K2.7 Code 23→22, Claude Sonnet 4.6 (high) 24→25, MiMo V2.5 Pro · DeepSWE 1.0 25→24 |
+| eicrud/eicrud (4) | GLM-5.2 (max) 10→12, GPT-5.6 Luna (max) 11→10, Claude Opus 5 (max) 12→11, DeepSeek V4 Flash (max) 15→16, GLM-5.3 Flash (max) 16→15, Claude Opus 4.7 (max) · DeepSWE 1.0 17→19, Grok 4.5 (high) 19→17, Gemini 3.6 Flash (high) 20→21, Claude Opus 4.6 (max) · DeepSWE 1.0 21→22, Gemini 3.5 Flash (high) 22→20, MiMo V2.5 Pro · DeepSWE 1.0 25→26, GPT-5.4 (xhigh) 26→25, Kimi K2.6 · DeepSWE 1.0 27→28, GLM-5.1 · DeepSWE 1.0 28→29, Muse Spark 1.1 (xhigh) 29→27 |
+| flightcontrolhq/superjson (4) | GLM-5.3 (max) 6→7, Grok 4.6 (medium) 7→9, DeepSeek V4 Pro (max) 8→6, Qwen3.8 Max (xhigh) 9→10, GLM-5.2 (max) 10→8, GPT-5.6 Luna (max) 11→12, Claude Opus 5 (max) 12→11, GPT-5.5 (xhigh) 13→16, DeepSeek V4 Flash (max) 15→13, GLM-5.3 Flash (max) 16→15, Gemini 3.7 Flash (medium) 18→19, Grok 4.5 (high) 19→18, Claude Opus 4.6 (max) · DeepSWE 1.0 21→23, Gemini 3.5 Flash (high) 22→21, Kimi K2.7 Code 23→22 |
+| gvergnaud/ts-pattern (4) | GLM-5.3 (max) 6→7, Grok 4.6 (medium) 7→6, DeepSeek V4 Pro (max) 8→9, Qwen3.8 Max (xhigh) 9→8, Claude Opus 5 (max) 12→13, GPT-5.5 (xhigh) 13→12, Claude Opus 4.6 (max) · DeepSWE 1.0 21→23, Kimi K2.7 Code 23→21, MiMo V2.5 Pro · DeepSWE 1.0 25→26, GPT-5.4 (xhigh) 26→25, Gemini 3.1 Pro Preview (high) 31→32, MiniMax M3 · DeepSWE 1.0 32→31 |
+| jeffijoe/awilix (4) | DeepSeek V4 Pro (max) 8→10, Qwen3.8 Max (xhigh) 9→8, GLM-5.2 (max) 10→12, GPT-5.6 Luna (max) 11→9, Claude Opus 5 (max) 12→11, GPT-5.5 (xhigh) 13→15, Claude Sonnet 5 (max) 14→13, DeepSeek V4 Flash (max) 15→14, Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17, Claude Opus 4.6 (max) · DeepSWE 1.0 21→22, Gemini 3.5 Flash (high) 22→21, Claude Sonnet 4.6 (high) 24→25, MiMo V2.5 Pro · DeepSWE 1.0 25→26, GPT-5.4 (xhigh) 26→24, Kimi K2.6 · DeepSWE 1.0 27→30, GLM-5.1 · DeepSWE 1.0 28→29, Muse Spark 1.1 (xhigh) 29→27, Muse Spark 1.2 (xhigh) 30→28 |
+| keajs/kea (4) | GLM-5.3 (max) 6→8, DeepSeek V4 Pro (max) 8→6, GLM-5.2 (max) 10→11, GPT-5.6 Luna (max) 11→10, GPT-5.5 (xhigh) 13→15, Claude Sonnet 5 (max) 14→13, DeepSeek V4 Flash (max) 15→14, Gemini 3.7 Flash (medium) 18→19, Grok 4.5 (high) 19→18, Gemini 3.6 Flash (high) 20→23, Claude Opus 4.6 (max) · DeepSWE 1.0 21→20, Kimi K2.7 Code 23→21, GLM-5.1 · DeepSWE 1.0 28→29, Muse Spark 1.1 (xhigh) 29→28 |
+| kysely-org/kysely (4) | GLM-5.3 (max) 6→8, Grok 4.6 (medium) 7→12, DeepSeek V4 Pro (max) 8→6, Qwen3.8 Max (xhigh) 9→10, GLM-5.2 (max) 10→7, GPT-5.6 Luna (max) 11→9, Claude Opus 5 (max) 12→11, GPT-5.5 (xhigh) 13→15, Claude Sonnet 5 (max) 14→13, DeepSeek V4 Flash (max) 15→14, Gemini 3.7 Flash (medium) 18→19, Grok 4.5 (high) 19→18, Gemini 3.6 Flash (high) 20→21, Claude Opus 4.6 (max) · DeepSWE 1.0 21→23, Kimi K2.7 Code 23→20 |
+| meriyah/meriyah (4) | GPT-5.6 Luna (max) 11→13, Claude Opus 5 (max) 12→11, GPT-5.5 (xhigh) 13→15, Claude Sonnet 5 (max) 14→12, DeepSeek V4 Flash (max) 15→14, Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17, Gemini 3.5 Flash (high) 22→23, Kimi K2.7 Code 23→22, Gemini 3.1 Pro Preview (high) 31→32, MiniMax M3 · DeepSWE 1.0 32→31 |
+| open-circle/valibot (4) | GPT-5.6 Terra (max) 5→6, GLM-5.3 (max) 6→5, DeepSeek V4 Pro (max) 8→9, Qwen3.8 Max (xhigh) 9→8, GPT-5.6 Luna (max) 11→13, Claude Opus 5 (max) 12→11, GPT-5.5 (xhigh) 13→15, Claude Sonnet 5 (max) 14→12, DeepSeek V4 Flash (max) 15→14, Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17, Claude Opus 4.6 (max) · DeepSWE 1.0 21→23, Gemini 3.5 Flash (high) 22→21, Kimi K2.7 Code 23→22 |
+| platers/obsidian-linter (12) | GLM-5.3 (max) 6→7, Grok 4.6 (medium) 7→6, DeepSeek V4 Pro (max) 8→9, Qwen3.8 Max (xhigh) 9→12, GPT-5.6 Luna (max) 11→8, Claude Opus 5 (max) 12→13, GPT-5.5 (xhigh) 13→11, Claude Opus 4.7 (max) · DeepSWE 1.0 17→19, Grok 4.5 (high) 19→17, Gemini 3.6 Flash (high) 20→23, Claude Opus 4.6 (max) · DeepSWE 1.0 21→22, Gemini 3.5 Flash (high) 22→20, Kimi K2.7 Code 23→21, Claude Sonnet 4.6 (high) 24→25, MiMo V2.5 Pro · DeepSWE 1.0 25→26, GPT-5.4 (xhigh) 26→24, Kimi K2.6 · DeepSWE 1.0 27→29, Muse Spark 1.1 (xhigh) 29→27 |
+| pmndrs/koota (16) | GLM-5.3 (max) 6→10, Grok 4.6 (medium) 7→9, DeepSeek V4 Pro (max) 8→7, Qwen3.8 Max (xhigh) 9→8, GLM-5.2 (max) 10→6, Claude Opus 5 (max) 12→16, GPT-5.5 (xhigh) 13→12, Claude Sonnet 5 (max) 14→13, DeepSeek V4 Flash (max) 15→14, GLM-5.3 Flash (max) 16→15, Claude Opus 4.7 (max) · DeepSWE 1.0 17→19, Grok 4.5 (high) 19→17, Gemini 3.6 Flash (high) 20→22, Gemini 3.5 Flash (high) 22→23, Kimi K2.7 Code 23→20, GLM-5.1 · DeepSWE 1.0 28→29, Muse Spark 1.1 (xhigh) 29→28, Gemini 3.1 Pro Preview (high) 31→32, MiniMax M3 · DeepSWE 1.0 32→31 |
+| slab/quill (4) | GLM-5.3 (max) 6→7, Grok 4.6 (medium) 7→6, DeepSeek V4 Pro (max) 8→9, Qwen3.8 Max (xhigh) 9→8, Claude Sonnet 5 (max) 14→16, DeepSeek V4 Flash (max) 15→14, GLM-5.3 Flash (max) 16→15, Gemini 3.5 Flash (high) 22→23, Kimi K2.7 Code 23→22, GLM-5.1 · DeepSWE 1.0 28→29, Muse Spark 1.1 (xhigh) 29→28 |
+| sql-formatter-org/sql-formatter (4) | GLM-5.3 (max) 6→7, Grok 4.6 (medium) 7→6, GPT-5.6 Luna (max) 11→12, Claude Opus 5 (max) 12→11, Claude Sonnet 5 (max) 14→15, DeepSeek V4 Flash (max) 15→14, Gemini 3.6 Flash (high) 20→23, Claude Opus 4.6 (max) · DeepSWE 1.0 21→22, Gemini 3.5 Flash (high) 22→21, Kimi K2.7 Code 23→20, Claude Sonnet 4.6 (high) 24→25, MiMo V2.5 Pro · DeepSWE 1.0 25→24, Gemini 3.1 Pro Preview (high) 31→32, MiniMax M3 · DeepSWE 1.0 32→31 |
+| true-myth/true-myth (4) | Grok 4.6 (medium) 7→9, DeepSeek V4 Pro (max) 8→7, Qwen3.8 Max (xhigh) 9→10, GLM-5.2 (max) 10→8, Claude Sonnet 5 (max) 14→15, DeepSeek V4 Flash (max) 15→14, Claude Opus 4.6 (max) · DeepSWE 1.0 21→22, Gemini 3.5 Flash (high) 22→21, Kimi K2.6 · DeepSWE 1.0 27→29, GLM-5.1 · DeepSWE 1.0 28→27, Muse Spark 1.1 (xhigh) 29→28, Gemini 3.1 Pro Preview (high) 31→32, MiniMax M3 · DeepSWE 1.0 32→31, Grok Build 0.1 · DeepSWE 1.0 34→35, GPT-5.4 mini (xhigh) · DeepSWE 1.0 35→34 |
+| unjs/ofetch (4) | Qwen3.8 Max (xhigh) 9→11, GLM-5.2 (max) 10→9, GPT-5.6 Luna (max) 11→10, Claude Opus 5 (max) 12→13, GPT-5.5 (xhigh) 13→12, Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17, Gemini 3.5 Flash (high) 22→24, Kimi K2.7 Code 23→22, Claude Sonnet 4.6 (high) 24→23, Kimi K2.6 · DeepSWE 1.0 27→29, Muse Spark 1.1 (xhigh) 29→27, Gemini 3.1 Pro Preview (high) 31→32, MiniMax M3 · DeepSWE 1.0 32→31 |
+| vadimdemedes/ink (4) | GLM-5.2 (max) 10→11, GPT-5.6 Luna (max) 11→12, Claude Opus 5 (max) 12→10, Claude Sonnet 5 (max) 14→15, DeepSeek V4 Flash (max) 15→14, Claude Opus 4.7 (max) · DeepSWE 1.0 17→18, Gemini 3.7 Flash (medium) 18→17, Gemini 3.6 Flash (high) 20→21, Claude Opus 4.6 (max) · DeepSWE 1.0 21→23, Gemini 3.5 Flash (high) 22→20, Kimi K2.7 Code 23→22 |
+| vitest-dev/vitest (4) | Grok 4.6 (medium) 7→8, DeepSeek V4 Pro (max) 8→9, Qwen3.8 Max (xhigh) 9→7, DeepSeek V4 Flash (max) 15→16, GLM-5.3 Flash (max) 16→15, Gemini 3.7 Flash (medium) 18→19, Grok 4.5 (high) 19→18, Gemini 3.6 Flash (high) 20→23, Claude Opus 4.6 (max) · DeepSWE 1.0 21→20, Gemini 3.5 Flash (high) 22→21, Kimi K2.7 Code 23→22, Claude Sonnet 4.6 (high) 24→25, MiMo V2.5 Pro · DeepSWE 1.0 25→24 |
 
 Difficulty strata. On tasks every model solved the score is pure footprint; on the rest it mixes correctness and footprint.
 
-| Model | All common (110) | Solved by fewer (110) |
+| Model | All tasks (132) | Solved by fewer (132) |
 |---|---:|---:|
 | Claude Fable 5 (xhigh) | 42.3 (1) | 42.3 (1) |
 | Kimi K3 (max) | 33.1 (2) | 33.1 (2) |
@@ -191,16 +227,28 @@ Difficulty strata. On tasks every model solved the score is pure footprint; on t
 | Claude Sonnet 5 (max) | 21.1 (14) | 21.1 (14) |
 | DeepSeek V4 Flash (max) | 20.5 (15) | 20.5 (15) |
 | GLM-5.3 Flash (max) | 19.6 (16) | 19.6 (16) |
-| Gemini 3.7 Flash (medium) | 17.5 (17) | 17.5 (17) |
-| Grok 4.5 (high) | 16.6 (18) | 16.6 (18) |
-| Gemini 3.6 Flash (high) | 14.2 (19) | 14.2 (19) |
-| Gemini 3.5 Flash (high) | 13.9 (20) | 13.9 (20) |
-| Kimi K2.7 Code | 13.8 (21) | 13.8 (21) |
-| Claude Sonnet 4.6 (high) | 10.9 (22) | 10.9 (22) |
-| GPT-5.4 (xhigh) | 9.7 (23) | 9.7 (23) |
-| Muse Spark 1.1 (xhigh) | 6.0 (24) | 6.0 (24) |
-| Muse Spark 1.2 (xhigh) | 5.1 (25) | 5.1 (25) |
-| Gemini 3.1 Pro Preview (high) | 1.9 (26) | 1.9 (26) |
+| Claude Opus 4.7 (max) · DeepSWE 1.0 | 17.5 (17) | 17.5 (17) |
+| Gemini 3.7 Flash (medium) | 17.5 (18) | 17.5 (18) |
+| Grok 4.5 (high) | 16.6 (19) | 16.6 (19) |
+| Gemini 3.6 Flash (high) | 14.2 (20) | 14.2 (20) |
+| Claude Opus 4.6 (max) · DeepSWE 1.0 | 13.9 (21) | 13.9 (21) |
+| Gemini 3.5 Flash (high) | 13.9 (22) | 13.9 (22) |
+| Kimi K2.7 Code | 13.8 (23) | 13.8 (23) |
+| Claude Sonnet 4.6 (high) | 10.9 (24) | 10.9 (24) |
+| MiMo V2.5 Pro · DeepSWE 1.0 | 10.0 (25) | 10.0 (25) |
+| GPT-5.4 (xhigh) | 9.7 (26) | 9.7 (26) |
+| Kimi K2.6 · DeepSWE 1.0 | 6.7 (27) | 6.7 (27) |
+| GLM-5.1 · DeepSWE 1.0 | 6.2 (28) | 6.2 (28) |
+| Muse Spark 1.1 (xhigh) | 6.0 (29) | 6.0 (29) |
+| Muse Spark 1.2 (xhigh) | 5.1 (30) | 5.1 (30) |
+| Gemini 3.1 Pro Preview (high) | 1.9 (31) | 1.9 (31) |
+| MiniMax M3 · DeepSWE 1.0 | 1.6 (32) | 1.6 (32) |
+| Gemini 3 Flash Preview · DeepSWE 1.0 | -0.9 (33) | -0.9 (33) |
+| Grok Build 0.1 · DeepSWE 1.0 | -3.1 (34) | -3.1 (34) |
+| GPT-5.4 mini (xhigh) · DeepSWE 1.0 | -3.3 (35) | -3.3 (35) |
+| Claude Haiku 4.5 · DeepSWE 1.0 | -7.4 (36) | -7.4 (36) |
+| MiniMax M2.7 · DeepSWE 1.0 | -8.6 (37) | -8.6 (37) |
+| Qwen3.6 Plus · DeepSWE 1.0 | -9.3 (38) | -9.3 (38) |
 
 ## What drives each adjacent gap
 
@@ -221,16 +269,28 @@ Diagnostic on tasks where both models have calibrated point scores, split by out
 - **GPT-5.5 (xhigh) − Claude Sonnet 5 (max) = 0.45**: failed/failed -0.39 (32), failed/solved -9.46 (17), solved/failed 13.73 (36), solved/solved -3.43 (45). For GPT-5.5 (xhigh): `meriyah-explicit-resource-declarations#4` +0.71 (solved/failed), `drizzle-orm-window-function-builders#2` +0.70 (solved/solved), `superjson-error-stack-serialization#4` +0.70 (solved/failed). For Claude Sonnet 5 (max): `koota-deferred-mutation-buffer#4` -0.86 (failed/solved), `quill-shared-toolbar-focus#1` -0.84 (failed/solved), `quill-shared-toolbar-focus#4` -0.78 (failed/solved).
 - **Claude Sonnet 5 (max) − DeepSeek V4 Flash (max) = 0.23**: failed/failed 0.70 (46), failed/solved -11.21 (22), solved/failed 10.72 (19), solved/solved 0.02 (43). For Claude Sonnet 5 (max): `superjson-error-stack-serialization#1` +0.84 (solved/failed), `quill-shared-toolbar-focus#1` +0.84 (solved/failed), `koota-query-predicates#1` +0.82 (solved/failed). For DeepSeek V4 Flash (max): `cliffy-config-file-parsing#4` -0.85 (failed/solved), `dynamodb-toolbox-lazy-recursive-schemas#3` -0.78 (failed/solved), `vitest-duration-sharding#4` -0.78 (failed/solved).
 - **DeepSeek V4 Flash (max) − GLM-5.3 Flash (max) = 1.32**: failed/failed -0.10 (43), failed/solved -11.02 (22), solved/failed 9.32 (20), solved/solved 3.12 (46). For DeepSeek V4 Flash (max): `cliffy-config-file-parsing#4` +0.85 (solved/failed), `claude-code-by-agents-recursive-delegation#1` +0.79 (solved/failed), `koota-pair-relation-tracking#3` +0.79 (solved/failed). For GLM-5.3 Flash (max): `arktype-json-schema-refs-dependencies#2` -0.83 (failed/solved), `effect-sse-httpapi-streaming#3` -0.83 (failed/solved), `clack-async-autocomplete-options#3` -0.76 (failed/solved).
-- **GLM-5.3 Flash (max) − Gemini 3.7 Flash (medium) = 2.05**: failed/failed 0.09 (31), failed/solved -12.25 (32), solved/failed 9.50 (19), solved/solved 4.71 (49). For GLM-5.3 Flash (max): `effect-sse-httpapi-streaming#3` +0.85 (solved/failed), `arktype-json-schema-refs-dependencies#2` +0.79 (solved/failed), `happy-dom-deterministic-intersectionobserver#2` +0.73 (solved/failed). For Gemini 3.7 Flash (medium): `obsidian-linter-link-format-conversion#3` -0.77 (failed/solved), `kysely-window-grouping-helpers#1` -0.71 (failed/solved), `eicrud-keyset-pagination-cursor#2` -0.71 (failed/solved).
+- **GLM-5.3 Flash (max) − Claude Opus 4.7 (max) · DeepSWE 1.0 = 3.00**: failed/failed 0.09 (33), failed/solved -11.99 (25), solved/failed 11.70 (23), solved/solved 3.19 (44). For GLM-5.3 Flash (max): `clack-async-autocomplete-options#3` +0.80 (solved/failed), `happy-dom-deterministic-intersectionobserver#2` +0.75 (solved/failed), `clack-async-autocomplete-options#4` +0.74 (solved/failed). For Claude Opus 4.7 (max) · DeepSWE 1.0: `koota-pair-relation-tracking#3` -0.85 (failed/solved), `obsidian-linter-link-format-conversion#4` -0.84 (failed/solved), `obsidian-linter-link-format-conversion#1` -0.81 (failed/solved).
+- **Claude Opus 4.7 (max) · DeepSWE 1.0 − Gemini 3.7 Flash (medium) = 0.16**: failed/failed 0.10 (27), failed/solved -12.42 (29), solved/failed 9.04 (20), solved/solved 3.44 (50). For Claude Opus 4.7 (max) · DeepSWE 1.0: `obsidian-linter-link-format-conversion#4` +0.84 (solved/failed), `koota-pair-relation-tracking#3` +0.83 (solved/failed), `obsidian-linter-link-format-conversion#1` +0.80 (solved/failed). For Gemini 3.7 Flash (medium): `obsidian-linter-link-format-conversion#3` -0.79 (failed/solved), `kysely-window-grouping-helpers#1` -0.75 (failed/solved), `kysely-window-grouping-helpers#2` -0.67 (failed/solved).
 - **Gemini 3.7 Flash (medium) − Grok 4.5 (high) = 0.82**: failed/failed -0.11 (33), failed/solved -7.21 (17), solved/failed 14.64 (38), solved/solved -6.50 (44). For Gemini 3.7 Flash (medium): `obsidian-linter-link-format-conversion#3` +0.77 (solved/failed), `kysely-window-grouping-helpers#1` +0.71 (solved/failed), `eicrud-keyset-pagination-cursor#2` +0.68 (solved/failed). For Grok 4.5 (high): `ink-grid-box-layout#4` -0.74 (failed/solved), `arktype-json-schema-refs-dependencies#2` -0.72 (failed/solved), `koota-pair-relation-tracking#3` -0.67 (failed/solved).
 - **Grok 4.5 (high) − Gemini 3.6 Flash (high) = 2.48**: failed/failed -0.31 (49), failed/solved -12.14 (22), solved/failed 13.38 (28), solved/solved 1.55 (33). For Grok 4.5 (high): `dynamodb-toolbox-conditional-attribute-requirements#2` +0.81 (solved/failed), `ink-grid-box-layout#4` +0.73 (solved/failed), `arktype-json-schema-refs-dependencies#2` +0.72 (solved/failed). For Gemini 3.6 Flash (high): `obsidian-linter-scoped-ignore-markers#3` -0.81 (failed/solved), `kea-atomic-signal-selectors#4` -0.78 (failed/solved), `vitest-duration-sharding#1` -0.77 (failed/solved).
-- **Gemini 3.6 Flash (high) − Gemini 3.5 Flash (high) = 0.32**: failed/failed -0.18 (62), failed/solved -9.25 (15), solved/failed 13.30 (23), solved/solved -3.54 (32). For Gemini 3.6 Flash (high): `sql-formatter-bigquery-pipe-formatting#1` +0.84 (solved/failed), `obsidian-linter-scoped-ignore-markers#3` +0.80 (solved/failed), `kea-atomic-signal-selectors#4` +0.79 (solved/failed). For Gemini 3.5 Flash (high): `valibot-recursive-schema-composition#2` -0.84 (failed/solved), `dynamodb-toolbox-lazy-recursive-schemas#1` -0.82 (failed/solved), `koota-deferred-mutation-buffer#2` -0.81 (failed/solved).
+- **Gemini 3.6 Flash (high) − Claude Opus 4.6 (max) · DeepSWE 1.0 = 0.42**: failed/failed -0.28 (57), failed/solved -9.91 (16), solved/failed 13.43 (25), solved/solved -2.82 (24). For Gemini 3.6 Flash (high): `obsidian-linter-scoped-ignore-markers#3` +0.88 (solved/failed), `kea-atomic-signal-selectors#4` +0.84 (solved/failed), `optique-conditional-option-dependencies#3` +0.80 (solved/failed). For Claude Opus 4.6 (max) · DeepSWE 1.0: `ink-grid-box-layout#2` -0.91 (failed/solved), `dynamodb-toolbox-lazy-recursive-schemas#3` -0.89 (failed/solved), `ink-grid-box-layout#1` -0.86 (failed/solved).
+- **Claude Opus 4.6 (max) · DeepSWE 1.0 − Gemini 3.5 Flash (high) = 1.95**: failed/failed -0.11 (65), failed/solved -11.13 (17), solved/failed 11.62 (17), solved/solved 1.57 (23). For Claude Opus 4.6 (max) · DeepSWE 1.0: `ink-grid-box-layout#2` +0.90 (solved/failed), `eicrud-keyset-pagination-cursor#2` +0.88 (solved/failed), `dynamodb-toolbox-lazy-recursive-schemas#3` +0.88 (solved/failed). For Gemini 3.5 Flash (high): `dynamodb-toolbox-lazy-recursive-schemas#1` -0.89 (failed/solved), `kea-atomic-signal-selectors#2` -0.87 (failed/solved), `koota-deferred-mutation-buffer#2` -0.85 (failed/solved).
 - **Gemini 3.5 Flash (high) − Kimi K2.7 Code = 0.08**: failed/failed -0.05 (67), failed/solved -12.16 (18), solved/failed 13.86 (27), solved/solved -1.57 (20). For Gemini 3.5 Flash (high): `dynamodb-toolbox-lazy-recursive-schemas#1` +0.81 (solved/failed), `kea-atomic-signal-selectors#2` +0.81 (solved/failed), `ofetch-per-origin-circuit-breaker#1` +0.81 (solved/failed). For Kimi K2.7 Code: `query-persist-restored-query-state#4` -0.84 (failed/solved), `optique-conditional-option-dependencies#1` -0.83 (failed/solved), `awilix-async-container-initialization#1` -0.83 (failed/solved).
 - **Kimi K2.7 Code − Claude Sonnet 4.6 (high) = 2.47**: failed/failed 0.18 (71), failed/solved -12.24 (22), solved/failed 12.72 (19), solved/solved 1.81 (18). For Kimi K2.7 Code: `optique-conditional-option-dependencies#1` +0.84 (solved/failed), `drizzle-orm-window-function-builders#1` +0.84 (solved/failed), `query-persist-restored-query-state#2` +0.83 (solved/failed). For Claude Sonnet 4.6 (high): `query-persist-restored-query-state#1` -0.84 (failed/solved), `cliffy-config-file-parsing#3` -0.84 (failed/solved), `cliffy-config-file-parsing#1` -0.81 (failed/solved).
-- **Claude Sonnet 4.6 (high) − GPT-5.4 (xhigh) = 1.14**: failed/failed 0.71 (51), failed/solved -13.07 (39), solved/failed 10.33 (14), solved/solved 3.17 (26). For Claude Sonnet 4.6 (high): `eicrud-keyset-pagination-cursor#3` +0.88 (solved/failed), `cliffy-config-file-parsing#3` +0.87 (solved/failed), `query-persist-restored-query-state#1` +0.85 (solved/failed). For GPT-5.4 (xhigh): `valibot-recursive-schema-composition#1` -0.80 (failed/solved), `meriyah-explicit-resource-declarations#1` -0.76 (failed/solved), `meriyah-explicit-resource-declarations#3` -0.75 (failed/solved).
-- **GPT-5.4 (xhigh) − Muse Spark 1.1 (xhigh) = 3.68**: failed/failed 0.34 (40), failed/solved -8.84 (26), solved/failed 8.63 (29), solved/solved 3.54 (37). For GPT-5.4 (xhigh): `kysely-window-grouping-helpers#2` +0.73 (solved/failed), `happy-dom-abort-pending-body-reads#1` +0.57 (solved/failed), `vitest-duration-sharding#4` +0.55 (solved/solved). For Muse Spark 1.1 (xhigh): `sql-formatter-bigquery-pipe-formatting#3` -0.81 (failed/solved), `query-persist-restored-query-state#3` -0.75 (failed/solved), `drizzle-orm-window-function-builders#1` -0.67 (failed/solved).
+- **Claude Sonnet 4.6 (high) − MiMo V2.5 Pro · DeepSWE 1.0 = 0.75**: failed/failed -0.09 (73), failed/solved -9.78 (15), solved/failed 12.06 (20), solved/solved -1.45 (17). For Claude Sonnet 4.6 (high): `vitest-duration-sharding#2` +0.89 (solved/failed), `cliffy-config-file-parsing#3` +0.87 (solved/failed), `cliffy-config-file-parsing#1` +0.84 (solved/failed). For MiMo V2.5 Pro · DeepSWE 1.0: `awilix-async-container-initialization#3` -0.88 (failed/solved), `eicrud-keyset-pagination-cursor#2` -0.87 (failed/solved), `query-persist-restored-query-state#3` -0.80 (failed/solved).
+- **MiMo V2.5 Pro · DeepSWE 1.0 − GPT-5.4 (xhigh) = -0.40**: failed/failed 0.88 (48), failed/solved -16.67 (47), solved/failed 12.68 (18), solved/solved 2.72 (14). For MiMo V2.5 Pro · DeepSWE 1.0: `eicrud-keyset-pagination-cursor#3` +0.89 (solved/failed), `awilix-async-container-initialization#3` +0.89 (solved/failed), `eicrud-keyset-pagination-cursor#2` +0.89 (solved/failed). For GPT-5.4 (xhigh): `valibot-recursive-schema-composition#1` -0.81 (failed/solved), `meriyah-explicit-resource-declarations#1` -0.77 (failed/solved), `query-persist-restored-query-state#4` -0.77 (failed/solved).
+- **GPT-5.4 (xhigh) − Kimi K2.6 · DeepSWE 1.0 = 3.66**: failed/failed -1.12 (54), failed/solved -8.01 (10), solved/failed 15.50 (43), solved/solved -2.71 (18). For GPT-5.4 (xhigh): `valibot-recursive-schema-composition#1` +0.84 (solved/failed), `meriyah-explicit-resource-declarations#3` +0.77 (solved/failed), `meriyah-explicit-resource-declarations#1` +0.76 (solved/failed). For Kimi K2.6 · DeepSWE 1.0: `obsidian-linter-auto-table-of-contents#1` -0.91 (failed/solved), `eicrud-keyset-pagination-cursor#1` -0.89 (failed/solved), `query-persist-restored-query-state#3` -0.88 (failed/solved).
+- **Kimi K2.6 · DeepSWE 1.0 − GLM-5.1 · DeepSWE 1.0 = 0.55**: failed/failed 0.51 (83), failed/solved -7.23 (12), solved/failed 6.26 (10), solved/solved 1.01 (18). For Kimi K2.6 · DeepSWE 1.0: `obsidian-linter-auto-table-of-contents#1` +0.91 (solved/failed), `true-myth-iterable-collection-combinators#1` +0.90 (solved/failed), `eicrud-keyset-pagination-cursor#1` +0.89 (solved/failed). For GLM-5.1 · DeepSWE 1.0: `eicrud-keyset-pagination-cursor#4` -0.88 (failed/solved), `drizzle-orm-window-function-builders#3` -0.87 (failed/solved), `eicrud-keyset-pagination-cursor#2` -0.85 (failed/solved).
+- **GLM-5.1 · DeepSWE 1.0 − Muse Spark 1.1 (xhigh) = -0.95**: failed/failed 1.49 (55), failed/solved -11.02 (40), solved/failed 5.52 (9), solved/solved 3.06 (21). For GLM-5.1 · DeepSWE 1.0: `eicrud-keyset-pagination-cursor#4` +0.89 (solved/failed), `eicrud-keyset-pagination-cursor#2` +0.87 (solved/failed), `kea-atomic-signal-selectors#1` +0.81 (solved/failed). For Muse Spark 1.1 (xhigh): `valibot-recursive-schema-composition#4` -0.66 (failed/solved), `sql-formatter-bigquery-pipe-formatting#3` -0.66 (solved/solved), `meriyah-explicit-resource-declarations#2` -0.65 (failed/solved).
 - **Muse Spark 1.1 (xhigh) − Muse Spark 1.2 (xhigh) = 0.95**: failed/failed -0.14 (51), failed/solved -4.65 (18), solved/failed 3.10 (14), solved/solved 2.63 (49). For Muse Spark 1.1 (xhigh): `valibot-recursive-schema-composition#4` +0.58 (solved/failed), `ts-pattern-match-each#3` +0.43 (solved/solved), `query-persist-restored-query-state#3` +0.37 (solved/solved). For Muse Spark 1.2 (xhigh): `eicrud-keyset-pagination-cursor#1` -0.64 (failed/solved), `koota-query-predicates#1` -0.61 (failed/solved), `eicrud-keyset-pagination-cursor#2` -0.59 (failed/solved).
 - **Muse Spark 1.2 (xhigh) − Gemini 3.1 Pro Preview (high) = 3.00**: failed/failed -2.57 (61), failed/solved -1.52 (2), solved/failed 12.10 (51), solved/solved -5.01 (14). For Muse Spark 1.2 (xhigh): `meriyah-explicit-resource-declarations#4` +0.66 (solved/failed), `eicrud-keyset-pagination-cursor#1` +0.61 (solved/failed), `valibot-recursive-schema-composition#1` +0.57 (solved/failed). For Gemini 3.1 Pro Preview (high): `meriyah-explicit-resource-declarations#3` -0.80 (failed/solved), `ts-pattern-match-each#4` -0.72 (failed/solved), `sql-formatter-bigquery-pipe-formatting#1` -0.71 (solved/solved).
+- **Gemini 3.1 Pro Preview (high) − MiniMax M3 · DeepSWE 1.0 = -0.37**: failed/failed 2.73 (88), failed/solved -10.35 (23), solved/failed 5.19 (8), solved/solved 2.07 (5). For Gemini 3.1 Pro Preview (high): `ofetch-per-origin-circuit-breaker#4` +0.91 (solved/failed), `clack-async-autocomplete-options#2` +0.90 (solved/failed), `meriyah-explicit-resource-declarations#3` +0.81 (solved/failed). For MiniMax M3 · DeepSWE 1.0: `dynamodb-toolbox-lazy-recursive-schemas#4` -0.84 (failed/solved), `eicrud-keyset-pagination-cursor#4` -0.81 (failed/solved), `obsidian-linter-link-format-conversion#3` -0.80 (failed/solved).
+- **MiniMax M3 · DeepSWE 1.0 − Gemini 3 Flash Preview · DeepSWE 1.0 = 4.85**: failed/failed -3.35 (71), failed/solved -3.21 (3), solved/failed 12.14 (22), solved/solved -0.73 (2). For MiniMax M3 · DeepSWE 1.0: `dynamodb-toolbox-lazy-recursive-schemas#4` +1.01 (solved/failed), `ink-grid-box-layout#1` +1.01 (solved/failed), `obsidian-linter-link-format-conversion#3` +1.00 (solved/failed). For Gemini 3 Flash Preview · DeepSWE 1.0: `awilix-async-container-initialization#3` -1.15 (failed/solved), `true-myth-iterable-collection-combinators#4` -1.06 (failed/solved), `true-myth-iterable-collection-combinators#2` -1.00 (failed/solved).
+- **Gemini 3 Flash Preview · DeepSWE 1.0 − Grok Build 0.1 · DeepSWE 1.0 = 3.17**: failed/failed 2.67 (81), failed/solved -3.93 (6), solved/failed 3.52 (3), solved/solved 0.90 (2). For Gemini 3 Flash Preview · DeepSWE 1.0: `awilix-async-container-initialization#3` +1.22 (solved/failed), `ofetch-per-origin-circuit-breaker#1` +1.17 (solved/failed), `true-myth-iterable-collection-combinators#4` +1.14 (solved/failed). For Grok Build 0.1 · DeepSWE 1.0: `query-persist-restored-query-state#4` -1.00 (failed/solved), `query-persist-restored-query-state#2` -0.96 (failed/solved), `true-myth-iterable-collection-combinators#1` -0.90 (failed/solved).
+- **Grok Build 0.1 · DeepSWE 1.0 − GPT-5.4 mini (xhigh) · DeepSWE 1.0 = -0.42**: failed/failed 0.50 (92), failed/solved -6.11 (11), solved/failed 4.90 (10), solved/solved 0.29 (2). For Grok Build 0.1 · DeepSWE 1.0: `query-persist-restored-query-state#3` +0.87 (solved/failed), `query-persist-restored-query-state#2` +0.83 (solved/failed), `query-persist-restored-query-state#4` +0.82 (solved/failed). For GPT-5.4 mini (xhigh) · DeepSWE 1.0: `obsidian-linter-scoped-ignore-markers#1` -0.85 (failed/solved), `obsidian-linter-scoped-ignore-markers#3` -0.83 (failed/solved), `ts-pattern-match-each#4` -0.77 (failed/solved).
+- **GPT-5.4 mini (xhigh) · DeepSWE 1.0 − Claude Haiku 4.5 · DeepSWE 1.0 = 4.53**: failed/failed -2.71 (105), solved/failed 7.24 (14). For GPT-5.4 mini (xhigh) · DeepSWE 1.0: `obsidian-linter-scoped-ignore-markers#1` +0.82 (solved/failed), `obsidian-linter-scoped-ignore-markers#3` +0.79 (solved/failed), `ts-pattern-match-each#4` +0.76 (solved/failed). For Claude Haiku 4.5 · DeepSWE 1.0: `koota-deferred-mutation-buffer#2` -0.11 (failed/failed), `sql-formatter-bigquery-pipe-formatting#3` -0.10 (failed/failed), `kea-atomic-signal-selectors#1` -0.09 (failed/failed).
+- **Claude Haiku 4.5 · DeepSWE 1.0 − MiniMax M2.7 · DeepSWE 1.0 = 1.42**: failed/failed 1.42 (123). For Claude Haiku 4.5 · DeepSWE 1.0: `meriyah-explicit-resource-declarations#3` +0.06 (failed/failed), `sql-formatter-bigquery-pipe-formatting#2` +0.06 (failed/failed), `koota-query-predicates#4` +0.06 (failed/failed). For MiniMax M2.7 · DeepSWE 1.0: `superjson-error-stack-serialization#2` -0.05 (failed/failed), `koota-query-predicates#3` -0.05 (failed/failed), `obsidian-linter-link-format-conversion#2` -0.03 (failed/failed).
+- **MiniMax M2.7 · DeepSWE 1.0 − Qwen3.6 Plus · DeepSWE 1.0 = 0.71**: failed/failed 1.37 (118), failed/solved -0.66 (2). For MiniMax M2.7 · DeepSWE 1.0: `query-persist-restored-query-state#2` +0.08 (failed/failed), `sql-formatter-bigquery-pipe-formatting#2` +0.07 (failed/failed), `dynamodb-toolbox-conditional-attribute-requirements#1` +0.07 (failed/failed). For Qwen3.6 Plus · DeepSWE 1.0: `happy-dom-abort-pending-body-reads#4` -0.50 (failed/solved), `true-myth-iterable-collection-combinators#2` -0.16 (failed/solved), `happy-dom-abort-pending-body-reads#1` -0.06 (failed/failed).
 
 ## Regenerate
 

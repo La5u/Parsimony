@@ -42,11 +42,11 @@ Each benchmark and language has its own board, since unit counts can't be compar
 
 | Page | Benchmark | Models | Tasks × attempts | Analyzer | Data |
 |---|---|---:|---|---|---|
-| [DeepSWE, all languages](https://parsimony.lasu.dev/) (front page) | DeepSWE v1.1 | 26 | 108 × 4 | per language | the four boards below |
-| [DeepSWE Python](https://parsimony.lasu.dev/python.html) | DeepSWE v1.1 | 26 | 34 × 4 | 0.5.2-beta | [examples/deepswe-python](examples/deepswe-python/README.md) |
-| [DeepSWE JavaScript](https://parsimony.lasu.dev/javascript.html) | DeepSWE v1.1 | 26 | 5 × 4 | 0.7.0-beta | [examples/deepswe-javascript](examples/deepswe-javascript/README.md) |
-| [DeepSWE TypeScript](https://parsimony.lasu.dev/typescript.html) | DeepSWE v1.1 | 26 | 35 × 4 | 0.7.0-beta | [examples/deepswe-typescript](examples/deepswe-typescript/README.md) |
-| [DeepSWE Go](https://parsimony.lasu.dev/go.html) | DeepSWE v1.1 | 26 | 34 × 4 | 0.8.0-beta | [examples/deepswe-go-v2](examples/deepswe-go-v2/README.md) |
+| [DeepSWE, all languages](https://parsimony.lasu.dev/) (front page) | DeepSWE v1.1 + 1.0 | 38 | 108 × 4 | per language | the four boards below |
+| [DeepSWE Python](https://parsimony.lasu.dev/python.html) | DeepSWE v1.1 + 1.0 | 38 | 34 × 4 | 0.5.2-beta | [examples/deepswe-python](examples/deepswe-python/README.md) |
+| [DeepSWE JavaScript](https://parsimony.lasu.dev/javascript.html) | DeepSWE v1.1 + 1.0 | 38 | 5 × 4 | 0.7.0-beta | [examples/deepswe-javascript](examples/deepswe-javascript/README.md) |
+| [DeepSWE TypeScript](https://parsimony.lasu.dev/typescript.html) | DeepSWE v1.1 + 1.0 | 38 | 35 × 4 | 0.7.0-beta | [examples/deepswe-typescript](examples/deepswe-typescript/README.md) |
+| [DeepSWE Go](https://parsimony.lasu.dev/go.html) | DeepSWE v1.1 + 1.0 | 38 | 34 × 4 | 0.8.0-beta | [examples/deepswe-go-v2](examples/deepswe-go-v2/README.md), [release 1.0](examples/deepswe-go-v2/release-1.0/README.md) |
 | [SWE-bench Verified](https://parsimony.lasu.dev/verified.html) | SWE-bench Verified | 35 | 500 × 1 | 0.5.2-beta | [examples/mini-swe-agent-500](examples/mini-swe-agent-500/README.md) |
 | [Live Python](https://parsimony.lasu.dev/live.html) | SWE-bench Live Lite | 4 | 300 × 1 | 0.6.0-beta | [examples/live-python](examples/live-python/README.md) |
 | [Live JavaScript](https://parsimony.lasu.dev/live-javascript.html) | SWE-bench Live MultiLang | 5 | 108 × 1 | 0.10.0-beta | [examples/live-javascript](examples/live-javascript/README.md) |

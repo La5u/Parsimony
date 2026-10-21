@@ -28,13 +28,16 @@ LANGS=(python javascript typescript)
 if [ "$OFFLINE" = 0 ]; then
   GO=$(mktemp -d)
   python examples/benchmark-discovery/fetch-go-v2-release.py --output "$GO"
+  # DeepSWE release 1.0 runs are committed beside the checksum-bound v1.1 asset, never inside it.
+  cp examples/deepswe-go-v2/release-1.0/*.jsonl "$GO/"
+  cp examples/deepswe-go-v2/release-1.0/sensitivity.json "$GO/sensitivity.json"
   LANGS+=(go)
 fi
 
 for lang in "${LANGS[@]}"; do
   E=examples/deepswe-$lang PAGE=$lang EXTRA=()
   [ "$lang" = python ] && EXTRA=(--self-run examples/self-run/results/*.jsonl)
-  [ "$lang" = go ] && E=$GO EXTRA=(--sensitivity-report examples/deepswe-go-v2/sensitivity.md)
+  [ "$lang" = go ] && E=$GO EXTRA=(--sensitivity-report examples/deepswe-go-v2/release-1.0/sensitivity.md)
   python -m parsimony.site "$E/score-panel.json" "$E/"*.jsonl --sensitivity "$E/sensitivity.json" \
     --benchmark deepswe "${NAV[@]}" --output "$OUT/$PAGE.html" --external "$AA" "${EXTRA[@]}"
 done
