@@ -669,6 +669,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       ...(complexity ? [{key: 'cx', label: 'Decision points added'}] : [])];
     if (merged) return [{key: 'same_net', label: 'Net syntax units vs. other models, all languages (×)'},
       {key: 'same_cx', label: 'Decision points vs. other models, all languages (×)'},
+      ...(humanFix ? [{key: 'human_net', label: 'Net syntax units vs. human fix, all languages (×)'}] : []),
       ...languages.map(l => ({key: 'lang_' + l.key, label: `Net syntax units vs. other models, ${l.name} (×)`})),
       {key: 'resolve_rate', label: 'Solved (%)'},
       ...(external ? [{key: 'aa_intelligence', label: 'Artificial Analysis Intelligence Index'},
@@ -702,7 +703,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       cx: cx, solved_cx: `${cx} Mean over solved attempts.`,
       same_net: merged ? `Each language board's net-units ratio vs. the other models, averaged and weighted by the model's shared tasks there. ${units}` : `Net syntax units ${vsOthers} Sets the rank. ${units}`,
       same_cx: `Decision points ${vsOthers} ${cx}`,
-      human_net: `Net syntax units on the tasks this model solved, divided by what the human reference fix added on those same tasks. Totals are compared, so a human fix that adds almost nothing cannot blow it up. 1× = the same as the human. Does not affect rank. ${units}`,
+      human_net: merged ? `Each language's ratio of net syntax units to the human reference fix on the tasks this model solved, averaged and weighted by the model's shared tasks there. 1× = the same as the human. Does not affect rank. ${units}` : `Net syntax units on the tasks this model solved, divided by what the human reference fix added on those same tasks. Totals are compared, so a human fix that adds almost nothing cannot blow it up. 1× = the same as the human. Does not affect rank. ${units}`,
       resolve_rate: table ? '' : `Share of attempts the benchmark reports as solved. From ${bench.results}; tests aren't rerun.`,
       coverage: 'Share of solved attempts whose patch could be measured (fetched, applied to the task\'s base commit and parsed). Data coverage, not quality.',
       aa_intelligence: table ? '' : 'Outside capability score from Artificial Analysis, matched by model and reasoning effort. Does not affect rank.',

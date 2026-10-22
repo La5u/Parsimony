@@ -350,12 +350,17 @@ def human_by_task(records):
     return tasks
 
 
+def human_pairs(own, human):
+    """(own per-task solved net mean, human fix net units) over the solved tasks with a measured human fix."""
+    return [(values[0], human[t]) for t, values in own.items() if t in human]
+
+
 def human_task(own, human, seed):
     """Net units a model added relative to the human fix on the same solved tasks (1 = the same as the human).
 
     Ratio of sums like same_task, so a human fix with net ≈ 0 (many delete or replace code) cannot blow it up.
     Diagnostic only: never sets rank."""
-    pairs = [(values[0], human[t]) for t, values in own.items() if t in human]
+    pairs = human_pairs(own, human)
     denominator = sum(b for _, b in pairs)
     ratio = sum(a for a, _ in pairs) / denominator if pairs and denominator > 0 else None
     interval = None
@@ -551,6 +556,7 @@ def build_merged(boards, draws=2000, seed=42):
             groups.setdefault(r['agent'], []).append(r)
         per_model = {m['agent']: solved_by_task(groups[m['agent']]) for m in board['models']}
         typical = typical_by_task(per_model)
+        human = human_by_task(records)
         if language == 'python':
             self_run_typical = board['task_typical']
         tasks = len({row[0].split('#', 1)[0] for row in board['footprint_tasks']})
@@ -558,10 +564,12 @@ def build_merged(boards, draws=2000, seed=42):
                               attempts=board['population_count'] // tasks, models=len(board['models'])))
         for m in board['models']:
             entry = models.setdefault(m['agent'], dict(
-                agent=m['agent'], name=m['name'], company=m['company'], languages={}, pairs=({}, {}),
+                agent=m['agent'], name=m['name'], company=m['company'], languages={}, pairs=({}, {}, {}),
                 upstream_solved_attempts=0, measured_solved_attempts=0, footprint_population_count=0))
             for k in (0, 1):
                 entry['pairs'][k][language] = same_task_pairs(per_model[m['agent']], typical, k)
+            if human:
+                entry['pairs'][2][language] = human_pairs(per_model[m['agent']], human)
             entry['languages'][language] = dict(net=m['same_task_net'], net_tasks=m['same_task_net_tasks'],
                                                 complexity=m['same_task_complexity'])
             entry['upstream_solved_attempts'] += m['upstream_solved_attempts']
@@ -570,7 +578,10 @@ def build_merged(boards, draws=2000, seed=42):
     for m in models.values():
         pairs = m.pop('pairs')
         m['resolve_rate'] = m['upstream_solved_attempts'] / m['footprint_population_count']
-        for k, key in ((0, 'net'), (1, 'complexity')):
+        # Human fix: the same per-language combination, over languages whose board measured human fixes.
+        for k, key in ((0, 'net'), (1, 'complexity'), (2, 'human')):
+            if k == 2 and not pairs[2]:
+                continue
             ratio, interval, count = merged_ratio(pairs[k]), None, sum(map(len, pairs[k].values()))
             if ratio is not None and count >= SAME_TASK_MIN_INTERVAL:
                 rng, values = random.Random(f"{seed}:{m['agent']}:{key}"), []
@@ -579,9 +590,10 @@ def build_merged(boards, draws=2000, seed=42):
                     if value is not None:
                         values.append(value)
                 interval = [round(quantile(values, 0.025), 3), round(quantile(values, 0.975), 3)]
-            m[f'same_task_{key}'] = None if ratio is None else round(ratio, 3)
-            m[f'same_task_{key}_ci'] = interval
-            m[f'same_task_{key}_tasks'] = count
+            field = 'human_task_net' if k == 2 else f'same_task_{key}'
+            m[field] = None if ratio is None else round(ratio, 3)
+            m[f'{field}_ci'] = interval
+            m[f'{field}_tasks'] = count
         if len(m['languages']) < len(languages):
             m['partial'] = True
         elif m['same_task_net'] is not None and m['same_task_net_tasks'] < min_rank_tasks(sum(lang['tasks'] for lang in languages)):

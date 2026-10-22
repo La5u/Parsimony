@@ -816,6 +816,15 @@ assert.match(element('#board tbody').innerHTML, /^<tr><td>1<\/td><td class="left
 assert.deepEqual(element('graph-x').innerHTML.match(/value="[^"]+"/g), ['value="same_net"', 'value="same_cx"', 'value="lang_python"', 'value="lang_go"', 'value="resolve_rate"']);
 axis('x', 'lang_go');
 assert.match(element('ratio-note').textContent, /^×: net syntax units added vs\. other models/);
+// With human-fix ratios the combined page offers the human axis too; it never changes rank.
+const mergedHuman = structuredClone(mergedPage);
+Object.assign(mergedHuman.models[1], {human_task_net: 0.7, human_task_net_ci: [0.6, 0.8], human_task_net_tasks: 20});
+load(mergedHuman);
+assert.match(element('graph-x').innerHTML, /value="human_net">Net syntax units vs\. human fix, all languages \(×\)/);
+assert.match(element('#board tbody').innerHTML, /^<tr><td>1<\/td><td class="left">Alpha/);
+axis('y', 'human_net');
+assert.match(graph(), /0\.70×/);
+load(mergedPage);
 // A model missing from a language is listed faded and unranked; self-runs are Python only.
 const partialPage = structuredClone(mergedPage);
 partialPage.models.push({...partialPage.models[1], agent: 'c', name: 'Gamma', same_task_net: 0.5, same_task_net_ci: null, partial: true,
