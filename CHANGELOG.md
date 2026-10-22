@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — DeepSWE 1.0 models on the index axes; Solved axis fits the data
+
+**Site.** The 12 DeepSWE release 1.0 models added after the 2026-10-08 snapshot are now mapped (`aa-mapping.json`) in a new snapshot, `examples/external/artificial-analysis-2026-10-22.json`: 9 matched by model and reasoning effort; GLM-5.1, Kimi K2.6 and MiMo V2.5 Pro stay blank because their default runs don't record a thinking mode and Artificial Analysis lists both modes. All 35 earlier entries have identical values. The 2026-10-08 file stays, since the frozen Go release README cites it. The Solved axis now ends at the next 5% above the best model instead of 100%.
+
 ## Unreleased — Artificial Analysis indices on SWE-bench Verified
 
 **Site.** The Verified board gets the Artificial Analysis Intelligence and Coding Index axes from a new pinned snapshot (`examples/external/artificial-analysis-2026-10-22-verified.json`, mapping `aa-mapping-verified.json`): 27 of 35 configurations matched by model and reasoning effort, read from each run's trajectory or submission metadata (older runs that set no effort use the provider default). Eight stay blank with a reason, e.g. GPT-5.2 (high), which Artificial Analysis lists only at Medium and Xhigh. As on DeepSWE, the index becomes the default Y axis and never affects rank. Boards with human-fix ratios now open the chart on net syntax units vs. the human fix (X) against the Intelligence Index, or Solved where there is no index; the table still sorts by rank. The DeepSWE snapshot (2026-10-08) is unchanged.

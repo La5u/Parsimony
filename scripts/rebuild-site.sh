@@ -22,7 +22,7 @@ NAV=(--nav 'DeepSWE, all languages=index.html' --nav 'DeepSWE Python=python.html
      --nav 'DeepSWE TypeScript=typescript.html' --nav 'DeepSWE Go=go.html' --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html'
      --nav 'Live JavaScript=live-javascript.html' --nav 'Live TypeScript=live-typescript.html' --nav 'Live Go=live-go.html' --nav 'SWEeper PHP=sweeper-php.html'
      --nav 'SWE-Milestone, features=swe-milestone.html')
-AA=examples/external/artificial-analysis-2026-10-08.json
+AA=examples/external/artificial-analysis-2026-10-22.json
 
 LANGS=(python javascript typescript)
 if [ "$OFFLINE" = 0 ]; then

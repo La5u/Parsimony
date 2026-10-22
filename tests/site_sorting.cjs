@@ -191,6 +191,13 @@ function click(key, expected, direction) {
     assert.equal(other.parentElement.attributes['aria-sort'], 'none');
   }
 }
+function solvedAxis(which, top) {
+  // Solved ends at the next 5% above the best model (never an unreached 100%) and starts at 0 unless an outlier is set aside.
+  const [lo, hi] = graph().match(new RegExp(`data-${which}-domain="([^"]+)"`))[1].split(',').map(Number);
+  if (top !== undefined) assert.equal(hi, top);
+  assert.ok(hi % 5 === 0 && hi <= 100, `solved axis ends at ${hi}`);
+  if (lo === 0) assert.equal(tickValues(which)[0], 0);
+}
 function axis(which, key) {
   element('graph-' + which).listeners.change({target: {value: key}});
 }
@@ -223,7 +230,7 @@ assert.match(graph(), /Alpha \(Anthropic\).*Net syntax units added, solved \(mea
 axis('x', 'net');
 domainNear('x', -2.1, .1);
 assert.deepEqual(tickValues('x'), [-2, -1.5, -1, -.5, 0]); // round values, not -2.1 / -1.55 / …
-assert.deepEqual(tickValues('y'), [0, 20, 40, 60, 80, 100]);
+solvedAxis('y', 85); // best model solves 80%
 assert.match(graph(), /Alpha \(Anthropic\).*Net syntax units added, all measured \(mean\): −2.0, Solved \(%\): 80.0%/);
 // Both footprint columns and axes keep their fixed meanings; sorting all measured does not change rank.
 assert.match(element('graph-x').innerHTML, /value="solved_net">Net syntax units added, solved \(mean\)/);
@@ -312,8 +319,8 @@ for (const x of keys) for (const y of keys.filter(k => k !== x)) {
   circle.listeners.focus();
   assert(tooltip.textContent.includes(element('graph-x').innerHTML.match(new RegExp(`value="${x}">([^<]+)`))[1] + ':'));
   assert(tooltip.textContent.includes(element('graph-y').innerHTML.match(new RegExp(`value="${y}">([^<]+)`))[1] + ':'));
-  if (['resolve_rate', 'coverage'].includes(x)) assert.deepEqual(tickValues('x'), [0, 20, 40, 60, 80, 100]);
-  if (['resolve_rate', 'coverage'].includes(y)) assert.deepEqual(tickValues('y'), [0, 20, 40, 60, 80, 100]);
+  if (x === 'resolve_rate') solvedAxis('x');
+  if (y === 'resolve_rate') solvedAxis('y');
 }
 axis('x', 'net'); axis('y', 'resolve_rate');
 axis('x', 'resolve_rate'); // Selecting the other axis's metric swaps, rather than duplicating, it.
@@ -405,10 +412,10 @@ load(cropped);
 axis('x', 'net');
 domainNear('x', -2.1, .1);
 assert.match(element('graph-legend').textContent, /Gemini 3.1 Pro is off the scale/);
-domainNear('y', 18, 62);
+domainNear('y', 18, 65);
 assert.deepEqual(tickValues('y'), [20, 30, 40, 50, 60]);
 near(coordinates()[0], left() + (-500 + 2.1) / 2.2 * (690 - left()));
-near(coordinates()[1], 388 - (8 - 18) / 44 * 370);
+near(coordinates()[1], 388 - (8 - 18) / 47 * 370);
 assert(coordinates()[0] < left() && coordinates()[1] > 388);
 assert(Number.parseFloat(element('graph').style.marginBottom) > coordinates()[1] - 440);
 assert.match(html, /height: auto; overflow: visible/);
@@ -420,7 +427,7 @@ assert.match(tooltip.textContent, /off the chart's scale.*\nNet syntax units add
 assert.doesNotMatch(tooltip.textContent, /marker/i);
 assert.match(element('#board tbody').innerHTML, /−500.0/);
 axis('x', 'resolve_rate');
-near(coordinates()[0], left() + (8 - 18) / 44 * (690 - left()));
+near(coordinates()[0], left() + (8 - 18) / 47 * (690 - left()));
 near(coordinates()[1], 388 - (-500 + 2.1) / 2.2 * 370);
 axis('x', 'net');
 task('org__repo-1');
@@ -431,7 +438,7 @@ preview.models[2].name = 'Gemini 3.1 Pro Preview (high)';
 load(preview);
 axis('x', 'net');
 domainNear('x', -2.1, .1);
-domainNear('y', 18, 62);
+domainNear('y', 18, 65);
 assert.deepEqual(tickValues('y'), [20, 30, 40, 50, 60]);
 assert.match(element('graph-legend').textContent, /Gemini 3.1 Pro is off the scale/);
 const harness = structuredClone(cropped);
@@ -446,7 +453,7 @@ for (const name of ['Gemini 3.1 Professional', 'Gemini 3.1 Pro Plus', 'Gemini 3.
   load(similar);
   axis('x', 'net');
   assert(domain('x')[0] < -500); // the outlier is inside the fitted range
-  assert.deepEqual(tickValues('y'), [0, 20, 40, 60, 80, 100]);
+  solvedAxis('y');
   assert.doesNotMatch(element('graph-legend').textContent, /off the scale/);
 }
 const php = structuredClone(cropped);
@@ -459,7 +466,7 @@ singleton.models[1].measured_net_mean = null;
 load(singleton);
 axis('x', 'net');
 assert(domain('x')[0] < -500); // the outlier is inside the fitted range
-assert.deepEqual(tickValues('y'), [0, 20, 40, 60, 80, 100]);
+solvedAxis('y');
 assert.doesNotMatch(element('graph-legend').textContent, /off the scale/);
 const inside = structuredClone(cropped);
 inside.models[2].measured_net_mean = -1;
@@ -467,7 +474,7 @@ inside.models[2].resolve_rate = .4;
 load(inside);
 axis('x', 'net');
 assert.doesNotMatch(graph(), /\(off-scale\)/);
-assert.deepEqual(tickValues('y'), [0, 20, 40, 60, 80, 100]);
+solvedAxis('y');
 assert.equal(element('graph').style.marginBottom, '0px');
 assert.doesNotMatch(element('graph-legend').textContent, /off the scale/);
 const right = structuredClone(cropped);

@@ -840,11 +840,12 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       const samples = exclude ? others : points;
       const values = samples.map(p => p[axis]);
       const changed = exclude && (Math.min(...values) !== Math.min(...points.map(p => p[axis])) || Math.max(...values) !== Math.max(...points.map(p => p[axis])));
-      if (key === 'resolve_rate' && !changed) return [0, 100];
       if (changed) excludedAxes.push(axis);
       const low = Math.min(...values), high = Math.max(...values);
+      // Solved starts at 0% and ends at the next 5% above the best model, not at an unreached 100%.
+      if (key === 'resolve_rate') return [changed ? Math.max(0, low - 2) : 0, Math.min(100, Math.ceil((high + 1) / 5) * 5)];
       const padding = high > low ? (high - low) * 0.05 : Math.max(Math.abs(low) * 0.05, 1);
-      return key === 'resolve_rate' ? [Math.max(0, low - padding), Math.min(100, high + padding)] : [low - padding, high + padding];
+      return [low - padding, high + padding];
     }
     const [xmin, xmax] = extent('x', axes.x), [ymin, ymax] = extent('y', axes.y);
     // Ticks sit at round values (1, 2 or 5 × 10^k apart, about five) inside the fitted range, which stays data-driven.
