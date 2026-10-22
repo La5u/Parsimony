@@ -516,7 +516,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   };
   const companyColor = company => companyColors[company] || companyColors.Other;
   // External capability indices replace Solved as the default Y axis when a pinned snapshot is present.
-  const graphAxes = {all: {x: defaultKey, y: external ? 'aa_intelligence' : 'resolve_rate'}, task: {x: 'net', y: 'churn'}};
+  // With human-fix ratios the chart opens on code vs. the human fix; the table still sorts by rank.
+  const graphAxes = {all: {x: humanFix ? 'human_net' : defaultKey, y: external ? 'aa_intelligence' : 'resolve_rate'}, task: {x: 'net', y: 'churn'}};
   const currentAxes = () => graphAxes[selected ? 'task' : 'all'];
   function axisOptions() {
     const complexity = data.models.some(m => Number.isFinite(m.measured_solved_complexity_mean));

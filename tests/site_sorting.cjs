@@ -721,7 +721,6 @@ Object.assign(sameTask.models[1], {same_task_net: 0.9, same_task_net_ci: [0.8, 1
   same_task_complexity: 0.7, same_task_complexity_ci: [0.6, 0.8], same_task_complexity_tasks: 8, measured_solved_complexity_mean: 4});
 Object.assign(sameTask.self_run_models[0], {same_task_net: 0.5, same_task_net_ci: [0.3, 0.9], same_task_net_tasks: 5,
   same_task_complexity: 0.6, same_task_complexity_ci: null, same_task_complexity_tasks: 2, measured_solved_complexity_mean: 3});
-Object.assign(sameTask.models[1], {human_task_net: 1.4, human_task_net_ci: [1.2, 1.7], human_task_net_tasks: 6});
 sameTask.task_typical = {'org__repo-1': [150.5, 12, 4]};
 sameTask.task_human = {'org__repo-1': 40};
 for (const row of sameTask.footprint_tasks) for (const cell of row[2]) { while (cell.length < 8) cell.push(true); cell[8] = 7; }
@@ -740,13 +739,20 @@ assert.match(element('rank-help').textContent, /tasks where everyone writes a lo
 assert.match(element('#board tbody').innerHTML, /title="1 of 4 published solved attempts measured in scope\. Missing measurements are not zero and can bias the comparison\."/);
 assert.match(element('graph-x').innerHTML, /value="same_cx">Decision points vs\. other models, same tasks/);
 assert.match(element('graph-x').innerHTML, /value="solved_cx">Decision points added, solved \(mean\)/);
-// Net syntax units vs. the human fix: an extra axis with its own note and range; it never sets rank.
-assert.match(element('graph-x').innerHTML, /value="human_net">Net syntax units vs\. human fix, same tasks \(×\)/);
-axis('y', 'human_net');
-assert.match(element('ratio-note').textContent, /net syntax units added vs\. the human fix on the same solved tasks/);
-assert.match(graph(), /1\.40×/);
-assert.deepEqual(names(), ['Beta', 'Alpha', 'Gamma']);
-axis('y', 'resolve_rate');
+// Net syntax units vs. the human fix: with it the chart opens on that axis, but rank and table order don't change.
+assert.doesNotMatch(element('graph-x').innerHTML, /value="human_net"/);
+{
+  const human = structuredClone(sameTask);
+  Object.assign(human.models[1], {human_task_net: 1.4, human_task_net_ci: [1.2, 1.7], human_task_net_tasks: 6});
+  load(human, 'https://example.org/index.html');
+  assert.equal(element('graph-x').value, 'human_net');
+  assert.match(element('graph-x').innerHTML, /value="human_net">Net syntax units vs\. human fix, same tasks \(×\)/);
+  assert.match(element('ratio-note').textContent, /net syntax units added vs\. the human fix on the same solved tasks/);
+  assert.match(graph(), /1\.40×/);
+  assert.equal(element('header-same_net').attributes['aria-sort'], 'ascending');
+  assert.deepEqual(names(), ['Beta', 'Alpha', 'Gamma']);
+  load(sameTask, 'https://example.org/index.html');
+}
 // (i) buttons tell net units, units changed and complexity apart; table headers get them too.
 assert.match(element('#board thead').innerHTML, /data-info="same_net"/);
 assert.match(html, /id="graph-x-info"/);

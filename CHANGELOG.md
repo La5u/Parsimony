@@ -4,7 +4,7 @@ Analyzer versions change measurements. **Never pool or compare records from diff
 
 ## Unreleased — Artificial Analysis indices on SWE-bench Verified
 
-**Site.** The Verified board gets the Artificial Analysis Intelligence and Coding Index axes from a new pinned snapshot (`examples/external/artificial-analysis-2026-10-22-verified.json`, mapping `aa-mapping-verified.json`): 27 of 35 configurations matched by model and reasoning effort, read from each run's trajectory or submission metadata (older runs that set no effort use the provider default). Eight stay blank with a reason, e.g. GPT-5.2 (high), which Artificial Analysis lists only at Medium and Xhigh. As on DeepSWE, the index becomes the default Y axis and never affects rank. The DeepSWE snapshot (2026-10-08) is unchanged.
+**Site.** The Verified board gets the Artificial Analysis Intelligence and Coding Index axes from a new pinned snapshot (`examples/external/artificial-analysis-2026-10-22-verified.json`, mapping `aa-mapping-verified.json`): 27 of 35 configurations matched by model and reasoning effort, read from each run's trajectory or submission metadata (older runs that set no effort use the provider default). Eight stay blank with a reason, e.g. GPT-5.2 (high), which Artificial Analysis lists only at Medium and Xhigh. As on DeepSWE, the index becomes the default Y axis and never affects rank. Boards with human-fix ratios now open the chart on net syntax units vs. the human fix (X) against the Intelligence Index, or Solved where there is no index; the table still sorts by rank. The DeepSWE snapshot (2026-10-08) is unchanged.
 
 ## Unreleased — Human-fix axis, metric explanations and chart export
 
