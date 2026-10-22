@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — Artificial Analysis indices on SWE-bench Verified
+
+**Site.** The Verified board gets the Artificial Analysis Intelligence and Coding Index axes from a new pinned snapshot (`examples/external/artificial-analysis-2026-10-22-verified.json`, mapping `aa-mapping-verified.json`): 27 of 35 configurations matched by model and reasoning effort, read from each run's trajectory or submission metadata (older runs that set no effort use the provider default). Eight stay blank with a reason, e.g. GPT-5.2 (high), which Artificial Analysis lists only at Medium and Xhigh. As on DeepSWE, the index becomes the default Y axis and never affects rank. The DeepSWE snapshot (2026-10-08) is unchanged.
+
 ## Unreleased — Human-fix axis, metric explanations and chart export
 
 **Site.** New chart axis "Net units vs. human fix, same tasks (×)" (`human_task_net`): a model's solved net units over the human reference fix's on the same tasks, as a ratio of sums with a task-bootstrap range, on boards with measured human fixes (DeepSWE Python/JavaScript/TypeScript/Go, Verified, self-runs); the DeepSWE all-languages page combines the per-language human-fix ratios the same way as its peer ratio. The task view shows the human fix's net units. Site labels renamed: net units → **net syntax units**, units changed → **churn**, complexity → **decision points** (field names unchanged). (i) buttons beside the axis selectors and table headers explain each metric. Measured (%) is no longer a chart axis (it stays a table column), churn is only an axis in the task view, and churn axes get no "better" zone. New "Download chart (PNG)" and "Copy image" buttons export the current chart with its labels and legend. Rank, measurements and existing ratios are unchanged.

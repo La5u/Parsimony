@@ -53,7 +53,8 @@ fi
 
 V=examples/mini-swe-agent-500
 python -m parsimony.site "$V/score-panel.json" "$V/"*.jsonl --sensitivity "$V/sensitivity-35.json" \
-  --benchmark verified "${NAV[@]}" --output "$OUT/verified.html"
+  --benchmark verified "${NAV[@]}" --output "$OUT/verified.html" \
+  --external examples/external/artificial-analysis-2026-10-22-verified.json
 
 L=examples/live-python
 DATA=$L/site-data.json
