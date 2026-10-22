@@ -42,6 +42,10 @@ These ranges cover task resampling conditional on the eligible measurements. The
 
 The front page averages each model's per-language ratios, weighted by that model's eligible task count in each usable language (positive comparison total). Raw unit counts are never pooled across languages. Ranges resample tasks within each language. Models absent from a language board are shown as partial and not ranked. Because task eligibility differs by model, language weights can differ too.
 
+### Net units vs. the human fix (chart axis, not a rank)
+
+Where the benchmark's human reference fix was measured (all four DeepSWE languages, SWE-bench Verified and the self-runs; not Live, SWEeper or SWE-Milestone), `human_task_net` divides the sum of a model's per-task solved net units by the sum of the human fix's net units on those same tasks (in-scope, full-file human measurements only). Like the same-task ratio it is a ratio of sums, so human fixes with net ≤ 0 (117 of Verified's 500) do not make it undefined; it is unavailable when the human total is nonpositive. Ranges use the same 1,000-draw task bootstrap from 5 tasks. A human fix is one reference, not an optimum, and this ratio never sets rank. The task view also shows the human fix's net units (`task_human`).
+
 ### Offline ranking diagnostics
 
 [Published diagnostics](../examples/ranking-diagnostics/README.md) cover each language board separately: leave-one-task/repository/peer-out sensitivity, pairwise matched-task means, comparison-denominator concentration and missing-success coverage. These are descriptive checks, not confidence intervals or a new ranking. They do not evaluate the combined-language aggregate.

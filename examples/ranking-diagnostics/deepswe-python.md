@@ -8,32 +8,44 @@ These diagnostics do not change the website ranking. Lower footprint is not bett
 
 | Configuration | Ratio | Shared tasks | Measured / published successes | Largest task share | Task-drop rank range | Repo-drop rank range |
 |---|---:|---:|---:|---:|---:|---:|
-| Gemini 3.1 Pro Preview (high) | 0.663 | 8 | 11/11 | 0.180 | 1–1 | 1–1 |
-| Claude Fable 5 (xhigh) | 0.801 | 28 | 97/101 | 0.063 | 2–3 | 2–3 |
-| Claude Sonnet 5 (max) | 0.834 | 25 | 78/81 | 0.067 | 3–4 | 3–5 |
-| Claude Opus 4.8 (max) | 0.842 | 29 | 83/86 | 0.061 | 3–7 | 3–7 |
-| GLM-5.2 (max) | 0.842 | 24 | 53/57 | 0.068 | 3–6 | 3–6 |
-| Kimi K3 (max) | 0.848 | 30 | 89/92 | 0.059 | 3–8 | 3–8 |
-| Gemini 3.5 Flash (high) | 0.856 | 17 | 38/40 | 0.103 | 3–8 | 3–8 |
-| Claude Sonnet 4.6 (high) | 0.867 | 19 | 36/40 | 0.093 | 2–8 | 2–8 |
-| Kimi K2.7 Code | 0.889 | 20 | 32/33 | 0.090 | 9–9 | 9–9 |
-| DeepSeek V4 Flash (max) | 0.931 | 27 | 63/66 | 0.063 | 10–11 | 10–11 |
-| Qwen3.8 Max (xhigh) | 0.934 | 27 | 74/75 | 0.063 | 10–11 | 10–11 |
-| Gemini 3.6 Flash (high) | 0.949 | 22 | 53/57 | 0.085 | 12–12 | 11–12 |
-| Grok 4.5 (high) | 0.976 | 28 | 79/80 | 0.064 | 13–13 | 13–13 |
-| Grok 4.6 (medium) | 1.004 | 28 | 89/92 | 0.058 | 14–15 | 14–15 |
-| GPT-5.4 (xhigh) | 1.032 | 25 | 59/63 | 0.066 | 15–18 | 15–18 |
-| Gemini 3.7 Flash (medium) | 1.041 | 27 | 80/82 | 0.067 | 14–19 | 14–19 |
-| GLM-5.3 Flash (max) | 1.047 | 29 | 93/95 | 0.062 | 15–18 | 15–18 |
-| GPT-5.6 Sol (max) | 1.060 | 29 | 98/101 | 0.062 | 17–19 | 17–19 |
-| GPT-5.6 Terra (max) | 1.067 | 29 | 90/93 | 0.060 | 18–21 | 18–21 |
-| GPT-5.5 (xhigh) | 1.074 | 28 | 87/91 | 0.062 | 19–22 | 19–22 |
-| DeepSeek V4 Pro (max) | 1.075 | 29 | 77/81 | 0.060 | 19–22 | 19–22 |
-| GLM-5.3 (max) | 1.075 | 29 | 87/90 | 0.062 | 16–22 | 16–22 |
-| GPT-5.6 Luna (max) | 1.143 | 30 | 85/89 | 0.058 | 23–24 | 23–24 |
-| Claude Opus 5 (max) | 1.144 | 28 | 97/101 | 0.064 | 23–24 | 23–24 |
-| Muse Spark 1.2 (xhigh) | 1.309 | 27 | 66/69 | 0.063 | 25–25 | 25–25 |
-| Muse Spark 1.1 (xhigh) | 1.352 | 24 | 68/72 | 0.071 | 26–26 | 26–26 |
+| Gemini 3 Flash Preview · DeepSWE 1.0 | 0.499 | 2 | 2/4 | 0.549 | 1–1 | 1–1 |
+| Gemini 3.1 Pro Preview (high) | 0.676 | 8 | 11/11 | 0.184 | 2–2 | 2–2 |
+| Claude Fable 5 (xhigh) | 0.808 | 28 | 97/101 | 0.063 | 3–5 | 3–5 |
+| Kimi K2.6 · DeepSWE 1.0 | 0.814 | 14 | 23/25 | 0.127 | 3–6 | 3–6 |
+| Claude Opus 4.6 (max) · DeepSWE 1.0 | 0.830 | 18 | 35/37 | 0.091 | 4–9 | 4–9 |
+| Claude Sonnet 5 (max) | 0.845 | 25 | 78/81 | 0.067 | 6–9 | 5–9 |
+| Qwen3.6 Plus · DeepSWE 1.0 | 0.848 | 1 | 1/1 | 1.000 | 6–9 | 6–9 |
+| Claude Opus 4.8 (max) | 0.850 | 29 | 83/86 | 0.061 | 5–10 | 5–10 |
+| GLM-5.2 (max) | 0.854 | 24 | 53/57 | 0.069 | 7–11 | 7–11 |
+| Kimi K3 (max) | 0.857 | 30 | 89/92 | 0.059 | 5–12 | 5–12 |
+| Gemini 3.5 Flash (high) | 0.864 | 17 | 38/40 | 0.104 | 6–12 | 6–12 |
+| Claude Sonnet 4.6 (high) | 0.870 | 19 | 36/40 | 0.093 | 3–13 | 3–13 |
+| MiMo V2.5 Pro · DeepSWE 1.0 | 0.884 | 12 | 20/21 | 0.166 | 12–14 | 12–14 |
+| Kimi K2.7 Code | 0.898 | 20 | 32/33 | 0.090 | 13–15 | 13–15 |
+| DeepSeek V4 Flash (max) | 0.941 | 27 | 63/66 | 0.063 | 14–17 | 14–17 |
+| Qwen3.8 Max (xhigh) | 0.945 | 27 | 74/75 | 0.062 | 15–18 | 15–18 |
+| Grok Build 0.1 · DeepSWE 1.0 | 0.957 | 8 | 15/15 | 0.188 | 15–20 | 15–20 |
+| Gemini 3.6 Flash (high) | 0.958 | 22 | 53/57 | 0.086 | 16–19 | 16–19 |
+| Grok 4.5 (high) | 0.986 | 28 | 79/80 | 0.065 | 18–20 | 18–20 |
+| Claude Opus 4.7 (max) · DeepSWE 1.0 | 1.005 | 27 | 63/68 | 0.061 | 19–21 | 19–22 |
+| Grok 4.6 (medium) | 1.014 | 28 | 89/92 | 0.057 | 19–22 | 19–22 |
+| MiniMax M3 · DeepSWE 1.0 | 1.027 | 12 | 22/24 | 0.132 | 21–27 | 21–27 |
+| GPT-5.4 (xhigh) | 1.040 | 25 | 59/63 | 0.067 | 21–27 | 21–27 |
+| Gemini 3.7 Flash (medium) | 1.046 | 27 | 80/82 | 0.067 | 20–28 | 20–28 |
+| GPT-5.4 mini (xhigh) · DeepSWE 1.0 | 1.053 | 14 | 27/29 | 0.118 | 22–29 | 22–28 |
+| GLM-5.3 Flash (max) | 1.056 | 29 | 93/95 | 0.062 | 23–27 | 23–27 |
+| GPT-5.6 Sol (max) | 1.069 | 29 | 98/101 | 0.062 | 25–29 | 25–29 |
+| GPT-5.6 Terra (max) | 1.075 | 29 | 90/93 | 0.061 | 26–30 | 26–30 |
+| GPT-5.5 (xhigh) | 1.082 | 28 | 87/91 | 0.062 | 28–31 | 28–31 |
+| DeepSeek V4 Pro (max) | 1.084 | 29 | 77/81 | 0.060 | 27–31 | 27–31 |
+| GLM-5.3 (max) | 1.085 | 29 | 87/90 | 0.062 | 25–32 | 25–32 |
+| GPT-5.6 Luna (max) | 1.152 | 30 | 85/89 | 0.058 | 31–34 | 31–34 |
+| Claude Opus 5 (max) | 1.154 | 28 | 97/101 | 0.065 | 32–33 | 32–33 |
+| GLM-5.1 · DeepSWE 1.0 | 1.205 | 8 | 11/13 | 0.193 | 3–35 | 3–35 |
+| Muse Spark 1.2 (xhigh) | 1.314 | 27 | 66/69 | 0.064 | 34–35 | 34–35 |
+| Muse Spark 1.1 (xhigh) | 1.359 | 24 | 68/72 | 0.072 | 35–36 | 35–36 |
+| Claude Haiku 4.5 · DeepSWE 1.0 | — | 0 | 0/0 | — | — | — |
+| MiniMax M2.7 · DeepSWE 1.0 | — | 0 | 0/0 | — | — | — |
 
 Largest task share is the largest absolute per-task peer footprint divided by the total peer footprint; cancellation can make it exceed 1. Unavailable perturbations are counted separately in JSON, not included in rank ranges.
 

@@ -120,6 +120,12 @@ body { overflow-x: clip; }
   padding: 5px 9px;
   background: var(--bg); color: #000;
 }
+#export-controls button { font-size: 0.78rem; padding: 3px 8px; }
+.info {
+  display: inline-flex; align-items: center; justify-content: center; width: 1.25em; height: 1.25em; min-width: 0;
+  margin-left: 0.3em; padding: 0; border: 1px solid currentColor; border-radius: 50%; background: none; color: var(--muted);
+  font: italic 600 0.72rem/1 Georgia, serif; vertical-align: 0.1em; cursor: help;
+}
 #graph circle:focus-visible { outline: 2px solid #000; outline-offset: 4px; }
 /* Sort arrows are SVG masks in the text colour: phones draw the ↕ character as an emoji. */
 th[aria-sort] button::after {
@@ -159,7 +165,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p>Existing benchmarks measure solve rate and cost, but don't punish excess code, which makes a codebase harder to work with in the long term. Parsimony measures how much code AI models add.</p>
   <noscript><p class="small">The charts and leaderboard need JavaScript. The data is on <a href="https://github.com/La5u/Parsimony/tree/main/examples">GitHub</a>.</p></noscript>
 
-  <p class="small" id="units-definition">It takes the patches that benchmarks already publish and counts <b>coding units</b>, syntax elements like calls, names and literals rather than lines: net units = added − removed (<a href="https://github.com/La5u/Parsimony/blob/main/docs/method.md">method</a>).</p>
+  <p class="small" id="units-definition">It takes the patches that benchmarks already publish and counts <b>syntax units</b> (calls, names, literals and so on) rather than lines: net syntax units = added − removed (<a href="https://github.com/La5u/Parsimony/blob/main/docs/method.md">method</a>).</p>
   <nav id="nav" aria-label="Leaderboards" hidden></nav>
   <section aria-labelledby="complexity">
   <h2 id="complexity">Compare models</h2>
@@ -168,19 +174,20 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
        <option value="scatter">Scatter: compare two metrics</option><option value="bar">Bars: one metric</option></select>
      <label id="self-run-toggle-label" hidden><input type="checkbox" id="self-run-toggle" checked> <span id="self-run-toggle-text">Show my runs</span></label>
      <label id="harness-toggle-label" hidden><input type="checkbox" id="harness-toggle"> Show other harnesses</label></p>
-  <p id="axis-controls"><label for="graph-x" id="graph-x-label">X axis</label> <select id="graph-x" aria-label="X axis metric"></select>
-     <span id="graph-y-control"><label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select></span></p>
+  <p id="axis-controls"><label for="graph-x" id="graph-x-label">X axis</label> <select id="graph-x" aria-label="X axis metric"></select><button type="button" class="info" id="graph-x-info" aria-label="What does the X axis metric mean?">i</button>
+     <span id="graph-y-control"><label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select><button type="button" class="info" id="graph-y-info" aria-label="What does the Y axis metric mean?">i</button></span></p>
   </details>
   <p class="small" id="ratio-note" hidden></p>
   <p class="small muted" id="graph-legend"></p>
   <div class="small" id="company-legend" aria-label="Model companies"></div>
   <div id="graph" aria-label="Comparison of selected metrics per model"></div>
+  <p class="small" id="export-controls"><button type="button" id="export-png">Download chart (PNG)</button> <button type="button" id="copy-png" hidden>Copy image</button> <span class="muted" id="export-status" role="status" aria-live="polite"></span></p>
   <div class="small" id="graph-tooltip" role="tooltip" hidden></div>
   <p class="small muted" id="self-run-note" hidden></p>
   </section>
 
   <details class="small muted"><summary>How to read this</summary>
-  <p><span id="rank-help">Models are ranked by mean net units added on the tasks they solved, lowest first. "Net units added (mean)" also includes failed attempts.</span> Solved comes from <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a>; tests aren't rerun. Measured is how many solved attempts could be measured.</p>
+  <p><span id="rank-help">Models are ranked by mean net syntax units added on the tasks they solved, lowest first. "Net syntax units added (mean)" also includes failed attempts.</span> Solved comes from <a id="bench-link" href="https://www.swebench.com">SWE-bench Verified</a>; tests aren't rerun. Measured is how many solved attempts could be measured.</p>
   <p>Each model has its own solved, measured comparison tasks and peer mixture. Missing measurements are not zero; large patches can dominate the ratio. Hover over a ratio for its shared-task count and conditional 95% range, or over Measured for success coverage. These ranges do not cover missingness, peer selection or differing harness/retry policies; configurations are not controlled model-only comparisons. <a href="https://github.com/La5u/Parsimony/blob/main/docs/method.md#website-ranking-same-task-net-ratio-v1">Ranking details and offline diagnostics</a>.</p>
   <p id="external-help" hidden><span id="external-note"></span> It's an outside score, matched by model and reasoning effort, and doesn't affect the rank.<span id="aa-missing"></span></p>
   <p id="self-run-help" hidden>Faded models were run by me on the first <span class="self-run-tasks">few</span> DeepSWE Python tasks (OpenAI models with pi, and the GPT-6 family with Codex, whose pi runs appear with "Show other harnesses"; Anthropic models with Claude Code) and graded with each task's own tests. They aren't verified or ranked. GPT-5.6 Sol ran both ways: my run added 0.88× the code of its published run.</p>
@@ -204,8 +211,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         <tr>
           <th>Rank</th>
           <th class="left">Model</th>
-          <th aria-sort="ascending"><button type="button" data-sort="net">Net units added (mean)</button></th>
-          <th aria-sort="none"><button type="button" data-sort="solved_net">Net units added, solved (mean)</button></th>
+          <th aria-sort="ascending"><button type="button" data-sort="net">Net syntax units added (mean)</button></th>
+          <th aria-sort="none"><button type="button" data-sort="solved_net">Net syntax units added, solved (mean)</button></th>
           <th aria-sort="none"><button type="button" data-sort="resolve_rate">Solved</button></th>
           <th aria-sort="none"><button type="button" data-sort="coverage">Measured</button></th>
         </tr>
@@ -527,29 +534,33 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   }
   // Same-task comparison (task difficulty): code relative to the other models on the tasks a model solved.
   const sameTask = data.models.some(m => Number.isFinite(m.same_task_net));
+  const humanFix = data.models.some(m => Number.isFinite(m.human_task_net));
   const rankValue = m => unranked(m) ? null : sameTask ? m.same_task_net : netMean(m);
   const rankOf = m => Number.isFinite(rankValue(m)) ? 1 + data.models.filter(other =>
     Number.isFinite(rankValue(other)) && rankValue(other) < rankValue(m)).length : null;
   // One sentence above the chart whenever an axis is a same-task ratio, so 0.8× reads without opening help.
   const showRatioNote = keys => {
-    const what = keys.some(k => k === 'same_net' || langKeys.includes(k)) ? 'Net units added' : keys.includes('same_cx') ? 'Complexity added' : '';
-    $('ratio-note').hidden = !what;
-    $('ratio-note').textContent = what ? `×: ${what.toLowerCase()} vs. other models on the same solved tasks. 1× = the same, 0.8× = 20% less.` : '';
+    const what = keys.some(k => k === 'same_net' || langKeys.includes(k)) ? 'Net syntax units added' : keys.includes('same_cx') ? 'Decision points added' : '';
+    const human = keys.includes('human_net');
+    const notes = [what && `${what.toLowerCase()} vs. other models on the same solved tasks`, human && 'net syntax units added vs. the human fix on the same solved tasks'].filter(Boolean);
+    $('ratio-note').hidden = !notes.length;
+    $('ratio-note').textContent = notes.length ? `×: ${notes.join('; ')}. 1× = the same, 0.8× = 20% less.` : '';
   };
   // Legend entries for the two kinds of lighter dot, so older generations and my runs aren't confused.
   const fadeLegend = (older, selfRun) =>
     (older ? '<span><span class="company-swatch fade-swatch" style="opacity:0.7" aria-hidden="true"></span>Lighter: older generation</span>' : '')
     + (selfRun ? '<span><span class="company-swatch fade-swatch" style="opacity:0.35" aria-hidden="true"></span>Faintest: ' + runsLabel.toLowerCase() + ', not ranked</span>' : '');
-  const ratioKeys = ['same_net', 'same_cx', ...langKeys], footprintKeys = ['net', 'solved_net', 'churn', 'solved_cx', 'cx', ...ratioKeys];
+  const ratioKeys = ['same_net', 'same_cx', 'human_net', ...langKeys], footprintKeys = ['net', 'solved_net', 'churn', 'solved_cx', 'cx', ...ratioKeys];
   const defaultKey = sameTask ? 'same_net' : 'solved_net';
   if (sameTask) {
-    $('rank-help').textContent = 'Some tasks need much more code than others, and models solve different tasks. So each model is ranked by the code it added on the tasks it solved, divided by what the other models added on those same tasks: 0.8× means 20% less code than they wrote. Only tasks solved by at least 3 other models count, and totals are compared, so tasks where everyone writes a lot weigh more than small ones. "Net units added (mean)" is the plain average and also includes failed attempts. Complexity counts added branches, loops and functions the same way.' + (data.min_rank_tasks ? ` A model needs at least ${data.min_rank_tasks} such tasks to be ranked; with fewer it is listed faded at the end.` : '');
+    $('rank-help').textContent = 'Some tasks need much more code than others, and models solve different tasks. So each model is ranked by the code it added on the tasks it solved, divided by what the other models added on those same tasks: 0.8× means 20% less code than they wrote. Only tasks solved by at least 3 other models count, and totals are compared, so tasks where everyone writes a lot weigh more than small ones. "Net syntax units added (mean)" is the plain average and also includes failed attempts. Decision points (added branches, loops and functions) are compared the same way.' + (data.min_rank_tasks ? ` A model needs at least ${data.min_rank_tasks} such tasks to be ranked; with fewer it is listed faded at the end.` : '');
   }
   if (merged) {
     $('rank-help').textContent = `Each language board ranks models by the code they added on the tasks they solved, divided by what the other models added on those same tasks: 0.8× means 20% less code. This page averages each model's ${languages.map(l => l.name).join(', ')} ratios, weighting each language by the model's shared tasks there, so a language with few tasks counts little. Unit counts differ between languages and are never added together. The 95% range resamples tasks within each language. A model needs at least ${data.min_rank_tasks} shared tasks across languages to be ranked; with fewer it is listed faded at the end.`;
   }
   const languageOf = key => languages.find(l => 'lang_' + l.key === key);
-  const ratioOf = (m, key) => key === 'same_cx' ? [m.same_task_complexity_ci, m.same_task_complexity_tasks] : [m.same_task_net_ci, m.same_task_net_tasks];
+  const ratioOf = (m, key) => key === 'same_cx' ? [m.same_task_complexity_ci, m.same_task_complexity_tasks]
+    : key === 'human_net' ? [m.human_task_net_ci, m.human_task_net_tasks] : [m.same_task_net_ci, m.same_task_net_tasks];
   const rangeNote = (m, key) => {
     if (languageOf(key)) {
       const count = m.languages?.[languageOf(key).key]?.net_tasks ?? 0;
@@ -568,6 +579,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         coverage: denominator(model) > 0 ? measuredCount(model) / denominator(model) * 100 : null,
         churn: model.measured_churn_mean, net: model.measured_net_mean, solved_net: model.measured_solved_net_mean,
         solved_cx: model.measured_solved_complexity_mean, same_net: model.same_task_net, same_cx: model.same_task_complexity,
+        human_net: model.human_task_net,
         aa_coding: model.aa_coding, aa_intelligence: model.aa_intelligence,
         ...Object.fromEntries(languages.map(l => ['lang_' + l.key, model.languages?.[l.key]?.net ?? null]))}[key];
     }
@@ -581,10 +593,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const focusedSort = [...document.querySelectorAll('#board button[data-sort]')]
       .find(button => button === document.activeElement)?.dataset.sort;
     const headers = selected
-      ? [['Model', null], ['Result', null], ['Net units', 'net']]
+      ? [['Model', null], ['Result', null], ['Net syntax units', 'net']]
       : merged ? [['#', null], ['Model', null], ['Vs. others, all languages', 'same_net'], ...languages.map(l => [l.name, 'lang_' + l.key]), ['Solved', 'resolve_rate'], ...(external ? [['AA Intel.', 'aa_intelligence']] : []), ['Measured', 'coverage']]
-      : [['#', null], ['Model', null], ...(sameTask ? [['Vs. others, same tasks', 'same_net']] : []), ['Net units, solved (mean)', 'solved_net'], ['Net units, all measured (mean)', 'net'], ['Solved', 'resolve_rate'], ...(external ? [['AA Intel.', 'aa_intelligence']] : []), ['Measured', 'coverage']];
-    document.querySelector('#board thead').innerHTML = '<tr>' + headers.map(([name, key]) => `<th${key ? ` aria-sort="${key === sortKey ? ascending ? 'ascending' : 'descending' : 'none'}"` : ''}${name === 'Model' ? ' class="left"' : ''}>${key ? `<button type="button" data-sort="${key}">${name}</button>` : name}</th>`).join('') + '</tr>';
+      : [['#', null], ['Model', null], ...(sameTask ? [['Vs. others, same tasks', 'same_net']] : []), ['Net syntax units, solved (mean)', 'solved_net'], ['Net syntax units, all measured (mean)', 'net'], ['Solved', 'resolve_rate'], ...(external ? [['AA Intel.', 'aa_intelligence']] : []), ['Measured', 'coverage']];
+    document.querySelector('#board thead').innerHTML = '<tr>' + headers.map(([name, key]) => `<th${key ? ` aria-sort="${key === sortKey ? ascending ? 'ascending' : 'descending' : 'none'}"` : ''}${name === 'Model' ? ' class="left"' : ''}>${key ? `<button type="button" data-sort="${key}">${name}</button>` : name}${key && metricInfo(key, true) ? `<button type="button" class="info" data-info="${key}" aria-label="What is ${esc(name)}?">i</button>` : ''}</th>`).join('') + '</tr>';
     const buttons = [...document.querySelectorAll('#board button[data-sort]')];
     if (focusedSort) buttons.find(button => button.dataset.sort === focusedSort)?.focus({preventScroll: true});
     buttons.forEach((button) => button.addEventListener('click', () => {
@@ -623,7 +635,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     selected = id ? tasks.get(id) : null;
     const typical = selected && (data.task_typical || {})[selected[0].split('#')[0]];
     $('task-status').textContent = selected ? `Selected task: ${selected[0]}.` + (typical
-      ? ` Typical solved patch: ${signed(typical[0])} net units${typical[1] == null ? '' : `, complexity ${signed(typical[1])}`} (mean of ${typical[2]} model${typical[2] === 1 ? '' : 's'}).` : '') : 'Showing all tasks.';
+      ? ` Typical solved patch: ${signed(typical[0])} net syntax units${typical[1] == null ? '' : `, decision points ${signed(typical[1])}`} (mean of ${typical[2]} model${typical[2] === 1 ? '' : 's'}).` : '')
+      + (Number.isFinite(data.task_human?.[selected[0].split('#')[0]]) ? ` Human fix: ${signed(data.task_human[selected[0].split('#')[0]])} net syntax units.` : '') : 'Showing all tasks.';
     $('task-search').value = selected ? selected[0] : '';
     $('task-footer').hidden = !selected;
     if (selected) {
@@ -652,20 +665,20 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const currentAxes = () => graphAxes[selected ? 'task' : 'all'];
   function axisOptions() {
     const complexity = data.models.some(m => Number.isFinite(m.measured_solved_complexity_mean));
-    if (selected) return [{key: 'net', label: 'Net units added'}, {key: 'churn', label: 'Units changed'},
-      ...(complexity ? [{key: 'cx', label: 'Complexity added'}] : [])];
-    if (merged) return [{key: 'same_net', label: 'Net units vs. other models, all languages (×)'},
-      {key: 'same_cx', label: 'Complexity vs. other models, all languages (×)'},
-      ...languages.map(l => ({key: 'lang_' + l.key, label: `Net units vs. other models, ${l.name} (×)`})),
-      {key: 'resolve_rate', label: 'Solved (%)'}, {key: 'coverage', label: 'Measured (%)'},
+    if (selected) return [{key: 'net', label: 'Net syntax units added'}, {key: 'churn', label: 'Churn'},
+      ...(complexity ? [{key: 'cx', label: 'Decision points added'}] : [])];
+    if (merged) return [{key: 'same_net', label: 'Net syntax units vs. other models, all languages (×)'},
+      {key: 'same_cx', label: 'Decision points vs. other models, all languages (×)'},
+      ...languages.map(l => ({key: 'lang_' + l.key, label: `Net syntax units vs. other models, ${l.name} (×)`})),
+      {key: 'resolve_rate', label: 'Solved (%)'},
       ...(external ? [{key: 'aa_intelligence', label: 'Artificial Analysis Intelligence Index'},
         {key: 'aa_coding', label: 'Artificial Analysis Coding Index'}] : [])];
-    return [...(sameTask ? [{key: 'same_net', label: 'Net units vs. other models, same tasks (×)'},
-        {key: 'same_cx', label: 'Complexity vs. other models, same tasks (×)'}] : []),
-      {key: 'solved_net', label: 'Net units added, solved (mean)'}, {key: 'net', label: 'Net units added, all measured (mean)'},
-      {key: 'churn', label: 'Units changed, all measured (mean)'}, {key: 'resolve_rate', label: 'Solved (%)'},
-      {key: 'coverage', label: 'Measured (%)'},
-      ...(complexity ? [{key: 'solved_cx', label: 'Complexity added, solved (mean)'}] : []),
+    return [...(sameTask ? [{key: 'same_net', label: 'Net syntax units vs. other models, same tasks (×)'},
+        {key: 'same_cx', label: 'Decision points vs. other models, same tasks (×)'}] : []),
+      ...(humanFix ? [{key: 'human_net', label: 'Net syntax units vs. human fix, same tasks (×)'}] : []),
+      {key: 'solved_net', label: 'Net syntax units added, solved (mean)'}, {key: 'net', label: 'Net syntax units added, all measured (mean)'},
+      {key: 'resolve_rate', label: 'Solved (%)'},
+      ...(complexity ? [{key: 'solved_cx', label: 'Decision points added, solved (mean)'}] : []),
       ...(external ? [{key: 'aa_intelligence', label: 'Artificial Analysis Intelligence Index'},
         {key: 'aa_coding', label: 'Artificial Analysis Coding Index'}] : [])];
   }
@@ -675,6 +688,118 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       $('graph-' + axis).value = currentAxes()[axis];
     }
   }
+  // (i) buttons: what a metric counts. Net syntax units, churn and decision points are easy to mix up.
+  function metricInfo(key, table) {
+    const units = 'Units are syntax elements (names, calls, literals, operators, statements), not lines; comments, formatting and tests are not counted.';
+    const net = 'Net syntax units: units added − units removed, i.e. how much the code grew. Negative means it shrank.';
+    const cx = 'Decision points: new functions, branches, loops, exception handlers and extra and/or operands. They count paths through the code, not its size: 50 units of straight-line code add 0.';
+    const vsOthers = 'on the tasks this model solved, divided by what the other models added on those same tasks (totals, so big tasks weigh more). 1× = the same, 0.8× = 20% less.';
+    if (key.startsWith('lang_')) return `Net syntax units ${vsOthers} ${units}`;
+    return {
+      net: `${net} ${selected ? 'For this attempt.' : 'Mean over every measured attempt, failed ones included.'} ${units}`,
+      solved_net: `${net} Mean over solved attempts. ${units}`,
+      churn: `Churn: units added + units removed, i.e. how much code the patch touched in either direction. Rewriting 10 units in place is 0 net but 20 changed. ${units}`,
+      cx: cx, solved_cx: `${cx} Mean over solved attempts.`,
+      same_net: merged ? `Each language board's net-units ratio vs. the other models, averaged and weighted by the model's shared tasks there. ${units}` : `Net syntax units ${vsOthers} Sets the rank. ${units}`,
+      same_cx: `Decision points ${vsOthers} ${cx}`,
+      human_net: `Net syntax units on the tasks this model solved, divided by what the human reference fix added on those same tasks. Totals are compared, so a human fix that adds almost nothing cannot blow it up. 1× = the same as the human. Does not affect rank. ${units}`,
+      resolve_rate: table ? '' : `Share of attempts the benchmark reports as solved. From ${bench.results}; tests aren't rerun.`,
+      coverage: 'Share of solved attempts whose patch could be measured (fetched, applied to the task\'s base commit and parsed). Data coverage, not quality.',
+      aa_intelligence: table ? '' : 'Outside capability score from Artificial Analysis, matched by model and reasoning effort. Does not affect rank.',
+      aa_coding: 'Outside coding score from Artificial Analysis, matched by model and reasoning effort. Does not affect rank.',
+    }[key] || '';
+  }
+  const infoText = button => metricInfo(button.dataset.info || $(button.id.replace('-info', '')).value, !!button.dataset.info);
+  ['mouseover', 'focusin', 'click'].forEach(type => window.addEventListener(type, event => {
+    const button = event.target.closest?.('.info');
+    // A tap elsewhere closes an open (i); taps fire mouseover then click, so a click never toggles it off.
+    if (!button) { if (type === 'click' && tooltipTarget?.classList?.contains('info')) hideTooltip(); return; }
+    showTooltipAt(button, event, infoText(button));
+  }));
+  ['mouseout', 'focusout'].forEach(type => window.addEventListener(type, event => {
+    if (event.target.closest?.('.info') && !event.target.contains(event.relatedTarget)) hideTooltip();
+  }));
+  // Export: the chart as drawn (SVG, HTML labels and bars, legends) painted onto a 2× canvas.
+  async function chartCanvas() {
+    const scale = 2, pad = 16, graph = $('graph');
+    const parts = ['ratio-note', 'graph-legend', 'company-legend', 'graph'].map($).filter(el => !el.hidden && el.offsetHeight);
+    const rects = parts.flatMap(el => [el, ...el.querySelectorAll('*')]).map(el => el.getBoundingClientRect()).filter(r => r.width || r.height);
+    const g = graph.getBoundingClientRect();
+    const left = Math.min(g.left, ...rects.map(r => r.left)), right = Math.max(g.right, ...rects.map(r => r.right));
+    const top = Math.min(...rects.map(r => r.top)), bottom = Math.max(...rects.map(r => r.bottom));
+    const title = `${bench.name} — ${trackName}`, head = 30, foot = 22;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil((right - left + 2 * pad) * scale);
+    canvas.height = Math.ceil((bottom - top + 2 * pad + head + foot) * scale);
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#000'; ctx.font = '600 15px system-ui, sans-serif'; ctx.textBaseline = 'top';
+    ctx.fillText(title, pad, pad);
+    const ox = pad - left, oy = pad + head - top;
+    const fontOf = cs => `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const opacityOf = el => { let o = 1; for (let e = el; e && e !== document.body; e = e.parentElement) o *= Number(getComputedStyle(e).opacity); return o; };
+    const visible = color => color && color !== 'transparent' && !/rgba\(.*,\s*0\)$/.test(color);
+    for (const part of parts) {
+      for (const svg of part.querySelectorAll('svg')) {
+        const clone = svg.cloneNode(true), source = [svg, ...svg.querySelectorAll('*')], copy = [clone, ...clone.querySelectorAll('*')];
+        source.forEach((el, i) => {
+          const cs = getComputedStyle(el);
+          copy[i].setAttribute('style', ['fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-opacity', 'stroke-dasharray', 'opacity',
+            'font-family', 'font-size', 'font-weight', 'text-anchor', 'dominant-baseline'].map(p => `${p}:${cs.getPropertyValue(p)}`).join(';'));
+        });
+        const r = svg.getBoundingClientRect();
+        clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        clone.setAttribute('width', r.width); clone.setAttribute('height', r.height);
+        const img = new Image();
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone));
+        await img.decode();
+        ctx.drawImage(img, r.left + ox, r.top + oy, r.width, r.height);
+      }
+      for (const el of [part, ...part.querySelectorAll('*')]) {
+        if (el.closest('svg')) continue;
+        const cs = getComputedStyle(el), r = el.getBoundingClientRect();
+        if (cs.visibility === 'hidden' || !r.width || !visible(cs.backgroundColor)) continue;
+        ctx.globalAlpha = opacityOf(el); ctx.fillStyle = cs.backgroundColor;
+        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(r.left + ox, r.top + oy, r.width, r.height, parseFloat(cs.borderTopLeftRadius) || 0) : ctx.rect(r.left + ox, r.top + oy, r.width, r.height); ctx.fill();
+      }
+      const walker = document.createTreeWalker(part, NodeFilter.SHOW_TEXT), range = document.createRange();
+      for (let node; (node = walker.nextNode());) {
+        const el = node.parentElement;
+        if (!el || el.closest('svg') || !node.textContent.trim()) continue;
+        const cs = getComputedStyle(el), clip = el.getBoundingClientRect();
+        ctx.save(); ctx.globalAlpha = opacityOf(el); ctx.fillStyle = cs.color; ctx.font = fontOf(cs); ctx.textBaseline = 'middle';
+        if (cs.overflow === 'hidden') { ctx.beginPath(); ctx.rect(clip.left + ox, clip.top + oy, clip.width, clip.height); ctx.clip(); }
+        for (const word of node.textContent.matchAll(/\S+/g)) {
+          range.setStart(node, word.index); range.setEnd(node, word.index + word[0].length);
+          const w = range.getBoundingClientRect();
+          if (w.width) ctx.fillText(word[0], w.left + ox, w.top + w.height / 2 + oy);
+        }
+        ctx.restore();
+      }
+    }
+    ctx.globalAlpha = 1; ctx.fillStyle = '#666'; ctx.font = '11px system-ui, sans-serif'; ctx.textBaseline = 'bottom';
+    ctx.fillText(location.host ? location.host + location.pathname : 'parsimony.lasu.dev', pad, canvas.height / scale - pad / 2);
+    return canvas;
+  }
+  const chartBlob = async () => { const canvas = await chartCanvas(); return new Promise(resolve => canvas.toBlob(resolve, 'image/png')); };
+  const chartName = () => ['parsimony', (location.pathname.split('/').pop() || 'index').replace(/\.html$/, ''), selected?.[0],
+    chartType === 'bar' ? currentAxes().x : `${currentAxes().x}-vs-${currentAxes().y}`].filter(Boolean).join('-').replace(/[^\w.-]+/g, '_') + '.png';
+  const exportStatus = text => { $('export-status').textContent = text; setTimeout(() => { if ($('export-status').textContent === text) $('export-status').textContent = ''; }, 2500); };
+  $('export-png').addEventListener('click', async () => {
+    hideTooltip();
+    try {
+      const url = URL.createObjectURL(await chartBlob()), a = document.createElement('a');
+      a.href = url; a.download = chartName(); a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) { exportStatus('Could not export the chart.'); }
+  });
+  $('copy-png').hidden = !(window.navigator?.clipboard?.write && window.ClipboardItem);
+  $('copy-png').addEventListener('click', async () => {
+    hideTooltip();
+    try { await window.navigator.clipboard.write([new window.ClipboardItem({'image/png': chartBlob()})]); exportStatus('Copied.'); }
+    catch (error) { exportStatus('Could not copy; use Download instead.'); }
+  });
   for (const axis of ['x', 'y']) $('graph-' + axis).addEventListener('change', e => {
     const key = e.target.value, axes = currentAxes(), other = axis === 'x' ? 'y' : 'x';
     if (!axisOptions().some(o => o.key === key)) return;
@@ -893,7 +1018,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
     const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${narrow ? 4 : 6}" ${p.m && partialOpacity(p.m) ? ` fill-opacity="${partialOpacity(p.m)}"` : ''} tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('');
     // Green zone: the half of each axis that is better (lower footprint, higher solved/index).
-    const better = {net: -1, solved_net: -1, churn: -1, solved_cx: -1, cx: -1, same_net: -1, same_cx: -1, resolve_rate: 1, aa_coding: 1, aa_intelligence: 1, ...Object.fromEntries(langKeys.map(k => [k, -1]))};
+    const better = {net: -1, solved_net: -1, solved_cx: -1, cx: -1, same_net: -1, same_cx: -1, human_net: -1, resolve_rate: 1, aa_coding: 1, aa_intelligence: 1, ...Object.fromEntries(langKeys.map(k => [k, -1]))};
     const bx = better[axes.x], by = better[axes.y];
     let zone = '';
     if (bx && by && points.length) {

@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — Human-fix axis, metric explanations and chart export
+
+**Site.** New chart axis "Net units vs. human fix, same tasks (×)" (`human_task_net`): a model's solved net units over the human reference fix's on the same tasks, as a ratio of sums with a task-bootstrap range, on boards with measured human fixes (DeepSWE Python/JavaScript/TypeScript/Go, Verified, self-runs). The task view shows the human fix's net units. Site labels renamed: net units → **net syntax units**, units changed → **churn**, complexity → **decision points** (field names unchanged). (i) buttons beside the axis selectors and table headers explain each metric. Measured (%) is no longer a chart axis (it stays a table column), churn is only an axis in the task view, and churn axes get no "better" zone. New "Download chart (PNG)" and "Copy image" buttons export the current chart with its labels and legend. Rank, measurements and existing ratios are unchanged.
+
 ## Unreleased — Current-ranking diagnostics and quiet coverage disclosures
 
 **Diagnostics.** Add `python -m parsimony.diagnostics` and `scripts/diagnose-rankings.sh`: reproducible task/repository/peer omission checks, matched-task comparisons, denominator concentration, missing-success coverage and hashed inputs for each of the ten language boards. Reports live under `examples/ranking-diagnostics/`; they do not evaluate the combined-language aggregate. CI checks regenerated reports. **Site.** Add limitations to the existing collapsed help and success-coverage explanations to Measured-cell hover text, without new columns or controls. Rebuilt pages retain identical embedded ranking data. No analyzer rules or measurements changed.

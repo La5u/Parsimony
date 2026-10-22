@@ -43,8 +43,10 @@ class RebuildScriptTests(unittest.TestCase):
                             self.assertFalse(page.exists())
                     commands = calls.read_text()
                     self.assertNotIn('fetch-go-v2-release.py', commands)
-                    self.assertNotIn('--merge', commands)
+                    # Only the DeepSWE combined page (which needs Go) is skipped; SWE-Milestone merges local boards.
+                    self.assertNotIn('--merge python=examples/deepswe-python', commands)
+                    self.assertNotIn('--output ' + str(output / 'index.html'), commands)
                     for name in ('python', 'javascript', 'typescript', 'verified', 'live',
-                                 'sweeper-php', 'live-javascript', 'live-typescript', 'live-go'):
+                                 'sweeper-php', 'live-javascript', 'live-typescript', 'live-go', 'swe-milestone'):
                         self.assertIn('--output ' + str(output / (name + '.html')), commands)
-                    self.assertEqual(len(commands.splitlines()), 9)
+                    self.assertEqual(len(commands.splitlines()), 10)

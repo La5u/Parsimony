@@ -340,6 +340,37 @@ def same_task(own, typical, seed, leave_out=True):
     return out
 
 
+def human_by_task(records):
+    """Per base task: net units of the benchmark's human reference fix, measured like model patches (in scope only)."""
+    tasks = {}
+    for r in records:
+        h = r.get('human_metrics')
+        if h and h.get('mode') == 'full_file' and h.get('net_units') is not None and not out_of_scope(h):
+            tasks[r['task_id'].split('#', 1)[0]] = h['net_units']
+    return tasks
+
+
+def human_task(own, human, seed):
+    """Net units a model added relative to the human fix on the same solved tasks (1 = the same as the human).
+
+    Ratio of sums like same_task, so a human fix with net ≈ 0 (many delete or replace code) cannot blow it up.
+    Diagnostic only: never sets rank."""
+    pairs = [(values[0], human[t]) for t, values in own.items() if t in human]
+    denominator = sum(b for _, b in pairs)
+    ratio = sum(a for a, _ in pairs) / denominator if pairs and denominator > 0 else None
+    interval = None
+    if ratio is not None and len(pairs) >= SAME_TASK_MIN_INTERVAL:
+        rng, draws = random.Random(f'{seed}:human'), []
+        for _ in range(1000):
+            drawn = rng.choices(pairs, k=len(pairs))
+            d = sum(b for _, b in drawn)
+            if d > 0:
+                draws.append(sum(a for a, _ in drawn) / d)
+        interval = [round(quantile(draws, 0.025), 3), round(quantile(draws, 0.975), 3)]
+    return dict(human_task_net=None if ratio is None else round(ratio, 3), human_task_net_ci=interval,
+                human_task_net_tasks=len(pairs))
+
+
 def build(panel, records, draws=2000, seed=42):
     # Archived score diagnostics only; footprint means below determine the published order.
     board = sorted(score_records(panel, records),
@@ -408,8 +439,11 @@ def build(panel, records, draws=2000, seed=42):
     # Task difficulty: each model is compared with the other models on the tasks it solved.
     per_model = {m['agent']: solved_by_task(groups[m['agent']].values()) for m in models}
     typical = typical_by_task(per_model)
+    human_net = human_by_task(records)
     for m in models:
         m.update(same_task(per_model[m['agent']], typical, f"{seed}:{m['agent']}"))
+        if human_net:
+            m.update(human_task(per_model[m['agent']], human_net, f"{seed}:{m['agent']}"))
     # Too few shared tasks to rank: listed after the ranked models, like partial models on combined pages.
     minimum = min_rank_tasks(len({cluster(t) for t in panel['tasks']}))
     for m in models:
@@ -478,6 +512,7 @@ def build(panel, records, draws=2000, seed=42):
                 # Typical solved patch per task: mean net units, mean complexity, number of models.
                 task_typical={t: [round(net / n, 1), None if cx is None else round(cx / n, 1), n]
                               for t, (net, cx, n) in sorted(typical.items())},
+                **(dict(task_human=dict(sorted(human_net.items()))) if human_net else {}),
                 **(dict(task_urls=task_urls) if task_urls else {}),
                 score_version=VERSION, panel=panel['name'], references=len(references), harness=versions, other_harness=other_harness, analyzer_version=panel['analyzer_version'],
                 python_version=panel['python_version'], task_count=len(panel['tasks']),
@@ -616,7 +651,9 @@ def self_run_models(records, task_typical=None):
             # Compared with every ranked model on the same tasks (self-runs are not in the baseline).
             **same_task(solved_by_task(group) if graded else {},
                         {t: (net * n, None if cx is None else cx * n, n) for t, (net, cx, n) in (task_typical or {}).items()},
-                        agent, leave_out=False)))
+                        agent, leave_out=False),
+            **(human_task(solved_by_task(group) if graded else {}, human, agent)
+               if (human := human_by_task(group)) else {})))
     # The same model run through two harnesses (pi and Codex) is told apart by its harness.
     names = [m['name'] for m in models]
     for m in models:

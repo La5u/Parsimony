@@ -26,6 +26,8 @@ done
 if [ "$OFFLINE" = 0 ]; then
   GO=$(mktemp -d)
   python examples/benchmark-discovery/fetch-go-v2-release.py --output "$GO"
+  # Same Go population as the website: release 1.0 runs sit beside the checksum-bound asset.
+  cp examples/deepswe-go-v2/release-1.0/*.jsonl "$GO/"
   report deepswe-go "$GO/score-panel.json" "$GO/"*.jsonl
 else
   printf '%s\n' 'Offline diagnostics: skipping DeepSWE Go; existing report copies are left unchanged.' >&2

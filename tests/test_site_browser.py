@@ -121,7 +121,7 @@ class SiteBrowserTests(unittest.TestCase):
             self.assertEqual([p.text for p in browser.find_elements(By.CSS_SELECTOR, '.bar-name')], ['Alpha'])
             self.assertEqual(browser.find_element(By.ID, 'graph-x-label').text, 'Metric')
             self.assertFalse(browser.find_element(By.ID, 'graph-y-control').is_displayed())
-            self.assertIn('Net units added, solved (mean)', browser.find_element(By.ID, 'graph-legend').text)
+            self.assertIn('Net syntax units added, solved (mean)', browser.find_element(By.ID, 'graph-legend').text)
             x.select_by_value('net')
             self.assertEqual([p.text for p in browser.find_elements(By.CSS_SELECTOR, '.bar-name')], ['Beta', 'Alpha'])
             x.select_by_value('resolve_rate')
@@ -349,7 +349,7 @@ class SiteBrowserTests(unittest.TestCase):
             Select(browser.find_element(By.ID, 'chart-type')).select_by_value('bar')
             owner = next(row for row in browser.find_elements(By.CSS_SELECTOR, '[data-bar]')
                          if 'Owner' in row.get_attribute('aria-label'))
-            self.assertIn('Net units added, all measured (mean): 0.4', owner.get_attribute('aria-label'))
+            self.assertIn('Net syntax units added, all measured (mean): 0.4', owner.get_attribute('aria-label'))
             self.assertGreater(owner.rect['width'], 0)
             browser.execute_async_script('''
                 const row = arguments[0], done = arguments[1];
@@ -357,5 +357,5 @@ class SiteBrowserTests(unittest.TestCase):
                 requestAnimationFrame(() => requestAnimationFrame(done));
             ''', owner)
             browser.execute_script('arguments[0].focus({preventScroll: true})', owner)
-            self.assertIn('Net units added, all measured (mean): 0.4',
+            self.assertIn('Net syntax units added, all measured (mean): 0.4',
                           browser.find_element(By.ID, 'graph-tooltip').text)
