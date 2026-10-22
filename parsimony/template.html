@@ -610,6 +610,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         const img = new Image();
         img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone));
         await img.decode();
+        ctx.globalAlpha = 1; // a faded legend swatch painted earlier must not fade the chart
         ctx.drawImage(img, r.left + ox, r.top + oy, r.width, r.height);
       }
       for (const el of [part, ...part.querySelectorAll('*')]) {
@@ -619,6 +620,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         ctx.globalAlpha = opacityOf(el); ctx.fillStyle = cs.backgroundColor;
         ctx.beginPath(); ctx.roundRect ? ctx.roundRect(r.left + ox, r.top + oy, r.width, r.height, parseFloat(cs.borderTopLeftRadius) || 0) : ctx.rect(r.left + ox, r.top + oy, r.width, r.height); ctx.fill();
       }
+      ctx.globalAlpha = 1;
       const walker = document.createTreeWalker(part, NodeFilter.SHOW_TEXT), range = document.createRange();
       for (let node; (node = walker.nextNode());) {
         const el = node.parentElement;
