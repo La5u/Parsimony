@@ -46,6 +46,10 @@ The front page averages each model's per-language ratios, weighted by that model
 
 Where the benchmark's human reference fix was measured (all four DeepSWE languages, SWE-bench Verified and the self-runs; not Live, SWEeper or SWE-Milestone), `human_task_net` divides the sum of a model's per-task solved net units by the sum of the human fix's net units on those same tasks (in-scope, full-file human measurements only). Like the same-task ratio it is a ratio of sums, so human fixes with net ≤ 0 (117 of Verified's 500) do not make it undefined; it is unavailable when the human total is nonpositive. Ranges use the same 1,000-draw task bootstrap from 5 tasks. A human fix is one reference, not an optimum, and this ratio never sets rank. The task view also shows the human fix's net units (`task_human`). The combined DeepSWE page averages the per-language human-fix ratios, weighted by each model's shared tasks per language (`merged_ratio`), like its peer ratio; ranges resample tasks within each language.
 
+### Pairwise matched-task view
+
+Language boards offer **On tasks both solved**: two models' mean net units on the intersection of their solved, measured, full-file, in-scope base tasks. DeepSWE's repeated attempts are averaged first. The ratio is a ratio of sums when the second model's total is positive. Unlike the ranking, this intersection does **not** require three other models. Combined-language pages omit the view because they have no per-task unit cells. `?a=` and `?b=` (agent identifiers) restore the pair. Rank is unchanged. This is the same comparison the [offline diagnostics](../examples/ranking-diagnostics/README.md) record as matched pairs.
+
 ### Offline ranking diagnostics
 
 [Published diagnostics](../examples/ranking-diagnostics/README.md) cover each language board separately: leave-one-task/repository/peer-out sensitivity, pairwise matched-task means, comparison-denominator concentration and missing-success coverage. These are descriptive checks, not confidence intervals or a new ranking. They do not evaluate the combined-language aggregate.
