@@ -104,7 +104,9 @@ body { overflow-x: clip; }
 #graph .bar-row:focus-visible .bar-name { outline: 2px solid #000; outline-offset: 2px; }
 #self-run-toggle-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
 #harness-toggle-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
+#weight-filter-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
 #self-run-toggle, #harness-toggle { width: auto; min-width: 0; padding: 0; margin: 0; border: initial; flex: none; }
+#weight-filter { width: auto; max-width: 12em; }
 #company-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.78rem; color: var(--muted); }
 .company-swatch { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
 .company-swatch.fade-swatch { background: #777; }
@@ -166,7 +168,12 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p><label for="chart-type">Chart</label> <select id="chart-type" aria-label="Chart type">
        <option value="scatter">Scatter: compare two metrics</option><option value="bar">Bars: one metric</option></select>
      <label id="self-run-toggle-label" hidden><input type="checkbox" id="self-run-toggle" checked> <span id="self-run-toggle-text">Show my runs</span></label>
-     <label id="harness-toggle-label" hidden><input type="checkbox" id="harness-toggle"> Show other harnesses</label></p>
+     <label id="harness-toggle-label" hidden><input type="checkbox" id="harness-toggle"> Show other harnesses</label>
+     <label id="weight-filter-label" hidden>Weights <select id="weight-filter" aria-label="Weight class">
+       <option value="all">All models</option>
+       <option value="open">Open weights</option>
+       <option value="closed">Proprietary</option>
+     </select></label></p>
   <p id="axis-controls"><label for="graph-x" id="graph-x-label">X axis</label> <select id="graph-x" aria-label="X axis metric"></select><button type="button" class="info" id="graph-x-info" aria-label="What does the X axis metric mean?">i</button>
      <span id="graph-y-control"><label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select><button type="button" class="info" id="graph-y-info" aria-label="What does the Y axis metric mean?">i</button></span></p>
   </details>
@@ -188,6 +195,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
 
   <h2 id="leaderboard">Leaderboard</h2>
   <p class="small muted" id="board-intro"></p>
+  <p class="small muted" id="weight-note" hidden></p>
   <p class="small muted" id="benchmark-notice" hidden></p>
   <div id="task-picker">
   <label for="task-search" class="small muted">Task</label><br>
@@ -352,7 +360,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const external = data.external || null;
   // Owner-run configurations: shown faded in the all-tasks view, never ranked.
   const selfRun = data.self_run_models || [];
-  let showSelfRun = true, showOtherHarnesses = false;
+  let showSelfRun = true, showOtherHarnesses = false, weightFilter = 'all';
+  const matchesWeight = m => weightFilter === 'all' || m.open_weight === (weightFilter === 'open');
   // A model run through both Codex and pi shows its Codex run unless other harnesses are turned on.
   const activeSelfRun = () => showSelfRun ? selfRun.filter(m => showOtherHarnesses || !m.alternative_harness) : [];
   // Fallback metric without same-task ratios. Measured = measured solved / upstream solved.
@@ -466,9 +475,18 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       return (ascending ? x - y : y - x) || a.m.name.localeCompare(b.m.name);
     };
     // Self-run rows cover a task subset: listed after the ranked rows, never interleaved.
-    const extra = selected ? [] : activeSelfRun().map(m => ({m, i: -1})).sort(order);
+    const extra = selected ? [] : activeSelfRun().filter(matchesWeight).map(m => ({m, i: -1})).sort(order);
     // Partial models (missing from a language) follow the ranked rows, like self-runs.
-    const models = data.models.map((m, i) => ({m, i})).sort((a, b) => (!selected && (unranked(a.m) - unranked(b.m))) || order(a, b)).concat(extra);
+    const models = data.models.map((m, i) => ({m, i})).filter(({m}) => matchesWeight(m)).sort((a, b) => (!selected && (unranked(a.m) - unranked(b.m))) || order(a, b)).concat(extra);
+    if (weightFilter === 'all') {
+      $('weight-note').hidden = true;
+      $('weight-note').textContent = '';
+    } else {
+      const kind = weightFilter === 'open' ? 'open-weight' : 'proprietary';
+      const count = data.models.filter(matchesWeight).length;
+      $('weight-note').hidden = false;
+      $('weight-note').textContent = `Showing ${count} ${kind} model${count === 1 ? '' : 's'}. Rank is among every model on this board; hiding rows does not recompute it.`;
+    }
     document.querySelector('#board tbody').innerHTML = models.map(({m, i}, k) => (k === models.length - extra.length && extra.length
       ? `<tr class="self-run-head"><td colspan="${headers.length}">${runsLabel} · not ranked, ${selfRunTasks} tasks</td></tr>` : '') + (() => {
       if (selected) {
@@ -668,12 +686,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   });
   // Chart type: the scatter, or bars of the X-axis metric; ?chart=bar opens the bars (shareable link).
   // ?selfrun=0 hides the self-run models from the chart and table; ?harnesses=all adds the pi runs of models also run with Codex.
+  // ?weights=open|closed restricts the chart and table to open-weight or proprietary models; rank is unchanged.
   let chartType = 'scatter';
   try {
     const params = new URLSearchParams(window.location.search);
     if (params.get('chart') === 'bar') chartType = 'bar';
     if (params.get('selfrun') === '0') showSelfRun = false;
     if (params.get('harnesses') === 'all') showOtherHarnesses = true;
+    if (params.get('weights') === 'open' || params.get('weights') === 'closed') weightFilter = params.get('weights');
   } catch (e) {}
   const setParam = (key, value) => {
     try {
@@ -704,6 +724,16 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   $('harness-toggle').addEventListener('change', e => {
     showOtherHarnesses = !!e.target.checked;
     setParam('harnesses', showOtherHarnesses ? 'all' : null);
+    renderBoard(); renderGraph();
+  });
+  const hasOpen = [...data.models, ...selfRun].some(m => m.open_weight === true);
+  const hasClosed = [...data.models, ...selfRun].some(m => m.open_weight === false);
+  $('weight-filter-label').hidden = !(hasOpen && hasClosed);
+  $('weight-filter').value = weightFilter;
+  $('weight-filter').addEventListener('change', e => {
+    const next = e.target.value === 'open' || e.target.value === 'closed' ? e.target.value : 'all';
+    weightFilter = next;
+    setParam('weights', next === 'all' ? null : next);
     renderBoard(); renderGraph();
   });
   const tooltip = $('graph-tooltip');
@@ -769,7 +799,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const percent = ['resolve_rate', 'coverage'].includes(key) ? '%' : ratioKeys.includes(key) ? '×' : '';
     const rows = data.models.map((m, i) => ({m, i, v: metricValue(m, i, key), latest: m.latest !== false}))
       .concat(selected ? [] : activeSelfRun().map(m => ({m, i: -1, v: metricValue(m, -1, key), latest: true, selfRun: true})))
-      .filter(r => Number.isFinite(r.v)).sort((a, b) => (footprint ? a.v - b.v : b.v - a.v) || a.m.name.localeCompare(b.m.name));
+      .filter(r => matchesWeight(r.m) && Number.isFinite(r.v)).sort((a, b) => (footprint ? a.v - b.v : b.v - a.v) || a.m.name.localeCompare(b.m.name));
     // Self-run means cover only their own task subset, so they get their own group, never interleaved.
     rows.sort((a, b) => !!a.selfRun - !!b.selfRun);
     const firstSelfRun = rows.findIndex(r => r.selfRun);
@@ -816,11 +846,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : (selected[2][i][6] || selected[2][i][0]) === 'r' ? 'resolved' : 'unknown') : 'all', i, m}))
       .concat(selected ? [] : activeSelfRun().map(m => ({x: metricValue(m, -1, axes.x), y: metricValue(m, -1, axes.y), name: m.name,
         company: m.company || 'Other', count: measuredCount(m), match: m.aa_match, latest: true, kind: 'all', i: -1, m, selfRun: true})))
-      .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
+      .filter(p => matchesWeight(p.m) && Number.isFinite(p.x) && Number.isFinite(p.y));
     $('graph-legend').textContent = points.length
       ? (selected ? 'Status on hover.' : '')
       : 'No data for this view.';
-    const unmatched = usesExternalAxis() ? data.models.filter(m => [currentAxes().x, currentAxes().y].some(k => k.startsWith('aa_') && m[k] == null)).length : 0;
+    const unmatched = usesExternalAxis() ? data.models.filter(m => matchesWeight(m) && [currentAxes().x, currentAxes().y].some(k => k.startsWith('aa_') && m[k] == null)).length : 0;
     $('aa-missing').textContent = unmatched ? ` ${unmatched} model${unmatched > 1 ? 's have' : ' has'} no score, so ${unmatched > 1 ? 'they are' : 'it is'} not on this chart.` : '';
     showRatioNote([currentAxes().x, currentAxes().y]);
     $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort().map(company =>
