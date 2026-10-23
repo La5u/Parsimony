@@ -720,6 +720,41 @@ element('self-run-toggle').listeners.change({target: {checked: true}});
 assert.match(graph(), /Delta/);
 assert.equal(element('self-run-note').hidden, false);
 assert.equal(browser.location.search, '?chart=bar');
+// Open-weight view filter: hides rows and points, keeps published rank, restores from ?weights=.
+{
+  const filtered = structuredClone(gradedSelfRun);
+  filtered.models[0].open_weight = true;  // Alpha
+  filtered.models[1].open_weight = false; // Beta (rank 1 on solved mean)
+  filtered.models[2].open_weight = true;  // Gamma
+  filtered.self_run_models[0].open_weight = null; // unclassified: exclusive filters hide it
+  load(filtered, 'https://example.org/index.html?weights=open');
+  assert.equal(element('weight-filter-label').hidden, false);
+  assert.equal(element('weight-filter').value, 'open');
+  assert.deepEqual(names(), ['Alpha', 'Gamma']);
+  assert.match(element('#board tbody').innerHTML, /<td>2<\/td><td class="left">Alpha/); // rank among every model
+  assert.doesNotMatch(element('#board tbody').innerHTML, /Beta|Delta/);
+  assert.match(element('weight-note').textContent, /Showing 2 open-weight models/);
+  assert.match(element('weight-note').textContent, /does not recompute/);
+  assert.match(graph(), /data-model="Alpha"/);
+  assert.doesNotMatch(graph(), /data-model="Beta"|Delta/);
+  element('weight-filter').listeners.change({target: {value: 'closed'}});
+  assert.deepEqual(names(), ['Beta']);
+  assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Beta/);
+  assert.match(graph(), /data-model="Beta"/);
+  assert.doesNotMatch(graph(), /data-model="Alpha"|data-model="Gamma"/);
+  assert.equal(browser.location.search, '?weights=closed');
+  element('chart-type').listeners.change({target: {value: 'bar'}});
+  assert.deepEqual(barNames(), ['Beta']);
+  element('weight-filter').listeners.change({target: {value: 'all'}});
+  assert.equal(element('weight-note').hidden, true);
+  assert.equal(browser.location.search, '?chart=bar');
+  assert.ok(names().includes('Alpha') && names().includes('Beta') && names().includes('Gamma'));
+  load(filtered, 'https://example.org/index.html');
+  assert.equal(element('weight-filter').value, 'all');
+}
+assert.match(html, /id="weight-filter"/);
+assert.match(html, /<option value="open">Open weights<\/option>/);
+assert.match(html, /id="weight-note"/);
 // Same-task ratio (task difficulty): ranks, defaults, task averages and self-run range bars.
 const sameTask = structuredClone(gradedSelfRun);
 Object.assign(sameTask.models[0], {same_task_net: 1.2, same_task_net_ci: [1.1, 1.3], same_task_net_tasks: 8,

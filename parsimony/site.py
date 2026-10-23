@@ -208,6 +208,40 @@ def company(agent):
     return 'Other'
 
 
+# Developers whose model weights are generally published. Classification is by
+# company() (plus gpt-oss), not by license text, size class or whether a given
+# machine can run the weights. Unknown developers stay unclassified.
+OPEN_WEIGHT_COMPANIES = {
+    'Alibaba', 'DeepSeek', 'Meta', 'MiniMax', 'Mistral AI', 'Moonshot AI', 'Xiaomi', 'Z.ai',
+}
+CLOSED_WEIGHT_COMPANIES = {'Anthropic', 'Google', 'OpenAI', 'xAI'}
+
+
+def open_weight(agent, company_name=None, name=None):
+    """True if weights are generally published, False if they are API-only, else None.
+
+    gpt-oss is the OpenAI exception. Unclassified developers (company 'Other') stay
+    None so a view filter does not guess. This never changes rank or measurements.
+    """
+    text = (name or label(agent)).lower()
+    if text.startswith('gpt-oss') or 'gpt-oss' in text:
+        return True
+    owner = company_name if company_name is not None else company(agent)
+    if owner in OPEN_WEIGHT_COMPANIES:
+        return True
+    if owner in CLOSED_WEIGHT_COMPANIES:
+        return False
+    return None
+
+
+def annotate_open_weight(models):
+    """Set open_weight on each model dict from its display name and company."""
+    for model in models:
+        model['open_weight'] = open_weight(model['agent'], company_name=model.get('company'),
+                                           name=model.get('name'))
+    return models
+
+
 GENERATION = re.compile(r'\d+(?:\.\d+)*')
 
 
@@ -462,6 +496,7 @@ def build(panel, records, draws=2000, seed=42):
     newest = newest_generation([m['name'] for m in models])
     for m in models:
         m['latest'] = m['name'] in newest
+    annotate_open_weight(models)
     order = [m['agent'] for m in models]
     scored_by_agent = {entry['agent']: entry['tasks'] for entry in board}
     tasks = []
@@ -603,6 +638,7 @@ def build_merged(boards, draws=2000, seed=42):
     newest = newest_generation([m['name'] for m in ordered])
     for m in ordered:
         m['latest'] = m['name'] in newest
+    annotate_open_weight(ordered)
     return dict(merged=dict(languages=languages), ranking_metric='same-task-net-ratio-merged-v1',
                 min_rank_tasks=min_rank_tasks(sum(lang['tasks'] for lang in languages)),
                 footprint_tasks=[], task_typical={}, models=ordered, self_run_typical=self_run_typical,
@@ -672,6 +708,7 @@ def self_run_models(records, task_typical=None):
         if names.count(m['name']) > 1:
             m['name'] += f" · {m['harness']}"
             m['alternative_harness'] = m['harness'] != 'Codex'  # the site shows Codex by default
+    annotate_open_weight(models)
     return models
 
 
