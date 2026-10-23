@@ -720,6 +720,43 @@ element('self-run-toggle').listeners.change({target: {checked: true}});
 assert.match(graph(), /Delta/);
 assert.equal(element('self-run-note').hidden, false);
 assert.equal(browser.location.search, '?chart=bar');
+// Pairwise matched-task view: shared solved measured tasks, no three-peer gate, rank unchanged.
+{
+  const pair = structuredClone(data);
+  pair.footprint_tasks = [
+    ['t-small', null, [['r', 10, 12, 10], ['r', 20, 22, 20], ['f', 1, 2, 5]]],
+    ['t-big', null, [['r', 80, 82, 10], ['r', 100, 102, 20], ['r', 90, 92, 10]]],
+    ['t-only-a', null, [['r', 5, 6, 10], ['f', 9, 10, 20], ['m', null, null, null]]],
+  ];
+  pair.tasks = pair.footprint_tasks;
+  load(pair, 'https://example.org/python.html');
+  assert.equal(element('compare').hidden, false);
+  assert.equal(element('compare-status').textContent, 'Pick two models to see the tasks both solved.');
+  element('compare-a').listeners.change({target: {value: 'alpha'}});
+  element('compare-b').listeners.change({target: {value: 'beta'}});
+  assert.match(element('compare-status').textContent, /On 2 tasks both solved and measured, Alpha added 0\.75× Beta's net syntax units/);
+  assert.match(element('compare-status').textContent, /Mean per task: Alpha \+45, Beta \+60, difference −15/);
+  assert.match(element('compare-status').textContent, /Rank is unchanged/);
+  assert.match(element('compare-table').innerHTML, /data-task="t-big">t-big/);
+  assert.match(element('compare-table').innerHTML, /<td>\+80<\/td><td>\+100<\/td><td>−20<\/td>/);
+  assert.doesNotMatch(element('compare-table').innerHTML, /t-only-a/); // Beta failed it
+  assert.equal(browser.location.search, '?a=alpha&b=beta');
+  element('compare-a').listeners.change({target: {value: 'gamma'}});
+  assert.match(element('compare-status').textContent, /On 1 task both solved and measured, Gamma added 0\.90× Beta's net syntax units/);
+  const clustered = structuredClone(pair);
+  clustered.footprint_tasks = [
+    ['shared#1', null, [['r', 10, 10, 10], ['r', 30, 30, 10], ['m', null, null, null]]],
+    ['shared#2', null, [['r', 20, 20, 10], ['r', 50, 50, 10], ['m', null, null, null]]],
+  ];
+  clustered.tasks = clustered.footprint_tasks;
+  load(clustered, 'https://example.org/python.html?a=alpha&b=beta');
+  assert.match(element('compare-status').textContent, /On 1 task both solved and measured, Alpha added 0\.38× Beta's net syntax units/);
+  assert.match(element('compare-table').innerHTML, /data-task="shared#1">shared</);
+  assert.equal(element('compare-a').value, 'alpha');
+  assert.equal(element('compare-b').value, 'beta');
+}
+assert.match(html, /id="compare"/);
+assert.match(html, /id="compare-heading">On tasks both solved/);
 // Same-task ratio (task difficulty): ranks, defaults, task averages and self-run range bars.
 const sameTask = structuredClone(gradedSelfRun);
 Object.assign(sameTask.models[0], {same_task_net: 1.2, same_task_net_ci: [1.1, 1.3], same_task_net_tasks: 8,
@@ -820,6 +857,7 @@ mergedPage.models = [
 ];
 load(mergedPage);
 assert.equal(element('task-picker').hidden, true);
+assert.equal(element('compare').hidden, true);
 assert.match(element('leaderboard').textContent, /— all languages$/);
 assert.match(element('board-intro').textContent, /^2 models on DeepSWE's 34 Python and 3 Go tasks, 4 attempts each\./);
 assert.match(element('language-scope').textContent, /never added across languages/);
