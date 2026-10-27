@@ -50,6 +50,10 @@ Where the benchmark's human reference fix was measured (all four DeepSWE languag
 
 The website can hide proprietary or open-weight rows from the chart and table. Rank, same-task ratios and measurements do not change: hidden models remain in the peer set. Classification is by model developer (`parsimony.site.open_weight`): Alibaba, DeepSeek, Meta, MiniMax, Mistral AI, Moonshot AI, Xiaomi and Z.ai count as open-weight, plus gpt-oss; Anthropic, Google, OpenAI (other than gpt-oss) and xAI count as proprietary. API-only lines from open-weight developers are proprietary: Meta's Muse Spark (not Muse Spark Open), Qwen Plus and hosted Qwen Flash (not Flash-Next). Qwen Max, whose weight status sources dispute, and unknown developers appear only in the all-models view. `?weights=open` and `?weights=closed` restore the view. The control is omitted when a board has only one class.
 
+### Pairwise matched-task view
+
+Language boards offer **On tasks both solved**: two models' mean net units on the intersection of their solved, measured, full-file, in-scope base tasks. DeepSWE's repeated attempts are averaged first. The ratio is a ratio of sums when the second model's total is positive. Unlike the ranking, this intersection does **not** require three other models. Combined-language pages omit the view because they have no per-task unit cells. `?a=` and `?b=` (agent identifiers) restore the pair. Rank is unchanged. This is the same comparison the [offline diagnostics](../examples/ranking-diagnostics/README.md) record as matched pairs.
+
 ### Offline ranking diagnostics
 
 [Published diagnostics](../examples/ranking-diagnostics/README.md) cover each language board separately: leave-one-task/repository/peer-out sensitivity, pairwise matched-task means, comparison-denominator concentration and missing-success coverage. These are descriptive checks, not confidence intervals or a new ranking. They do not evaluate the combined-language aggregate.

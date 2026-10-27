@@ -123,6 +123,11 @@ body { overflow-x: clip; }
   background: var(--bg); color: #000;
 }
 #export-controls button { font-size: 0.78rem; padding: 3px 8px; }
+#compare { margin-top: 28px; }
+#compare .compare-pick { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+#compare .compare-pick select { width: auto; max-width: 18em; }
+#compare-table table { font-size: 0.85rem; }
+#compare-table button[data-task] { font: inherit; color: var(--link); background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
 .info {
   display: inline-flex; align-items: center; justify-content: center; width: 1.25em; height: 1.25em; min-width: 0;
   margin-left: 0.3em; padding: 0; border: 1px solid currentColor; border-radius: 50%; background: none; color: var(--muted);
@@ -230,6 +235,19 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   </div>
   <p class="small" id="task-footer" hidden><a id="task-link" href="#">Maintainers' pull request</a></p>
   <p class="small muted" id="feedback">Missing a model? <a id="request-model" href="https://github.com/La5u/Parsimony/issues/new?template=model-request.yml">Request it</a>. A number looks wrong? <a id="report-number" href="https://github.com/La5u/Parsimony/issues/new?template=number-looks-wrong.yml">Report it</a>. Have spare API credits? <a href="https://github.com/La5u/Parsimony/blob/main/CONTRIBUTING.md#contributed-runs">Run a model on the tasks</a>.</p>
+
+  <section id="compare" aria-labelledby="compare-heading" hidden>
+    <h2 id="compare-heading">On tasks both solved</h2>
+    <p class="small muted">Net syntax units on the intersection of two models' solved, measured tasks, without the three-peer ranking gate. Rank is unchanged. Repeated attempts of one task are averaged first.</p>
+    <p class="compare-pick">
+      <label for="compare-a">Model A</label>
+      <select id="compare-a" aria-label="First model"></select>
+      <label for="compare-b">Model B</label>
+      <select id="compare-b" aria-label="Second model"></select>
+    </p>
+    <p id="compare-status" class="small" role="status" aria-live="polite"></p>
+    <div class="scroll" id="compare-table"></div>
+  </section>
 
   <section id="data-sources" aria-labelledby="sources-heading" hidden>
     <h2 id="sources-heading">Data sources</h2>
@@ -1126,6 +1144,87 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     });
   }
   // label-placement:end
+  // Pairwise matched-task view: intersection of solved, measured base tasks, no three-peer gate.
+  // Combined-language pages have no per-task cells, so the section stays hidden.
+  const canCompare = !merged && data.models.length >= 2 && displayedTasks.length > 0;
+  $('compare').hidden = !canCompare;
+  if (canCompare) {
+    const options = '<option value="">Choose a model</option>' +
+      data.models.map(m => `<option value="${esc(m.agent)}">${esc(m.name)}</option>`).join('');
+    $('compare-a').innerHTML = $('compare-b').innerHTML = options;
+    let pairA = '', pairB = '';
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const known = new Set(data.models.map(m => m.agent));
+      if (known.has(params.get('a'))) pairA = params.get('a');
+      if (known.has(params.get('b'))) pairB = params.get('b');
+    } catch (e) {}
+    $('compare-a').value = pairA;
+    $('compare-b').value = pairB;
+    const COMPARE_LIMIT = 20;
+    const eligibleSolvedNet = cell => {
+      const eligible = cell.length > 7 ? cell[7] : ['r', 'f', 'c'].includes(cell[0]);
+      const resolved = (cell[6] || cell[0]) === 'r';
+      return eligible && resolved && Number.isFinite(cell[1]) ? cell[1] : null;
+    };
+    const solvedMeans = index => {
+      const groups = new Map();
+      for (const row of displayedTasks) {
+        const net = eligibleSolvedNet(row[2][index]);
+        if (net == null) continue;
+        const base = row[0].split('#')[0];
+        const values = groups.get(base);
+        if (values) values.push(net); else groups.set(base, [net]);
+      }
+      return new Map([...groups].map(([task, values]) => [task, values.reduce((s, v) => s + v, 0) / values.length]));
+    };
+    const displayTaskId = base => {
+      if (tasks.has(base)) return base;
+      const row = displayedTasks.find(t => t[0] === base || t[0].startsWith(base + '#'));
+      return row ? row[0] : base;
+    };
+    const renderCompare = () => {
+      setParam('a', pairA || null);
+      setParam('b', pairB || null);
+      if (!pairA || !pairB) {
+        $('compare-status').textContent = 'Pick two models to see the tasks both solved.';
+        $('compare-table').innerHTML = '';
+        return;
+      }
+      if (pairA === pairB) {
+        $('compare-status').textContent = 'Pick two different models.';
+        $('compare-table').innerHTML = '';
+        return;
+      }
+      const ia = data.models.findIndex(m => m.agent === pairA), ib = data.models.findIndex(m => m.agent === pairB);
+      const left = solvedMeans(ia), right = solvedMeans(ib);
+      const shared = [...left.keys()].filter(task => right.has(task)).sort();
+      const rows = shared.map(task => ({task, a: left.get(task), b: right.get(task), d: left.get(task) - right.get(task)}));
+      const sumA = rows.reduce((s, r) => s + r.a, 0), sumB = rows.reduce((s, r) => s + r.b, 0);
+      const nameA = data.models[ia].name, nameB = data.models[ib].name;
+      if (!rows.length) {
+        $('compare-status').textContent = `${nameA} and ${nameB} have no shared solved, measured tasks.`;
+        $('compare-table').innerHTML = '';
+        return;
+      }
+      const meanA = sumA / rows.length, meanB = sumB / rows.length;
+      const ratio = sumB > 0 ? sumA / sumB : null;
+      $('compare-status').textContent = `On ${rows.length} task${rows.length === 1 ? '' : 's'} both solved and measured, ${nameA} added ${ratio == null ? '—' : fmt(ratio, 2) + '×'} ${nameB}'s net syntax units (totals, so larger tasks weigh more). Mean per task: ${nameA} ${signed(Number(meanA.toFixed(1)))}, ${nameB} ${signed(Number(meanB.toFixed(1)))}, difference ${signed(Number((meanA - meanB).toFixed(1)))}. Rank is unchanged.`;
+      const shown = rows.slice().sort((x, y) => Math.abs(y.d) - Math.abs(x.d) || x.task.localeCompare(y.task)).slice(0, COMPARE_LIMIT);
+      const clipped = rows.length > COMPARE_LIMIT;
+      $('compare-table').innerHTML = (clipped ? `<p class="small muted">Largest ${COMPARE_LIMIT} of ${rows.length} by absolute difference.</p>` : '') +
+        `<table><thead><tr><th class="left">Task</th><th>${esc(nameA)}</th><th>${esc(nameB)}</th><th>A − B</th></tr></thead><tbody>` +
+        shown.map(r => `<tr><td class="left"><button type="button" data-task="${esc(displayTaskId(r.task))}">${esc(r.task)}</button></td><td>${signed(Number(r.a.toFixed(1)))}</td><td>${signed(Number(r.b.toFixed(1)))}</td><td>${signed(Number(r.d.toFixed(1)))}</td></tr>`).join('') +
+        '</tbody></table>';
+    };
+    $('compare-a').addEventListener('change', e => { pairA = e.target.value; renderCompare(); });
+    $('compare-b').addEventListener('change', e => { pairB = e.target.value; renderCompare(); });
+    $('compare-table').addEventListener('click', e => {
+      const button = e.target.closest && e.target.closest('[data-task]');
+      if (button && button.dataset.task) showTask(button.dataset.task);
+    });
+    renderCompare();
+  }
   $('task-search').addEventListener('input', e => showTask(e.target.value.trim()));
   $('task-reset').addEventListener('click', () => showTask(''));
   showTask('');
