@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — DeepSeek V4.1 Flash · TianxiCode on Live JavaScript and TypeScript
+
+**Data.** Live JavaScript and Live TypeScript gain a sixth configuration, DeepSeek V4.1 Flash · TianxiCode 0.1.486, from the unmerged SWE-bench-Live/submission PR 64 pinned at its head commit `8275820`: JavaScript 58/108 solved (99 measured), TypeScript 56/111 (106 measured). It was measured with the boards' 0.10.0-beta analyzer at `4c02b61` and scored against the unchanged frozen panels. All 216 nonempty patches match their `trajs/*/patch.diff` copies, so no tasks are set aside; 3 incomplete tasks per board keep an unknown outcome. With a sixth peer, more tasks reach the three-peer gate, so JavaScript ranks shift (GPT-5.5 · Slingshot 3.0.0 moves from 3rd to 1st). **Importer.** `import_run` finds the combined JS/TS run's patches under `trajs/`; the driver splits the one run across the two boards.
+
 ## Unreleased — Chart shows each model line's newest generation
 
 **Site.** The chart (scatter and bars) shows each model line's newest generation that has values on the current axes, so older generations no longer crowd it or stretch its axes. Hovering any point of a line shows that line's older generations, lighter and labelled. **Show older generations** under Change chart (`?older=1`) charts them all. The table, rank and measurements are unchanged. Page data gains `line` and `generation_rank` per model.

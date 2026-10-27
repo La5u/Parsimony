@@ -81,8 +81,8 @@ Cloudflare Pages serves `site/` at <https://parsimony.lasu.dev>; a push to `main
 | DeepSWE Go | `site/go.html` | `examples/deepswe-go-v2/` + checksum-bound release asset | 26 | 34 × 4 | 0.8.0-beta @ `34d59ca` |
 | SWE-bench Verified | `site/verified.html` | `examples/mini-swe-agent-500/` | 35 | 500 × 1 | 0.5.2-beta |
 | SWE-bench Live Lite Python | `site/live.html` | `examples/live-python/` | 4 configs | 300 × 1 | 0.6.0-beta @ `de63300` |
-| SWE-bench Live JavaScript | `site/live-javascript.html` | `examples/live-javascript/` | 5 configs | 108 × 1 | 0.10.0-beta @ `4c02b61` |
-| SWE-bench Live TypeScript | `site/live-typescript.html` | `examples/live-typescript/` | 5 configs | 111 × 1 | 0.10.0-beta @ `4c02b61` |
+| SWE-bench Live JavaScript | `site/live-javascript.html` | `examples/live-javascript/` | 6 configs (5 + TianxiCode from unmerged PR 64 @ `8275820`) | 108 × 1 | 0.10.0-beta @ `4c02b61` |
+| SWE-bench Live TypeScript | `site/live-typescript.html` | `examples/live-typescript/` | 6 configs (5 + TianxiCode from unmerged PR 64 @ `8275820`) | 111 × 1 | 0.10.0-beta @ `4c02b61` |
 | SWE-bench Live Go | `site/live-go.html` | `examples/live-go/` | 7 configs (6 AMI + TianxiCode) | 138 × 1 | 0.10.0-beta @ `9dd189a` |
 | SWEeper-Bench PHP | `site/sweeper-php.html` | `examples/sweeper-php/` | 15 configs | 128 × 1 | 0.10.0-beta @ `03d5c59` |
 | SWE-Milestone (Go 30 + TS 18 + Python 12, combined page) | `site/swe-milestone.html` | `examples/swe-milestone-{go,typescript,python}/` | 10 configs | 60 × 1 | 0.10.0-beta @ `feb9d04` |
