@@ -47,6 +47,7 @@ class RebuildScriptTests(unittest.TestCase):
                     self.assertNotIn('--merge python=examples/deepswe-python', commands)
                     self.assertNotIn('--output ' + str(output / 'index.html'), commands)
                     for name in ('python', 'javascript', 'typescript', 'verified', 'live',
-                                 'sweeper-php', 'live-javascript', 'live-typescript', 'live-go', 'swe-milestone'):
+                                 'sweeper-php', 'live-javascript', 'live-typescript', 'live-go', 'swe-milestone',
+                                 'polybench-python'):
                         self.assertIn('--output ' + str(output / (name + '.html')), commands)
-                    self.assertEqual(len(commands.splitlines()), 10)
+                    self.assertEqual(len(commands.splitlines()), 11)

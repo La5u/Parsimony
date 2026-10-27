@@ -43,3 +43,5 @@ for lang in javascript typescript go; do
 done
 E=examples/sweeper-php
 report sweeper-php "$E/score-panel.json" "$E/"sweeper-*.jsonl
+E=examples/polybench-python
+report polybench-python "$E/score-panel.json" "$E/"polybench-*.jsonl

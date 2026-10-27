@@ -21,7 +21,7 @@ mkdir -p "$OUT"
 NAV=(--nav 'DeepSWE, all languages=index.html' --nav 'DeepSWE Python=python.html' --nav 'DeepSWE JavaScript=javascript.html'
      --nav 'DeepSWE TypeScript=typescript.html' --nav 'DeepSWE Go=go.html' --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html'
      --nav 'Live JavaScript=live-javascript.html' --nav 'Live TypeScript=live-typescript.html' --nav 'Live Go=live-go.html' --nav 'SWEeper PHP=sweeper-php.html'
-     --nav 'SWE-Milestone, features=swe-milestone.html')
+     --nav 'SWE-Milestone, features=swe-milestone.html' --nav 'PolyBench Python=polybench-python.html')
 AA=examples/external/artificial-analysis-2026-10-22.json
 
 LANGS=(python javascript typescript)
@@ -66,6 +66,10 @@ python -m parsimony.site "$L/score-panel.json" "$L/deepseek-v4.1-flash.jsonl" "$
 S=examples/sweeper-php
 python -m parsimony.site "$S/score-panel.json" "$S/"sweeper-*.jsonl --sensitivity "$S/stability.json" \
   --benchmark sweeper "${NAV[@]}" --output "$OUT/sweeper-php.html"
+
+P=examples/polybench-python
+python -m parsimony.site "$P/score-panel.json" "$P/"polybench-*.jsonl --sensitivity "$P/stability.json" \
+  --benchmark polybench "${NAV[@]}" --output "$OUT/polybench-python.html"
 
 for lang in javascript typescript go; do
   M=examples/live-$lang

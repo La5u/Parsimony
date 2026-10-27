@@ -90,7 +90,12 @@ NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude
          'milestone-codex-gpt-5.3-codex': 'GPT-5.3 Codex · Codex',
          'milestone-gemini-cli-gemini-3-flash': 'Gemini 3 Flash · Gemini CLI',
          'milestone-gemini-cli-gemini-3-pro': 'Gemini 3 Pro · Gemini CLI',
-         'milestone-gemini-cli-gemini-3.1-pro': 'Gemini 3.1 Pro · Gemini CLI'}
+         'milestone-gemini-cli-gemini-3.1-pro': 'Gemini 3.1 Pro · Gemini CLI',
+         'polybench-claude-opus-4.8-hmigbot': 'Claude Opus 4.8 · HMigBot',
+         'polybench-claude-opus-5.5-aiwork-code': 'Claude Opus 5.5 (high) · AiWork.Code',
+         'polybench-claude-opus-5.5-jitto-build': 'Claude Opus 5.5 (high) · Jitto Build (Claude Code)',
+         'polybench-gpt-5.6-sol-slingshot-3.4.0': 'GPT-5.6 Sol · Slingshot 3.4.0',
+         'polybench-deepseek-v4-flash-mobile-coder-1.2.4': 'DeepSeek V4 Flash (max) · Mobile Coder 1.2.4'}
 
 
 BENCHMARKS = {
@@ -125,7 +130,9 @@ BENCHMARKS = {
                       reference="Maintainers' fix", task_url='https://github.com/{owner}/{repo}/pull/{number}',
                       task_link="Maintainers' pull request", results='public submitter evaluation reports', attempts=1,
                       harness_note='Each model uses its own agent, so this compares model + agent setups, not models alone.',
-                      notice='Results are reported by the submitters, not checked independently.'),
+                      notice='Results are reported by the submitters, not checked independently. Four runs come from '
+                             'open, unmerged submission pull requests; Jitto Build reports 129 of its 294 resolved '
+                             'patches are near-copies of the reference fix.'),
 }
 
 
@@ -147,6 +154,7 @@ def published_sources(benchmark, language='python', root=None):
         ('SWE-Milestone · Go', 'milestone', 'go', 'swe-milestone-go', 'population-manifest.json', 'swe-milestone.html'),
         ('SWE-Milestone · TypeScript', 'milestone', 'typescript', 'swe-milestone-typescript', 'population-manifest.json', 'swe-milestone.html'),
         ('SWE-Milestone · Python', 'milestone', 'python', 'swe-milestone-python', 'population-manifest.json', 'swe-milestone.html'),
+        ('SWE-PolyBench Verified · Python', 'polybench', 'python', 'polybench-python', 'population-manifest.json', 'polybench-python.html'),
     ]
     sources = []
     for name, key, lang, directory, filename, board_url in boards:

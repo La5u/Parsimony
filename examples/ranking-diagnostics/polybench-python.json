@@ -1,0 +1,834 @@
+{
+  "diagnostic_version": "same-task-net-diagnostics-v1",
+  "ranking_metric": "same-task-net-ratio-v1",
+  "panel": "swe-polybench-verified-python-v1",
+  "limitations": [
+    "Descriptive sensitivity, not confidence intervals or a replacement ranking.",
+    "Successful measured repairs only; missing footprints are not imputed.",
+    "Each task/repository deletion preserves peer eligibility rules; peer deletion recomputes them.",
+    "Peer rank changes exclude the mechanical effect of removing a competing candidate.",
+    "Pairwise comparisons use all shared solved measured base tasks, without the three-peer gate.",
+    "Repository omission tests influence; it is not a repository-cluster bootstrap.",
+    "Harness, retry policy and upstream outcome validity are not inferred from model labels.",
+    "Combined-language ranking is not evaluated; run this separately for each language board."
+  ],
+  "base_tasks": 105,
+  "repositories": 5,
+  "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+      "name": "Claude Opus 4.8 \u00b7 HMigBot",
+      "ratio": 1.0341280972417017,
+      "rank": 3,
+      "coverage": {
+        "resolved_records": 70,
+        "published_resolved_attempts": 70,
+        "eligible_solved_attempts": 69,
+        "eligible_solved_base_tasks": 69,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {
+          "unverified_preimage": 1
+        }
+      },
+      "comparison_tasks": 60,
+      "reported_harnesses": [
+        "HMigBot"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 2139.0,
+      "largest_abs_comparison_task": "huggingface__transformers-27463",
+      "largest_abs_comparison_share": 0.21937821411874708,
+      "nonpositive_comparison_tasks": 12,
+      "leave_one_task_out": {
+        "scenarios": 105,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          2,
+          3
+        ],
+        "ratio_range": [
+          0.9983530468633028,
+          1.089262402088773
+        ],
+        "max_abs_ratio_change": 0.05513430484707116,
+        "top_influences": [
+          {
+            "removed": "huggingface__transformers-15158",
+            "ratio": 1.0223809523809524,
+            "rank": 2,
+            "comparison_tasks": 59,
+            "ratio_change": -0.011747144860749348,
+            "rank_change": -1
+          },
+          {
+            "removed": "huggingface__transformers-7075",
+            "ratio": 1.089262402088773,
+            "rank": 3,
+            "comparison_tasks": 59,
+            "ratio_change": 0.05513430484707116,
+            "rank_change": 0
+          },
+          {
+            "removed": "huggingface__transformers-27463",
+            "ratio": 0.9983530468633028,
+            "rank": 3,
+            "comparison_tasks": 59,
+            "ratio_change": -0.0357750503783989,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 5,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          2,
+          5
+        ],
+        "ratio_range": [
+          1.0090671966215377,
+          1.497142857142857
+        ],
+        "max_abs_ratio_change": 0.46301475990115537,
+        "top_influences": [
+          {
+            "removed": "huggingface/transformers",
+            "ratio": 1.497142857142857,
+            "rank": 5,
+            "comparison_tasks": 20,
+            "ratio_change": 0.46301475990115537,
+            "rank_change": 2
+          },
+          {
+            "removed": "keras-team/keras",
+            "ratio": 1.0090671966215377,
+            "rank": 2,
+            "comparison_tasks": 49,
+            "ratio_change": -0.025060900620164084,
+            "rank_change": -1
+          },
+          {
+            "removed": "yt-dlp/yt-dlp",
+            "ratio": 1.0185614849187936,
+            "rank": 3,
+            "comparison_tasks": 58,
+            "ratio_change": -0.015566612322908124,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 4,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          3,
+          4
+        ],
+        "ratio_range": [
+          1.0446787148594376,
+          1.2292006525285482
+        ],
+        "max_abs_ratio_change": 0.19507255528684642,
+        "top_influences": [
+          {
+            "removed": "polybench-claude-opus-5.5-jitto-build",
+            "ratio": 1.2292006525285482,
+            "rank": 4,
+            "comparison_tasks": 42,
+            "ratio_change": 0.19507255528684642,
+            "rank_change": 1
+          },
+          {
+            "removed": "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+            "ratio": 1.06384872080089,
+            "rank": 3,
+            "comparison_tasks": 50,
+            "ratio_change": 0.029720623559188253,
+            "rank_change": 1
+          },
+          {
+            "removed": "polybench-gpt-5.6-sol-slingshot-3.4.0",
+            "ratio": 1.0446787148594376,
+            "rank": 3,
+            "comparison_tasks": 49,
+            "ratio_change": 0.010550617617735902,
+            "rank_change": 1
+          }
+        ]
+      }
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+      "name": "Claude Opus 5.5 (high) \u00b7 AiWork.Code",
+      "ratio": 1.1254946428158192,
+      "rank": 4,
+      "coverage": {
+        "resolved_records": 80,
+        "published_resolved_attempts": 80,
+        "eligible_solved_attempts": 80,
+        "eligible_solved_base_tasks": 80,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {}
+      },
+      "comparison_tasks": 64,
+      "reported_harnesses": [
+        "AiWork.Code"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 3601.0833333333335,
+      "largest_abs_comparison_task": "huggingface__transformers-20136",
+      "largest_abs_comparison_share": 0.3453590354754356,
+      "nonpositive_comparison_tasks": 11,
+      "leave_one_task_out": {
+        "scenarios": 105,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          4,
+          5
+        ],
+        "ratio_range": [
+          1.0536957828131077,
+          1.213753488498117
+        ],
+        "max_abs_ratio_change": 0.08825884568229769,
+        "top_influences": [
+          {
+            "removed": "huggingface__transformers-27463",
+            "ratio": 1.213753488498117,
+            "rank": 5,
+            "comparison_tasks": 63,
+            "ratio_change": 0.08825884568229769,
+            "rank_change": 1
+          },
+          {
+            "removed": "huggingface__transformers-20136",
+            "ratio": 1.0536957828131077,
+            "rank": 4,
+            "comparison_tasks": 63,
+            "ratio_change": -0.07179886000271152,
+            "rank_change": 0
+          },
+          {
+            "removed": "huggingface__transformers-7075",
+            "ratio": 1.0905010169967035,
+            "rank": 4,
+            "comparison_tasks": 63,
+            "ratio_change": -0.03499362581911569,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 5,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          4
+        ],
+        "ratio_range": [
+          0.6727785613540197,
+          1.1507488815405562
+        ],
+        "max_abs_ratio_change": 0.45271608146179954,
+        "top_influences": [
+          {
+            "removed": "huggingface/transformers",
+            "ratio": 0.6727785613540197,
+            "rank": 1,
+            "comparison_tasks": 20,
+            "ratio_change": -0.45271608146179954,
+            "rank_change": -3
+          },
+          {
+            "removed": "keras-team/keras",
+            "ratio": 1.1507488815405562,
+            "rank": 4,
+            "comparison_tasks": 54,
+            "ratio_change": 0.025254238724736977,
+            "rank_change": 0
+          },
+          {
+            "removed": "yt-dlp/yt-dlp",
+            "ratio": 1.1291344042528604,
+            "rank": 4,
+            "comparison_tasks": 62,
+            "ratio_change": 0.0036397614370411446,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 4,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          2,
+          3
+        ],
+        "ratio_range": [
+          0.9385693335505947,
+          1.1121985319818246
+        ],
+        "max_abs_ratio_change": 0.18692530926522455,
+        "top_influences": [
+          {
+            "removed": "polybench-gpt-5.6-sol-slingshot-3.4.0",
+            "ratio": 0.9385693335505947,
+            "rank": 2,
+            "comparison_tasks": 49,
+            "ratio_change": -0.18692530926522455,
+            "rank_change": -1
+          },
+          {
+            "removed": "polybench-claude-opus-5.5-jitto-build",
+            "ratio": 1.0204187128456965,
+            "rank": 3,
+            "comparison_tasks": 42,
+            "ratio_change": -0.10507592997012272,
+            "rank_change": -1
+          },
+          {
+            "removed": "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+            "ratio": 1.0539280958721704,
+            "rank": 2,
+            "comparison_tasks": 50,
+            "ratio_change": -0.07156654694364883,
+            "rank_change": -1
+          }
+        ]
+      }
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+      "name": "Claude Opus 5.5 (high) \u00b7 Jitto Build (Claude Code)",
+      "ratio": 1.1780664444188989,
+      "rank": 5,
+      "coverage": {
+        "resolved_records": 97,
+        "published_resolved_attempts": 97,
+        "eligible_solved_attempts": 97,
+        "eligible_solved_base_tasks": 97,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {}
+      },
+      "comparison_tasks": 67,
+      "reported_harnesses": [
+        "Jitto Build (Claude Code)"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 3624.583333333333,
+      "largest_abs_comparison_task": "huggingface__transformers-20136",
+      "largest_abs_comparison_share": 0.3570985170709277,
+      "nonpositive_comparison_tasks": 11,
+      "leave_one_task_out": {
+        "scenarios": 105,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          4,
+          5
+        ],
+        "ratio_range": [
+          1.1446705832983635,
+          1.224332153202446
+        ],
+        "max_abs_ratio_change": 0.04626570878354719,
+        "top_influences": [
+          {
+            "removed": "huggingface__transformers-27463",
+            "ratio": 1.1446705832983635,
+            "rank": 4,
+            "comparison_tasks": 66,
+            "ratio_change": -0.033395861120535386,
+            "rank_change": -1
+          },
+          {
+            "removed": "huggingface__transformers-20136",
+            "ratio": 1.224332153202446,
+            "rank": 5,
+            "comparison_tasks": 66,
+            "ratio_change": 0.04626570878354719,
+            "rank_change": 0
+          },
+          {
+            "removed": "huggingface__transformers-7075",
+            "ratio": 1.1558081572756285,
+            "rank": 5,
+            "comparison_tasks": 66,
+            "ratio_change": -0.022258287143270383,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 5,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          4,
+          5
+        ],
+        "ratio_range": [
+          1.1509846827133479,
+          1.1816198590029163
+        ],
+        "max_abs_ratio_change": 0.02708176170555099,
+        "top_influences": [
+          {
+            "removed": "huggingface/transformers",
+            "ratio": 1.1509846827133479,
+            "rank": 4,
+            "comparison_tasks": 22,
+            "ratio_change": -0.02708176170555099,
+            "rank_change": -1
+          },
+          {
+            "removed": "keras-team/keras",
+            "ratio": 1.174173957052997,
+            "rank": 5,
+            "comparison_tasks": 55,
+            "ratio_change": -0.0038924873659018644,
+            "rank_change": 0
+          },
+          {
+            "removed": "yt-dlp/yt-dlp",
+            "ratio": 1.1816198590029163,
+            "rank": 5,
+            "comparison_tasks": 65,
+            "ratio_change": 0.003553414584017478,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 4,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          4,
+          4
+        ],
+        "ratio_range": [
+          1.1303827751196172,
+          1.2759831460674158
+        ],
+        "max_abs_ratio_change": 0.09791670164851696,
+        "top_influences": [
+          {
+            "removed": "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+            "ratio": 1.2759831460674158,
+            "rank": 4,
+            "comparison_tasks": 50,
+            "ratio_change": 0.09791670164851696,
+            "rank_change": 0
+          },
+          {
+            "removed": "polybench-claude-opus-5.5-aiwork-code",
+            "ratio": 1.244831880448319,
+            "rank": 4,
+            "comparison_tasks": 45,
+            "ratio_change": 0.06676543602942009,
+            "rank_change": 0
+          },
+          {
+            "removed": "polybench-gpt-5.6-sol-slingshot-3.4.0",
+            "ratio": 1.1303827751196172,
+            "rank": 4,
+            "comparison_tasks": 49,
+            "ratio_change": -0.047683669299281695,
+            "rank_change": 0
+          }
+        ]
+      }
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+      "name": "DeepSeek V4 Flash (max) \u00b7 Mobile Coder 1.2.4",
+      "ratio": 1.0125364296618402,
+      "rank": 2,
+      "coverage": {
+        "resolved_records": 80,
+        "published_resolved_attempts": 80,
+        "eligible_solved_attempts": 80,
+        "eligible_solved_base_tasks": 80,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {}
+      },
+      "comparison_tasks": 59,
+      "reported_harnesses": [
+        "Mobile Coder 1.2.4"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 3602.8333333333335,
+      "largest_abs_comparison_task": "huggingface__transformers-20136",
+      "largest_abs_comparison_share": 0.3487995559050747,
+      "nonpositive_comparison_tasks": 10,
+      "leave_one_task_out": {
+        "scenarios": 105,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          2,
+          3
+        ],
+        "ratio_range": [
+          0.9027491653051076,
+          1.031423817447112
+        ],
+        "max_abs_ratio_change": 0.10978726435673258,
+        "top_influences": [
+          {
+            "removed": "huggingface__transformers-15158",
+            "ratio": 1.0237033560197137,
+            "rank": 3,
+            "comparison_tasks": 58,
+            "ratio_change": 0.01116692635787353,
+            "rank_change": 1
+          },
+          {
+            "removed": "huggingface__transformers-20136",
+            "ratio": 0.9027491653051076,
+            "rank": 2,
+            "comparison_tasks": 58,
+            "ratio_change": -0.10978726435673258,
+            "rank_change": 0
+          },
+          {
+            "removed": "huggingface__transformers-27463",
+            "ratio": 0.978721146192624,
+            "rank": 2,
+            "comparison_tasks": 58,
+            "ratio_change": -0.03381528346921625,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 5,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          2,
+          3
+        ],
+        "ratio_range": [
+          1.0072281213947685,
+          1.1390134529147982
+        ],
+        "max_abs_ratio_change": 0.12647702325295795,
+        "top_influences": [
+          {
+            "removed": "huggingface/transformers",
+            "ratio": 1.1390134529147982,
+            "rank": 3,
+            "comparison_tasks": 21,
+            "ratio_change": 0.12647702325295795,
+            "rank_change": 1
+          },
+          {
+            "removed": "langchain-ai/langchain",
+            "ratio": 1.0072281213947685,
+            "rank": 2,
+            "comparison_tasks": 51,
+            "ratio_change": -0.005308308267071737,
+            "rank_change": 0
+          },
+          {
+            "removed": "keras-team/keras",
+            "ratio": 1.0092639871617186,
+            "rank": 2,
+            "comparison_tasks": 47,
+            "ratio_change": -0.0032724425001215973,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 4,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          2
+        ],
+        "ratio_range": [
+          0.8947792458910733,
+          1.0438817598533454
+        ],
+        "max_abs_ratio_change": 0.11775718377076694,
+        "top_influences": [
+          {
+            "removed": "polybench-gpt-5.6-sol-slingshot-3.4.0",
+            "ratio": 0.8947792458910733,
+            "rank": 1,
+            "comparison_tasks": 49,
+            "ratio_change": -0.11775718377076694,
+            "rank_change": 0
+          },
+          {
+            "removed": "polybench-claude-opus-5.5-aiwork-code",
+            "ratio": 0.953375086986778,
+            "rank": 2,
+            "comparison_tasks": 45,
+            "ratio_change": -0.059161342675062234,
+            "rank_change": 0
+          },
+          {
+            "removed": "polybench-claude-opus-4.8-hmigbot",
+            "ratio": 1.0438817598533454,
+            "rank": 2,
+            "comparison_tasks": 49,
+            "ratio_change": 0.031345330191505205,
+            "rank_change": 0
+          }
+        ]
+      }
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+      "name": "GPT-5.6 Sol \u00b7 Slingshot 3.4.0",
+      "ratio": 0.6499640028797696,
+      "rank": 1,
+      "coverage": {
+        "resolved_records": 64,
+        "published_resolved_attempts": 64,
+        "eligible_solved_attempts": 64,
+        "eligible_solved_base_tasks": 64,
+        "published_successes_without_resolved_record": 0,
+        "excluded_success_reasons": {}
+      },
+      "comparison_tasks": 60,
+      "reported_harnesses": [
+        "Slingshot 3.4.0"
+      ],
+      "retry_policy": "Not inferred; consult the pinned source run report.",
+      "comparison_denominator": 3472.5,
+      "largest_abs_comparison_task": "huggingface__transformers-20136",
+      "largest_abs_comparison_share": 0.43350131989440843,
+      "nonpositive_comparison_tasks": 10,
+      "leave_one_task_out": {
+        "scenarios": 105,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          1
+        ],
+        "ratio_range": [
+          0.6302290956246098,
+          0.7487926798271626
+        ],
+        "max_abs_ratio_change": 0.09882867694739295,
+        "top_influences": [
+          {
+            "removed": "huggingface__transformers-20136",
+            "ratio": 0.7487926798271626,
+            "rank": 1,
+            "comparison_tasks": 59,
+            "ratio_change": 0.09882867694739295,
+            "rank_change": 0
+          },
+          {
+            "removed": "huggingface__transformers-7075",
+            "ratio": 0.6719976306826596,
+            "rank": 1,
+            "comparison_tasks": 59,
+            "ratio_change": 0.022033627802889977,
+            "rank_change": 0
+          },
+          {
+            "removed": "huggingface__transformers-13693",
+            "ratio": 0.6302290956246098,
+            "rank": 1,
+            "comparison_tasks": 59,
+            "ratio_change": -0.019734907255159806,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_repository_out": {
+        "scenarios": 5,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          2
+        ],
+        "ratio_range": [
+          0.6437225368926367,
+          0.7099678456591639
+        ],
+        "max_abs_ratio_change": 0.0600038427793943,
+        "top_influences": [
+          {
+            "removed": "huggingface/transformers",
+            "ratio": 0.7099678456591639,
+            "rank": 2,
+            "comparison_tasks": 21,
+            "ratio_change": 0.0600038427793943,
+            "rank_change": 1
+          },
+          {
+            "removed": "keras-team/keras",
+            "ratio": 0.6437225368926367,
+            "rank": 1,
+            "comparison_tasks": 48,
+            "ratio_change": -0.0062414659871329325,
+            "rank_change": 0
+          },
+          {
+            "removed": "yt-dlp/yt-dlp",
+            "ratio": 0.6516552484070329,
+            "rank": 1,
+            "comparison_tasks": 58,
+            "ratio_change": 0.0016912455272632965,
+            "rank_change": 0
+          }
+        ]
+      },
+      "leave_one_peer_out": {
+        "scenarios": 4,
+        "unavailable_scenarios": 0,
+        "rank_range": [
+          1,
+          1
+        ],
+        "ratio_range": [
+          0.6577893472166599,
+          0.7681686046511628
+        ],
+        "max_abs_ratio_change": 0.11820460177139314,
+        "top_influences": [
+          {
+            "removed": "polybench-claude-opus-5.5-jitto-build",
+            "ratio": 0.7681686046511628,
+            "rank": 1,
+            "comparison_tasks": 42,
+            "ratio_change": 0.11820460177139314,
+            "rank_change": 0
+          },
+          {
+            "removed": "polybench-claude-opus-5.5-aiwork-code",
+            "ratio": 0.7155003270111184,
+            "rank": 1,
+            "comparison_tasks": 45,
+            "ratio_change": 0.0655363241313488,
+            "rank_change": 0
+          },
+          {
+            "removed": "polybench-claude-opus-4.8-hmigbot",
+            "ratio": 0.683084629030575,
+            "rank": 1,
+            "comparison_tasks": 49,
+            "ratio_change": 0.033120626150805355,
+            "rank_change": 0
+          }
+        ]
+      }
+    }
+  },
+  "pairwise": [
+    {
+      "a": "polybench-claude-opus-4.8-hmigbot",
+      "b": "polybench-claude-opus-5.5-aiwork-code",
+      "shared_solved_measured_tasks": 60,
+      "a_net_mean": 39.516666666666666,
+      "b_net_mean": 39.81666666666667,
+      "mean_difference_a_minus_b": -0.3,
+      "ratio_a_over_b": 0.992465466722478
+    },
+    {
+      "a": "polybench-claude-opus-4.8-hmigbot",
+      "b": "polybench-claude-opus-5.5-jitto-build",
+      "shared_solved_measured_tasks": 69,
+      "a_net_mean": 36.94202898550725,
+      "b_net_mean": 40.73913043478261,
+      "mean_difference_a_minus_b": -3.7971014492753623,
+      "ratio_a_over_b": 0.9067947349697616
+    },
+    {
+      "a": "polybench-claude-opus-4.8-hmigbot",
+      "b": "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+      "shared_solved_measured_tasks": 55,
+      "a_net_mean": 40.58181818181818,
+      "b_net_mean": 35.63636363636363,
+      "mean_difference_a_minus_b": 4.945454545454545,
+      "ratio_a_over_b": 1.1387755102040817
+    },
+    {
+      "a": "polybench-claude-opus-4.8-hmigbot",
+      "b": "polybench-gpt-5.6-sol-slingshot-3.4.0",
+      "shared_solved_measured_tasks": 54,
+      "a_net_mean": 30.537037037037038,
+      "b_net_mean": 21.27777777777778,
+      "mean_difference_a_minus_b": 9.25925925925926,
+      "ratio_a_over_b": 1.4351610095735423
+    },
+    {
+      "a": "polybench-claude-opus-5.5-aiwork-code",
+      "b": "polybench-claude-opus-5.5-jitto-build",
+      "shared_solved_measured_tasks": 80,
+      "a_net_mean": 39.3,
+      "b_net_mean": 39.95,
+      "mean_difference_a_minus_b": -0.65,
+      "ratio_a_over_b": 0.983729662077597
+    },
+    {
+      "a": "polybench-claude-opus-5.5-aiwork-code",
+      "b": "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+      "shared_solved_measured_tasks": 63,
+      "a_net_mean": 42.333333333333336,
+      "b_net_mean": 40.73015873015873,
+      "mean_difference_a_minus_b": 1.6031746031746033,
+      "ratio_a_over_b": 1.039360872954014
+    },
+    {
+      "a": "polybench-claude-opus-5.5-aiwork-code",
+      "b": "polybench-gpt-5.6-sol-slingshot-3.4.0",
+      "shared_solved_measured_tasks": 59,
+      "a_net_mean": 59.016949152542374,
+      "b_net_mean": 39.11864406779661,
+      "mean_difference_a_minus_b": 19.89830508474576,
+      "ratio_a_over_b": 1.5086655112651646
+    },
+    {
+      "a": "polybench-claude-opus-5.5-jitto-build",
+      "b": "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+      "shared_solved_measured_tasks": 72,
+      "a_net_mean": 42.65277777777778,
+      "b_net_mean": 38.31944444444444,
+      "mean_difference_a_minus_b": 4.333333333333333,
+      "ratio_a_over_b": 1.113084450888003
+    },
+    {
+      "a": "polybench-claude-opus-5.5-jitto-build",
+      "b": "polybench-gpt-5.6-sol-slingshot-3.4.0",
+      "shared_solved_measured_tasks": 64,
+      "a_net_mean": 58.765625,
+      "b_net_mean": 37.40625,
+      "mean_difference_a_minus_b": 21.359375,
+      "ratio_a_over_b": 1.5710108604845447
+    },
+    {
+      "a": "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+      "b": "polybench-gpt-5.6-sol-slingshot-3.4.0",
+      "shared_solved_measured_tasks": 52,
+      "a_net_mean": 59.65384615384615,
+      "b_net_mean": 42.67307692307692,
+      "mean_difference_a_minus_b": 16.98076923076923,
+      "ratio_a_over_b": 1.3979269941415051
+    }
+  ],
+  "inputs": [
+    {
+      "file": "score-panel.json",
+      "sha256": "e07c2110dec5b4c56e97f1cc5624a7bced54c9dd74db82b009ef6e89f5b0cddd"
+    },
+    {
+      "file": "polybench-claude-opus-4.8-hmigbot.jsonl",
+      "sha256": "b60842fd54a5953a833661c571a2ee6f1fe360ba70252715c460bfb9d3776767"
+    },
+    {
+      "file": "polybench-claude-opus-5.5-aiwork-code.jsonl",
+      "sha256": "50fd3bb024dc9b9cb6c1cd15c008f7550986a6bba6a2d98a9ec116d6f7d6ed78"
+    },
+    {
+      "file": "polybench-claude-opus-5.5-jitto-build.jsonl",
+      "sha256": "94773bef8920f9dfb27fcaa17153a78dc958d7ee98adfbee47207e5732b29bd0"
+    },
+    {
+      "file": "polybench-deepseek-v4-flash-mobile-coder-1.2.4.jsonl",
+      "sha256": "03ad09eede144077e7e7c49452115c5a86955059b4e8a9dc8d1d3986507aa96d"
+    },
+    {
+      "file": "polybench-gpt-5.6-sol-slingshot-3.4.0.jsonl",
+      "sha256": "9719bfdeddd31cfe2389f5d48728aba0ea9e0d633a3732168d9179d1741c31be"
+    }
+  ]
+}
