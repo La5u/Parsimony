@@ -80,3 +80,8 @@ done
 # SWE-Milestone feature work: Go, TypeScript and Python boards combined by same-task ratios, as on index.html.
 python -m parsimony.site --merge go=examples/swe-milestone-go --merge typescript=examples/swe-milestone-typescript \
   --merge python=examples/swe-milestone-python --benchmark milestone "${NAV[@]}" --output "$OUT/swe-milestone.html"
+
+# Ranking diagnostics come from the same scalars; rebuild them with the pages so the two never drift apart.
+if [ "$OUT" = site ]; then
+  if [ "$OFFLINE" = 1 ]; then scripts/diagnose-rankings.sh --offline; else scripts/diagnose-rankings.sh; fi
+fi
