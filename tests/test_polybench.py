@@ -11,11 +11,13 @@ from urllib.error import HTTPError
 from parsimony.artifacts import Cache
 from parsimony.polybench import (
     COMMIT_URL, DATASET, DATASET_REVISION, LANGUAGE_COUNTS, RAW, RUNS,
-    SUBMISSION_REVISION, TREE_URL, analyze_run, import_run, main,
+    SUBMISSION_REVISION, TREE_URL, analyze_run, audit_preimages, import_run, main, run_source,
 )
 
 ISWE = '20260422_iswe_agent'
 MIGBOT = '20260623_migbot_claude-opus-4-8'
+AIWORK = '20261021_aiwork-code_claude-opus-5-5'
+MOBILE = '20260901_mobile-coder_deepseek-v4-flash'
 PASS = 'huggingface__transformers-12981'
 FAIL = 'huggingface__transformers-13491'
 MISSING = 'keras-team__keras-20002'
@@ -48,12 +50,17 @@ class PolyBenchTests(unittest.TestCase):
     def fixture(self, run_name=ISWE):
         self.run_name = run_name
         self.prefix = f'evaluation/PBVerified/{run_name}'
-        self.root = RAW + '/' + self.prefix
+        source = run_source(run_name)
+        self.raw, self.commit_url, self.tree_url = source['raw'], source['commit_url'], source['tree_url']
+        self.root = self.raw + '/' + self.prefix
         tasks = []
         for lang, count in LANGUAGE_COUNTS.items():
             ids = [f'org__{lang}-{i}' for i in range(count)]
             if lang == 'python':
                 ids[:3] = [PASS, FAIL, MISSING]
+            named = [t for t in RUNS[run_name].get('source_dispositions', ())
+                     if lang == ('python' if t.startswith(('keras', 'huggingface')) else 'java')]
+            ids[3:3 + len(named)] = named
             tasks.extend(dict(instance_id=task_id, repo='org/repo', base_commit='c' * 40,
                               language=lang.title(), patch='DO NOT USE GOLD PATCH') for task_id in ids)
         self.tasks = tasks
@@ -62,9 +69,13 @@ class PolyBenchTests(unittest.TestCase):
         writer.writeheader()
         writer.writerows(tasks)
         self.predictions = [dict(instance_id=r['instance_id'], model_patch=DIFF,
-                                 model_name_or_path=RUNS[run_name]['model'])
-                            for r in tasks if run_name == MIGBOT or
+                                 **({'model_name_or_path': RUNS[run_name]['model']}
+                                    if RUNS[run_name]['model'] is not None else {}))
+                            for r in tasks if run_name != ISWE or
                             (r['language'] == 'Python' and r['instance_id'] != MISSING)]
+        for row in self.predictions:
+            if row['instance_id'] in RUNS[run_name].get('source_dispositions', {}):
+                row['model_patch'] = ''
         pred_ids = {r['instance_id'] for r in self.predictions}
         # Actual source layout: logs/<instance_id>_result.json, not nested task
         # directories, keyed report.json, or a successes-only aggregate.
@@ -72,7 +83,10 @@ class PolyBenchTests(unittest.TestCase):
         if run_name == ISWE:
             result_ids += [f'outside__full-harness-{i}' for i in range(2110 - len(tasks))]
         entries = [dict(path=self.prefix + '/all_preds.jsonl', type='blob')]
-        values = {COMMIT_URL: encoded(dict(sha=SUBMISSION_REVISION, tree=dict(sha='d' * 40))),
+        commit = dict(sha=source['revision'], tree=dict(sha='d' * 40))
+        if source['pull_request']:
+            commit['parents'] = [dict(sha=SUBMISSION_REVISION)]
+        values = {self.commit_url: encoded(commit),
                   HF_API: encoded(dict(sha=DATASET_REVISION)), HF_CSV: csv_text.getvalue().encode(),
                   self.root + '/README.md': b'113 Python tasks; full harness output is not the cohort',
                   self.root + '/metadata.yaml': b'name: iSWE-Agent\noss: false\n'}
@@ -80,17 +94,19 @@ class PolyBenchTests(unittest.TestCase):
             values[self.root + '/README.md'] = (b'70 Feature + 312 complementary; 29 relay retries; '
                                                b'five unconditional replacements; frozen-set re-evaluation')
             values[self.root + '/metadata.yaml'] = b'name: HMigBot\noss: false\n'
-            values[self.root + '/temporal_history_isolation_audit.json'] = encoded({'cases': []})
+        for filename in RUNS[run_name].get('documents', ()):
+            values[self.root + '/' + filename] = encoded({'cases': []})
+        empty = {r['instance_id'] for r in self.predictions if not r['model_patch']}
         for task_id in result_ids:
-            generated = task_id in pred_ids
+            generated = task_id in pred_ids and task_id not in empty
             success = generated and task_id == PASS
             result = dict(instance_id=task_id, generation=generated, resolved=success,
                           patch_applied=generated, with_logs=generated, all_f2p_passed=success,
                           no_p2p_failed=generated, passed_tests=[], failed_tests=[])
             path = self.prefix + f'/logs/{task_id}_result.json'
             entries.append(dict(path=path, type='blob', sha='e' * 40))
-            values[RAW + '/' + path] = encoded(result)
-        values[TREE_URL] = encoded(dict(sha='d' * 40, truncated=False, tree=entries))
+            values[self.raw + '/' + path] = encoded(result)
+        values[self.tree_url] = encoded(dict(sha='d' * 40, truncated=False, tree=entries))
         self.cache = FixtureCache(values)
         self.save_predictions()
         return self.cache
@@ -341,6 +357,74 @@ class PolyBenchTests(unittest.TestCase):
             import_run(self.cache, run_name='other')
         with self.assertRaises(TypeError):
             import_run(self.cache, run_name=ISWE, task_ids=[PASS])
+
+    def test_pull_request_run_pinned_at_head_with_source_dispositions(self):
+        self.fixture(AIWORK)
+        self.assertIn('x4vierli/SWE-PolyBench/d2b1f885', self.root)
+        run = self.inventory()
+        self.assertEqual(run['pull_request'], 47)
+        self.assertFalse(run['merged_upstream'])
+        self.assertEqual(run['submission_revision'], SUBMISSION_REVISION)
+        self.assertEqual(run['source_revision'], 'd2b1f885a66387fa8ad5d670aa1d690c41965a4e')
+        self.assertNotIn('data', run['documents']['memorization_audit.json'])
+        rows = {r['task_id']: r for r in run['records']}
+        self.assertEqual(rows['keras-team__keras-19915']['source_disposition'], 'withdrawn_after_leakage_audit')
+        self.assertEqual(rows['keras-team__keras-19915']['published_outcome'], 'no_generation')
+        self.assertIsNone(rows[PASS]['source_disposition'])
+        with tempfile.TemporaryDirectory() as directory:
+            records = {r['task_id']: r for r in analyze_run(run, self.offline(directory))}
+        self.assertEqual(records[PASS]['agent'], 'polybench-claude-opus-5.5-aiwork-code')
+        self.assertEqual(records[PASS]['provenance']['source_agent'], 'AiWork.Code')
+        self.assertFalse(records[PASS]['provenance']['merged_upstream'])
+        self.assertTrue(records[PASS]['provenance']['prediction_url'].startswith(self.raw))
+        self.assertEqual(records['keras-team__keras-19915']['source_disposition'], 'withdrawn_after_leakage_audit')
+        self.assertEqual(records['keras-team__keras-19915']['analysis_status'], 'empty_patch')
+        self.assertIsNone(records['keras-team__keras-19915']['metrics'])
+
+    def test_pull_request_head_must_sit_on_pinned_upstream(self):
+        self.fixture(MOBILE)
+        self.assertEqual(self.inventory()['records'][0]['reported_model'], None)
+        commit = json.loads(self.cache.values[self.commit_url])
+        commit['parents'] = [dict(sha='a' * 40)]
+        self.cache.values[self.commit_url] = encoded(commit)
+        with self.assertRaisesRegex(ValueError, 'only parent'):
+            self.inventory()
+
+    def test_source_disposition_with_a_submitted_patch_fails_closed(self):
+        self.fixture(AIWORK)
+        for row in self.predictions:
+            if row['instance_id'] == 'google__guava-3971':
+                row['model_patch'] = DIFF
+        self.save_predictions()
+        with self.assertRaisesRegex(ValueError, 'no patch was submitted'):
+            self.inventory()
+
+    def test_preimage_audit_withholds_unverified_before_state(self):
+        self.fixture()
+        self.predictions[1]['model_patch'] = DIFF.replace('--- a/', 'index abcdef1..1234567 100644\n--- a/', 1)
+        self.save_predictions()
+        run = self.inventory()
+        with tempfile.TemporaryDirectory() as directory:
+            cache = self.offline(directory)
+            audit = audit_preimages(run, cache)
+            statuses = {r['task_id']: r['status'] for r in audit['records']}
+            self.assertEqual(len(statuses), 113)
+            self.assertEqual(statuses[FAIL], 'unverified')  # wrong blob prefix at the base
+            self.assertEqual(statuses[PASS], 'hunks_match_without_blob_identity')
+            self.assertEqual(statuses[MISSING], 'not_required')
+            rows = {r['task_id']: r for r in analyze_run(run, cache, preimages=audit)}
+            for task in (PASS, FAIL):
+                self.assertEqual(rows[task]['analysis_status'], 'unverified_preimage')
+                self.assertIsNone(rows[task]['metrics'])
+                self.assertEqual(rows[task]['provenance']['preimage_audit']['status'], statuses[task])
+            self.assertEqual(rows[PASS]['evaluation_result'], 'resolved')  # outcome kept, footprint withheld
+            self.assertEqual(rows[FAIL]['evaluation_result'], 'failed')
+            other = dict(audit, inventory_sha256='0' * 64)
+            with self.assertRaisesRegex(ValueError, 'does not bind'):
+                analyze_run(run, cache, preimages=other)
+            partial = dict(audit, records=audit['records'][1:])
+            with self.assertRaisesRegex(ValueError, 'complete language population'):
+                analyze_run(run, cache, preimages=partial)
 
     def test_cli_rejects_duplicate_inventory_keys_before_analysis(self):
         with tempfile.TemporaryDirectory() as directory:
