@@ -36,7 +36,7 @@ E=examples/mini-swe-agent-500
 report verified "$E/score-panel.json" "$E/"*.jsonl
 E=examples/live-python
 report live-python "$E/score-panel.json" "$E/deepseek-v4.1-flash.jsonl" "$E/gpt-5.6-sol.jsonl" \
-  "$E/claude-opus-4.8.jsonl" "$E/gpt-5.5-agav.jsonl"
+  "$E/claude-opus-4.8.jsonl" "$E/gpt-5.5-agav.jsonl" "$E/claude-opus-5.5-xhigh.jsonl"
 for lang in javascript typescript go; do
   E=examples/live-$lang
   report live-$lang "$E/score-panel.json" "$E/"*-*.jsonl
