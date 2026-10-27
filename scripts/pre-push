@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Git pre-push hook: run scripts/check.sh on each pushed commit, so a failing commit never reaches CI.
+# Checks a clean checkout of the pushed commit, not the working tree. Install once:
+#
+#   ln -sf ../../scripts/pre-push .git/hooks/pre-push
+#
+# Skip in an emergency with `git push --no-verify`.
+set -euo pipefail
+repo=$(git rev-parse --show-toplevel)
+
+while read -r _ lsha _ _; do
+  [[ $lsha =~ ^0+$ ]] && continue   # deletion
+  tmp=$(mktemp -d)
+  git worktree add -q --detach "$tmp/tree" "$lsha"
+  [ -d "$repo/node_modules" ] && ln -s "$repo/node_modules" "$tmp/tree/node_modules"
+  echo "pre-push: checking $(git log -1 --format='%h %s' "$lsha")" >&2
+  rc=0
+  (cd "$tmp/tree" && bash scripts/check.sh >"$tmp/check.log" 2>&1) || rc=$?
+  [ $rc = 0 ] || tail -40 "$tmp/check.log" >&2
+  git worktree remove --force "$tmp/tree"
+  rm -rf "$tmp"
+  if [ $rc != 0 ]; then
+    echo "pre-push: checks failed; push blocked." >&2
+    exit 1
+  fi
+done

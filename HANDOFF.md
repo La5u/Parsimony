@@ -199,6 +199,8 @@ Latest validation (2026-10-14, 0.10.0-beta): **419 tests ran, 45 skipped** (Go g
 
 ### Before every push
 
+`scripts/pre-push` is a git pre-push hook that runs `scripts/check.sh` on a clean checkout of each pushed commit and blocks the push if it fails (install once: `ln -sf ../../scripts/pre-push .git/hooks/pre-push`; the global no-ai-attribution hook chains to it). It catches the stale-diagnostics class of CI failure locally.
+
 ```sh
 npm ci                                            # pinned TypeScript parser for JS/TS tests
 scripts/check.sh                                  # Python tests (413; Go and opt-in browser tests skip without extras), page checks, bundles
