@@ -26,11 +26,16 @@ COHORTS = [
      'GPT-5.6 Sol', 'python', 'live-lite-gpt-5.6-sol-slingshot-3.4.0'),
     ('claude_opus_4_8', 'lite/aiwork-code/20260909-opus-4-8-xhigh', 'AiWork.Code',
      'Claude Opus 4.8', 'python', 'live-lite-claude-opus-4.8-aiwork'),
+    ('claude_opus_5_5', 'lite/aiwork-code/20261021-opus-5-5-xhigh', 'AiWork.Code',
+     'Claude Opus 5.5', 'python', 'live-lite-claude-opus-5.5-xhigh-aiwork'),
     ('gpt_5_6_sol_js', 'multilang/js_ts/slingshot-agent/v3.4.0/gpt-5.6-sol/js', 'Slingshot 3.4.0',
      'GPT-5.6 Sol', 'javascript', 'live-multilang-gpt-5.6-sol-slingshot-3.4.0'),
     ('gpt_5_6_sol_ts', 'multilang/js_ts/slingshot-agent/v3.4.0/gpt-5.6-sol/ts', 'Slingshot 3.4.0',
      'GPT-5.6 Sol', 'typescript', 'live-multilang-gpt-5.6-sol-slingshot-3.4.0'),
 ]
+# Cohorts not at REVISION. Opus 5.5 is the head of the open, unmerged PR 60
+# (fork x4vierli/submission); raw.githubusercontent.com serves it under the upstream repo.
+REVISIONS = {'claude_opus_5_5': '36022565d01a5f828d65e7ef9a541d056c579beb'}
 
 
 def save(path, value):
@@ -91,7 +96,7 @@ def main():
         if args.phase == 'inventory':
             is_python = language == 'python'
             split = {'python': 'lite', 'javascript': 'js', 'typescript': 'ts'}[language]
-            run = import_run(cache, submission_revision=REVISION, config_path='submissions/' + config,
+            run = import_run(cache, submission_revision=REVISIONS.get(name, REVISION), config_path='submissions/' + config,
                              dataset=PYTHON_DATASET if is_python else 'SWE-bench-Live/MultiLang',
                              dataset_revision=PYTHON_REVISION if is_python else MULTILANG_REVISION,
                              dataset_files=[(language, f'data/{split}-00000-of-00001.parquet')],
