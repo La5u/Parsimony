@@ -1,14 +1,14 @@
-# Score sensitivity: 5 models
+# Score sensitivity: 6 models
 
-Analysis, not a score release. Baseline `parsimony-80-20-v0.5` (net 0.8 / churn 0.2, failure cap 25), panel `live-multilang-typescript-v1`: 111 tasks. Scores average all tasks; an unscored task counts at the middle of its range, and comparisons also check its best and worst case (68 tasks have a point score for every model).
+Analysis, not a score release. Baseline `parsimony-80-20-v0.5` (net 0.8 / churn 0.2, failure cap 25), panel `live-multilang-typescript-v1`: 111 tasks. Scores average all tasks; an unscored task counts at the middle of its range, and comparisons also check its best and worst case (67 tasks have a point score for every model).
 
-**Verdict.** Read the ranking with its uncertainty, not as exact positions: GPT-5.6 Sol · Slingshot 3.4.0 ≈ Claude Opus 4.6 · AMI Agent 0.7.0 ≈ GPT-5.5 · Slingshot 3.0.0 ≈ GPT-5.5 · Slingshot 2.6.0 ≈ Claude Sonnet 4.5 · Slingshot 2.6.0 (≈ marks an adjacent pair that is statistically tied or reversed by some variation).
+**Verdict.** Read the ranking with its uncertainty, not as exact positions: GPT-5.6 Sol · Slingshot 3.4.0 ≈ Claude Opus 4.6 · AMI Agent 0.7.0 ≈ DeepSeek V4.1 Flash · TianxiCode 0.1.486 ≈ GPT-5.5 · Slingshot 3.0.0 ≈ GPT-5.5 · Slingshot 2.6.0 ≈ Claude Sonnet 4.5 · Slingshot 2.6.0 (≈ marks an adjacent pair that is statistically tied or reversed by some variation).
 
-- **No rank changes at all** under net weight 0.5–1.0 and the net floor or failure cap 0–50 or leave-one-model-out and deduplicated panels or leave-one-repository-out.
-- **Stable under every variation and statistically separated** (0 of 4 adjacent pairs): none.
-- **Statistically indistinguishable** (paired 95% CI on the difference includes 0; 4 pairs): GPT-5.6 Sol · Slingshot 3.4.0 vs Claude Opus 4.6 · AMI Agent 0.7.0, Claude Opus 4.6 · AMI Agent 0.7.0 vs GPT-5.5 · Slingshot 3.0.0, GPT-5.5 · Slingshot 3.0.0 vs GPT-5.5 · Slingshot 2.6.0, GPT-5.5 · Slingshot 2.6.0 vs Claude Sonnet 4.5 · Slingshot 2.6.0.
-- **Midpoint rank never changes under any variation**: GPT-5.6 Sol · Slingshot 3.4.0 (1), Claude Opus 4.6 · AMI Agent 0.7.0 (2), GPT-5.5 · Slingshot 3.0.0 (3), GPT-5.5 · Slingshot 2.6.0 (4), Claude Sonnet 4.5 · Slingshot 2.6.0 (5).
-- Difficulty strata answer a different question and are not counted as variations; they reverse GPT-5.5 · Slingshot 2.6.0 > Claude Sonnet 4.5 · Slingshot 2.6.0 (solved by all).
+- **No rank changes at all** under net weight 0.5–1.0 and the net floor or failure cap 0–50 or leave-one-model-out and deduplicated panels.
+- **Stable under every variation and statistically separated** (0 of 5 adjacent pairs): none.
+- **Statistically indistinguishable** (paired 95% CI on the difference includes 0; 5 pairs): GPT-5.6 Sol · Slingshot 3.4.0 vs Claude Opus 4.6 · AMI Agent 0.7.0, Claude Opus 4.6 · AMI Agent 0.7.0 vs DeepSeek V4.1 Flash · TianxiCode 0.1.486, DeepSeek V4.1 Flash · TianxiCode 0.1.486 vs GPT-5.5 · Slingshot 3.0.0, GPT-5.5 · Slingshot 3.0.0 vs GPT-5.5 · Slingshot 2.6.0, GPT-5.5 · Slingshot 2.6.0 vs Claude Sonnet 4.5 · Slingshot 2.6.0.
+- **Midpoint rank never changes under any variation**: GPT-5.6 Sol · Slingshot 3.4.0 (1), GPT-5.5 · Slingshot 3.0.0 (4), GPT-5.5 · Slingshot 2.6.0 (5), Claude Sonnet 4.5 · Slingshot 2.6.0 (6).
+- Difficulty strata answer a different question and are not counted as variations; they reverse GPT-5.5 · Slingshot 3.0.0 > GPT-5.5 · Slingshot 2.6.0 (solved by all); GPT-5.5 · Slingshot 2.6.0 > Claude Sonnet 4.5 · Slingshot 2.6.0 (solved by all).
 
 ## Ranking
 
@@ -16,18 +16,20 @@ Rank range is the best and worst rank across all weight, cap, panel and reposito
 
 | Rank | Model | Score | 95% CI | Bounds (all tasks) | Rank range | Bootstrap rank 95% | P(top) |
 |---:|---|---:|---|---|---|---|---:|
-| 1 | GPT-5.6 Sol · Slingshot 3.4.0 | 29.5 | 15.7–42.2 | 23.5–35.6 | 1–1 | 1.0–4.0 | 0.88 |
-| 2 | Claude Opus 4.6 · AMI Agent 0.7.0 | 25.1 | 11.4–38.4 | 18.7–31.5 | 2–2 | 1.0–5.0 | 0.12 |
-| 3 | GPT-5.5 · Slingshot 3.0.0 | 16.1 | 4.5–26.2 | 11.6–20.6 | 3–3 | 1.0–5.0 | 0.00 |
-| 4 | GPT-5.5 · Slingshot 2.6.0 | 11.3 | -0.0–22.0 | 6.3–16.2 | 4–4 | 1.0–5.0 | 0.00 |
-| 5 | Claude Sonnet 4.5 · Slingshot 2.6.0 | 8.3 | -5.1–22.6 | 1.0–15.7 | 5–5 | 1.0–5.0 | 0.00 |
+| 1 | GPT-5.6 Sol · Slingshot 3.4.0 | 29.5 | 15.7–42.2 | 23.5–35.6 | 1–1 | 1.0–5.0 | 0.85 |
+| 2 | Claude Opus 4.6 · AMI Agent 0.7.0 | 25.1 | 11.4–38.4 | 18.7–31.5 | 2–3 | 1.0–6.0 | 0.12 |
+| 3 | DeepSeek V4.1 Flash · TianxiCode 0.1.486 | 23.4 | 7.9–38.5 | 15.6–31.1 | 2–3 | 1.0–6.0 | 0.03 |
+| 4 | GPT-5.5 · Slingshot 3.0.0 | 16.1 | 4.5–26.2 | 11.6–20.6 | 4–4 | 1.0–6.0 | 0.00 |
+| 5 | GPT-5.5 · Slingshot 2.6.0 | 11.3 | -0.0–22.0 | 6.3–16.2 | 5–5 | 1.0–6.0 | 0.00 |
+| 6 | Claude Sonnet 4.5 · Slingshot 2.6.0 | 8.3 | -5.1–22.6 | 1.0–15.7 | 6–6 | 1.0–6.0 | 0.00 |
 
 ## Adjacent pairs
 
 | Pair | Difference | Paired 95% CI | P(a > b) | Variations that reverse it | Bounds separate |
 |---|---:|---|---:|---|---|
 | GPT-5.6 Sol · Slingshot 3.4.0 > Claude Opus 4.6 · AMI Agent 0.7.0 | 4.41 | -17.12 to 24.34 | 0.03 | none | no |
-| Claude Opus 4.6 · AMI Agent 0.7.0 > GPT-5.5 · Slingshot 3.0.0 | 9.05 | -9.95 to 28.63 | 0.34 | none | no |
+| Claude Opus 4.6 · AMI Agent 0.7.0 > DeepSeek V4.1 Flash · TianxiCode 0.1.486 | 1.75 | -21.82 to 24.32 | 0.01 | without gsd-build/gsd-2 | no |
+| DeepSeek V4.1 Flash · TianxiCode 0.1.486 > GPT-5.5 · Slingshot 3.0.0 | 7.30 | -11.98 to 28.05 | 0.09 | none | no |
 | GPT-5.5 · Slingshot 3.0.0 > GPT-5.5 · Slingshot 2.6.0 | 4.83 | -10.79 to 19.65 | 0.06 | none | no |
 | GPT-5.5 · Slingshot 2.6.0 > Claude Sonnet 4.5 · Slingshot 2.6.0 | 2.91 | -17.77 to 22.16 | 0.01 | none | no |
 
@@ -39,9 +41,10 @@ Bound-midpoint score over all tasks; rank in parentheses.
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | GPT-5.6 Sol · Slingshot 3.4.0 | 29.5 (1) | 28.5 (1) | 28.9 (1) | 29.2 (1) | 29.9 (1) | 30.2 (1) | 29.0 (1) | 34.0 (1) | 32.2 (1) | 25.1 (1) |
 | Claude Opus 4.6 · AMI Agent 0.7.0 | 25.1 (2) | 25.8 (2) | 25.6 (2) | 25.4 (2) | 24.9 (2) | 24.7 (2) | 25.5 (2) | 30.1 (2) | 28.1 (2) | 20.2 (2) |
-| GPT-5.5 · Slingshot 3.0.0 | 16.1 (3) | 16.0 (3) | 16.0 (3) | 16.1 (3) | 16.1 (3) | 16.2 (3) | 15.9 (3) | 21.9 (3) | 19.6 (3) | 10.2 (3) |
-| GPT-5.5 · Slingshot 2.6.0 | 11.3 (4) | 10.9 (4) | 11.1 (4) | 11.2 (4) | 11.4 (4) | 11.5 (4) | 11.4 (4) | 18.0 (4) | 15.3 (4) | 4.5 (4) |
-| Claude Sonnet 4.5 · Slingshot 2.6.0 | 8.3 (5) | 8.6 (5) | 8.5 (5) | 8.4 (5) | 8.3 (5) | 8.2 (5) | 8.6 (5) | 16.9 (5) | 13.5 (5) | -0.2 (5) |
+| DeepSeek V4.1 Flash · TianxiCode 0.1.486 | 23.4 (3) | 22.9 (3) | 23.1 (3) | 23.2 (3) | 23.5 (3) | 23.7 (3) | 23.3 (3) | 28.7 (3) | 26.6 (3) | 18.1 (3) |
+| GPT-5.5 · Slingshot 3.0.0 | 16.1 (4) | 16.0 (4) | 16.0 (4) | 16.1 (4) | 16.1 (4) | 16.2 (4) | 15.9 (4) | 21.9 (4) | 19.6 (4) | 10.2 (4) |
+| GPT-5.5 · Slingshot 2.6.0 | 11.3 (5) | 10.9 (5) | 11.1 (5) | 11.2 (5) | 11.4 (5) | 11.5 (5) | 11.4 (5) | 18.0 (5) | 15.3 (5) | 4.5 (5) |
+| Claude Sonnet 4.5 · Slingshot 2.6.0 | 8.3 (6) | 8.6 (6) | 8.5 (6) | 8.4 (6) | 8.3 (6) | 8.2 (6) | 8.6 (6) | 16.9 (6) | 13.5 (6) | -0.2 (6) |
 
 ## Panel composition
 
@@ -92,7 +95,7 @@ Leave one repository out (task count in parentheses):
 | getsentry/sentry-javascript (2) | none |
 | ghostfolio/ghostfolio (1) | none |
 | gpbl/react-day-picker (2) | none |
-| gsd-build/gsd-2 (5) | none |
+| gsd-build/gsd-2 (5) | Claude Opus 4.6 · AMI Agent 0.7.0 2→3, DeepSeek V4.1 Flash · TianxiCode 0.1.486 3→2 |
 | highcharts/highcharts (1) | none |
 | honojs/hono (3) | none |
 | iOfficeAI/AionUi (1) | none |
@@ -130,27 +133,29 @@ Leave one repository out (task count in parentheses):
 
 Difficulty strata. On tasks every model solved the score is pure footprint; on the rest it mixes correctness and footprint.
 
-| Model | All tasks (111) | Solved by every model (22) | Solved by fewer (89) |
+| Model | All tasks (111) | Solved by every model (19) | Solved by fewer (92) |
 |---|---:|---:|---:|
-| GPT-5.6 Sol · Slingshot 3.4.0 | 29.5 (1) | 55.1 (2) | 23.2 (1) |
-| Claude Opus 4.6 · AMI Agent 0.7.0 | 25.1 (2) | 50.5 (3) | 18.9 (2) |
-| GPT-5.5 · Slingshot 3.0.0 | 16.1 (3) | 45.1 (4) | 8.9 (3) |
-| GPT-5.5 · Slingshot 2.6.0 | 11.3 (4) | 44.0 (5) | 3.2 (4) |
-| Claude Sonnet 4.5 · Slingshot 2.6.0 | 8.3 (5) | 57.8 (1) | -3.9 (5) |
+| GPT-5.6 Sol · Slingshot 3.4.0 | 29.5 (1) | 56.3 (2) | 24.0 (1) |
+| Claude Opus 4.6 · AMI Agent 0.7.0 | 25.1 (2) | 49.9 (3) | 20.0 (2) |
+| DeepSeek V4.1 Flash · TianxiCode 0.1.486 | 23.4 (3) | 48.6 (4) | 18.2 (3) |
+| GPT-5.5 · Slingshot 3.0.0 | 16.1 (4) | 43.7 (6) | 10.4 (4) |
+| GPT-5.5 · Slingshot 2.6.0 | 11.3 (5) | 45.2 (5) | 4.3 (5) |
+| Claude Sonnet 4.5 · Slingshot 2.6.0 | 8.3 (6) | 57.4 (1) | -1.8 (6) |
 
 ## What drives each adjacent gap
 
 Diagnostic on tasks where both models have calibrated point scores, split by outcome (a/b). Contributions sum to that common-point-task gap, not the full-population bound-midpoint difference.
 
 - **GPT-5.6 Sol · Slingshot 3.4.0 − Claude Opus 4.6 · AMI Agent 0.7.0 = 7.32**: failed/failed -0.03 (1), failed/solved -5.38 (6), solved/failed 13.87 (15), solved/solved -1.15 (48). For GPT-5.6 Sol · Slingshot 3.4.0: `denoland__std-6775` +1.32 (solved/failed), `surveyjs__survey-library-11137` +1.30 (solved/failed), `QwenLM__qwen-code-3310` +1.26 (solved/failed). For Claude Opus 4.6 · AMI Agent 0.7.0: `ChainSafe__lodestar-8203` -1.43 (failed/solved), `openai__openai-agents-js-318` -0.99 (solved/solved), `TanStack__form-1664` -0.97 (failed/solved).
-- **Claude Opus 4.6 · AMI Agent 0.7.0 − GPT-5.5 · Slingshot 3.0.0 = 11.25**: failed/failed -0.06 (4), failed/solved -9.98 (11), solved/failed 16.22 (18), solved/solved 5.07 (37). For Claude Opus 4.6 · AMI Agent 0.7.0: `openapi-ts__openapi-typescript-2365` +1.31 (solved/failed), `gsd-build__gsd-2-3946` +1.25 (solved/failed), `unplugin__unplugin-vue-components-858` +1.25 (solved/failed). For GPT-5.5 · Slingshot 3.0.0: `getsentry__sentry-javascript-17078` -1.29 (failed/solved), `orval-labs__orval-2328` -1.18 (failed/solved), `code-yeongyu__oh-my-openagent-3013` -1.16 (failed/solved).
+- **Claude Opus 4.6 · AMI Agent 0.7.0 − DeepSeek V4.1 Flash · TianxiCode 0.1.486 = 8.12**: failed/failed -0.08 (8), failed/solved -6.28 (8), solved/failed 15.98 (17), solved/solved -1.50 (38). For Claude Opus 4.6 · AMI Agent 0.7.0: `gsd-build__gsd-2-4400` +1.48 (solved/failed), `ChainSafe__lodestar-8203` +1.42 (solved/failed), `mnfst__manifest-1635` +1.36 (solved/failed). For DeepSeek V4.1 Flash · TianxiCode 0.1.486: `highcharts__highcharts-23356` -1.46 (failed/solved), `TanStack__router-5033` -1.05 (solved/solved), `QwenLM__qwen-code-3310` -1.01 (failed/solved).
+- **DeepSeek V4.1 Flash · TianxiCode 0.1.486 − GPT-5.5 · Slingshot 3.0.0 = 5.08**: failed/failed 0.05 (15), failed/solved -7.09 (10), solved/failed 5.76 (8), solved/solved 6.35 (40). For DeepSeek V4.1 Flash · TianxiCode 0.1.486: `TanStack__router-5033` +1.38 (solved/failed), `katspaugh__wavesurfer.js-4166` +1.25 (solved/failed), `openai__openai-agents-js-375` +1.08 (solved/solved). For GPT-5.5 · Slingshot 3.0.0: `getsentry__sentry-javascript-17078` -1.25 (failed/solved), `code-yeongyu__oh-my-openagent-3013` -1.06 (failed/solved), `wxt-dev__wxt-2267` -0.86 (failed/solved).
 - **GPT-5.5 · Slingshot 3.0.0 − GPT-5.5 · Slingshot 2.6.0 = 7.91**: failed/failed 0.75 (22), failed/solved -0.41 (1), solved/failed 5.39 (7), solved/solved 2.18 (44). For GPT-5.5 · Slingshot 3.0.0: `recharts__recharts-6070` +1.30 (solved/failed), `getsentry__sentry-javascript-17078` +1.25 (solved/failed), `antvis__G2-7076` +1.00 (solved/solved). For GPT-5.5 · Slingshot 2.6.0: `aws-amplify__amplify-ui-6665` -1.07 (solved/solved), `vueuse__vueuse-5336` -0.80 (solved/solved), `webdriverio__webdriverio-14672` -0.70 (solved/solved).
 - **GPT-5.5 · Slingshot 2.6.0 − Claude Sonnet 4.5 · Slingshot 2.6.0 = 7.05**: failed/failed -0.11 (26), failed/solved -2.31 (3), solved/failed 14.20 (20), solved/solved -4.72 (23). For GPT-5.5 · Slingshot 2.6.0: `highcharts__highcharts-23356` +1.42 (solved/failed), `antvis__G2-7021` +1.33 (solved/failed), `excalidraw__excalidraw-9760` +1.11 (solved/failed). For Claude Sonnet 4.5 · Slingshot 2.6.0: `MetaMask__metamask-mobile-17208` -1.34 (failed/solved), `kepano__defuddle-243` -1.10 (solved/solved), `dsherret__ts-morph-1663` -1.05 (solved/solved).
 
 ## Regenerate
 
 ```sh
-python -m parsimony.stability /home/lasu/coding/Parsimony/examples/live-typescript/score-panel.json /home/lasu/coding/Parsimony/examples/live-typescript/claude-opus-4.6-ami.jsonl /home/lasu/coding/Parsimony/examples/live-typescript/claude-sonnet-4.5-slingshot-2.6.0.jsonl /home/lasu/coding/Parsimony/examples/live-typescript/gpt-5.5-slingshot-2.6.0.jsonl /home/lasu/coding/Parsimony/examples/live-typescript/gpt-5.5-slingshot-3.0.0.jsonl /home/lasu/coding/Parsimony/examples/live-typescript/gpt-5.6-sol-slingshot-3.4.0.jsonl --output /home/lasu/coding/Parsimony/examples/live-typescript/stability.json
+python -m parsimony.stability examples/live-typescript/score-panel.json examples/live-typescript/claude-opus-4.6-ami.jsonl examples/live-typescript/claude-sonnet-4.5-slingshot-2.6.0.jsonl examples/live-typescript/deepseek-v4.1-flash-tianxicode-0.1.486.jsonl examples/live-typescript/gpt-5.5-slingshot-2.6.0.jsonl examples/live-typescript/gpt-5.5-slingshot-3.0.0.jsonl examples/live-typescript/gpt-5.6-sol-slingshot-3.4.0.jsonl --output examples/live-typescript/stability.json
 ```
 
 All numbers are in [stability.json](stability.json). The analysis is conditional on this cohort and task population; the panel is built from the same models it ranks.
