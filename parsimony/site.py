@@ -263,6 +263,16 @@ def generation(name):
     return name[:match.start()].strip().lower(), tuple(int(part) for part in match.group().split('.'))
 
 
+def generation_ranks(names):
+    """0 for the newest version of each model line, 1 for the next older version, and so on."""
+    versions = {}
+    for name in names:
+        line, version = generation(name)
+        versions.setdefault(line, set()).add(version)
+    order = {line: sorted(found, reverse=True) for line, found in versions.items()}
+    return {name: order[generation(name)[0]].index(generation(name)[1]) for name in names}
+
+
 def newest_generation(names):
     """Names whose version is the highest of their model line (the text before the version)."""
     newest = {}
@@ -504,8 +514,11 @@ def build(panel, records, draws=2000, seed=42):
                                m['same_task_net'] or 0, m['measured_solved_net_mean'] or 0, m['name']))
     # Chart emphasis only: older generations and their labels are slightly lighter; rank ignores this.
     newest = newest_generation([m['name'] for m in models])
+    ranks = generation_ranks([m['name'] for m in models])
     for m in models:
         m['latest'] = m['name'] in newest
+        # The chart shows each line's newest plotted generation and reveals older ones on hover.
+        m['line'], m['generation_rank'] = generation(m['name'])[0], ranks[m['name']]
     annotate_open_weight(models)
     order = [m['agent'] for m in models]
     scored_by_agent = {entry['agent']: entry['tasks'] for entry in board}
@@ -646,8 +659,11 @@ def build_merged(boards, draws=2000, seed=42):
     ordered = sorted(models.values(), key=lambda m: (m.get('partial', False), m.get('few_tasks', False), m['same_task_net'] is None,
                                                      m['same_task_net'] or 0, m['name']))
     newest = newest_generation([m['name'] for m in ordered])
+    ranks = generation_ranks([m['name'] for m in ordered])
     for m in ordered:
         m['latest'] = m['name'] in newest
+        # The chart shows each line's newest plotted generation and reveals older ones on hover.
+        m['line'], m['generation_rank'] = generation(m['name'])[0], ranks[m['name']]
     annotate_open_weight(ordered)
     return dict(merged=dict(languages=languages), ranking_metric='same-task-net-ratio-merged-v1',
                 min_rank_tasks=min_rank_tasks(sum(lang['tasks'] for lang in languages)),

@@ -78,6 +78,7 @@ body { overflow-x: clip; }
 #graph .older { fill-opacity: 0.70; }
 #graph .point-label { position: absolute; font: 400 8px system-ui, sans-serif; color: #000; white-space: nowrap; pointer-events: none; transform: translate(10px,-50%); line-height: 10px; }
 #graph .point-label.older-label { opacity: 0.75; }
+#graph [data-line]:not(.line-shown) { visibility: hidden; }
 #graph .self-run { fill-opacity: 0.35; }
 #graph .point-label.self-run-label { opacity: 0.45; }
 #graph circle, #graph .point-label { transition: opacity 0.15s; }
@@ -103,9 +104,9 @@ body { overflow-x: clip; }
 #graph .bar-row.self-run .bar-name, #graph .bar-row.self-run .bar-value { opacity: 0.45; }
 #graph .bar-row:focus-visible .bar-name { outline: 2px solid #000; outline-offset: 2px; }
 #self-run-toggle-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
-#harness-toggle-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
+#harness-toggle-label:not([hidden]), #older-toggle-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
 #weight-filter-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
-#self-run-toggle, #harness-toggle { width: auto; min-width: 0; padding: 0; margin: 0; border: initial; flex: none; }
+#self-run-toggle, #harness-toggle, #older-toggle { width: auto; min-width: 0; padding: 0; margin: 0; border: initial; flex: none; }
 #weight-filter { width: auto; max-width: 12em; }
 #company-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.78rem; color: var(--muted); }
 .company-swatch { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
@@ -174,6 +175,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
        <option value="scatter">Scatter: compare two metrics</option><option value="bar">Bars: one metric</option></select>
      <label id="self-run-toggle-label" hidden><input type="checkbox" id="self-run-toggle" checked> <span id="self-run-toggle-text">Show my runs</span></label>
      <label id="harness-toggle-label" hidden><input type="checkbox" id="harness-toggle"> Show other harnesses</label>
+     <label id="older-toggle-label" hidden><input type="checkbox" id="older-toggle"> Show older generations</label>
      <label id="weight-filter-label" hidden>Weights <select id="weight-filter" aria-label="Weight class">
        <option value="all">All models</option>
        <option value="open">Open weights</option>
@@ -378,7 +380,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const external = data.external || null;
   // Owner-run configurations: shown faded in the all-tasks view, never ranked.
   const selfRun = data.self_run_models || [];
-  let showSelfRun = true, showOtherHarnesses = false, weightFilter = 'all';
+  let showSelfRun = true, showOtherHarnesses = false, showOlder = false, weightFilter = 'all';
+  // The chart shows each model line's newest generation that has values on the current axes; older ones appear on
+  // hover over their line or with Show older generations. The table keeps every model.
+  const newestShown = rows => {
+    const newest = {};
+    for (const r of rows) if (r.m.line != null) newest[r.m.line] = Math.min(newest[r.m.line] ?? Infinity, r.m.generation_rank ?? 0);
+    return m => showOlder || m.line == null || (m.generation_rank ?? 0) <= newest[m.line];
+  };
   const matchesWeight = m => weightFilter === 'all' || m.open_weight === (weightFilter === 'open');
   // A model run through both Codex and pi shows its Codex run unless other harnesses are turned on.
   const activeSelfRun = () => showSelfRun ? selfRun.filter(m => showOtherHarnesses || !m.alternative_harness) : [];
@@ -616,7 +625,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   async function chartCanvas() {
     const scale = 2, pad = 16, graph = $('graph');
     const parts = ['ratio-note', 'graph-legend', 'company-legend', 'graph'].map($).filter(el => !el.hidden && el.offsetHeight);
-    const rects = parts.flatMap(el => [el, ...el.querySelectorAll('*')]).map(el => el.getBoundingClientRect()).filter(r => r.width || r.height);
+    // Hidden older generations and the hover hint are interactive only, so they stay out of the image.
+    const skip = el => getComputedStyle(el).visibility === 'hidden' || !!el.closest('.hover-hint');
+    const rects = parts.flatMap(el => [el, ...el.querySelectorAll('*')]).filter(el => !skip(el)).map(el => el.getBoundingClientRect()).filter(r => r.width || r.height);
     const g = graph.getBoundingClientRect();
     const left = Math.min(g.left, ...rects.map(r => r.left)), right = Math.max(g.right, ...rects.map(r => r.right));
     const top = Math.min(...rects.map(r => r.top)), bottom = Math.max(...rects.map(r => r.bottom));
@@ -638,7 +649,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         const clone = svg.cloneNode(true), source = [svg, ...svg.querySelectorAll('*')], copy = [clone, ...clone.querySelectorAll('*')];
         source.forEach((el, i) => {
           const cs = getComputedStyle(el);
-          copy[i].setAttribute('style', ['fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-opacity', 'stroke-dasharray', 'opacity',
+          copy[i].setAttribute('style', ['fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-opacity', 'stroke-dasharray', 'opacity', 'visibility',
             'font-family', 'font-size', 'font-weight', 'text-anchor', 'dominant-baseline'].map(p => `${p}:${cs.getPropertyValue(p)}`).join(';'));
         });
         const r = svg.getBoundingClientRect();
@@ -661,7 +672,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       const walker = document.createTreeWalker(part, NodeFilter.SHOW_TEXT), range = document.createRange();
       for (let node; (node = walker.nextNode());) {
         const el = node.parentElement;
-        if (!el || el.closest('svg') || !node.textContent.trim()) continue;
+        if (!el || el.closest('svg') || !node.textContent.trim() || skip(el)) continue;
         const cs = getComputedStyle(el), clip = el.getBoundingClientRect();
         ctx.save(); ctx.globalAlpha = opacityOf(el); ctx.fillStyle = cs.color; ctx.font = fontOf(cs); ctx.textBaseline = 'middle';
         if (cs.overflow === 'hidden') { ctx.beginPath(); ctx.rect(clip.left + ox, clip.top + oy, clip.width, clip.height); ctx.clip(); }
@@ -705,12 +716,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   // Chart type: the scatter, or bars of the X-axis metric; ?chart=bar opens the bars (shareable link).
   // ?selfrun=0 hides the self-run models from the chart and table; ?harnesses=all adds the pi runs of models also run with Codex.
   // ?weights=open|closed restricts the chart and table to open-weight or proprietary models; rank is unchanged.
+  // ?older=1 puts every model's older generations on the chart.
   let chartType = 'scatter';
   try {
     const params = new URLSearchParams(window.location.search);
     if (params.get('chart') === 'bar') chartType = 'bar';
     if (params.get('selfrun') === '0') showSelfRun = false;
     if (params.get('harnesses') === 'all') showOtherHarnesses = true;
+    if (params.get('older') === '1') showOlder = true;
     if (params.get('weights') === 'open' || params.get('weights') === 'closed') weightFilter = params.get('weights');
   } catch (e) {}
   const setParam = (key, value) => {
@@ -743,6 +756,13 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     showOtherHarnesses = !!e.target.checked;
     setParam('harnesses', showOtherHarnesses ? 'all' : null);
     renderBoard(); renderGraph();
+  });
+  $('older-toggle-label').hidden = !data.models.some(m => m.latest === false);
+  $('older-toggle').checked = showOlder;
+  $('older-toggle').addEventListener('change', e => {
+    showOlder = !!e.target.checked;
+    setParam('older', showOlder ? '1' : null);
+    renderGraph();
   });
   const hasOpen = [...data.models, ...selfRun].some(m => m.open_weight === true);
   const hasClosed = [...data.models, ...selfRun].some(m => m.open_weight === false);
@@ -815,9 +835,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const key = currentAxes().x, footprint = footprintKeys.includes(key);
     const units = v => v.toLocaleString('en-US', {maximumFractionDigits: ratioKeys.includes(key) ? 2 : 1}).replace('-', '−');
     const percent = ['resolve_rate', 'coverage'].includes(key) ? '%' : ratioKeys.includes(key) ? '×' : '';
-    const rows = data.models.map((m, i) => ({m, i, v: metricValue(m, i, key), latest: m.latest !== false}))
+    let rows = data.models.map((m, i) => ({m, i, v: metricValue(m, i, key), latest: m.latest !== false}))
       .concat(selected ? [] : activeSelfRun().map(m => ({m, i: -1, v: metricValue(m, -1, key), latest: true, selfRun: true})))
-      .filter(r => matchesWeight(r.m) && Number.isFinite(r.v)).sort((a, b) => (footprint ? a.v - b.v : b.v - a.v) || a.m.name.localeCompare(b.m.name));
+      .filter(r => matchesWeight(r.m) && Number.isFinite(r.v));
+    const onChart = newestShown(rows);
+    rows = rows.filter(r => onChart(r.m)).sort((a, b) => (footprint ? a.v - b.v : b.v - a.v) || a.m.name.localeCompare(b.m.name));
     // Self-run means cover only their own task subset, so they get their own group, never interleaved.
     rows.sort((a, b) => !!a.selfRun - !!b.selfRun);
     const firstSelfRun = rows.findIndex(r => r.selfRun);
@@ -859,21 +881,26 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const axes = currentAxes(), options = axisOptions();
     const xLabel = options.find(o => o.key === axes.x).label, yLabel = options.find(o => o.key === axes.y).label;
     const axisFormat = (value, key) => ratioKeys.includes(key) ? fmt(value, 2) + '×' : fmt(value) + (['resolve_rate', 'coverage'].includes(key) ? '%' : '');
-    const points = data.models.map((m, i) => ({x: metricValue(m, i, axes.x), y: metricValue(m, i, axes.y),
+    const shown = data.models.map((m, i) => ({x: metricValue(m, i, axes.x), y: metricValue(m, i, axes.y),
       name: m.name, company: m.company || 'Other', count: measuredCount(m), match: m.aa_match, latest: m.latest !== false,
       kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : (selected[2][i][6] || selected[2][i][0]) === 'r' ? 'resolved' : 'unknown') : 'all', i, m}))
       .concat(selected ? [] : activeSelfRun().map(m => ({x: metricValue(m, -1, axes.x), y: metricValue(m, -1, axes.y), name: m.name,
         company: m.company || 'Other', count: measuredCount(m), match: m.aa_match, latest: true, kind: 'all', i: -1, m, selfRun: true})))
       .filter(p => matchesWeight(p.m) && Number.isFinite(p.x) && Number.isFinite(p.y));
+    // Hidden older generations don't fit the axes; they are drawn invisibly and shown while their line is hovered.
+    const onChart = newestShown(shown);
+    const hiddenOlder = shown.filter(p => !onChart(p.m));
+    const points = shown.filter(p => onChart(p.m));
     $('graph-legend').textContent = points.length
       ? (selected ? 'Status on hover.' : '')
       : 'No data for this view.';
-    const unmatched = usesExternalAxis() ? data.models.filter(m => matchesWeight(m) && [currentAxes().x, currentAxes().y].some(k => k.startsWith('aa_') && m[k] == null)).length : 0;
+    const unmatched = usesExternalAxis() ? data.models.filter(m => matchesWeight(m) && (showOlder || m.latest !== false) && [currentAxes().x, currentAxes().y].some(k => k.startsWith('aa_') && m[k] == null)).length : 0;
     $('aa-missing').textContent = unmatched ? ` ${unmatched} model${unmatched > 1 ? 's have' : ' has'} no score, so ${unmatched > 1 ? 'they are' : 'it is'} not on this chart.` : '';
     showRatioNote([currentAxes().x, currentAxes().y]);
     $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort().map(company =>
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('')
-      + fadeLegend(points.some(p => !p.latest && !p.selfRun), points.some(p => p.selfRun));
+      + fadeLegend(points.some(p => !p.latest && !p.selfRun), points.some(p => p.selfRun))
+      + (hiddenOlder.length ? '<span class="hover-hint">Hover a point for its older generations</span>' : '');
 
     // Narrow screens draw at their real width (text stays 12px) and a taller shape, so points spread out.
     const narrow = $('graph').clientWidth > 0 && $('graph').clientWidth < 600;
@@ -918,13 +945,16 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       p.px = sx(p.x);
       p.py = sy(p.y);
     }
+    // Older generations outside the fitted axes stay hidden even on hover.
+    const older = hiddenOlder.map(p => ({...p, px: sx(p.x), py: sy(p.y)})).filter(p => p.x >= xmin && p.x <= xmax && p.y >= ymin && p.y <= ymax);
     const ticks = (lo, hi, axis) => { const {values, digits} = roundTicks(lo, hi); return values.map(v => axis === 'x' ? `<line class="axis" x1="${sx(v)}" y1="${H-B}" x2="${sx(v)}" y2="${H-B+4}"/><text class="tick" text-anchor="middle" x="${sx(v)}" y="${H-B+19}">${tickLabel(v, axes.x, digits)}</text>` : `<line class="axis" x1="${L-4}" y1="${sy(v)}" x2="${L}" y2="${sy(v)}"/><text class="tick" text-anchor="end" x="${L-8}" y="${sy(v)+4}">${tickLabel(v, axes.y, digits)}</text>`).join(''); };
     const usesExternal = [axes.x, axes.y].some(k => k.startsWith('aa_'));
     const matchNote = p => usesExternal && p.match && p.match !== 'exact'
       ? {effort_unlabelled: 'Artificial Analysis entry has no effort label', undated_alias: 'undated model ID matched to the Artificial Analysis snapshot'}[p.match] : '';
     const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; off the chart\'s scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + (p.count ?? 0) + '/' + (denominator(p.m) ?? 0) + ' solved attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}${p.m && unranked(p.m) ? '; ' + unrankedNote(p.m) : ''}`;
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
-    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${narrow ? 4 : 6}" ${p.m && partialOpacity(p.m) ? ` fill-opacity="${partialOpacity(p.m)}"` : ''} tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('');
+    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${narrow ? 4 : 6}" ${p.m && partialOpacity(p.m) ? ` fill-opacity="${partialOpacity(p.m)}"` : ''} tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('')
+      + older.map((p, k) => `<circle data-older="${k}" data-line="${esc(p.m.line)}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'} older" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${narrow ? 4 : 6}" aria-hidden="true" data-company="${esc(p.company)}"></circle>`).join('');
     // Green zone: the half of each axis that is better (lower footprint, higher solved/index).
     const better = {net: -1, solved_net: -1, solved_cx: -1, cx: -1, same_net: -1, same_cx: -1, human_net: -1, resolve_rate: 1, aa_coding: 1, aa_intelligence: 1, ...Object.fromEntries(langKeys.map(k => [k, -1]))};
     const bx = better[axes.x], by = better[axes.y];
@@ -941,13 +971,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       const text = p.name + (p.offscale ? ' (off-scale)' : '');
       overlays.push(`<span class="point-label${p.latest ? '' : ' older-label'}${p.selfRun ? ' self-run-label' : ''}" data-point="${points.indexOf(p)}" data-company="${esc(p.company)}" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(text)}</span>`);
     });
+    older.forEach((p, k) => overlays.push(`<span class="point-label older-label" data-older="${k}" data-line="${esc(p.m.line)}" data-company="${esc(p.company)}" aria-hidden="true" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(p.name)}</span>`));
     const scale = ($('graph').clientWidth || W) / W;
     const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
     $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. All models are labelled; earlier generations are lighter. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other companies fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(${Math.max(16, L - 20 - 7 * yTickChars)} ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. Each model line's newest generation is labelled; hovering a point shows that line's older generations, lighter, and Show older generations adds them all. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other companies fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(${Math.max(16, L - 20 - 7 * yTickChars)} ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
     // Labels sit near their point without covering other labels or points; ranked, current models choose first.
     const graphWidth = $('graph').clientWidth, graphHeight = $('graph').clientHeight;
-    const labels = [...document.querySelectorAll('#graph .point-label')];
+    const labels = [...document.querySelectorAll('#graph .point-label[data-point]')];
     if (graphWidth && graphHeight && labels.length) {
       const at = label => points[Number(label.dataset.point)];
       const order = labels.map((l, i) => i).sort((a, b) => (!!at(labels[a]).selfRun - !!at(labels[b]).selfRun) || (at(labels[b]).latest - at(labels[a]).latest));
@@ -957,19 +988,44 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         // The rotated Y axis title.
         [{x: 0, y: T / H * graphHeight, w: (Math.max(16, L - 20 - 7 * yTickChars) + 8) * graphWidth / W, h: (H - T - B) / H * graphHeight}]);
       order.forEach((i, k) => { labels[i].style.transform = `translate(${offsets[k].dx}px, ${offsets[k].dy}px)`; });
+      // Each line's older labels are placed around the visible labels, since they only appear with them.
+      const taken = order.map((i, k) => { const a = xy(at(labels[i])); return {x: a.x + offsets[k].dx, y: a.y + offsets[k].dy, w: labels[i].offsetWidth, h: labels[i].offsetHeight}; });
+      const olderLabels = [...document.querySelectorAll('#graph .point-label[data-older]')];
+      for (const line of new Set(older.map(p => p.m.line))) {
+        const group = olderLabels.filter(l => l.dataset.line === line);
+        const groupOffsets = placeLabelBoxes(group.map(l => xy(older[Number(l.dataset.older)])), group.map(l => ({w: l.offsetWidth, h: l.offsetHeight})),
+          points.map(xy).concat(older.filter(p => p.m.line === line).map(xy)), 6 * graphWidth / W, graphWidth, graphHeight, taken);
+        group.forEach((l, k) => { l.style.transform = `translate(${groupOffsets[k].dx}px, ${groupOffsets[k].dy}px)`; });
+      }
     }
     // Hover/focus fades every other company's points and labels.
     const focusCompany = company => document.querySelectorAll('#graph [data-company]').forEach(el =>
       el.classList.toggle('dim', company !== null && el.dataset.company !== company));
+    // Hovering a point shows its line's hidden older generations; they stay briefly so the pointer can reach them.
+    let hideLine = null;
+    const showLine = line => {
+      clearTimeout(hideLine);
+      document.querySelectorAll('#graph [data-line]').forEach(el => el.classList.toggle('line-shown', line != null && el.dataset.line === line));
+    };
+    const leaveLine = () => { hideLine = setTimeout(() => showLine(null), 300); };
+    const olderTooltip = p => `${p.name}\nOlder generation\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${matchNote(p) ? '\n' + matchNote(p) : ''}`;
+    document.querySelectorAll('#graph circle[data-older]').forEach(circle => {
+      const p = older[Number(circle.dataset.older)];
+      ['mouseenter', 'mousemove', 'click'].forEach(event => circle.addEventListener(event, e => {
+        showLine(p.m.line); showTooltipAt(circle, e, olderTooltip(p)); focusCompany(p.company);
+      }));
+      circle.addEventListener('mouseleave', () => { hideTooltip(); focusCompany(null); leaveLine(); });
+    });
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
       const show = event => {
         const p = points[Number(circle.dataset.point)];
         const text = `${p.name}${p.offscale ? ' (off the chart\'s scale)' : ''}\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${matchNote(p) ? '\n' + matchNote(p) : ''}${p.kind === 'all' ? [...new Set([axes.x, axes.y].filter(k => ratioKeys.includes(k)))].map(k => '\n' + rangeNote(p.m, k)).join('') : ''}${p.selfRun ? '\n' + selfRunNote(p.m) : ''}${p.kind !== 'all' ? '\n' + p.kind + ' task attempt' : ''}`;
+        showLine(p.m && p.m.line);
         showTooltipAt(circle, event, text);
         focusCompany(p.company);
       };
       ['mouseenter', 'mousemove', 'focus', 'click'].forEach(event => circle.addEventListener(event, show));
-      ['mouseleave', 'blur'].forEach(event => circle.addEventListener(event, () => { hideTooltip(); focusCompany(null); }));
+      ['mouseleave', 'blur'].forEach(event => circle.addEventListener(event, () => { hideTooltip(); focusCompany(null); leaveLine(); }));
     });
   }
   // label-placement:start

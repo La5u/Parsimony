@@ -8,12 +8,12 @@ delete data.external; // Pages built with --external are checked separately belo
 delete data.self_run_models; // Likewise for self-run points.
 delete data.merged; // The all-languages DeepSWE page is checked on its own fixture at the end.
 // Same-task fields are tested on their own fixture below; the base fixture is the plain-mean board.
-const base = Object.fromEntries(Object.entries(data.models[0]).filter(([key]) => !key.startsWith('same_task') && !key.startsWith('human_task') && !key.includes('complexity')));
+const base = Object.fromEntries(Object.entries(data.models[0]).filter(([key]) => !key.startsWith('same_task') && !key.startsWith('human_task') && !key.includes('complexity') && !['latest', 'line'].includes(key)));
 data.models = [
   {...base, agent: 'alpha', footprint_population_count: 4, measured_churn_mean: 4, name: 'Alpha', score: 10, lower: 4, upper: 16, ci: [1, 90], resolve_rate: .8,
     company: 'Anthropic', latest: true, measured_net_mean: -2, measured_solved_net_mean: 7, measured_attempts: 4, measured_solved_attempts: 2, upstream_solved_attempts: 4, rank_range: [1, 2]},
   {...base, agent: 'beta', footprint_population_count: 4, measured_churn_mean: 6, name: 'Beta', score: null, lower: 10, upper: 30, ci: [2, 40], resolve_rate: .3,
-    company: 'OpenAI', latest: false, measured_net_mean: 0, measured_solved_net_mean: 3, measured_attempts: 3, measured_solved_attempts: 1, upstream_solved_attempts: 4, rank_range: [2, 3]},
+    company: 'OpenAI', latest: true, measured_net_mean: 0, measured_solved_net_mean: 3, measured_attempts: 3, measured_solved_attempts: 1, upstream_solved_attempts: 4, rank_range: [2, 3]},
   {...base, agent: 'gamma', footprint_population_count: 4, measured_churn_mean: null, name: 'Gamma', score: 5, lower: 5, upper: 5, ci: [3, 20], resolve_rate: .5,
     company: 'Anthropic', measured_net_mean: null, measured_solved_net_mean: null, measured_attempts: 0, measured_solved_attempts: 0, upstream_solved_attempts: 4, rank_range: null},
 ];
@@ -46,7 +46,7 @@ function element(id) {
   return elements.get(id);
 }
 element('parsimony-data').textContent = JSON.stringify(data);
-let lastButtons, lastHeader, lastCircles, lastGraph, lastBars, lastBarGraph, lastCompanies, lastCompanyGraph;
+let lastButtons, lastHeader, lastCircles, lastGraph, lastBars, lastBarGraph, lastCompanies, lastCompanyGraph, lastLines, lastLineGraph;
 const doc = {
   getElementById: element,
   querySelector: element,
@@ -72,6 +72,20 @@ const doc = {
       }));
       lastCompanies.forEach(el => { el.classList.owner = el; });
       return lastCompanies;
+    }
+    if (selector === '#graph [data-line]' || selector === '#graph circle[data-older]') {
+      // Hidden older generations: circles (hover targets) and labels, both tagged with their model line.
+      const graph = element('graph').innerHTML;
+      if (lastLines && lastLineGraph === graph) return selector.includes('circle') ? lastLines.filter(el => el.circle) : lastLines;
+      lastLineGraph = graph;
+      lastLines = [...graph.matchAll(/<(circle|span)[^>]*? data-older="(\d+)" data-line="([^"]*)"/g)].map(match => ({
+        circle: match[1] === 'circle', dataset: {older: match[2], line: match[3]}, shown: false,
+        listeners: {}, addEventListener(event, fn) { this.listeners[event] = fn; },
+        classList: {toggle(name, on) { if (name === 'line-shown') this.owner.shown = on; }},
+        getBoundingClientRect() { return {left: 100, width: 12, height: 12, top: 188, right: 112, bottom: 200}; }
+      }));
+      lastLines.forEach(el => { el.classList.owner = el; });
+      return selector.includes('circle') ? lastLines.filter(el => el.circle) : lastLines;
     }
     if (selector === '#graph [data-bar]') {
       const graph = element('graph').innerHTML;
@@ -101,7 +115,7 @@ const browser = {innerWidth: 800, innerHeight: 600, listeners: {},
   addEventListener(event, fn) { this.listeners[event] = fn; }};
 browser.location = new URL('https://example.org/index.html');
 browser.history = {replaceState(state, title, next) { browser.location = new URL(next); }};
-vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc, window: browser, URL, URLSearchParams});
+vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc, window: browser, URL, URLSearchParams, setTimeout, clearTimeout});
 const script = html.match(/<script>\n([\s\S]*?)<\/script>/)[1];
 assert(html.indexOf('id="graph"') < html.indexOf('id="task-search"'));
 assert(html.indexOf('id="task-search"') < html.indexOf('id="board"'));
@@ -122,12 +136,12 @@ assert.equal(element('metric-source').textContent, `${data.benchmark?.name || 'S
 const savedSources = data.sources;
 delete data.sources;
 element('parsimony-data').textContent = JSON.stringify(data);
-vm.runInNewContext(script, {document: doc, window: browser, URL, URLSearchParams});
+vm.runInNewContext(script, {document: doc, window: browser, URL, URLSearchParams, setTimeout, clearTimeout});
 assert.equal(element('data-sources').hidden, true);
 assert.equal(element('source-counts').innerHTML, '');
 data.sources = savedSources;
 element('parsimony-data').textContent = JSON.stringify(data);
-vm.runInNewContext(script, {document: doc, window: browser, URL, URLSearchParams});
+vm.runInNewContext(script, {document: doc, window: browser, URL, URLSearchParams, setTimeout, clearTimeout});
 assert.match(html, /#graph \.point-label \{ position: absolute; font: 400 8px/);
 assert.match(html, /#graph circle \{ stroke: none/);
 assert.match(html, /circle:focus-visible \{ outline: 2px solid #000; outline-offset: 4px/);
@@ -242,17 +256,18 @@ click('net', ['Alpha', 'Beta', 'Gamma'], 'ascending');
 assert.match(rows()[0], /<td>2<\/td><td class="left">Alpha<\/td><td>7.0<\/td><td>−2.0<\/td>/);
 assert.match(rows()[1], /<td>1<\/td><td class="left">Beta/);
 assert.doesNotMatch(graph(), /Gamma \(Anthropic\)/);
-// Every generation is labelled; earlier generations remain legible but lighter.
+// Every charted model is labelled; older generations (tested below) are lighter when shown.
 assert.match(graph(), /<span class="point-label"[^>]*>Alpha<\/span>/);
-assert.match(graph(), /<span class="point-label older-label"[^>]*>Beta<\/span>/);
+assert.match(graph(), /<span class="point-label"[^>]*>Beta<\/span>/);
 assert.match(html, /fill-opacity: 0\.70/);
 assert.match(html, /older-label \{ opacity: 0\.75/);
-assert.match(graph(), /<circle data-point="1" data-model="Beta" class="all-point older"/);
+assert.match(graph(), /<circle data-point="1" data-model="Beta" class="all-point"/);
 assert.match(graph(), /<circle data-point="0" data-model="Alpha" class="all-point"/);
+assert.equal(element('older-toggle-label').hidden, true); // no older generations on this board
 // Lower net units and higher solved are better: the green zone sits in the top-left corner.
 assert.match(graph(), new RegExp(`<rect class="best-zone" x="${left()}" y="18"`));
 assert.equal(element('graph-legend').textContent, '');
-assert.match(element('company-legend').innerHTML, /Lighter: older generation/);
+assert.doesNotMatch(element('company-legend').innerHTML, /Lighter: older generation|older generations/);
 assert.equal(element('ratio-note').hidden, true);
 element('graph-y').listeners.change({target: {value: 'coverage'}});
 assert.equal(element('graph-y').value, 'resolve_rate'); // Measured is a table column, not a chart axis.
@@ -379,15 +394,15 @@ const tied = structuredClone(data);
 tied.models[1].measured_solved_net_mean = 7;
 tied.models[1].resolve_rate = 1; // Correctness must not break a footprint tie.
 element('parsimony-data').textContent = JSON.stringify(tied);
-vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc, window: browser, URL, URLSearchParams});
+vm.runInNewContext(html.match(/<script>\n([\s\S]*?)<\/script>/)[1], {document: doc, window: browser, URL, URLSearchParams, setTimeout, clearTimeout});
 assert.deepEqual(names(), ['Alpha', 'Beta', 'Gamma']);
 assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Alpha/);
 assert.match(element('#board tbody').innerHTML, /<td>1<\/td><td class="left">Beta/);
 assert.match(element('#board tbody').innerHTML, /<td>—<\/td><td class="left">Gamma/);
-assert.doesNotMatch(graph(), /<polyline/); // Earlier Beta dominates latest Alpha at equal x.
+assert.doesNotMatch(graph(), /<polyline/); // Beta dominates Alpha at equal x.
 axis('x', 'resolve_rate'); axis('y', 'solved_net');
-assert.doesNotMatch(graph(), /<polyline/); // Earlier Beta also dominates in a swapped mixed-direction view.
-assert.match(graph(), /<circle data-point="1" data-model="Beta" class="all-point older/);
+assert.doesNotMatch(graph(), /<polyline/); // Beta also dominates in a swapped mixed-direction view.
+assert.match(graph(), /<circle data-point="1" data-model="Beta" class="all-point"/);
 function load(fixture, url = 'https://example.org/index.html') {
   element('parsimony-data').textContent = JSON.stringify(fixture);
   if (url) {
@@ -397,7 +412,7 @@ function load(fixture, url = 'https://example.org/index.html') {
     delete browser.location;
     delete browser.history;
   }
-  vm.runInNewContext(script, {document: doc, window: browser, URL, URLSearchParams});
+  vm.runInNewContext(script, {document: doc, window: browser, URL, URLSearchParams, setTimeout, clearTimeout});
 }
 // Fractional maxima must not skip the next 5% boundary; exact boundaries advance,
 // except at 100%. Check both axis orientations.
@@ -410,10 +425,54 @@ for (const [rate, top] of [[.795, 80], [.8, 85], [1, 100]]) {
   axis('x', 'resolve_rate');
   solvedAxis('x', top);
 }
+// Older generations: off the chart (never the table) and the axes by default; hovering any point of
+// their line shows them, Show older generations (?older=1) charts them all, lighter.
+{
+  const lines = structuredClone(data);
+  Object.assign(lines.models[0], {line: 'alpha', generation_rank: 0});
+  lines.models.push({...lines.models[0], agent: 'alpha-old', name: 'Alpha 1', latest: false, line: 'alpha', generation_rank: 1,
+    measured_solved_net_mean: 5, resolve_rate: .4, rank_range: null});
+  load(lines);
+  assert.ok(names().includes('Alpha 1'));
+  assert.equal(element('older-toggle-label').hidden, false);
+  assert.equal(element('older-toggle').checked, false);
+  assert.doesNotMatch(graph(), /data-point="\d+" data-model="Alpha 1"/);
+  assert.match(graph(), /<circle data-older="0" data-line="alpha" data-model="Alpha 1" class="all-point older"[^>]*aria-hidden="true"/);
+  assert.match(graph(), /<span class="point-label older-label" data-older="0" data-line="alpha"[^>]*>Alpha 1<\/span>/);
+  assert.match(element('company-legend').innerHTML, /<span class="hover-hint">Hover a point for its older generations/);
+  const hidden = () => doc.querySelectorAll('#graph [data-line]').filter(el => !el.shown).length;
+  assert.equal(hidden(), 2);
+  const alpha = doc.querySelectorAll('#graph circle[data-point]').find(c => c.dataset.point === '0');
+  alpha.listeners.mouseenter({clientX: 1, clientY: 1});
+  assert.equal(hidden(), 0); // Alpha's line: the older circle and its label
+  const old = doc.querySelectorAll('#graph circle[data-older]')[0];
+  old.listeners.mouseenter({clientX: 1, clientY: 1});
+  assert.equal(element('graph-tooltip').textContent.split('\n').slice(0, 2).join('|'), 'Alpha 1|Older generation');
+  const beta = doc.querySelectorAll('#graph circle[data-point]').find(c => c.dataset.point === '1');
+  beta.listeners.mouseenter({clientX: 1, clientY: 1});
+  assert.equal(hidden(), 2); // another line hides it
+  element('older-toggle').listeners.change({target: {checked: true}});
+  assert.equal(browser.location.search, '?older=1');
+  assert.match(graph(), /<circle data-point="\d+" data-model="Alpha 1" class="all-point older"/);
+  assert.doesNotMatch(graph(), /data-older=|hover-hint/);
+  element('chart-type').listeners.change({target: {value: 'bar'}});
+  assert.match(graph(), /class="bar-row older"[^>]*aria-label="Alpha 1 /);
+  element('older-toggle').listeners.change({target: {checked: false}});
+  assert.doesNotMatch(graph(), /Alpha 1/);
+  load(lines, 'https://example.org/index.html?older=1');
+  assert.equal(element('older-toggle').checked, true);
+  assert.match(graph(), /data-model="Alpha 1" class="all-point older"/);
+  // A line whose newest generation has no value on these axes still shows its newest plotted one.
+  const unscored = structuredClone(lines);
+  unscored.models[0].measured_solved_net_mean = null;
+  load(unscored);
+  assert.match(graph(), /<circle data-point="\d+" data-model="Alpha 1" class="all-point older"/);
+  assert.doesNotMatch(graph(), /data-older=/);
+}
 const cropped = structuredClone(data);
 cropped.models[0].resolve_rate = .2;
 cropped.models[1].resolve_rate = .6;
-cropped.models[2] = {...cropped.models[0], name: 'Gemini 3.1 Pro (high)', company: 'Google', latest: false, measured_net_mean: -500, resolve_rate: .08};
+cropped.models[2] = {...cropped.models[0], name: 'Gemini 3.1 Pro (high)', company: 'Google', latest: true, measured_net_mean: -500, resolve_rate: .08};
 function coordinates() {
   const circle = graph().match(/<circle[^>]*data-model="Gemini 3\.1 Pro \(high\)"[^>]*>/)[0];
   return ['cx', 'cy'].map(attr => Number(circle.match(new RegExp(`${attr}="([^"]+)"`))[1]));
@@ -431,7 +490,7 @@ assert(coordinates()[0] < left() && coordinates()[1] > 388);
 assert(Number.parseFloat(element('graph').style.marginBottom) > coordinates()[1] - 440);
 assert.match(html, /height: auto; overflow: visible/);
 assert.doesNotMatch(graph(), /marker|third quadrant/i);
-assert.match(graph(), /<span class="point-label older-label"[^>]*>Gemini 3.1 Pro \(high\) \(off-scale\)<\/span>/); // labels keep the effort
+assert.match(graph(), /<span class="point-label"[^>]*>Gemini 3.1 Pro \(high\) \(off-scale\)<\/span>/); // labels keep the effort
 const outlier = doc.querySelectorAll('#graph circle[data-point]').find(c => c.dataset.point === '2');
 outlier.listeners.focus();
 assert.match(tooltip.textContent, /off the chart's scale.*\nNet syntax units added, all measured \(mean\): −500.0\nSolved \(%\): 8.0%/);
@@ -567,7 +626,7 @@ const barNames = () => [...element('graph').innerHTML.matchAll(/<span class="bar
 assert.deepEqual(barNames(), ['Alpha', 'Beta', 'Delta (high)']); // Gamma has no measurement; self-run listed after, never interleaved
 assert.match(element('graph').innerHTML, /data-bar="1"[\s\S]*?<div class="bar-group" role="presentation">My runs: 2 tasks only, so not comparable with the bars above<\/div><div class="bar-row self-run"[^>]*data-bar="2"/);
 assert.match(element('graph').innerHTML, /class="bar-row self-run"[^>]*>[\s\S]*?background:#000000/);
-assert.match(element('graph').innerHTML, /class="bar-row older"[^>]*aria-label="Beta \(OpenAI\); Net syntax units added, all measured \(mean\): 0; Measured 1\/4 solved attempts"/);
+assert.match(element('graph').innerHTML, /class="bar-row"[^>]*aria-label="Beta \(OpenAI\); Net syntax units added, all measured \(mean\): 0; Measured 1\/4 solved attempts"/);
 assert.match(element('graph').innerHTML, /<span class="bar-zero" style="left:100%"><\/span>/);
 assert.match(element('graph').innerHTML, /<span class="bar-value">−5<\/span>/);
 assert.equal(element('graph-legend').textContent, 'Net syntax units added, all measured (mean).');

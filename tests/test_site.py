@@ -12,7 +12,7 @@ from unittest import mock
 
 from parsimony.scoring import freeze
 from parsimony.benchmark import read_jsonl
-from parsimony.site import (add_rank_ranges, build, build_merged, company, label, main, merged_ratio, min_rank_tasks,
+from parsimony.site import (add_rank_ranges, build, build_merged, company, generation_ranks, label, main, merged_ratio, min_rank_tasks,
                             newest_generation, open_weight, published_sources, render)
 from tests.test_scoring import record
 
@@ -349,6 +349,10 @@ class SiteTests(unittest.TestCase):
         data = build(freeze(records, 'generations'), records, draws=20)
         self.assertEqual({m['name']: m['latest'] for m in data['models']},
                          {label(records[0]['agent']): True, label(records[1]['agent']): False})
+        self.assertEqual({m['name']: (m['line'], m['generation_rank']) for m in data['models']},
+                         {label(records[0]['agent']): ('claude opus', 0), label(records[1]['agent']): ('claude opus', 1)})
+        self.assertEqual(generation_ranks(['GPT-5.6 Sol (max)', 'GPT-5.6 Luna (max)', 'GPT-5.5 (xhigh)', 'GPT-5 mini', 'o3']),
+                         {'GPT-5.6 Sol (max)': 0, 'GPT-5.6 Luna (max)': 0, 'GPT-5.5 (xhigh)': 1, 'GPT-5 mini': 2, 'o3': 0})
 
     @unittest.skipUnless(shutil.which('node'), 'JavaScript interaction test requires Node.js')
     def test_column_sorting(self):

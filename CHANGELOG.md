@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — Chart shows each model line's newest generation
+
+**Site.** The chart (scatter and bars) shows each model line's newest generation that has values on the current axes, so older generations no longer crowd it or stretch its axes. Hovering any point of a line shows that line's older generations, lighter and labelled. **Show older generations** under Change chart (`?older=1`) charts them all. The table, rank and measurements are unchanged. Page data gains `line` and `generation_rank` per model.
+
 ## Unreleased — Open-weight view filter
 
 **Site.** Boards that have both open-weight and proprietary models gain a Weights control under Change chart: All models, Open weights, or Proprietary. It hides rows and points only. Rank, same-task ratios and measurements stay those of the full board; `?weights=open` and `?weights=closed` restore the view. gpt-oss counts as open-weight; Muse Spark, Qwen Plus and hosted Qwen Flash as proprietary; Qwen Max and unknown developers stay in the all-models view. No analyzer rules or measurements changed.
