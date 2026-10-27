@@ -86,11 +86,12 @@ Cloudflare Pages serves `site/` at <https://parsimony.lasu.dev>; a push to `main
 | SWE-bench Live Go | `site/live-go.html` | `examples/live-go/` | 7 configs (6 AMI + TianxiCode) | 138 × 1 | 0.10.0-beta @ `9dd189a` |
 | SWEeper-Bench PHP | `site/sweeper-php.html` | `examples/sweeper-php/` | 15 configs | 128 × 1 | 0.10.0-beta @ `03d5c59` |
 | SWE-Milestone (Go 30 + TS 18 + Python 12, combined page) | `site/swe-milestone.html` | `examples/swe-milestone-{go,typescript,python}/` | 10 configs | 60 × 1 | 0.10.0-beta @ `feb9d04` |
+| SWE-PolyBench Verified Python | `site/polybench-python.html` | `examples/polybench-python/` | 5 configs (4 from open PRs, pinned at heads) | 113 × 1 | 0.10.0-beta @ `be4df4d` |
 
 - Each example directory holds measured JSONL, `population.json`, `coverage.json`, `score-panel.json`, `scores.json`, sensitivity/stability reports and a README. Large JSON files are tens of MB: summarise them with Python rather than dumping them into context.
 - Live Python: four model + agent configurations (DeepSeek V4.1 Flash · TianxiCode, GPT-5.6 Sol · Slingshot 3.4.0, Claude Opus 4.8 · AiWork, GPT-5.5 · agav 0.2.0-beta.2). The agav addition has 262 eligible footprints / 300 (271 completed analyses, 9 excluded-only), 186 source-reported successes, 85 failures, 29 empty-only unknowns; eligible mean net 50.38549618320611. All 271 nonempty patches have matching old-blob/hunk preimages. See `docs/archive/agav-gpt55-live-release-review.md`; historical measurement authorization is not external board certification. 238/300 tasks calibrated, 62 uncalibrated under opt-in `full-population-uncalibrated-bounds-v1`. Records publish scalars and hashes only, not patches; raw-artifact redistribution remains uncleared (`docs/archive/deepseek-v4.1-live-release-review.md`, `docs/archive/priority-live-provenance.md`). The JSONLs are byte-identical to clean `de63300` measurements; never relabel them.
 - Verified now includes **Gemini 3.5 Flash / mini-SWE-agent 2.4.2**: 441 eligible attempts (359 passing, 82 failed), 59 explicit aggregate `no_generation`, all 500 retained. Source-reported Solved 71.8%, measured mean net +36.6031746031746. All 441 separate patches agree with pinned predictions. Measurement commit/source hash exactly match existing Verified 0.5.2; human-reference comparison is intentionally uncomputed. See `docs/archive/gemini-3.5-verified-release.md` and `examples/benchmark-discovery/add-gemini-verified.py`. Old 33-model records, population/panel and reports stay unchanged; current reports use `coverage-34.json`, `scores-34.json`, `sensitivity-34.json`.
-- Measured but **not published**: PolyBench Opus 4.8 Python 111/113 (GPT-5.6 Sol JS/TS is now published on the Live JS/TS boards, remeasured with 0.10.0-beta) (metadata/hashes in `examples/priority-live/`; full footprints external). GPT-5.4 PolyBench measurements are withheld (hunk-only corroboration, no usable old-blob prefixes).
+- Measured but **not published**: nothing current (PolyBench Opus 4.8 is published on the PolyBench Python board since 2026-10-27; GPT-5.6 Sol JS/TS is on the Live JS/TS boards) (metadata/hashes in `examples/priority-live/`; full footprints external). GPT-5.4 PolyBench measurements are withheld (hunk-only corroboration, no usable old-blob prefixes).
 - `ten-model-500`, `beta-500-*` and root `ten-model-*` files are historical; never mix them with current cohorts.
 - There are zero contributed submission bundles.
 
@@ -141,7 +142,7 @@ Choose the first releasable newer-model cohort by **artifact completeness and co
 These are concrete fallbacks if fresh discovery yields no immediately releasable newer exports:
 
 - **Live JS/TS:** published 2026-10-14 as two boards with all five MultiLang JS/TS submissions (`examples/benchmark-discovery/run-live-multilang.py`). The six AMI Go configurations are on the Live Go board. The 13 cross-language `all_languages` runs were imported and measured for Go on 2026-10-14 but **excluded by the owner**: they share only 5-15 solved tasks and took the top/bottom ranks on noise (see `examples/benchmark-discovery/model-battery-refresh-2026-10-14.json`). Other MultiLang folders (`all_languages/*`, Java/Rust/C#) are separate populations or unsupported languages.
-- **PolyBench Opus 4.8 Python:** 111/113 attempts have static measurements. Complete the provenance/population release review and publish a separate PolyBench board if justified. Preserve all 113 population items and distinguish missing measurements from failures. Do not mix it with Live or Verified.
+- **PolyBench Opus 4.8 Python:** published 2026-10-27 on the PolyBench Python board with four open-PR configurations (`examples/polybench-python/README.md`).
 - **PolyBench GPT-5.4:** still blocked on historical before-state identity. Candidate-base hunk matches without usable old-blob prefixes are insufficient for release; seek stronger public operational/reset or byte-identity evidence, not permissive patch application. Lower priority than accessible newer-model cohorts.
 
 Passing references are needed only for archived combined-score diagnostics, **not** footprint eligibility or default ranking. Do not select a solved-derived population or delay a valid footprint release solely because some tasks have no passing reference. Use bounded archived scoring where needed without inventing scores.
@@ -206,7 +207,7 @@ uv pip install --python /tmp/parsimony-checks/bin/python '.[languages]'
 /tmp/parsimony-checks/bin/python -m unittest discover -s tests -q
 ```
 
-### Rebuild all ten pages (offline, no remeasurement)
+### Rebuild all pages (offline, no remeasurement)
 
 `scripts/rebuild-site.sh` reproduces every committed page byte-for-byte (it downloads the checksum-bound Go scalar asset; `--offline` skips the Go page, as CI does). Check with `git status` afterwards. Go asset files remain external rather than duplicated in Git.
 

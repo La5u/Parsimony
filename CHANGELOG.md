@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — SWE-PolyBench Verified Python board
+
+**Data.** New board `site/polybench-python.html` (`examples/polybench-python/`): 5 model + agent setups on all 113 Python tasks of SWE-PolyBench Verified (`b3fca77`). Claude Opus 4.8 · HMigBot comes from the upstream submission branch (`e7062f4`); Opus 5.5 · AiWork.Code (PR 47), Opus 5.5 · Jitto Build (PR 46), GPT-5.6 Sol · Slingshot 3.4.0 (PR 44) and DeepSeek V4 Flash · Mobile Coder 1.2.4 (PR 40) come from open, unmerged submission pull requests pinned at their head commits (disclosed on the page). All were measured at `be4df4d` (0.10.0-beta, Python 3.14.7): 559/565 attempts; one before-state withheld, one analysis error, 4 empty patches (including AiWork's patch withdrawn after its leakage audit). Jitto Build's own README reports 129 of 294 resolved patches are near-copies of the reference fix. GPT-5.6 Sol · Slingshot ranks first at 0.65×. Every page's navigation and Sources list gain the board. **Importer.** `parsimony.polybench` reads PR heads (checking each descends from upstream `e7062f4`), records submitter task dispositions and audits touched-file before-states; GPT-5.4 stays withheld.
+
 ## Unreleased — Claude Opus 5.5 · AiWork.Code on Live Python (open network)
 
 **Data.** Live Python gains Claude Opus 5.5 (xhigh) · AiWork.Code, from the open, unmerged SWE-bench-Live submission PR 60 pinned at its head `3602256`: 215/300 solved (submitter-run official harness), 287 attempts measured at the board's analyzer `de63300` (0.6.0-beta), 5 empty patches kept as unknown, all 295 nonempty patches matching old blobs and hunks. The run had open network access and could read upstream repositories, issues and fixes, unlike the board's GitHub-blocked Opus 4.8 run; it is labelled "(open network)" and the board notice and README say so. It ranks 5th of 5 at 1.33×; with a fifth peer, shared tasks rise from 73 to 92–158, and GPT-5.6 Sol · Slingshot (3rd) and Opus 4.8 · AiWork (4th) swap places.
