@@ -48,7 +48,7 @@ Where the benchmark's human reference fix was measured (all four DeepSWE languag
 
 ### Open-weight view filter
 
-The website can hide proprietary or open-weight rows from the chart and table. Rank, same-task ratios and measurements do not change: hidden models remain in the peer set. Classification is by model developer (`parsimony.site.open_weight`): Alibaba, DeepSeek, Meta, MiniMax, Mistral AI, Moonshot AI, Xiaomi and Z.ai count as open-weight, plus gpt-oss; Anthropic, Google, OpenAI (other than gpt-oss) and xAI count as proprietary. Unknown developers appear only in the all-models view. `?weights=open` and `?weights=closed` restore the view. The control is omitted when a board has only one class.
+The website can hide proprietary or open-weight rows from the chart and table. Rank, same-task ratios and measurements do not change: hidden models remain in the peer set. Classification is by model developer (`parsimony.site.open_weight`): Alibaba, DeepSeek, Meta, MiniMax, Mistral AI, Moonshot AI, Xiaomi and Z.ai count as open-weight, plus gpt-oss; Anthropic, Google, OpenAI (other than gpt-oss) and xAI count as proprietary. API-only lines from open-weight developers are proprietary: Meta's Muse Spark (not Muse Spark Open), Qwen Plus and hosted Qwen Flash (not Flash-Next). Qwen Max, whose weight status sources dispute, and unknown developers appear only in the all-models view. `?weights=open` and `?weights=closed` restore the view. The control is omitted when a board has only one class.
 
 ### Offline ranking diagnostics
 

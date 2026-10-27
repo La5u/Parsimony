@@ -215,17 +215,27 @@ OPEN_WEIGHT_COMPANIES = {
     'Alibaba', 'DeepSeek', 'Meta', 'MiniMax', 'Mistral AI', 'Moonshot AI', 'Xiaomi', 'Z.ai',
 }
 CLOSED_WEIGHT_COMPANIES = {'Anthropic', 'Google', 'OpenAI', 'xAI'}
+# API-only lines from open-weight developers (checked 2026-10-27): Meta's Muse Spark
+# (Muse Spark Open is separate), Qwen Plus and hosted Qwen Flash (Flash-Next is the open one).
+CLOSED_WEIGHT_LINES = re.compile(r'muse spark(?! open)|qwen[\d.]* plus|qwen[\d.]* flash(?!-next)')
+# Lines whose weight status sources dispute: unclassified. Qwen3.8 Max hosted vs. a reported text-only release.
+UNCLASSIFIED_LINES = re.compile(r'qwen[\d.]* max')
 
 
 def open_weight(agent, company_name=None, name=None):
     """True if weights are generally published, False if they are API-only, else None.
 
-    gpt-oss is the OpenAI exception. Unclassified developers (company 'Other') stay
-    None so a view filter does not guess. This never changes rank or measurements.
+    gpt-oss is the OpenAI exception; CLOSED_WEIGHT_LINES and UNCLASSIFIED_LINES override
+    the developer. Unclassified developers (company 'Other') stay None so a view filter
+    does not guess. This never changes rank or measurements.
     """
     text = (name or label(agent)).lower()
     if text.startswith('gpt-oss') or 'gpt-oss' in text:
         return True
+    if CLOSED_WEIGHT_LINES.search(text):
+        return False
+    if UNCLASSIFIED_LINES.search(text):
+        return None
     owner = company_name if company_name is not None else company(agent)
     if owner in OPEN_WEIGHT_COMPANIES:
         return True

@@ -4,7 +4,7 @@ Analyzer versions change measurements. **Never pool or compare records from diff
 
 ## Unreleased — Open-weight view filter
 
-**Site.** Boards that have both open-weight and proprietary models gain a Weights control under Change chart: All models, Open weights, or Proprietary. It hides rows and points only. Rank, same-task ratios and measurements stay those of the full board; `?weights=open` and `?weights=closed` restore the view. gpt-oss counts as open-weight; unknown developers stay in the all-models view. No analyzer rules or measurements changed.
+**Site.** Boards that have both open-weight and proprietary models gain a Weights control under Change chart: All models, Open weights, or Proprietary. It hides rows and points only. Rank, same-task ratios and measurements stay those of the full board; `?weights=open` and `?weights=closed` restore the view. gpt-oss counts as open-weight; Muse Spark, Qwen Plus and hosted Qwen Flash as proprietary; Qwen Max and unknown developers stay in the all-models view. No analyzer rules or measurements changed.
 
 ## Unreleased — DeepSWE 1.0 models on the index axes; Solved axis fits the data
 

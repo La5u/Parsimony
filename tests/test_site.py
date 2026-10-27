@@ -380,7 +380,13 @@ class SiteTests(unittest.TestCase):
             self.assertEqual(company(agent), expected, agent)
 
     def test_open_weight_follows_developer_and_gpt_oss_exception(self):
-        self.assertTrue(open_weight('deepswe-v1.1_mini_swe_agent_qwen3_8_max_xhigh'))
+        self.assertIsNone(open_weight('deepswe-v1.1_mini_swe_agent_qwen3_8_max_xhigh'))
+        self.assertTrue(open_weight('x', company_name='Alibaba', name='Qwen3.8-27B · AMI Agent 0.7.2'))
+        self.assertFalse(open_weight('x', company_name='Alibaba', name='Qwen3.6 Plus · DeepSWE 1.0'))
+        self.assertFalse(open_weight('x', company_name='Alibaba', name='Qwen3.8 Flash (xhigh) · Codex'))
+        self.assertTrue(open_weight('x', company_name='Alibaba', name='Qwen3.8 Flash-Next'))
+        self.assertFalse(open_weight('x', company_name='Meta', name='Muse Spark 1.3 (xhigh) · Muse Code'))
+        self.assertTrue(open_weight('x', company_name='Meta', name='Muse Spark Open'))
         self.assertTrue(open_weight('deepswe-v1.1_mini_swe_agent_deepseek_v4_pro_max'))
         self.assertTrue(open_weight('deepswe-v1.1_mini_swe_agent_glm_5_3_max'))
         self.assertTrue(open_weight('20250720_mini-v0.0.0-Llama-4-Maverick-17B-Instruct'))
