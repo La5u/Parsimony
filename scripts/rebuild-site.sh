@@ -60,7 +60,7 @@ L=examples/live-python
 DATA=$L/site-data.json
 [ "$OUT" = site ] || DATA=$OUT/live-data.json  # tests require the committed copy to match site/live.html
 python -m parsimony.site "$L/score-panel.json" "$L/deepseek-v4.1-flash.jsonl" "$L/gpt-5.6-sol.jsonl" \
-  "$L/claude-opus-4.8.jsonl" "$L/gpt-5.5-agav.jsonl" --sensitivity "$L/stability.json" --benchmark live \
+  "$L/claude-opus-4.8.jsonl" "$L/gpt-5.5-agav.jsonl" "$L/claude-opus-5.5-xhigh.jsonl" --sensitivity "$L/stability.json" --benchmark live \
   "${NAV[@]}" --output "$OUT/live.html" --data "$DATA"
 
 S=examples/sweeper-php

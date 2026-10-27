@@ -37,7 +37,8 @@ class LivePublicationTests(unittest.TestCase):
             self.assertEqual({r['task_id'] for r in rows}, set(panel['tasks']))
             inspect(rows)
             records.extend(rows)
-        records.extend(json.loads(line) for line in (FOLDER / 'gpt-5.5-agav.jsonl').read_text().splitlines())
+        for filename in ('gpt-5.5-agav.jsonl', 'claude-opus-5.5-xhigh.jsonl'):
+            records.extend(json.loads(line) for line in (FOLDER / filename).read_text().splitlines())
         actual = score_records(panel, records)
         stored = json.loads((FOLDER / 'scores.json').read_text())['leaderboard']
         self.assertEqual(actual, stored)
@@ -141,6 +142,37 @@ class LivePublicationTests(unittest.TestCase):
                                     for s in item['sources']))
         self.assertEqual(release['footprint']['eligible'], 262)
 
+    def test_opus55_aiwork_open_network_records_and_release_summary(self):
+        raw = (FOLDER / 'claude-opus-5.5-xhigh.jsonl').read_bytes()
+        release = json.loads((ROOT / 'examples/benchmark-discovery/aiwork-opus55-release.json').read_text())
+        audit_bytes = (ROOT / 'examples/priority-live/claude_opus_5_5.preimages.json').read_bytes()
+        self.assertEqual(hashlib.sha256(raw).hexdigest(), release['records_sha256'])
+        self.assertEqual(hashlib.sha256(audit_bytes).hexdigest(), release['preimage_audit_sha256'])
+        self.assertEqual(release['source']['submission_revision'], '36022565d01a5f828d65e7ef9a541d056c579beb')
+        self.assertEqual(release['source']['pull_request_state'], 'open, unmerged')
+        self.assertIn('open network', release['open_network'])
+        rows = [json.loads(line) for line in raw.splitlines()]
+        population = {json.loads(line)['instance_id'] for line in (FOLDER / 'population.jsonl').read_text().splitlines()}
+        self.assertEqual({r['task_id'] for r in rows}, population)
+        self.assertEqual(len(rows), 300)
+        for row in rows:
+            self.assertEqual((row['analyzer_commit'], row['analyzer_version'], row['python_version']),
+                             ('de633004011e1b6c8dda81d234baefc024a88b75', '0.6.0-beta', '3.14.7'))
+            self.assertEqual(row['analyzer_source_sha256'],
+                             'b2b45c86d1cb6ea6b035e697f7191ceaa00bf071f84eb47d1302ab7f2ac21b44')
+            self.assertNotIn('patch', row)
+        outcomes = [sum(r['published_outcome'] == o for r in rows) for o in ('success', 'failure', 'unknown')]
+        self.assertEqual(outcomes, [215, 80, 5])
+        unknown = [r for r in rows if r['published_outcome'] == 'unknown']
+        self.assertTrue(all(r['analysis_status'] == 'empty_patch' and r['metrics'] is None for r in unknown))
+        eligible = [r for r in rows if r['metrics'] is not None and not out_of_scope(r['metrics'])]
+        self.assertEqual((len(eligible), sum(r['resolved'] for r in eligible)), (287, 213))
+        self.assertEqual(release['trajectory_check']['set_aside'], [])
+        data = json.loads((FOLDER / 'site-data.json').read_text())
+        model = next(m for m in data['models'] if m['agent'] == 'live-lite-claude-opus-5.5-xhigh-aiwork')
+        self.assertIn('(open network)', model['name'])
+        self.assertIn('open network', data['benchmark']['notice'])
+
     def test_one_live_board_with_full_population_bounds_and_navigation(self):
         data = json.loads((FOLDER / 'site-data.json').read_text())
         html = (ROOT / 'site/live.html').read_text()
@@ -151,7 +183,7 @@ class LivePublicationTests(unittest.TestCase):
         self.assertEqual(data['excluded_tasks'], [])
         self.assertEqual(len(data['uncalibrated_tasks']), 62)
         self.assertEqual({m['company'] for m in data['models']}, {'DeepSeek', 'OpenAI', 'Anthropic'})
-        self.assertEqual(sorted(m['measured_attempts'] for m in data['models']), [262, 276, 287, 288])
+        self.assertEqual(sorted(m['measured_attempts'] for m in data['models']), [262, 276, 287, 287, 288])
         self.assertTrue(all(m['score'] is None and m['rank_range'] for m in data['models']))
         for page in ('index', 'javascript', 'typescript', 'go', 'verified'):
             other = (ROOT / 'site' / (page + '.html')).read_text()

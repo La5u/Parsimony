@@ -4,6 +4,18 @@ Website: **[parsimony.lasu.dev/live.html](https://parsimony.lasu.dev/live.html)*
 One published board, using the same layout as the other benchmarks; no preview
 page or alternative solved-only ranking.
 
+> **Open-network run.** Claude Opus 5.5 (xhigh) · AiWork.Code ran with **open network
+> access**: its submission README says the agent could search the web and read the
+> project's upstream repository, issues, pull requests and commits, and adapt an upstream
+> fix (an in-container probe recorded `github = OPEN`). The same harness's Claude Opus 4.8
+> run on this board ran with GitHub blocked. Its Solved rate and footprint may reflect
+> copied upstream fixes, so it is not a like-for-like comparison with the other rows. It
+> is labelled `(open network)` on the website, and the board notice says so.
+> It also comes from an **unmerged** pull request
+> ([SWE-bench-Live/submission#60](https://github.com/SWE-bench-Live/submission/pull/60)),
+> pinned at its head commit `36022565d01a5f828d65e7ef9a541d056c579beb` (fork
+> `x4vierli/submission`); the benchmark maintainers have not accepted it.
+
 ## Fixed population and configurations
 
 All **300** tasks in the immutable Lite candidate file are retained, independently
@@ -18,6 +30,7 @@ bytes and the underlying HF provenance.
 | GPT-5.6 Sol / Slingshot 3.4.0 | 211 | 288 (205 successful, 83 failed) |
 | Claude Opus 4.8 / AiWork.Code | 102 | 276 (102 successful, 174 failed) |
 | GPT-5.5 / agav0.2.0-beta.2 | 186 | 262 (185 successful, 77 failed) |
+| Claude Opus 5.5 (xhigh) / AiWork.Code, open network, unmerged PR | 215 | 287 (213 successful, 74 failed) |
 
 The unchanged static measurements were made from clean analyzer commit
 `de633004011e1b6c8dda81d234baefc024a88b75`, analyzer **0.6.0-beta**, Python
@@ -32,12 +45,13 @@ As on the website: a model's net units added on the tasks it solved, divided by 
 
 | Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
 |---:|---|---:|---|---:|---:|---:|---:|---:|
-| 1 | GPT-5.5 · agav 0.2.0-beta.2 | 0.79× | 0.55–1.04× | 73 | +57.5 | +50.4 | 62.0% | 185/186 |
-| 2 | DeepSeek V4.1 Flash · TianxiCode 0.1.423 | 0.87× | 0.57–1.21× | 73 | +54.0 | +50.1 | 68.0% | 202/204 |
-| 3 | Claude Opus 4.8 · AiWork.Code | 1.16× | 0.85–1.56× | 73 | +58.6 | +54.0 | 34.0% | 102/102 |
-| 4 | GPT-5.6 Sol · Slingshot 3.4.0 | 1.21× | 0.93–1.64× | 73 | +68.2 | +58.1 | 70.3% | 205/211 |
+| 1 | GPT-5.5 · agav 0.2.0-beta.2 | 0.84× | 0.75–0.95× | 155 | +57.5 | +50.4 | 62.0% | 185/186 |
+| 2 | DeepSeek V4.1 Flash · TianxiCode 0.1.423 | 0.89× | 0.78–0.99× | 156 | +54.0 | +50.1 | 68.0% | 202/204 |
+| 3 | GPT-5.6 Sol · Slingshot 3.4.0 | 0.96× | 0.81–1.17× | 147 | +68.2 | +58.1 | 70.3% | 205/211 |
+| 4 | Claude Opus 4.8 · AiWork.Code | 0.98× | 0.76–1.29× | 92 | +58.6 | +54.0 | 34.0% | 102/102 |
+| 5 | Claude Opus 5.5 (xhigh) · AiWork.Code (open network) | 1.33× | 1.09–1.63× | 158 | +77.5 | +68.3 | 71.7% | 213/215 |
 
-The all-measured mean includes 85 DeepSeek failures, 83 Slingshot failures, 174 AiWork failures and 77 agav failures. Upstream Solved % is separate context. Eligible/population coverage is 287/300, 288/300, 276/300 and 262/300. GPT-5.5 / agav has mean net units **50.38549618320611** across eligible attempts and **57.52972972972973** over eligible solved attempts only. Its 271 completed full-file analyses (`analysis_status=ok`) include 9 excluded-only attempts (1 success, 8 failures), which are not ranking inputs: successful analysis does not guarantee an in-scope footprint. The 29 empty-patch-only records have unknown correctness and no footprint metrics. Missing footprints are never zero; models without measurements are unranked. Equal values tie.
+Adding the fifth configuration (2026-10-27) changed every ratio: a task counts once 3 of the 4 other models solved it, so far more tasks are shared (73 before), and Sol · Slingshot (now 3rd) and Opus 4.8 (now 4th) swapped places. The all-measured mean includes 85 DeepSeek failures, 83 Slingshot failures, 174 Opus 4.8 AiWork failures, 77 agav failures and 74 Opus 5.5 AiWork failures. Upstream Solved % is separate context. Eligible/population coverage is 287/300, 288/300, 276/300, 262/300 and 287/300. Claude Opus 5.5 / AiWork has mean net units **68.25087108013938** across eligible attempts and **77.45539906103286** over eligible solved attempts; its 295 completed analyses include 8 excluded-only attempts (2 successes, 6 failures), and its 5 empty-patch records have unknown correctness, not failures. GPT-5.5 / agav has mean net units **50.38549618320611** across eligible attempts and **57.52972972972973** over eligible solved attempts only. Its 271 completed full-file analyses (`analysis_status=ok`) include 9 excluded-only attempts (1 success, 8 failures), which are not ranking inputs: successful analysis does not guarantee an in-scope footprint. The 29 empty-patch-only records have unknown correctness and no footprint metrics. Missing footprints are never zero; models without measurements are unranked. Equal values tie.
 
 Passing references and their absence do not restrict footprint data. Task views
 show all recorded tasks and their actual net changes when eligible. The 80/20
@@ -104,12 +118,26 @@ Specific caveats retained from the source review:
 - AiWork: adaptive reasoning effort, submitted-patch transformations and grader
   errors/empty-only outcome. Do not label this a constant-xhigh run or independently
   certify absence of future-fix contamination.
+- Opus 5.5 AiWork (`submissions/lite/aiwork-code/20261021-opus-5-5-xhigh`): **open
+  network** (see the note at the top) and an **unmerged** pull request pinned at its head
+  commit `3602256`; `results.json` is the submitter's own run of the official harness, not
+  the maintainers'. All 300 IDs match the population: 215 success, 80 failure, 5 empty
+  patches (unknown, not failures). All 295 nonempty patches match old blobs and hunks
+  ([preimage audit](../priority-live/claude_opus_5_5.preimages.json)). The submission has
+  no separate patch file; `trajs/<id>.md` are event streams whose tool outputs are often
+  truncated. 183 of 295 trajectories show exactly the `preds.json` patch in their last diff
+  output, 1 in an earlier one, 111 show no complete copy, and none shows a conflicting
+  complete final copy, so no task is set aside. 296 trajectories name
+  `primary/claude-opus-5-5` with effort `xhigh`; 5 end without a completion event.
+  Measured at the board's analyzer identity (clean `de63300` worktree on `PYTHONPATH`, the
+  current driver), so it is directly comparable with the other rows; no relabelling.
 - agav: GPT-5.5 and agav0.2.0-beta.2 are source-declared labels, not provider
   authentication or independent grading. The 29 empty-patch-only outcomes remain
   unknown, not failed no-ops. The targeted release review does not establish that
   every detailed report was audited or certify historical protocol compliance.
 
-Detailed evidence: [targeted GPT-5.5 / agav review](../../docs/archive/agav-gpt55-live-release-review.md),
+Detailed evidence: [Opus 5.5 AiWork release summary](../benchmark-discovery/aiwork-opus55-release.json)
+(from `review-aiwork-opus55-live.py`), [targeted GPT-5.5 / agav review](../../docs/archive/agav-gpt55-live-release-review.md),
 [agav discovery metadata](../benchmark-discovery/agav-gpt55-release.json),
 [targeted DeepSeek review](../../docs/archive/deepseek-v4.1-live-release-review.md),
 [full source/protocol/terms audit](../../docs/archive/priority-live-provenance.md),
@@ -122,7 +150,7 @@ The population and panel are frozen; do not overwrite them when adding entrants.
 A new reference pool requires a separately named snapshot.
 
 ```sh
-RECORDS='examples/live-python/deepseek-v4.1-flash.jsonl examples/live-python/gpt-5.6-sol.jsonl examples/live-python/claude-opus-4.8.jsonl examples/live-python/gpt-5.5-agav.jsonl'
+RECORDS='examples/live-python/deepseek-v4.1-flash.jsonl examples/live-python/gpt-5.6-sol.jsonl examples/live-python/claude-opus-4.8.jsonl examples/live-python/gpt-5.5-agav.jsonl examples/live-python/claude-opus-5.5-xhigh.jsonl'
 python -m parsimony.scoring score examples/live-python/score-panel.json $RECORDS \
   --output /tmp/live-scores.json
 cmp examples/live-python/scores.json /tmp/live-scores.json
@@ -134,6 +162,23 @@ python -m parsimony.site examples/live-python/score-panel.json $RECORDS \
   --nav 'DeepSWE, all languages=index.html' --nav 'DeepSWE Python=python.html' --nav 'DeepSWE JavaScript=javascript.html' \
   --nav 'DeepSWE TypeScript=typescript.html' --nav 'DeepSWE Go=go.html' \
   --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html'
+```
+
+Re-measure Claude Opus 5.5 (the other four cohorts were measured at `de63300` too; the
+raw inventory and cache stay external):
+
+```sh
+# a clean detached worktree at de63300 provides the board's analyzer identity; Python 3.14.7
+D=~/parsimony-live-ml/opus55
+for phase in inventory audit measure; do   # measure needs this checkout committed and clean
+  PYTHONPATH=/path/to/worktree-at-de63300 python examples/benchmark-discovery/run-priority-live.py \
+    --output-dir $D --phase $phase --cohort claude_opus_5_5
+done
+cmp $D/claude_opus_5_5.records.jsonl examples/live-python/claude-opus-5.5-xhigh.jsonl
+PYTHONPATH=. python examples/benchmark-discovery/review-aiwork-opus55-live.py --external-dir $D \
+  --output examples/benchmark-discovery/aiwork-opus55-release.json
+python -m parsimony.release audit examples/live-python/population-manifest.json $RECORDS \
+  --output examples/live-python/coverage.json
 ```
 
 These commands do arithmetic/rendering only. They do not fetch or execute target

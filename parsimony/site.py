@@ -40,6 +40,7 @@ NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude
          'live-lite-gpt-5.5-agav-0.2.0-beta.2': 'GPT-5.5 · agav 0.2.0-beta.2',
          'live-lite-deepseek-v4.1-flash-tianxicode-0.1.423': 'DeepSeek V4.1 Flash · TianxiCode 0.1.423',
          'live-lite-claude-opus-4.8-aiwork': 'Claude Opus 4.8 · AiWork.Code',
+         'live-lite-claude-opus-5.5-xhigh-aiwork': 'Claude Opus 5.5 (xhigh) · AiWork.Code (open network)',
          'live-multilang-gpt-5.6-sol-slingshot-3.4.0': 'GPT-5.6 Sol · Slingshot 3.4.0',
          'live-multilang-gpt-5.5-slingshot-3.0.0': 'GPT-5.5 · Slingshot 3.0.0',
          'live-multilang-gpt-5.5-slingshot-2.6.0': 'GPT-5.5 · Slingshot 2.6.0',
@@ -103,7 +104,9 @@ BENCHMARKS = {
                  task_url='https://github.com/{owner}/{repo}/pull/{number}', task_link="Maintainers' pull request",
                  results='public submitter evaluation reports', attempts=1,
                  harness_note='Each model uses its own agent, so this compares model + agent setups, not models alone.',
-                 notice='Model names and pass/fail are reported by the submitters, not checked independently.'),
+                 notice='Model names and pass/fail are reported by the submitters, not checked independently. '
+                        'Claude Opus 5.5 · AiWork.Code ran with open network access, so it could read the '
+                        "project's upstream repository, issues and fixes; its submission is an unmerged pull request."),
     'live-multilang': dict(name='SWE-bench Live MultiLang', url='https://swe-bench-live.github.io', reference='Reference solution',
                            task_url='https://github.com/{owner}/{repo}/pull/{number}', task_link="Maintainers' pull request",
                            results='public submitter evaluation reports', attempts=1,
