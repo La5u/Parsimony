@@ -843,7 +843,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       if (changed) excludedAxes.push(axis);
       const low = Math.min(...values), high = Math.max(...values);
       // Solved starts at 0% and ends at the next 5% above the best model, not at an unreached 100%.
-      if (key === 'resolve_rate') return [changed ? Math.max(0, low - 2) : 0, Math.min(100, Math.ceil((high + 1) / 5) * 5)];
+      if (key === 'resolve_rate') return [changed ? Math.max(0, low - 2) : 0, Math.min(100, (Math.floor(high / 5) + 1) * 5)];
       const padding = high > low ? (high - low) * 0.05 : Math.max(Math.abs(low) * 0.05, 1);
       return [low - padding, high + padding];
     }

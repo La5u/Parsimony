@@ -399,6 +399,17 @@ function load(fixture, url = 'https://example.org/index.html') {
   }
   vm.runInNewContext(script, {document: doc, window: browser, URL, URLSearchParams});
 }
+// Fractional maxima must not skip the next 5% boundary; exact boundaries advance,
+// except at 100%. Check both axis orientations.
+for (const [rate, top] of [[.795, 80], [.8, 85], [1, 100]]) {
+  const fixture = structuredClone(data);
+  fixture.models[0].resolve_rate = rate;
+  load(fixture);
+  axis('x', 'net'); axis('y', 'resolve_rate');
+  solvedAxis('y', top);
+  axis('x', 'resolve_rate');
+  solvedAxis('x', top);
+}
 const cropped = structuredClone(data);
 cropped.models[0].resolve_rate = .2;
 cropped.models[1].resolve_rate = .6;
