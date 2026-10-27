@@ -13,7 +13,7 @@ from unittest import mock
 from parsimony.scoring import freeze
 from parsimony.benchmark import read_jsonl
 from parsimony.site import (add_rank_ranges, build, build_merged, company, label, main, merged_ratio, min_rank_tasks,
-                            newest_generation, published_sources, render)
+                            newest_generation, open_weight, published_sources, render)
 from tests.test_scoring import record
 
 
@@ -378,6 +378,31 @@ class SiteTests(unittest.TestCase):
             'other-model': 'Other',
         }.items():
             self.assertEqual(company(agent), expected, agent)
+
+    def test_open_weight_follows_developer_and_gpt_oss_exception(self):
+        self.assertTrue(open_weight('deepswe-v1.1_mini_swe_agent_qwen3_8_max_xhigh'))
+        self.assertTrue(open_weight('deepswe-v1.1_mini_swe_agent_deepseek_v4_pro_max'))
+        self.assertTrue(open_weight('deepswe-v1.1_mini_swe_agent_glm_5_3_max'))
+        self.assertTrue(open_weight('20250720_mini-v0.0.0-Llama-4-Maverick-17B-Instruct'))
+        self.assertTrue(open_weight('devstral-2512'))
+        self.assertTrue(open_weight('gpt-oss-120b'))
+        self.assertTrue(open_weight('20260217_mini-v2.0.0_gpt-oss-120b'))
+        self.assertFalse(open_weight('deepswe-v1.1_mini_swe_agent_claude_opus_5_max'))
+        self.assertFalse(open_weight('deepswe-v1.1_mini_swe_agent_gpt_5_6_sol_max'))
+        self.assertFalse(open_weight('deepswe-v1.1_mini_swe_agent_gemini_3_7_flash_medium'))
+        self.assertFalse(open_weight('deepswe-v1.1_mini_swe_agent_grok_4_6_medium'))
+        self.assertIsNone(open_weight('other-model'))
+
+    def test_build_records_open_weight_without_changing_rank_order(self):
+        records = [record('20260217_mini-v2.0.0_minimax-2-5-high', net=2, churn=4),
+                   record('20260901_mini-v2.4.2_gemini-3-5-flash', net=8, churn=10)]
+        panel = freeze(records, 'open-weight-order')
+        models = build(panel, records, draws=10)['models']
+        self.assertEqual([m['name'] for m in models],
+                         [label(records[0]['agent']), label(records[1]['agent'])])
+        by_name = {m['name']: m['open_weight'] for m in models}
+        self.assertEqual(by_name[label(records[0]['agent'])], True)
+        self.assertEqual(by_name[label(records[1]['agent'])], False)
 
     def test_model_plot_no_measurements_is_missing_not_zero(self):
         panel = freeze([record('ref')], 'empty-plot')

@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — Open-weight view filter
+
+**Site.** Boards that have both open-weight and proprietary models gain a Weights control under Change chart: All models, Open weights, or Proprietary. It hides rows and points only. Rank, same-task ratios and measurements stay those of the full board; `?weights=open` and `?weights=closed` restore the view. gpt-oss counts as open-weight; unknown developers stay in the all-models view. No analyzer rules or measurements changed.
+
 ## Unreleased — DeepSWE 1.0 models on the index axes; Solved axis fits the data
 
 **Site.** The 12 DeepSWE release 1.0 models added after the 2026-10-08 snapshot are now mapped (`aa-mapping.json`) in a new snapshot, `examples/external/artificial-analysis-2026-10-22.json`: 9 matched by model and reasoning effort; GLM-5.1, Kimi K2.6 and MiMo V2.5 Pro stay blank because their default runs don't record a thinking mode and Artificial Analysis lists both modes. All 35 earlier entries have identical values. The 2026-10-08 file stays, since the frozen Go release README cites it. The Solved axis now ends at the next 5% above the best model instead of 100%.

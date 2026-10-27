@@ -46,6 +46,10 @@ The front page averages each model's per-language ratios, weighted by that model
 
 Where the benchmark's human reference fix was measured (all four DeepSWE languages, SWE-bench Verified and the self-runs; not Live, SWEeper or SWE-Milestone), `human_task_net` divides the sum of a model's per-task solved net units by the sum of the human fix's net units on those same tasks (in-scope, full-file human measurements only). Like the same-task ratio it is a ratio of sums, so human fixes with net ≤ 0 (117 of Verified's 500) do not make it undefined; it is unavailable when the human total is nonpositive. Ranges use the same 1,000-draw task bootstrap from 5 tasks. A human fix is one reference, not an optimum, and this ratio never sets rank. The task view also shows the human fix's net units (`task_human`). The combined DeepSWE page averages the per-language human-fix ratios, weighted by each model's shared tasks per language (`merged_ratio`), like its peer ratio; ranges resample tasks within each language.
 
+### Open-weight view filter
+
+The website can hide proprietary or open-weight rows from the chart and table. Rank, same-task ratios and measurements do not change: hidden models remain in the peer set. Classification is by model developer (`parsimony.site.open_weight`): Alibaba, DeepSeek, Meta, MiniMax, Mistral AI, Moonshot AI, Xiaomi and Z.ai count as open-weight, plus gpt-oss; Anthropic, Google, OpenAI (other than gpt-oss) and xAI count as proprietary. Unknown developers appear only in the all-models view. `?weights=open` and `?weights=closed` restore the view. The control is omitted when a board has only one class.
+
 ### Offline ranking diagnostics
 
 [Published diagnostics](../examples/ranking-diagnostics/README.md) cover each language board separately: leave-one-task/repository/peer-out sensitivity, pairwise matched-task means, comparison-denominator concentration and missing-success coverage. These are descriptive checks, not confidence intervals or a new ranking. They do not evaluate the combined-language aggregate.
