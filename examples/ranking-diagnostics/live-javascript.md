@@ -8,11 +8,12 @@ These diagnostics do not change the website ranking. Lower footprint is not bett
 
 | Configuration | Ratio | Shared tasks | Measured / published successes | Largest task share | Task-drop rank range | Repo-drop rank range |
 |---|---:|---:|---:|---:|---:|---:|
-| Claude Opus 4.6 · AMI Agent 0.7.0 | 0.562 | 23 | 54/60 | 0.337 | 1–2 | 1–2 |
-| GPT-5.6 Sol · Slingshot 3.4.0 | 0.803 | 27 | 72/79 | 0.239 | 1–2 | 1–2 |
-| GPT-5.5 · Slingshot 3.0.0 | 1.109 | 27 | 44/46 | 0.279 | 3–4 | 3–5 |
-| Claude Sonnet 4.5 · Slingshot 2.6.0 | 1.114 | 15 | 21/23 | 0.332 | 3–4 | 3–4 |
-| GPT-5.5 · Slingshot 2.6.0 | 1.556 | 25 | 30/31 | 0.230 | 5–5 | 4–5 |
+| GPT-5.5 · Slingshot 3.0.0 | 0.789 | 37 | 44/46 | 0.225 | 1–3 | 1–3 |
+| Claude Opus 4.6 · AMI Agent 0.7.0 | 0.867 | 34 | 54/60 | 0.278 | 1–5 | 1–4 |
+| GPT-5.6 Sol · Slingshot 3.4.0 | 0.975 | 39 | 72/79 | 0.218 | 1–4 | 1–5 |
+| Claude Sonnet 4.5 · Slingshot 2.6.0 | 1.022 | 18 | 21/23 | 0.309 | 3–5 | 3–5 |
+| GPT-5.5 · Slingshot 2.6.0 | 1.230 | 28 | 30/31 | 0.225 | 2–6 | 1–6 |
+| DeepSeek V4.1 Flash · TianxiCode 0.1.486 | 1.281 | 36 | 55/58 | 0.214 | 4–6 | 4–6 |
 
 Largest task share is the largest absolute per-task peer footprint divided by the total peer footprint; cancellation can make it exceed 1. Unavailable perturbations are counted separately in JSON, not included in rank ranges.
 
