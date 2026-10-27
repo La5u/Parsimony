@@ -1,0 +1,122 @@
+{
+  "date": "2026-10-27",
+  "method": "Public metadata only: fresh-cache DeepSWE configs and artifact hashes plus patch probes, upstream commit/PR listings for SWE-bench experiments, SWE-bench-Live and PolyBench (open-PR trees read at their head SHAs; preds/results files and a few per-instance result files fetched), SWEeper and SWE-Milestone Hugging Face revisions (full file lists compared), plus a web search for new models. Downloads in ~/parsimony-live-ml/refresh-2026-10-27/ only; nothing measured, imported or published; no paid runs; nobody contacted.",
+  "deepswe": {
+    "release": "v1.1",
+    "configs_command": "python -m parsimony.deepswe --cache <fresh> configs: 26 usable configurations, identical to examples/deepswe-python/refresh-2026-09-29.json",
+    "artifacts_unchanged": false,
+    "artifact_sha256_prefixes": {
+      "trials.json": "310cb428fe8914cf",
+      "leaderboard-live.json": "a7c15d66288fd249",
+      "release.json": "3ed793db158e1d13"
+    },
+    "changes_since_pin": "trials.json and leaderboard-live.json byte-identical (re-uploaded 2026-10-23 / 2026-10-26). release.json changed (was 0b77963ed8c54ef4, now 3ed793db158e1d13, last-modified 2026-10-27T21:40:30Z): artifact_base_url is now https://deepswe-downloads.datacurve.ai (formerly CloudFront d3ujjcmjq6o8v6.cloudfront.net); key patterns unchanged. Both hosts serve the same bytes for 4 sampled Claude Opus 5 patches. The importer reads the base URL from release.json, so caches keyed by the old URL stay valid, but a re-download hits new URLs.",
+    "newer_releases_probed": {"v1.2": 404, "v1.3": 404, "v2": 404, "v2.0": 404, "v1.1.1": 404, "v1.2.0": 404},
+    "github": "datacurve-ai/deep-swe main still 0b9fabbb63b9 (2026-08-26); only tag v1.0.0",
+    "release_1_0_archive": "gated datacurve/deep-swe-leaderboard still at 0618ccdd613e (2026-06-09)",
+    "gpt_6_astra": "5 configurations (low/medium/high/xhigh/max), 452 trials each, 0 declared patches",
+    "gemini_3_8_flash": "high 447/447 and medium 452/452 declare patches; 8 sampled patch GETs return HTTP 403 on both hosts while 4 Claude Opus 5 controls return 200",
+    "verdict": "No new DeepSWE configuration. Only the artifact host moved."
+  },
+  "swe_bench_verified": {
+    "main": "40f164d5b8f1d249bf95a6df8b74b577fd8e519d",
+    "main_unchanged": true,
+    "open_pr_507": {
+      "title": "Add Benzi on DeepSeek V4.1-Flash, Oct 2026 (SWE-bench Verified): 412/500 (82.4%)",
+      "head": "oooscoos/experiments@a257636ecfed9f73a8bb70ae3d8a35e45854418b",
+      "head_unchanged": true,
+      "status": "open, 0 comments, 0 reviews; still no per-instance results",
+      "verdict": "Still waiting for merge with official per-instance results (owner decision 2026-10-20)."
+    },
+    "benzi_mini_swe_agent_baseline": {
+      "source": "https://github.com/oooscoos/Benzi/tree/a61f887fcfc198f2552eb8a46e8fa606ad6911df/swebench-october-SWEMINIAGENT",
+      "committed": "2026-10-17 (before the last refresh, not recorded then)",
+      "claim": "mini-swe-agent 2.4.6, stock swebench.yaml, DeepSeek V4.1-Flash (LiteLLM deepseek/deepseek-flash, thinking default), pass@1, 410/500, swebench 5.0.2 harness",
+      "all_preds_sha256": "aa4bc0d5d1a6f143770f1637338326175f61ab727a53ee801b38b2a776c4be60",
+      "predictions": 500,
+      "nonempty_patches": 500,
+      "model_name_or_path": "mini-swe-agent-2.4.6+deepseek-flash (alias, not a dated model id)",
+      "trajectories": "500 markdown tool-call summaries; no outcomes in them",
+      "per_instance_results": "absent (metadata says verified: false, logs: false); only the aggregate 410",
+      "not_submitted_upstream": true,
+      "verdict": "Patches importable, outcomes missing. Same harness as most Verified rows, so the best Verified candidate if per-instance results appear."
+    },
+    "new_open_prs": {
+      "513": {"title": "Prilog — 91.2% on SWE-bench Verified", "head": "Roshan931/experiments@b7ae40f7a335e111767ecb48ac8b22f635800afc", "results": "per-instance results.json (456 resolved, 4 no_generation)", "blocker": "model undisclosed, proprietary engine; predictions chosen using official evaluation feedback (87 regenerated), not a fresh run; all_preds only in the external repo Roshan931/prilog-swebench-verified-20261022@cf2de52", "verdict": "Not a model row."},
+      "515": {"title": "KAIROS (Qwen 2.5 Coder + Gemini Flash)", "head": "amanjotss/experiments@94f9ce3d704608155f9248f849efe237ca89533b", "blocker": "all_preds.jsonl has 5 rows, each a 143-character patch; results.json lists 5 ids but claims 277/500; older models", "verdict": "Not importable."},
+      "516": {"title": "LifeGraph Path2 sweep-one-full Lite N=300", "verdict": "SWE-bench Lite, not a Parsimony population."}
+    },
+    "other_open_prs": "Unchanged since 2026-10-20: LifeGraph (#503, #504, #509, #510, #511), Omniverse Apex 7.00 (#505), Yuki Lite (#512). #483 (harness9 Kimi K3, Lite) updated 2026-10-26, still Lite."
+  },
+  "swe_bench_live": {
+    "main": "8c67bd5",
+    "main_unchanged": true,
+    "open_prs": {
+      "60": {
+        "title": "AiWork.Code + Claude Opus 5.5 (xhigh) on SWE-bench-Live lite (215/300)",
+        "head": "x4vierli/submission@36022565d01a5f828d65e7ef9a541d056c579beb",
+        "path": "submissions/lite/aiwork-code/20261021-opus-5-5-xhigh/",
+        "board": "Live Python (Lite 300); all 300 ids match examples/live-python/population.jsonl",
+        "files": "README.md, preds.json, results.json, trajs/ (300 .md); no logs/",
+        "preds_sha256": "e1bbbc155863c65ff55b43dbad7d7aaa1052f0e8038321c5094d29644b7d459f",
+        "results_sha256": "8905da3fba3792fb9018d84a8455ee4413b3f891126f895d25752d541cac1cad",
+        "counts": {"submitted": 300, "nonempty": 295, "success": 215, "failure": 80, "empty_patch": 5, "error": 0, "incomplete": 0},
+        "model_claim": "claude-opus-5-5, reasoning_effort xhigh, pass@1",
+        "caveat": "Open network: the README says the agent could read the upstream repo, issues, PRs and commits and adapt an upstream fix (probe github = OPEN). The same harness's published Opus 4.8 row (20260909) ran with GitHub blocked and scored 102/300. Results.json is self-run with the official harness; PR unmerged.",
+        "next_action": "Owner decision: accept an open-network run on the Live Python board (with a disclosure), or wait. Mechanically importable with the existing Live importer once a pinned revision is chosen (the PR head SHA, or the merge commit)."
+      },
+      "64": {
+        "title": "TianxiCode + DeepSeek-V4.1-Flash on SWE-bench-Live MultiLang JS/TS (114/219)",
+        "head": "wei64/submission@8275820e4fd36720d5281ce73e8fc5beb16fb404",
+        "path": "submissions/multilang/js_ts/tianxi/deepseek-flash/",
+        "board": "Live JavaScript (108) + Live TypeScript (111); all 219 ids match the two board populations",
+        "files": "README.md, preds.json, results.json, logs/ (report/status per instance), trajs/<id>/patch.diff plus attempts/",
+        "preds_sha256": "cf2073e97c5c25b9fd9d0ac1057f73a460f81659b97bde13b0381c2764be2c9e",
+        "results_sha256": "f3dc7968fe1bd582d4308afa5b26d394b7561e56ab6a5767d2f4f3d4dccc09b1",
+        "counts": {"submitted": 219, "nonempty": 216, "success": 114, "failure": 96, "empty_patch": 3, "error": 0, "incomplete": 6},
+        "patch_linkage": "Git blob SHA of all 216 nonempty preds patches equals trajs/<id>/patch.diff; the 3 without a trajectory patch are the empties (unlike the Go run, where 24 differed)",
+        "model_claim": "TianxiCode CLI 0.1.486, tianxi-agent-plan/deepseek-flash --variant max --thinking; label V4.1 is the submitter's, alias only (same as the Live Go row)",
+        "next_action": "Best next import: same agent/model label as the published Live Go row, a supported language, full populations, clean patch linkage. Wait for merge or pin the PR head SHA (owner choice); the 6 incomplete ids stay unknown."
+      },
+      "61": {"title": "wescode / deepseek-flash on SWE-bench-Live verified (355/500)", "head": "qinglongcn/submission@64255b1f72cff820b01c4795b926ef5f7e1bb720", "blocker": "Live 'verified' split (500 rows / 499 unique ids) has no Parsimony board; submitter leaves compliance boxes unticked", "verdict": "Not for an existing board."},
+      "63": {"title": "Slai Agent Runtime gpt-5.6-terra-xhigh, MultiLang C++ (134/142)", "verdict": "C++ is unsupported."}
+    },
+    "verdict": "No merged changes. Two open PRs fit existing boards: JS/TS TianxiCode (#64) and Python Lite Opus 5.5 (#60)."
+  },
+  "polybench": {
+    "submission": "e7062f4a848ca7775bc1c1313f7aa419bd6a3ec1",
+    "unchanged": true,
+    "main": "9c836c5 (2026-06-16), gh-pages 497b9ce (2026-08-14), both unchanged",
+    "dataset": "AmazonScience/SWE-PolyBench_Verified@b3fca77: 382 = Python 113, JavaScript 100, TypeScript 100, Java 69",
+    "open_prs": {
+      "47": {"claim": "AiWork.Code + claude-opus-5-5, 274/382", "head": "x4vierli/SWE-PolyBench@d2b1f885a66387fa8ad5d670aa1d690c41965a4e", "created": "2026-10-21", "all_preds_sha256": "5daf60df318cc6a73351356817b8154136c6fe6ace37bff302af79c910a2a6d7", "nonempty": "375/382 (Python 110/113)", "result_files": 382, "note": "3 patches withdrawn after a leakage audit (empty, counted unresolved); repository-isolation audit included"},
+      "46": {"claim": "JamLabs Jitto Build (Claude Code, claude-opus-5-5 high), 293/382", "head": "charliefrantowski/SWE-PolyBench@30150b6f06d8e2acfdba897fe473726515baff92", "created": "2026-10-10", "all_preds_sha256": "c91a487fbaddc3b5ece8dde759c53829a75941c19d1d316d24bc275828fcf0ea", "nonempty": "380/382 (Python 112/113)", "result_files": 382, "note": "--network none, history cut to base_commit; submitter discloses high gold-patch similarity (129/294 resolved near-verbatim)"},
+      "44": {"claim": "Sapient Slingshot v3.4 + GPT-5.6 Sol, 185/382", "head": "sanjuatps/SWE-PolyBench-S1@2c177685c6bf424badb6c3722aaf8c778a178a08", "created": "2026-10-05", "all_preds_sha256": "6376de773ae5ccee9426eb0c82052ea7baf9b45696ac047f90bca6ea969343ab", "nonempty": "382/382", "result_files": 382},
+      "40": {"claim": "Mobile Coder 1.2.4 + DeepSeek V4 Flash, 241/382", "head": "WilliamRocketRen/SWE-PolyBench@46905351979ebe9da1d0d82c0fff2871daddaf85", "created": "2026-09-01", "all_preds_sha256": "ad6ba5eeda0e28dee845ee911b09cb7517180639867afab60e01e7c05601503d", "nonempty": "382/382", "result_files": 382}
+    },
+    "sample_check": "Per-instance <id>_result.json carries a resolved boolean (sampled AutoGPT-4652 in #47)",
+    "blocker": "All four are unmerged (none recorded in earlier censuses). There is no published PolyBench board yet: the Opus 4.8 Python cohort still awaits its release review.",
+    "verdict": "Four complete per-instance candidates (two Opus 5.5, GPT-5.6 Sol, DeepSeek V4 Flash), enough to justify a PolyBench Python board alongside HMigBot Opus 4.8, pending an owner decision on unmerged PRs."
+  },
+  "sweeper": {
+    "traces_revision": "7d103ed06e6c4a61ed8d84607816ded1257f5ae6",
+    "dataset_revision": "f10cd684be52322667f1373c8295624e13791b8f",
+    "unchanged_since_2026-10-20": true,
+    "runs_csv_sha256": "702601116a8b490d99d1d87be856e9f00745a158c0dd5da128975ebfd5135e49 (main == 15e41de)"
+  },
+  "swe_milestone": {
+    "pin": "DeepCommit-ai/SWE-Milestone-log@03d82b7e48d4c5c8c3c76a8a8bb80901659d9f99",
+    "head": "7064a6427ae749a191f023a0ba9d8c2586315ce3 (2026-08-26; nothing newer, so nothing since 2026-10-20)",
+    "pin_to_head": "33 commits, 3,916 added and 4,230 changed files, all under */e2e_trial/ plus .gitignore, .hf_revision, ACCEPTED_LEGACY.tsv",
+    "mstone_trial": "Unchanged: same 10 configurations per repository at pin and head, no file added or changed",
+    "e2e_trial_new_configs": ["_claude-code_glm-5.3-1m_run_002", "_claude-code_glm-5.3_run_003"],
+    "e2e_note": "e2e_trial holds 35 setups at head, including newer models (Opus 4.8, Fable 5 with-leak, GPT-5.5, GPT-5.6 Sol, Kimi K3, GLM-5.3, DeepSeek V4 Pro, Gemini 3.5 Flash), but the board deliberately excludes end-to-end trials (cumulative snapshots)",
+    "harness": "DeepCommit-ai/SWE-Milestone still 17a8f15",
+    "verdict": "No new per-milestone setups."
+  },
+  "new_models_without_public_patches": {
+    "source": "web search 2026-10-27 (nocode.mba October tracker, secondary; release pages not individually verified)",
+    "models": ["GPT-6.1 Terra (2026-10-26)", "Kimi K3.1 Pro / Highspeed (2026-10-23)", "MiniMax M3.1 Flash (2026-10-19)", "Nemotron 3.5 Bolt E4B (2026-10-23)", "LFM3 (2026-10-27)", "Ling-3.0-flash (2026-10-22)", "Flint (Recursive, 2026-10-21)", "Mercury 3 (2026-10-19)"],
+    "note": "None appear in DeepSWE trials or any Verified/Live/PolyBench listing. Claude Opus 5.5 (listed 2026-10-20 as having no public patches) now has per-task patches and outcomes in open PRs: Live #60 and PolyBench #46/#47."
+  }
+}
