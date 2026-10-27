@@ -39,6 +39,9 @@ See [the full audit](../../docs/archive/priority-live-static-import.md) and
 - PolyBench Opus Python: a transformers tokenization error and a langchain strict
   hunk mismatch remain unmeasured. Its metadata remains `declared-candidate`, not
   a historically certified dataset/evaluator match.
+  Now remeasured with 0.10.0-beta at `be4df4d` and published on the
+  [PolyBench Python board](../polybench-python/README.md) (same 111/113); the
+  0.6.0-beta summary above is historical.
 - PolyBench GPT-5.4: **112 generated Python patches of 113 tasks**. All 112 strictly
   match candidate-base hunks, but contain no usable old-blob identity prefixes.
   Without independent operational/full-before-source evidence, measurements are

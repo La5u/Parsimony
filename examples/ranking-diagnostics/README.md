@@ -12,6 +12,7 @@ Each Markdown summary has a JSON companion with complete pairwise comparisons, c
 | SWE-bench Verified | [Verified](verified.md) |
 | SWE-bench Live | [Python](live-python.md), [JavaScript](live-javascript.md), [TypeScript](live-typescript.md), [Go](live-go.md) |
 | SWEeper | [PHP](sweeper-php.md) |
+| SWE-PolyBench Verified | [Python](polybench-python.md) |
 
 The all-languages DeepSWE aggregate is **not** diagnosed here. Its constituent boards are checked independently. Owner-run/contributed configurations are not included in the ranked peer population.
 

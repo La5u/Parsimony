@@ -1,0 +1,1865 @@
+{
+ "status": "analysis-not-a-score-release",
+ "score_version": "parsimony-80-20-v0.5",
+ "panel": "swe-polybench-verified-python-v1",
+ "baseline": {
+  "net_weight": 0.8,
+  "churn_weight": 0.2,
+  "failure_cap": 25
+ },
+ "calibration_policy": "full-population-uncalibrated-bounds-v1",
+ "task_count": 113,
+ "common_tasks": 103,
+ "panel_references": 390,
+ "dedup_references_removed": 22,
+ "leave_one_out": {
+  "polybench-claude-opus-4.8-hmigbot": {
+   "orphaned_tasks": [
+    "huggingface__transformers-13989",
+    "huggingface__transformers-28115",
+    "keras-team__keras-18871",
+    "keras-team__keras-19459",
+    "keras-team__keras-19466",
+    "keras-team__keras-19826",
+    "keras-team__keras-19973",
+    "langchain-ai__langchain-5625"
+   ],
+   "references_removed": 69
+  },
+  "polybench-claude-opus-5.5-aiwork-code": {
+   "orphaned_tasks": [
+    "huggingface__transformers-13989",
+    "huggingface__transformers-28115",
+    "keras-team__keras-18871",
+    "keras-team__keras-19459",
+    "keras-team__keras-19466",
+    "keras-team__keras-19826",
+    "keras-team__keras-19973",
+    "langchain-ai__langchain-5625"
+   ],
+   "references_removed": 80
+  },
+  "polybench-claude-opus-5.5-jitto-build": {
+   "orphaned_tasks": [
+    "huggingface__transformers-13989",
+    "huggingface__transformers-17082",
+    "huggingface__transformers-23141",
+    "huggingface__transformers-23223",
+    "huggingface__transformers-27717",
+    "huggingface__transformers-28115",
+    "keras-team__keras-18871",
+    "keras-team__keras-19459",
+    "keras-team__keras-19466",
+    "keras-team__keras-19826",
+    "keras-team__keras-19973",
+    "langchain-ai__langchain-5625"
+   ],
+   "references_removed": 97
+  },
+  "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+   "orphaned_tasks": [
+    "huggingface__transformers-13989",
+    "huggingface__transformers-15843",
+    "huggingface__transformers-25765",
+    "huggingface__transformers-27114",
+    "huggingface__transformers-27663",
+    "huggingface__transformers-28115",
+    "huggingface__transformers-7562",
+    "huggingface__transformers-8747",
+    "keras-team__keras-18871",
+    "keras-team__keras-19459",
+    "keras-team__keras-19466",
+    "keras-team__keras-19826",
+    "keras-team__keras-19863",
+    "keras-team__keras-19973",
+    "keras-team__keras-20002",
+    "langchain-ai__langchain-5625"
+   ],
+   "references_removed": 80
+  },
+  "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+   "orphaned_tasks": [
+    "huggingface__transformers-13989",
+    "huggingface__transformers-28115",
+    "keras-team__keras-18871",
+    "keras-team__keras-19459",
+    "keras-team__keras-19466",
+    "keras-team__keras-19826",
+    "keras-team__keras-19973",
+    "langchain-ai__langchain-5625"
+   ],
+   "references_removed": 64
+  }
+ },
+ "repositories": {
+  "Significant-Gravitas/AutoGPT": 1,
+  "huggingface/transformers": 72,
+  "keras-team/keras": 22,
+  "langchain-ai/langchain": 13,
+  "yt-dlp/yt-dlp": 5
+ },
+ "strata_tasks": {
+  "solved_by_all": 43,
+  "solved_by_fewer": 70
+ },
+ "ranking": [
+  "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+  "polybench-claude-opus-5.5-jitto-build",
+  "polybench-gpt-5.6-sol-slingshot-3.4.0",
+  "polybench-claude-opus-5.5-aiwork-code",
+  "polybench-claude-opus-4.8-hmigbot"
+ ],
+ "rank_range": {
+  "polybench-deepseek-v4-flash-mobile-coder-1.2.4": [
+   1,
+   2
+  ],
+  "polybench-claude-opus-5.5-jitto-build": [
+   1,
+   2
+  ],
+  "polybench-gpt-5.6-sol-slingshot-3.4.0": [
+   3,
+   5
+  ],
+  "polybench-claude-opus-5.5-aiwork-code": [
+   3,
+   4
+  ],
+  "polybench-claude-opus-4.8-hmigbot": [
+   4,
+   5
+  ]
+ },
+ "adjacent_pairs": [
+  {
+   "a": "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+   "b": "polybench-claude-opus-5.5-jitto-build",
+   "difference": 0.5282336559738762,
+   "ci_95": [
+    -8.45671286554149,
+    9.803056067730532
+   ],
+   "p_greater": 0.386,
+   "distinguishable": false,
+   "flips_in": [
+    "net_weight=0.5",
+    "net_weight=0.6",
+    "net_weight=0.7",
+    "failure_cap=50",
+    "panel_without=polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "without_repo=keras-team/keras",
+    "without_repo=langchain-ai/langchain"
+   ],
+   "flips_in_strata": [
+    "solved_by_fewer"
+   ],
+   "bounds_separate": false,
+   "outcomes": {
+    "a": "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "b": "polybench-claude-opus-5.5-jitto-build",
+    "difference": 0.6875276488099814,
+    "by_outcome": {
+     "failed/solved": {
+      "tasks": 25,
+      "contribution": -13.209172939837435
+     },
+     "solved/failed": {
+      "tasks": 8,
+      "contribution": 4.499557731504559
+     },
+     "solved/solved": {
+      "tasks": 72,
+      "contribution": 9.39714285714286
+     }
+    },
+    "favoring_a": [
+     {
+      "task": "keras-team__keras-19636",
+      "outcome": "solved/solved",
+      "a": 90.10000000000001,
+      "b": 10.9,
+      "contribution": 0.7542857142857143
+     },
+     {
+      "task": "huggingface__transformers-27114",
+      "outcome": "solved/failed",
+      "a": 50.5,
+      "b": -17.901234567901238,
+      "contribution": 0.651440329218107
+     },
+     {
+      "task": "huggingface__transformers-22649",
+      "outcome": "solved/solved",
+      "a": 78.22,
+      "b": 10.9,
+      "contribution": 0.6411428571428571
+     },
+     {
+      "task": "huggingface__transformers-25765",
+      "outcome": "solved/failed",
+      "a": 50.5,
+      "b": -15.957446808510637,
+      "contribution": 0.6329280648429585
+     },
+     {
+      "task": "huggingface__transformers-7562",
+      "outcome": "solved/failed",
+      "a": 50.5,
+      "b": -12.47000277843931,
+      "contribution": 0.5997143121756124
+     }
+    ],
+    "favoring_b": [
+     {
+      "task": "huggingface__transformers-5122",
+      "outcome": "failed/solved",
+      "a": -17.869745718733785,
+      "b": 62.875,
+      "contribution": -0.7689975782736551
+     },
+     {
+      "task": "huggingface__transformers-25884",
+      "outcome": "failed/solved",
+      "a": -12.5,
+      "b": 67.0,
+      "contribution": -0.7571428571428571
+     },
+     {
+      "task": "huggingface__transformers-31217",
+      "outcome": "failed/solved",
+      "a": -3.820598006644518,
+      "b": 75.25,
+      "contribution": -0.7530533143489954
+     },
+     {
+      "task": "huggingface__transformers-26568",
+      "outcome": "failed/solved",
+      "a": -7.631671968893601,
+      "b": 67.0,
+      "contribution": -0.7107778282751771
+     },
+     {
+      "task": "keras-team__keras-20008",
+      "outcome": "failed/solved",
+      "a": -1.1215538847117794,
+      "b": 65.35000000000001,
+      "contribution": -0.633062417949636
+     }
+    ]
+   }
+  },
+  {
+   "a": "polybench-claude-opus-5.5-jitto-build",
+   "b": "polybench-gpt-5.6-sol-slingshot-3.4.0",
+   "difference": 6.490981440061796,
+   "ci_95": [
+    -3.0549426625165053,
+    15.562435277272883
+   ],
+   "p_greater": 0.875,
+   "distinguishable": false,
+   "flips_in": [],
+   "flips_in_strata": [
+    "solved_by_all"
+   ],
+   "bounds_separate": true,
+   "outcomes": {
+    "a": "polybench-claude-opus-5.5-jitto-build",
+    "b": "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "difference": 6.866484787876028,
+    "by_outcome": {
+     "failed/failed": {
+      "tasks": 8,
+      "contribution": 4.926733292269503e-06
+     },
+     "solved/failed": {
+      "tasks": 33,
+      "contribution": 16.065622718285596
+     },
+     "solved/solved": {
+      "tasks": 64,
+      "contribution": -9.199142857142858
+     }
+    },
+    "favoring_a": [
+     {
+      "task": "huggingface__transformers-31217",
+      "outcome": "solved/failed",
+      "a": 75.25,
+      "b": -9.785202863961814,
+      "contribution": 0.8098590748948744
+     },
+     {
+      "task": "keras-team__keras-18553",
+      "outcome": "solved/failed",
+      "a": 83.5,
+      "b": -1.1363636363636365,
+      "contribution": 0.8060606060606061
+     },
+     {
+      "task": "yt-dlp__yt-dlp-4841",
+      "outcome": "solved/failed",
+      "a": 50.5,
+      "b": -24.375,
+      "contribution": 0.7130952380952381
+     },
+     {
+      "task": "langchain-ai__langchain-5450",
+      "outcome": "solved/failed",
+      "a": 50.5,
+      "b": -22.487616099071207,
+      "contribution": 0.6951201533244876
+     },
+     {
+      "task": "huggingface__transformers-13491",
+      "outcome": "solved/failed",
+      "a": 70.30000000000001,
+      "b": -0.011481056257175657,
+      "contribution": 0.6696331529167352
+     }
+    ],
+    "favoring_b": [
+     {
+      "task": "huggingface__transformers-8554",
+      "outcome": "solved/solved",
+      "a": 10.9,
+      "b": 90.10000000000001,
+      "contribution": -0.7542857142857143
+     },
+     {
+      "task": "keras-team__keras-19924",
+      "outcome": "solved/solved",
+      "a": 13.375,
+      "b": 87.625,
+      "contribution": -0.7071428571428572
+     },
+     {
+      "task": "keras-team__keras-19838",
+      "outcome": "solved/solved",
+      "a": 13.375,
+      "b": 82.67500000000001,
+      "contribution": -0.6600000000000001
+     },
+     {
+      "task": "huggingface__transformers-28563",
+      "outcome": "solved/solved",
+      "a": 20.8,
+      "b": 86.14000000000001,
+      "contribution": -0.6222857142857144
+     },
+     {
+      "task": "huggingface__transformers-22649",
+      "outcome": "solved/solved",
+      "a": 10.9,
+      "b": 74.25999999999999,
+      "contribution": -0.6034285714285713
+     }
+    ]
+   }
+  },
+  {
+   "a": "polybench-gpt-5.6-sol-slingshot-3.4.0",
+   "b": "polybench-claude-opus-5.5-aiwork-code",
+   "difference": 1.3069561677210142,
+   "ci_95": [
+    -7.755735147876129,
+    10.071044550048851
+   ],
+   "p_greater": 0.47,
+   "distinguishable": false,
+   "flips_in": [
+    "without_repo=huggingface/transformers"
+   ],
+   "flips_in_strata": [
+    "solved_by_fewer"
+   ],
+   "bounds_separate": false,
+   "outcomes": {
+    "a": "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "b": "polybench-claude-opus-5.5-aiwork-code",
+    "difference": 1.5255813995473775,
+    "by_outcome": {
+     "failed/failed": {
+      "tasks": 20,
+      "contribution": -0.14147652916670597
+     },
+     "failed/solved": {
+      "tasks": 21,
+      "contribution": -10.326150095819523
+     },
+     "solved/failed": {
+      "tasks": 5,
+      "contribution": 3.1036365959621777
+     },
+     "solved/solved": {
+      "tasks": 59,
+      "contribution": 8.88957142857143
+     }
+    },
+    "favoring_a": [
+     {
+      "task": "huggingface__transformers-30899",
+      "outcome": "solved/failed",
+      "a": 75.25,
+      "b": -13.942307692307693,
+      "contribution": 0.8494505494505494
+     },
+     {
+      "task": "keras-team__keras-19838",
+      "outcome": "solved/failed",
+      "a": 82.67500000000001,
+      "b": 0,
+      "contribution": 0.7873809523809525
+     },
+     {
+      "task": "huggingface__transformers-21345",
+      "outcome": "solved/solved",
+      "a": 90.10000000000001,
+      "b": 10.9,
+      "contribution": 0.7542857142857143
+     },
+     {
+      "task": "langchain-ai__langchain-4579",
+      "outcome": "solved/solved",
+      "a": 90.10000000000001,
+      "b": 12.88,
+      "contribution": 0.7354285714285715
+     },
+     {
+      "task": "langchain-ai__langchain-5609",
+      "outcome": "solved/solved",
+      "a": 90.10000000000001,
+      "b": 18.82,
+      "contribution": 0.6788571428571428
+     }
+    ],
+    "favoring_b": [
+     {
+      "task": "Significant-Gravitas__AutoGPT-4652",
+      "outcome": "failed/solved",
+      "a": -2.738908339551168,
+      "b": 76.9,
+      "contribution": -0.7584657937100112
+     },
+     {
+      "task": "yt-dlp__yt-dlp-5933",
+      "outcome": "failed/solved",
+      "a": -2.0737327188940093,
+      "b": 75.25,
+      "contribution": -0.7364165020847049
+     },
+     {
+      "task": "huggingface__transformers-19590",
+      "outcome": "failed/solved",
+      "a": -11.583011583011583,
+      "b": 62.875,
+      "contribution": -0.7091239198382056
+     },
+     {
+      "task": "huggingface__transformers-22158",
+      "outcome": "failed/solved",
+      "a": -3.3333333333333335,
+      "b": 67.0,
+      "contribution": -0.6698412698412698
+     },
+     {
+      "task": "langchain-ai__langchain-4009",
+      "outcome": "failed/solved",
+      "a": -9.198814546915813,
+      "b": 57.1,
+      "contribution": -0.6314172813991983
+     }
+    ]
+   }
+  },
+  {
+   "a": "polybench-claude-opus-5.5-aiwork-code",
+   "b": "polybench-claude-opus-4.8-hmigbot",
+   "difference": 1.347760413559645,
+   "ci_95": [
+    -7.950049999601923,
+    10.841707356729016
+   ],
+   "p_greater": 0.4095,
+   "distinguishable": false,
+   "flips_in": [],
+   "flips_in_strata": [
+    "solved_by_all"
+   ],
+   "bounds_separate": false,
+   "outcomes": {
+    "a": "polybench-claude-opus-5.5-aiwork-code",
+    "b": "polybench-claude-opus-4.8-hmigbot",
+    "difference": 0.7536109391479604,
+    "by_outcome": {
+     "failed/failed": {
+      "tasks": 16,
+      "contribution": 0.11293654699042623
+     },
+     "failed/solved": {
+      "tasks": 9,
+      "contribution": -5.344757468608556
+     },
+     "solved/failed": {
+      "tasks": 18,
+      "contribution": 9.432810501542791
+     },
+     "solved/solved": {
+      "tasks": 60,
+      "contribution": -3.4473786407766993
+     }
+    },
+    "favoring_a": [
+     {
+      "task": "yt-dlp__yt-dlp-5933",
+      "outcome": "solved/failed",
+      "a": 75.25,
+      "b": -2.2076707202993444,
+      "contribution": 0.7520162205854306
+     },
+     {
+      "task": "huggingface__transformers-13693",
+      "outcome": "solved/failed",
+      "a": 55.45,
+      "b": -19.605983728457705,
+      "contribution": 0.7286988711500748
+     },
+     {
+      "task": "huggingface__transformers-26568",
+      "outcome": "solved/failed",
+      "a": 67.0,
+      "b": -7.862097103223174,
+      "contribution": 0.7268164767303221
+     },
+     {
+      "task": "huggingface__transformers-22158",
+      "outcome": "solved/failed",
+      "a": 67.0,
+      "b": -4.032258064516129,
+      "contribution": 0.6896335734419041
+     },
+     {
+      "task": "keras-team__keras-19924",
+      "outcome": "solved/failed",
+      "a": 62.875,
+      "b": -5.420702754036087,
+      "contribution": 0.6630650752819037
+     }
+    ],
+    "favoring_b": [
+     {
+      "task": "huggingface__transformers-25884",
+      "outcome": "failed/solved",
+      "a": -12.5,
+      "b": 67.0,
+      "contribution": -0.7718446601941747
+     },
+     {
+      "task": "huggingface__transformers-23126",
+      "outcome": "solved/solved",
+      "a": 10.9,
+      "b": 86.14000000000001,
+      "contribution": -0.730485436893204
+     },
+     {
+      "task": "huggingface__transformers-7075",
+      "outcome": "solved/solved",
+      "a": 13.375,
+      "b": 87.625,
+      "contribution": -0.720873786407767
+     },
+     {
+      "task": "yt-dlp__yt-dlp-4841",
+      "outcome": "failed/solved",
+      "a": -23.372549019607845,
+      "b": 50.5,
+      "contribution": -0.7172092137826004
+     },
+     {
+      "task": "keras-team__keras-19838",
+      "outcome": "failed/solved",
+      "a": 0,
+      "b": 67.82499999999999,
+      "contribution": -0.6584951456310678
+     }
+    ]
+   }
+  }
+ ],
+ "scenarios": {
+  "baseline": {
+   "family": "baseline",
+   "task_count": 113,
+   "common_tasks": 103,
+   "ranking": [
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 27.87958019274623,
+     "lower": 26.44595187416216,
+     "upper": 29.3132085113303,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 29.227340606305876,
+     "lower": 28.453004323120034,
+     "upper": 30.001676889491716,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 37.02527821408869,
+     "lower": 36.25094193090285,
+     "upper": 37.799614497274526,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 37.55351187006256,
+     "lower": 36.66855611785017,
+     "upper": 38.43846762227495,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 30.53429677402689,
+     "lower": 29.6493410218145,
+     "upper": 31.419252526239276,
+     "full_score": null
+    }
+   }
+  },
+  "net_weight=0.5": {
+   "family": "weights",
+   "task_count": 113,
+   "common_tasks": 103,
+   "ranking": [
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 28.164930094386477,
+     "lower": 26.731301775802404,
+     "upper": 29.598558412970547,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 29.864728924965238,
+     "lower": 29.090392641779395,
+     "upper": 30.639065208151077,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 36.7581589411661,
+     "lower": 35.983822657980255,
+     "upper": 37.53249522435194,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 35.58001301785356,
+     "lower": 34.69505726564117,
+     "upper": 36.464968770065944,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 31.02691100153287,
+     "lower": 30.14195524932048,
+     "upper": 31.911866753745258,
+     "full_score": null
+    }
+   }
+  },
+  "net_weight=0.6": {
+   "family": "weights",
+   "task_count": 113,
+   "common_tasks": 103,
+   "ranking": [
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 28.069813460506396,
+     "lower": 26.636185141922326,
+     "upper": 29.503441779090466,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 29.65226615207878,
+     "lower": 28.877929868892938,
+     "upper": 30.42660243526462,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 36.847198698806956,
+     "lower": 36.072862415621124,
+     "upper": 37.621534981992795,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 36.23784596858989,
+     "lower": 35.3528902163775,
+     "upper": 37.12280172080228,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 30.862706259030873,
+     "lower": 29.977750506818484,
+     "upper": 31.747662011243264,
+     "full_score": null
+    }
+   }
+  },
+  "net_weight=0.7": {
+   "family": "weights",
+   "task_count": 113,
+   "common_tasks": 103,
+   "ranking": [
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 27.97469682662631,
+     "lower": 26.54106850804224,
+     "upper": 29.40832514521038,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 29.439803379192327,
+     "lower": 28.665467096006488,
+     "upper": 30.21413966237817,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 36.936238456447825,
+     "lower": 36.16190217326198,
+     "upper": 37.710574739633664,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 36.89567891932622,
+     "lower": 36.01072316711384,
+     "upper": 37.780634671538614,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 30.698501516528882,
+     "lower": 29.813545764316494,
+     "upper": 31.583457268741274,
+     "full_score": null
+    }
+   }
+  },
+  "net_weight=0.9": {
+   "family": "weights",
+   "task_count": 113,
+   "common_tasks": 103,
+   "ranking": [
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 27.784463558866147,
+     "lower": 26.350835240282077,
+     "upper": 29.218091877450217,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 29.01487783341942,
+     "lower": 28.24054155023358,
+     "upper": 29.789214116605258,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 37.11431797172955,
+     "lower": 36.33998168854371,
+     "upper": 37.88865425491539,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 38.21134482079889,
+     "lower": 37.32638906858651,
+     "upper": 39.096300573011284,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 30.370092031524894,
+     "lower": 29.485136279312506,
+     "upper": 31.255047783737282,
+     "full_score": null
+    }
+   }
+  },
+  "net_weight=1": {
+   "family": "weights",
+   "task_count": 113,
+   "common_tasks": 103,
+   "ranking": [
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 27.689346924986065,
+     "lower": 26.255718606401995,
+     "upper": 29.12297524357014,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 28.802415060532965,
+     "lower": 28.028078777347126,
+     "upper": 29.576751343718808,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 37.2033577293704,
+     "lower": 36.429021446184564,
+     "upper": 37.97769401255624,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 38.86917777153523,
+     "lower": 37.98422201932284,
+     "upper": 39.75413352374762,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 30.2058872890229,
+     "lower": 29.32093153681051,
+     "upper": 31.09084304123529,
+     "full_score": null
+    }
+   }
+  },
+  "net_floor=0": {
+   "family": "weights",
+   "task_count": 113,
+   "common_tasks": 103,
+   "ranking": [
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 27.476571343188706,
+     "lower": 26.042943024604636,
+     "upper": 28.91019966177278,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 29.24486273019968,
+     "lower": 28.47052644701384,
+     "upper": 30.01919901338552,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 36.89678263886744,
+     "lower": 36.1224463556816,
+     "upper": 37.67111892205328,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 37.59439682581477,
+     "lower": 36.709441073602385,
+     "upper": 38.47935257802716,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 31.00739411915963,
+     "lower": 30.122438366947243,
+     "upper": 31.892349871372023,
+     "full_score": null
+    }
+   }
+  },
+  "failure_cap=0": {
+   "family": "failure_cap",
+   "task_count": 113,
+   "common_tasks": 103,
+   "ranking": [
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 31.13424778761062,
+     "lower": 30.696194690265486,
+     "upper": 31.57230088495575,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 31.62867256637168,
+     "lower": 31.62867256637168,
+     "upper": 31.62867256637168,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 38.4053982300885,
+     "lower": 38.4053982300885,
+     "upper": 38.4053982300885,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 39.83194690265487,
+     "lower": 39.83194690265487,
+     "upper": 39.83194690265487,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 33.73867256637168,
+     "lower": 33.73867256637168,
+     "upper": 33.73867256637168,
+     "full_score": null
+    }
+   }
+  },
+  "failure_cap=10": {
+   "family": "failure_cap",
+   "task_count": 113,
+   "common_tasks": 103,
+   "ranking": [
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 29.832380749664864,
+     "lower": 28.996097563824154,
+     "upper": 30.66866393550557,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 30.668139782345357,
+     "lower": 30.35840526907102,
+     "upper": 30.977874295619696,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 37.853350223688565,
+     "lower": 37.54361571041423,
+     "upper": 38.16308473696291,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 38.920572889617944,
+     "lower": 38.56659058873299,
+     "upper": 39.2745551905029,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 32.45692224943377,
+     "lower": 32.10293994854881,
+     "upper": 32.810904550318725,
+     "full_score": null
+    }
+   }
+  },
+  "failure_cap=50": {
+   "family": "failure_cap",
+   "task_count": 113,
+   "common_tasks": 103,
+   "ranking": [
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 24.62491259788184,
+     "lower": 22.195709058058828,
+     "upper": 27.054116137704845,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 26.826008646240066,
+     "lower": 25.277336079868384,
+     "upper": 28.374681212611748,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 35.64515819808887,
+     "lower": 34.09648563171719,
+     "upper": 37.19383076446055,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 35.27507683747025,
+     "lower": 33.505165333045476,
+     "upper": 37.04498834189503,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 27.329920981682093,
+     "lower": 25.560009477257314,
+     "upper": 29.099832486106873,
+     "full_score": null
+    }
+   }
+  },
+  "panel_without=polybench-claude-opus-4.8-hmigbot": {
+   "family": "panel",
+   "task_count": 113,
+   "common_tasks": 103,
+   "ranking": [
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 27.838695236994017,
+     "lower": 26.405066918409947,
+     "upper": 29.272323555578087,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 28.93378278636699,
+     "lower": 28.15944650318115,
+     "upper": 29.708119069552833,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 37.07054370081435,
+     "lower": 36.29620741762851,
+     "upper": 37.84487998400019,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 37.60806233415434,
+     "lower": 36.72310658194195,
+     "upper": 38.493018086366725,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 30.61148766060225,
+     "lower": 29.72653190838986,
+     "upper": 31.49644341281464,
+     "full_score": null
+    }
+   }
+  },
+  "panel_without=polybench-claude-opus-5.5-aiwork-code": {
+   "family": "panel",
+   "task_count": 113,
+   "common_tasks": 103,
+   "ranking": [
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 27.24554992846842,
+     "lower": 25.81192160988435,
+     "upper": 28.67917824705249,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 27.95552644701384,
+     "lower": 27.181190163828,
+     "upper": 28.72986273019968,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 35.398641045947095,
+     "lower": 34.624304762761255,
+     "upper": 36.172977329132934,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 36.63375069570017,
+     "lower": 35.74879494348778,
+     "upper": 37.518706447912564,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 29.705984979274056,
+     "lower": 28.821029227061665,
+     "upper": 30.590940731486445,
+     "full_score": null
+    }
+   }
+  },
+  "panel_without=polybench-claude-opus-5.5-jitto-build": {
+   "family": "panel",
+   "task_count": 113,
+   "common_tasks": 99,
+   "ranking": [
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 26.34543869034514,
+     "lower": 24.469332495654875,
+     "upper": 28.221544885035406,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 28.364148843087847,
+     "lower": 27.147334683795812,
+     "upper": 29.58096300237988,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 35.143110072495766,
+     "lower": 32.616561399929395,
+     "upper": 37.66965874506213,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 35.49924214586251,
+     "lower": 34.17180851754392,
+     "upper": 36.8266757741811,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 28.782778517979697,
+     "lower": 27.455344889661113,
+     "upper": 30.11021214629828,
+     "full_score": null
+    }
+   }
+  },
+  "panel_without=polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+   "family": "panel",
+   "task_count": 113,
+   "common_tasks": 95,
+   "ranking": [
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 28.401341262837295,
+     "lower": 26.082757192040837,
+     "upper": 30.719925333633757,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 29.847378195745723,
+     "lower": 28.188086160347492,
+     "upper": 31.506670231143953,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 38.382964601769906,
+     "lower": 36.723672566371675,
+     "upper": 40.04225663716814,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 39.24147647183247,
+     "lower": 34.852095940859016,
+     "upper": 43.63085700280592,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 30.932994348148853,
+     "lower": 29.163082843724073,
+     "upper": 32.70290585257363,
+     "full_score": null
+    }
+   }
+  },
+  "panel_without=polybench-gpt-5.6-sol-slingshot-3.4.0": {
+   "family": "panel",
+   "task_count": 113,
+   "common_tasks": 103,
+   "ranking": [
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 29.102694818509892,
+     "lower": 27.669066499925822,
+     "upper": 30.536323137093962,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 30.45789200181302,
+     "lower": 29.68355571862718,
+     "upper": 31.23222828499886,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 38.85195963001789,
+     "lower": 38.07762334683205,
+     "upper": 39.62629591320373,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 38.454508066009026,
+     "lower": 37.569552313796635,
+     "upper": 39.33946381822141,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 32.041199428894146,
+     "lower": 31.156243676681754,
+     "upper": 32.92615518110653,
+     "full_score": null
+    }
+   }
+  },
+  "panel_dedup": {
+   "family": "panel",
+   "task_count": 113,
+   "common_tasks": 103,
+   "ranking": [
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 27.98516431833871,
+     "lower": 26.55153599975464,
+     "upper": 29.41879263692278,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 29.325172464712953,
+     "lower": 28.550836181527114,
+     "upper": 30.099508747898795,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 37.10120741762851,
+     "lower": 36.32687113444267,
+     "upper": 37.87554370081435,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 37.57103399395637,
+     "lower": 36.68607824174398,
+     "upper": 38.45598974616876,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 30.68164698785591,
+     "lower": 29.796691235643518,
+     "upper": 31.566602740068298,
+     "full_score": null
+    }
+   }
+  },
+  "without_repo=Significant-Gravitas/AutoGPT": {
+   "family": "task_mix",
+   "task_count": 112,
+   "common_tasks": 102,
+   "ranking": [
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 27.736540730181463,
+     "lower": 26.29011215875289,
+     "upper": 29.182969301610033,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 28.80169186171932,
+     "lower": 28.02044186171932,
+     "upper": 29.58294186171932,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 37.081753912428766,
+     "lower": 36.30050391242876,
+     "upper": 37.863003912428766,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 37.9783359556371,
+     "lower": 37.08547881277996,
+     "upper": 38.871193098494246,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 30.831378962540978,
+     "lower": 29.938521819683835,
+     "upper": 31.72423610539812,
+     "full_score": null
+    }
+   }
+  },
+  "without_repo=huggingface/transformers": {
+   "family": "task_mix",
+   "task_count": 41,
+   "common_tasks": 34,
+   "ranking": [
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 26.822314839009177,
+     "lower": 23.785729473155516,
+     "upper": 29.858900204862838,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 28.299450609012567,
+     "lower": 26.470182316329637,
+     "upper": 30.128718901695493,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 33.84328088119591,
+     "lower": 32.01401258851298,
+     "upper": 35.672549173878835,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 37.87240935092257,
+     "lower": 36.04314105823964,
+     "upper": 39.7016776436055,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 25.530228352598957,
+     "lower": 23.700960059916028,
+     "upper": 27.359496645281883,
+     "full_score": null
+    }
+   }
+  },
+  "without_repo=keras-team/keras": {
+   "family": "task_mix",
+   "task_count": 91,
+   "common_tasks": 86,
+   "ranking": [
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 29.796284690444995,
+     "lower": 28.702878097038404,
+     "upper": 30.88969128385159,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 30.78413768307789,
+     "lower": 30.509412408352617,
+     "upper": 31.058862957803164,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 39.258207934758126,
+     "lower": 38.98348266003285,
+     "upper": 39.532933209483396,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 37.649158189030565,
+     "lower": 37.23707027694265,
+     "upper": 38.06124610111848,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 31.754556109601893,
+     "lower": 31.34246819751398,
+     "upper": 32.166644021689805,
+     "full_score": null
+    }
+   }
+  },
+  "without_repo=langchain-ai/langchain": {
+   "family": "task_mix",
+   "task_count": 100,
+   "common_tasks": 92,
+   "ranking": [
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 26.75715637610477,
+     "lower": 25.75715637610477,
+     "upper": 27.75715637610477,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 28.88944596871697,
+     "lower": 28.13944596871697,
+     "upper": 29.63944596871697,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 36.910064381920215,
+     "lower": 36.160064381920215,
+     "upper": 37.660064381920215,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 36.69816841317069,
+     "lower": 35.82316841317069,
+     "upper": 37.57316841317069,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 30.21248820415661,
+     "lower": 29.33748820415661,
+     "upper": 31.08748820415661,
+     "full_score": null
+    }
+   }
+  },
+  "without_repo=yt-dlp/yt-dlp": {
+   "family": "task_mix",
+   "task_count": 108,
+   "common_tasks": 98,
+   "ranking": [
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 27.85356696759836,
+     "lower": 26.35356696759836,
+     "upper": 29.35356696759836,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 29.022128375336955,
+     "lower": 28.211943190151768,
+     "upper": 29.832313560522138,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 36.3999207240002,
+     "lower": 35.58973553881501,
+     "upper": 37.21010590918539,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 37.703284428983764,
+     "lower": 36.77735850305784,
+     "upper": 38.62921035490969,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 31.395693603792346,
+     "lower": 30.469767677866418,
+     "upper": 32.32161952971827,
+     "full_score": null
+    }
+   }
+  }
+ },
+ "strata": {
+  "solved_by_all": {
+   "task_count": 43,
+   "common_tasks": 42,
+   "ranking": [
+    "polybench-gpt-5.6-sol-slingshot-3.4.0",
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-claude-opus-4.8-hmigbot",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-5.5-jitto-build"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 49.76325581395349,
+     "lower": 48.61209302325582,
+     "upper": 50.91441860465117,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 44.479418604651165,
+     "lower": 44.479418604651165,
+     "upper": 44.479418604651165,
+     "full_score": 44.479418604651165
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 44.43337209302326,
+     "lower": 44.43337209302326,
+     "upper": 44.43337209302326,
+     "full_score": 44.43337209302326
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 54.10313953488372,
+     "lower": 54.10313953488372,
+     "upper": 54.10313953488372,
+     "full_score": 54.10313953488372
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 59.72081395348837,
+     "lower": 59.72081395348837,
+     "upper": 59.72081395348837,
+     "full_score": 59.72081395348837
+    }
+   }
+  },
+  "solved_by_fewer": {
+   "task_count": 70,
+   "common_tasks": 61,
+   "ranking": [
+    "polybench-claude-opus-5.5-jitto-build",
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4",
+    "polybench-claude-opus-5.5-aiwork-code",
+    "polybench-claude-opus-4.8-hmigbot",
+    "polybench-gpt-5.6-sol-slingshot-3.4.0"
+   ],
+   "models": {
+    "polybench-claude-opus-4.8-hmigbot": {
+     "score": 14.436750882576055,
+     "lower": 12.829608025433197,
+     "upper": 16.043893739718914,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-aiwork-code": {
+     "score": 19.85820697875091,
+     "lower": 18.60820697875091,
+     "upper": 21.10820697875091,
+     "full_score": null
+    },
+    "polybench-claude-opus-5.5-jitto-build": {
+     "score": 32.47459197417173,
+     "lower": 31.22459197417173,
+     "upper": 33.72459197417173,
+     "full_score": null
+    },
+    "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+     "score": 27.387312018815276,
+     "lower": 25.95874059024385,
+     "upper": 28.815883447386703,
+     "full_score": null
+    },
+    "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+     "score": 12.605436220929118,
+     "lower": 11.17686479235769,
+     "upper": 14.034007649500547,
+     "full_score": null
+    }
+   }
+  }
+ },
+ "bootstrap": {
+  "rank_policy": "bootstrap-score-bound-envelopes-v1",
+  "draws": 2000,
+  "seed": 42,
+  "task_count": 113,
+  "models": {
+   "polybench-claude-opus-4.8-hmigbot": {
+    "score_ci_95": [
+     20.415568015509002,
+     35.01582842285878
+    ],
+    "rank_counts": [
+     0,
+     6,
+     276,
+     588,
+     1130
+    ],
+    "rank_ci_95": [
+     2.0,
+     5.0
+    ],
+    "top_frequency": 0.0
+   },
+   "polybench-claude-opus-5.5-aiwork-code": {
+    "score_ci_95": [
+     22.78205277848628,
+     34.95425693771747
+    ],
+    "rank_counts": [
+     0,
+     14,
+     563,
+     828,
+     595
+    ],
+    "rank_ci_95": [
+     2.0,
+     5.0
+    ],
+    "top_frequency": 0.0
+   },
+   "polybench-claude-opus-5.5-jitto-build": {
+    "score_ci_95": [
+     30.94173407567209,
+     42.181927813204545
+    ],
+    "rank_counts": [
+     869,
+     1038,
+     89,
+     4,
+     0
+    ],
+    "rank_ci_95": [
+     1.0,
+     3.0
+    ],
+    "top_frequency": 0.4345
+   },
+   "polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+    "score_ci_95": [
+     30.297579045535766,
+     44.05626030624647
+    ],
+    "rank_counts": [
+     1104,
+     793,
+     90,
+     12,
+     1
+    ],
+    "rank_ci_95": [
+     1.0,
+     4.0
+    ],
+    "top_frequency": 0.552
+   },
+   "polybench-gpt-5.6-sol-slingshot-3.4.0": {
+    "score_ci_95": [
+     22.64184563862079,
+     38.13510961376883
+    ],
+    "rank_counts": [
+     27,
+     149,
+     982,
+     568,
+     274
+    ],
+    "rank_ci_95": [
+     1.0,
+     5.0
+    ],
+    "top_frequency": 0.0135
+   }
+  },
+  "pairs": {
+   "polybench-claude-opus-4.8-hmigbot|polybench-claude-opus-5.5-aiwork-code": {
+    "difference": -1.3477604135596455,
+    "ci_95": [
+     -10.841707356729017,
+     7.950049999601919
+    ],
+    "p_greater": 0.1735
+   },
+   "polybench-claude-opus-4.8-hmigbot|polybench-claude-opus-5.5-jitto-build": {
+    "difference": -9.145698021342456,
+    "ci_95": [
+     -18.147608012805037,
+     0.019869307204887526
+    ],
+    "p_greater": 0.0
+   },
+   "polybench-claude-opus-4.8-hmigbot|polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+    "difference": -9.67393167731633,
+    "ci_95": [
+     -19.77068543088291,
+     0.011914280801153643
+    ],
+    "p_greater": 0.0005
+   },
+   "polybench-claude-opus-4.8-hmigbot|polybench-gpt-5.6-sol-slingshot-3.4.0": {
+    "difference": -2.65471658128066,
+    "ci_95": [
+     -12.10269677040365,
+     6.475282163381192
+    ],
+    "p_greater": 0.084
+   },
+   "polybench-claude-opus-5.5-aiwork-code|polybench-claude-opus-4.8-hmigbot": {
+    "difference": 1.347760413559645,
+    "ci_95": [
+     -7.950049999601923,
+     10.841707356729016
+    ],
+    "p_greater": 0.4095
+   },
+   "polybench-claude-opus-5.5-aiwork-code|polybench-claude-opus-5.5-jitto-build": {
+    "difference": -7.797937607782811,
+    "ci_95": [
+     -14.72138477821906,
+     -0.7032759339018244
+    ],
+    "p_greater": 0.0
+   },
+   "polybench-claude-opus-5.5-aiwork-code|polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+    "difference": -8.326171263756686,
+    "ci_95": [
+     -17.21867495665773,
+     0.6019909294181123
+    ],
+    "p_greater": 0.0045
+   },
+   "polybench-claude-opus-5.5-aiwork-code|polybench-gpt-5.6-sol-slingshot-3.4.0": {
+    "difference": -1.3069561677210144,
+    "ci_95": [
+     -10.071044550048855,
+     7.755735147876122
+    ],
+    "p_greater": 0.198
+   },
+   "polybench-claude-opus-5.5-jitto-build|polybench-claude-opus-4.8-hmigbot": {
+    "difference": 9.145698021342454,
+    "ci_95": [
+     -0.019869307204890566,
+     18.147608012805033
+    ],
+    "p_greater": 0.9745
+   },
+   "polybench-claude-opus-5.5-jitto-build|polybench-claude-opus-5.5-aiwork-code": {
+    "difference": 7.797937607782811,
+    "ci_95": [
+     0.7032759339018219,
+     14.721384778219058
+    ],
+    "p_greater": 0.9905
+   },
+   "polybench-claude-opus-5.5-jitto-build|polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+    "difference": -0.5282336559738764,
+    "ci_95": [
+     -9.803056067730546,
+     8.456712865541487
+    ],
+    "p_greater": 0.2725
+   },
+   "polybench-claude-opus-5.5-jitto-build|polybench-gpt-5.6-sol-slingshot-3.4.0": {
+    "difference": 6.490981440061796,
+    "ci_95": [
+     -3.0549426625165053,
+     15.562435277272883
+    ],
+    "p_greater": 0.875
+   },
+   "polybench-deepseek-v4-flash-mobile-coder-1.2.4|polybench-claude-opus-4.8-hmigbot": {
+    "difference": 9.67393167731633,
+    "ci_95": [
+     -0.011914280801159312,
+     19.770685430882896
+    ],
+    "p_greater": 0.974
+   },
+   "polybench-deepseek-v4-flash-mobile-coder-1.2.4|polybench-claude-opus-5.5-aiwork-code": {
+    "difference": 8.326171263756686,
+    "ci_95": [
+     -0.6019909294181182,
+     17.218674956657715
+    ],
+    "p_greater": 0.9645
+   },
+   "polybench-deepseek-v4-flash-mobile-coder-1.2.4|polybench-claude-opus-5.5-jitto-build": {
+    "difference": 0.5282336559738762,
+    "ci_95": [
+     -8.45671286554149,
+     9.803056067730532
+    ],
+    "p_greater": 0.386
+   },
+   "polybench-deepseek-v4-flash-mobile-coder-1.2.4|polybench-gpt-5.6-sol-slingshot-3.4.0": {
+    "difference": 7.019215096035673,
+    "ci_95": [
+     -3.3898960461600396,
+     17.167021592138017
+    ],
+    "p_greater": 0.874
+   },
+   "polybench-gpt-5.6-sol-slingshot-3.4.0|polybench-claude-opus-4.8-hmigbot": {
+    "difference": 2.6547165812806597,
+    "ci_95": [
+     -6.475282163381198,
+     12.102696770403647
+    ],
+    "p_greater": 0.538
+   },
+   "polybench-gpt-5.6-sol-slingshot-3.4.0|polybench-claude-opus-5.5-aiwork-code": {
+    "difference": 1.3069561677210142,
+    "ci_95": [
+     -7.755735147876129,
+     10.071044550048851
+    ],
+    "p_greater": 0.47
+   },
+   "polybench-gpt-5.6-sol-slingshot-3.4.0|polybench-claude-opus-5.5-jitto-build": {
+    "difference": -6.4909814400617964,
+    "ci_95": [
+     -15.562435277272884,
+     3.0549426625164973
+    ],
+    "p_greater": 0.0235
+   },
+   "polybench-gpt-5.6-sol-slingshot-3.4.0|polybench-deepseek-v4-flash-mobile-coder-1.2.4": {
+    "difference": -7.019215096035674,
+    "ci_95": [
+     -17.167021592138028,
+     3.389896046160039
+    ],
+    "p_greater": 0.0215
+   }
+  }
+ },
+ "panel_sha256": "e07c2110dec5b4c56e97f1cc5624a7bced54c9dd74db82b009ef6e89f5b0cddd"
+}

@@ -176,7 +176,8 @@ class DiagnosticTests(unittest.TestCase):
         pages = {'deepswe-python': 'python', 'deepswe-javascript': 'javascript',
                  'deepswe-typescript': 'typescript', 'deepswe-go': 'go',
                  'verified': 'verified', 'live-python': 'live', 'live-javascript': 'live-javascript',
-                 'live-typescript': 'live-typescript', 'live-go': 'live-go', 'sweeper-php': 'sweeper-php'}
+                 'live-typescript': 'live-typescript', 'live-go': 'live-go', 'sweeper-php': 'sweeper-php',
+                 'polybench-python': 'polybench-python'}
         for name, page in pages.items():
             with self.subTest(board=name):
                 report = json.loads((root / 'examples/ranking-diagnostics' / (name + '.json')).read_text())
