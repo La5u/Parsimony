@@ -40,11 +40,11 @@ measurements and the outcomes, but not that the named model wrote them.
 ## Running
 
 ```sh
-mkdir -p ~/parsimony-self-run
-git clone https://github.com/datacurve-ai/deep-swe ~/parsimony-self-run/deep-swe
-git -C ~/parsimony-self-run/deep-swe checkout 0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea
-nohup python examples/self-run/run.py ~/parsimony-self-run/deep-swe --scratch ~/parsimony-self-run \
-  > ~/parsimony-self-run/run.log 2>&1 &
+mkdir -p $PWD/.scratch/self-run
+git clone https://github.com/datacurve-ai/deep-swe $PWD/.scratch/self-run/deep-swe
+git -C $PWD/.scratch/self-run/deep-swe checkout 0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea
+nohup python examples/self-run/run.py $PWD/.scratch/self-run/deep-swe --scratch $PWD/.scratch/self-run \
+  > $PWD/.scratch/self-run/run.log 2>&1 &
 ```
 
 Runs are resumable: finished items are skipped. Usage-limit errors pause that harness for 30
@@ -67,9 +67,9 @@ still measured. Five hangs ran to DeepSWE's 30-minute limit; the last two items 
 kombu attempts.
 
 ```sh
-python examples/self-run/grade.py ~/parsimony-self-run/deep-swe --scratch ~/parsimony-self-run --build
-python examples/self-run/grade.py ~/parsimony-self-run/deep-swe --scratch ~/parsimony-self-run --reference
-python examples/self-run/grade.py ~/parsimony-self-run/deep-swe --scratch ~/parsimony-self-run
+python examples/self-run/grade.py $PWD/.scratch/self-run/deep-swe --scratch $PWD/.scratch/self-run --build
+python examples/self-run/grade.py $PWD/.scratch/self-run/deep-swe --scratch $PWD/.scratch/self-run --reference
+python examples/self-run/grade.py $PWD/.scratch/self-run/deep-swe --scratch $PWD/.scratch/self-run
 python examples/self-run/grade.py --apply   # copy outcomes into results/*.jsonl
 ```
 

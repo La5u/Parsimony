@@ -169,7 +169,7 @@ raw inventory and cache stay external):
 
 ```sh
 # a clean detached worktree at de63300 provides the board's analyzer identity; Python 3.14.7
-D=~/parsimony-live-ml/opus55
+D=$PWD/.scratch/live-ml/opus55
 for phase in inventory audit measure; do   # measure needs this checkout committed and clean
   PYTHONPATH=/path/to/worktree-at-de63300 python examples/benchmark-discovery/run-priority-live.py \
     --output-dir $D --phase $phase --cohort claude_opus_5_5

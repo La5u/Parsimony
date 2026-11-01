@@ -9,7 +9,7 @@ markers and trajectories that end without a completion event. Inputs and raw cac
 output is scalars and hashes only. Never executes target code.
 
     PYTHONPATH=. python examples/benchmark-discovery/review-aiwork-opus55-live.py \
-      --external-dir ~/parsimony-live-ml/opus55 --output examples/benchmark-discovery/aiwork-opus55-release.json
+      --external-dir $PWD/.scratch/live-ml/opus55 --output examples/benchmark-discovery/aiwork-opus55-release.json
 """
 import argparse
 from collections import Counter

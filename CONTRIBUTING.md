@@ -39,7 +39,7 @@ Contributed runs use the same tasks, scripts, measurement and grading as [my sel
    `{"id": "contrib_<you>_<harness>_<model>_<effort>", "harness": "codex", "provider": "openai", "model": "gpt-6-sol", "effort": "high", "tasks": 10, "contributor": "<your GitHub handle>"}`.
    Use the plan's task order (the first `tasks` tasks) and its 2 attempts per task; at least 5 tasks. `run.py` supports the `pi`, `codex` and `claude-code` harnesses; another harness needs a small change to `run.py` in the same pull request.
 2. **Run** on Linux with bubblewrap, after the plan pull request is merged:
-   `python examples/self-run/run.py ~/deep-swe --scratch ~/parsimony-self-run --only <id>` (setup as in the self-run README). Don't rerun or drop attempts you dislike: every planned attempt is published, failed ones included.
+   `python examples/self-run/run.py $PWD/.scratch/self-run/deep-swe --scratch $PWD/.scratch/self-run --only <id>` (setup as in the self-run README). Don't rerun or drop attempts you dislike: every planned attempt is published, failed ones included.
 3. **Submit** a pull request with `examples/self-run/runs/<id>/` (each attempt's `patch.diff` and `meta.json`) and a public link to `<scratch>/transcripts/<id>/`, whose SHA-256s are in `meta.json`. Don't add measurements or outcomes: I run `measure.py` and `grade.py` and publish the results.
 
 ## Rules for changes
