@@ -144,7 +144,10 @@ BENCHMARKS = {
                 reference='Reference solution',
                 task_url='https://github.com/datacurve-ai/deep-swe/tree/main/tasks/{task}', task_link='Task on GitHub',
                 results="the Harness Leaderboard's published results", attempts=3,
-                task_name='DeepSWE', compare_heading='Compare harnesses',
+                task_name='DeepSWE', compare_heading='Compare harnesses', credit="Joel Niklaus's Harness Leaderboard",
+                og_image='og-harnesses.png?v=2026-11-08',
+                og_alt='Scatterplot of two models in nine coding harnesses on DeepSWE tasks: net code added vs. the human fix, '
+                       'versus solve rate, one logo per harness',
                 setups='36 setups (2 models × low/high effort × 9 harnesses)',
                 harness_note='Each row is one model in one harness, so the ratio compares harnesses as much as models.',
                 notice="From Joel Niklaus's Harness Leaderboard (its pass/fail and exclusions), not rechecked. "
@@ -797,7 +800,8 @@ def render(data, standalone=True, page_name=None):
     custom_js = CUSTOM_JS.read_text()
     language = (data.get('measurement_track') or {}).get('language') or 'python'
     language_name = 'all languages' if data.get('merged') else LANGUAGE_NAMES.get(language, language)
-    benchmark_name = (data.get('benchmark') or {}).get('name', 'SWE-bench Verified')
+    bench = data.get('benchmark') or {}
+    benchmark_name = bench.get('name', 'SWE-bench Verified')
     title = f'Parsimony: {benchmark_name} · {language_name}'
     stem = Path(page_name).stem if page_name else None
     if stem == 'index':
@@ -806,6 +810,10 @@ def render(data, standalone=True, page_name=None):
     page = (TEMPLATE.read_text().replace('__CUSTOM_BENCHMARK_JS__', custom_js)
             .replace('__DOCUMENT_TITLE__', escape(title))
             .replace('__PAGE_URL__', escape(url))
+            .replace('__OG_IMAGE__', escape(f"{SITE_URL}/{bench.get('og_image', 'og.png?v=2026-10-16')}"))
+            .replace('__OG_ALT__', escape(bench.get('og_alt', 'Scatterplot of AI models on DeepSWE Python tasks: net code units '
+                                                   'added relative to other models on the same tasks, versus Artificial '
+                                                   'Analysis Intelligence Index')))
             .replace('__PARSIMONY_DATA__', payload))
     head, body = page.split('<!-- BODY -->', 1)
     if standalone:

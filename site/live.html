@@ -525,6 +525,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   if (bench.notice) {
     $('benchmark-notice').hidden = false;
     $('benchmark-notice').textContent = bench.notice;
+    // The source's name links to it (e.g. "Joel Niklaus's Harness Leaderboard").
+    if (bench.credit && bench.notice.includes(bench.credit))
+      $('benchmark-notice').innerHTML = esc(bench.notice).replace(esc(bench.credit), `<a href="${esc(safeUrl(bench.url))}">${esc(bench.credit)}</a>`);
   }
   const versions = data.harness || [];
   if (bench.harness_note) {
