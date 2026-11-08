@@ -81,7 +81,9 @@ body { overflow-x: clip; }
 #graph .tick { fill: #000; font: 12px system-ui, sans-serif; }
 #graph circle { stroke: none; cursor: pointer; }
 #graph .older { fill-opacity: 0.70; }
-#graph.grouped circle.all-point { fill-opacity: 0.35; }
+#graph svg.grouped circle.all-point { fill-opacity: 0.35; transition: fill-opacity 0.15s, opacity 0.15s; }
+#graph svg.grouped circle.all-point.lit { fill-opacity: 1; }
+#graph circle.hub { cursor: pointer; }
 #graph .point-label.hub-label { font-weight: 600; font-size: 10px; line-height: 12px; }
 #graph .point-label { position: absolute; font: 400 8px system-ui, sans-serif; color: #000; white-space: nowrap; pointer-events: none; transform: translate(10px,-50%); line-height: 10px; }
 #graph .point-label.older-label { opacity: 0.75; }
@@ -1100,7 +1102,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     // Harness boards: small setup dots, joined by spokes to one labelled average dot per harness.
     const grouped = !selected && data.models.some(m => m.color_group);
     const pointR = grouped ? (narrow ? 2 : 2.5) : (narrow ? 4 : 6);
-    $('graph').classList.toggle('grouped', grouped);
     const W = narrow ? Math.max(300, $('graph').clientWidth) : 720, H = narrow ? Math.round(W * 1.15) : 440, R = narrow ? 12 : 30, T = 18, B = 52;
     let L;
     const excludedAxes = [];
@@ -1114,8 +1115,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       const changed = exclude && (Math.min(...values) !== Math.min(...points.map(p => p[axis])) || Math.max(...values) !== Math.max(...points.map(p => p[axis])));
       if (changed) excludedAxes.push(axis);
       const low = Math.min(...values), high = Math.max(...values);
-      // Solved starts at 0% and ends at the next 5% above the best model, not at an unreached 100%.
-      if (key === 'resolve_rate') return [changed ? Math.max(0, low - 2) : 0, Math.min(100, (Math.floor(high / 5) + 1) * 5)];
+      // Solved spans the 5% steps around the models shown, not an empty 0% or an unreached 100%.
+      if (key === 'resolve_rate') return [Math.max(0, (Math.ceil(low / 5) - 1) * 5), Math.min(100, (Math.floor(high / 5) + 1) * 5)];
       const padding = high > low ? (high - low) * 0.05 : Math.max(Math.abs(low) * 0.05, 1);
       return [low - padding, high + padding];
     }
@@ -1144,7 +1145,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     }
     const hubs = grouped ? [...new Set(points.map(p => p.company))].map(company => {
       const own = points.filter(p => p.company === company);
-      return {company, own, latest: true, hub: true, px: own.reduce((a, p) => a + p.px, 0) / own.length, py: own.reduce((a, p) => a + p.py, 0) / own.length};
+      const mean = key => own.reduce((a, p) => a + p[key], 0) / own.length;
+      return {company, own, latest: true, hub: true, x: mean('x'), y: mean('y'), px: mean('px'), py: mean('py')};
     }) : [];
     // Older generations outside the fitted axes stay hidden even on hover.
     const older = hiddenOlder.map(p => ({...p, px: sx(p.x), py: sy(p.y)})).filter(p => p.x >= xmin && p.x <= xmax && p.y >= ymin && p.y <= ymax);
@@ -1156,7 +1158,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
     const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${pointR}" ${p.m && partialOpacity(p.m) ? ` fill-opacity="${partialOpacity(p.m)}"` : ''} tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('')
       + older.map((p, k) => `<circle data-older="${k}" data-line="${esc(p.m.line)}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'} older" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${pointR}" aria-hidden="true" data-company="${esc(p.company)}"></circle>`).join('')
-      + hubs.map(h => `<circle class="hub" cx="${h.px}" cy="${h.py}" r="${narrow ? 4 : 5}" fill="${companyColor(h.company)}" aria-hidden="true" data-company="${esc(h.company)}"></circle>`).join('');
+      + hubs.map((h, k) => `<circle class="hub" data-hub="${k}" cx="${h.px}" cy="${h.py}" r="${narrow ? 4 : 5}" fill="${companyColor(h.company)}" tabindex="0" aria-label="${esc(h.company)}: average of ${h.own.length} setups; ${xLabel}: ${axisFormat(h.x, axes.x)}, ${yLabel}: ${axisFormat(h.y, axes.y)}" aria-describedby="graph-tooltip" data-company="${esc(h.company)}"></circle>`).join('');
     // Green zone: the half of each axis that is better (lower footprint, higher solved/index).
     const better = {net: -1, solved_net: -1, solved_cx: -1, cx: -1, same_net: -1, same_cx: -1, human_net: -1, resolve_rate: 1, aa_coding: 1, aa_intelligence: 1, aa_intelligence_latest: 1, ...Object.fromEntries(langKeys.map(k => [k, -1]))};
     const bx = better[axes.x], by = better[axes.y];
@@ -1177,7 +1179,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const scale = ($('graph').clientWidth || W) / W;
     const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
     $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">${grouped ? 'One small point per setup (model and effort), colored by harness; the larger labelled point is each harness\'s average.' : `One point per model, colored by its ${data.models.some(m => m.color_group) ? 'harness' : 'company'}.`} Each model line's newest generation is labelled; hovering a point shows that line's older generations, lighter, and Show older generations adds them all. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other ${data.models.some(m => m.color_group) ? 'harnesses' : 'companies'} fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(${Math.max(16, L - 20 - 7 * yTickChars)} ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    $('graph').innerHTML = `<svg${grouped ? ' class="grouped"' : ''} viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">${grouped ? 'One small point per setup (model and effort), colored by harness; the larger labelled point is each harness\'s average.' : `One point per model, colored by its ${data.models.some(m => m.color_group) ? 'harness' : 'company'}.`} Each model line's newest generation is labelled; hovering a point shows that line's older generations, lighter, and Show older generations adds them all. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other ${data.models.some(m => m.color_group) ? 'harnesses' : 'companies'} fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(${Math.max(16, L - 20 - 7 * yTickChars)} ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
     // Labels sit near their point without covering other labels or points; ranked, current models choose first.
     const graphWidth = $('graph').clientWidth, graphHeight = $('graph').clientHeight;
     const labels = [...document.querySelectorAll('#graph .point-label[data-point]')];
@@ -1218,16 +1220,28 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       }));
       circle.addEventListener('mouseleave', () => { hideTooltip(); focusCompany(null); leaveLine(); });
     });
+    // Hovering a harness's average shows its setups at full color and fades the other harnesses.
+    const lightUp = company => grouped && document.querySelectorAll('#graph circle[data-point]').forEach(el =>
+      el.classList.toggle('lit', company !== null && el.dataset.company === company));
+    document.querySelectorAll('#graph circle[data-hub]').forEach(circle => {
+      const h = hubs[Number(circle.dataset.hub)];
+      const show = event => {
+        showTooltipAt(circle, event, `${h.company}\nAverage of ${h.own.length} setups\n${xLabel}: ${axisFormat(h.x, axes.x)}\n${yLabel}: ${axisFormat(h.y, axes.y)}`);
+        focusCompany(h.company); lightUp(h.company);
+      };
+      ['mouseenter', 'mousemove', 'focus', 'click'].forEach(event => circle.addEventListener(event, show));
+      ['mouseleave', 'blur'].forEach(event => circle.addEventListener(event, () => { hideTooltip(); focusCompany(null); lightUp(null); }));
+    });
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
       const show = event => {
         const p = points[Number(circle.dataset.point)];
         const text = `${p.m ? headName(p.m) : p.name}${p.offscale ? ' (off the chart\'s scale)' : ''}\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${matchNote(p) ? '\n' + matchNote(p) : ''}${p.kind === 'all' ? [...new Set([axes.x, axes.y].filter(k => ratioKeys.includes(k)))].map(k => '\n' + rangeNote(p.m, k)).join('') : ''}${p.selfRun ? '\n' + selfRunNote(p.m) : ''}${p.kind !== 'all' ? '\n' + p.kind + ' task attempt' : ''}`;
         showLine(p.m && p.m.line);
         showTooltipAt(circle, event, text);
-        focusCompany(p.company);
+        focusCompany(p.company); if (grouped) lightUp(p.company);
       };
       ['mouseenter', 'mousemove', 'focus', 'click'].forEach(event => circle.addEventListener(event, show));
-      ['mouseleave', 'blur'].forEach(event => circle.addEventListener(event, () => { hideTooltip(); focusCompany(null); leaveLine(); }));
+      ['mouseleave', 'blur'].forEach(event => circle.addEventListener(event, () => { hideTooltip(); focusCompany(null); lightUp(null); leaveLine(); }));
     });
   }
   // label-placement:start
