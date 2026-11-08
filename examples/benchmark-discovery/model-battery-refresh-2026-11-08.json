@@ -1,0 +1,330 @@
+{
+ "date": "2026-11-08",
+ "method": "Public metadata only: fresh-cache DeepSWE configs and artifact hashes, upstream commit/PR listings (SWE-bench experiments, SWE-bench-Live, PolyBench), Hugging Face revisions (SWE-bench-Live datasets, SWEeper, SWE-Milestone, DeepSWE 1.0 archive), trajectory oracle scans of published and candidate runs (oracle-audit-2026-11-08.json), Artificial Analysis snapshots, and a web search for new benchmarks and models. Downloads in .scratch/ only; no paid runs; nobody contacted.",
+ "deepswe": {
+  "configs": "26 usable configurations, identical to examples/deepswe-python/refresh-2026-09-29.json",
+  "artifact_sha256_prefixes": {
+   "trials.json": "310cb428fe8914cf",
+   "leaderboard-live.json": "a7c15d66288fd249",
+   "release.json": "3ed793db158e1d13"
+  },
+  "unchanged_since": "2026-10-27",
+  "newer_releases_probed": {
+   "v1.2": 404,
+   "v1.3": 404,
+   "v2": 404,
+   "v2.0": 404,
+   "v1.1.1": 404,
+   "v1.2.0": 404
+  },
+  "github": "datacurve-ai/deep-swe main still 0b9fabbb63b9",
+  "release_1_0_archive": "datacurve/deep-swe-leaderboard still 0618ccdd613e",
+  "verdict": "No new configuration."
+ },
+ "swe_bench_verified": {
+  "main": "40f164d5b8f1 (unchanged)",
+  "benzi": {
+   "pr_507": "open, head a257636 unchanged, no comments",
+   "new_run": "oooscoos/Benzi@9abd8374a6 swebench-october-run2 (2026-10-31): DeepSeek V4.1-Flash, claims 413/500, 500 preds + trajs, metadata logs: false (no per-instance results). GitHub/PyPI blocked inside containers per its report.",
+   "verdict": "Still no per-instance outcomes; not importable. If outcomes appear, run oracle-audit first (DeepSeek V4.x Flash)."
+  },
+  "new_prs": {
+   "517": "J.O.S.E.F.I.N.A., Multimodal & Lite: not a Parsimony population",
+   "518": "ISHA, Lite: not a Parsimony population"
+  },
+  "verdict": "Nothing importable."
+ },
+ "swe_bench_live": {
+  "main": "18865f4c (2026-11-05)",
+  "events": {
+   "pr_60": "AiWork.Code + Opus 5.5 merged 2026-10-30, reverted 2026-11-03 (PR #73) as oracle-contaminated; withheld here",
+   "pr_64": "TianxiCode JS/TS closed unmerged 2026-11-03 (git show of future fixes in 119/219); withheld here",
+   "pr_61": "wescode verified split: closed, same reason",
+   "pr_66_75_63": "Slai Agent Runtime gpt-5.6-terra-xhigh Lite/Go/C++ PRs closed by the submitter 2026-11-06 (scope of disclosure)"
+  },
+  "candidates": {
+   "74": {
+    "title": "DuMate + DeepSeek-V4.1-Flash, Lite",
+    "head": "weixiaolong94-hub/submission@2a34b7feaaf159dec55e0ba133eded7b629097f0",
+    "oracle_scan": "own task PR URL in 87/299 trajectories (59 reported solved); git show/log --all in 160+",
+    "verdict": "Not imported: reads the task's upstream fix."
+   },
+   "76": {
+    "title": "HarnessOpt initial + GPT-6.1 Sol, Go",
+    "head": "laniusnan/submission@e0db3f0d358252ccaeeed5d32eefba28717a1874",
+    "counts": "138 submitted, 10 success, 125 failure, 3 empty",
+    "note": "40-request budget, 4096 output tokens per request, no network; MultiLang eb09c2e (go split file identical to the board's 62dc074)",
+    "verdict": "Not imported: 10 solved tasks cannot reach the 15-shared-task ranking minimum; revisit if a fuller run appears."
+   }
+  },
+  "datasets": {
+   "MultiLang": "eb09c2e5db (2026-11-03): only data/c changed; go/js/ts split files identical to the boards' pins",
+   "SWE-bench-Live": "babb27e45e (2026-11-03): lite split same 300 ids, base commits and patches; test_cmds changed on 46 tasks (grading only)"
+  },
+  "verdict": "Five published rows withheld (oracle). No clean new run for an existing board."
+ },
+ "polybench": {
+  "submission": "e7062f4 unchanged",
+  "prs": "#47 head moved d2b1f88 -> 828dadd (adds an organization entry only); #40, #44, #46 unchanged and still open",
+  "verdict": "Mobile Coder (#40) withheld (oracle); nothing new."
+ },
+ "sweeper": {
+  "dataset": "f10cd684be52",
+  "traces": "7d103ed06e6c",
+  "verdict": "Unchanged since 2026-10-16."
+ },
+ "swe_milestone": {
+  "head": "7064a6427a (2026-08-26)",
+  "verdict": "Unchanged."
+ },
+ "artificial_analysis": {
+  "snapshots": [
+   "examples/external/artificial-analysis-2026-11-08.json (v5.0: 14 of 47 configurations scored)",
+   "examples/external/artificial-analysis-2026-11-08-verified.json (v5.0: 1 of 35)"
+  ],
+  "site": "v4 (2026-10-22) stays the default axis; v5 added as a separate axis (owner request)"
+ },
+ "new_models": {
+  "source": "web search 2026-11-08 (trackers; release pages not individually verified)",
+  "notes": "No new frontier model with public per-task patches found. Trackers list MeituanLongCat-2.5 (pending) and Terminal-Bench 4.0 results for Opus 5.5 / Sonnet 5.5 / GPT-6 Astra / GPT-6.1 Sol, none with patches on a Parsimony population."
+ },
+ "new_benchmarks": {
+  "harness_leaderboard": {
+   "what": "Joel Niklaus's Harness Leaderboard (published 2026-11-05, v0.1.1): the same model in 9 coding-agent harnesses (Claude Code 2.1.300, Codex 0.162.1, Pi 1.2.0, OpenCode 1.19.0, Hermes v0.22.1, mini-swe-agent 2.4.6, Kimi Code 2.2.0, Qwen Code 0.25.2, OpenClaw 2026.10.4; plus a claude-code-bare variant), 3 attempts per task, on Terminal-Bench 2.1 and DeepSWE v1.1 (111 tasks at datacurve-ai/deep-swe 0b9fabbb, the commit our DeepSWE boards use). Models: GLM-5.3-Flash and DeepSeek-V4.1-Flash at low and high effort, Flint (partial).",
+   "urls": {
+    "space": "https://huggingface.co/spaces/joelniklaus/harness-leaderboard (code at 0dcd7195fd2c, Apache-2.0)",
+    "bucket": "https://huggingface.co/buckets/joelniklaus/harness-leaderboard (306 GB, 1.47M files, public)",
+    "article": "https://pasqualepillitteri.it/en/news/30849/harness-leaderboard-coding-agent-harness-ranking"
+   },
+   "layout": "runs/<run_id>/{run.json,invalid.json,dispatch.json}; runs/<run_id>/deep-swe/trials-<shard>.jsonl = one fact per trial (task, harness, reward, outcome, reused_from); runs/<run_id>/deep-swe/<trial>/artifacts/logs/artifacts/model.patch = the final diff (DeepSWE verifier.collect), verifier/reward.json, agent trajectories. A reused trial's files sit at its source run.",
+   "patch_sample": "22 sampled trials: 15 had a nonempty unified diff (19-120 KB, docs and source like DeepSWE patches), 2 empty (failures), 5 copies 404 at the reusing run but present at the source run except one pilot copy.",
+   "outcomes": "Board outcome = verifier reward >= 1, except answer-key access counts as fail, and infra (sandbox/provider/bridge failures) is excluded; invalid.json rules override. DeepSWE ran offline from 2026-10-23; earlier online trials that looked the answer up were rerun offline.",
+   "cells_full_stage_preview": {
+    "deepseek-ai/DeepSeek-V4.1-Flash | high | claude-code": {
+     "fail": 110,
+     "pass": 224,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | high | claude-code-bare": {
+     "pass": 31,
+     "fail": 10,
+     "tasks": 15
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | high | codex": {
+     "infra": 12,
+     "pass": 441,
+     "fail": 224,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | high | hermes": {
+     "pass": 292,
+     "fail": 83,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | high | kimi-code": {
+     "pass": 231,
+     "fail": 128,
+     "infra": 3,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | high | mini-swe-agent": {
+     "pass": 287,
+     "fail": 105,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | high | openclaw": {
+     "pass": 95,
+     "fail": 304,
+     "infra": 1,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | high | opencode": {
+     "pass": 291,
+     "fail": 375,
+     "infra": 27,
+     "cancelled": 1,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | high | pi": {
+     "pass": 237,
+     "fail": 121,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | high | qwen-code": {
+     "pass": 211,
+     "fail": 130,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | low | claude-code": {
+     "infra": 3,
+     "pass": 217,
+     "fail": 116,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | low | claude-code-bare": {
+     "pass": 32,
+     "fail": 11,
+     "tasks": 16
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | low | codex": {
+     "pass": 433,
+     "fail": 232,
+     "infra": 11,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | low | hermes": {
+     "pass": 313,
+     "fail": 97,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | low | kimi-code": {
+     "pass": 243,
+     "fail": 107,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | low | mini-swe-agent": {
+     "pass": 254,
+     "fail": 113,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | low | openclaw": {
+     "pass": 123,
+     "fail": 279,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | low | opencode": {
+     "pass": 357,
+     "fail": 309,
+     "infra": 26,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | low | pi": {
+     "pass": 233,
+     "fail": 124,
+     "tasks": 111
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash | low | qwen-code": {
+     "pass": 209,
+     "fail": 131,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | high | claude-code": {
+     "pass": 204,
+     "fail": 129,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | high | claude-code-bare": {
+     "pass": 201,
+     "fail": 132,
+     "infra": 2,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | high | codex": {
+     "fail": 372,
+     "pass": 294,
+     "infra": 9,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | high | hermes": {
+     "fail": 138,
+     "pass": 195,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | high | kimi-code": {
+     "pass": 212,
+     "fail": 121,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | high | mini-swe-agent": {
+     "pass": 207,
+     "fail": 126,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | high | openclaw": {
+     "fail": 449,
+     "infra": 14,
+     "pass": 217,
+     "cancelled": 1,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | high | opencode": {
+     "fail": 474,
+     "pass": 216,
+     "infra": 54,
+     "cancelled": 38,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | high | pi": {
+     "fail": 129,
+     "pass": 204,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | high | qwen-code": {
+     "pass": 182,
+     "fail": 151,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | low | claude-code": {
+     "fail": 147,
+     "pass": 186,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | low | claude-code-bare": {
+     "pass": 164,
+     "fail": 168,
+     "infra": 3,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | low | codex": {
+     "pass": 229,
+     "fail": 437,
+     "infra": 11,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | low | hermes": {
+     "pass": 172,
+     "fail": 162,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | low | kimi-code": {
+     "pass": 169,
+     "fail": 164,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | low | mini-swe-agent": {
+     "pass": 186,
+     "fail": 147,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | low | openclaw": {
+     "fail": 474,
+     "pass": 192,
+     "infra": 7,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | low | opencode": {
+     "fail": 504,
+     "pass": 207,
+     "infra": 43,
+     "cancelled": 34,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | low | pi": {
+     "fail": 160,
+     "pass": 175,
+     "tasks": 111
+    },
+    "zai-org/GLM-5.3-Flash | low | qwen-code": {
+     "fail": 178,
+     "pass": 155,
+     "tasks": 111
+    }
+   },
+   "preview_caveat": "From 6,660 of ~7,450 metadata/fact files (download rate-limited); cells above 333 trials include superseded harness versions/adapters that the board's on_board() filter drops. Reproduce the board's exact trial set by running its hlb.scoring.board_facts with its config at the pinned Space commit.",
+   "fit": "Strong: same DeepSWE tasks and commit as the DeepSWE boards, per-attempt patches and outcomes, ~13k scored trials (about 40 model x effort x harness setups x 111 tasks x 3). Python/TS/JS/Go tasks are measurable with current analyzers; Rust tasks are not. Separate board(s) (\"DeepSWE, harness comparison\"), never pooled with the Datacurve mini-swe-agent boards. Its rankings would answer \"which harness writes less code for the same model\".",
+   "blockers": "None found for numbers: public bucket, Apache-2.0 Space. Raw patches stay external as usual. Unauthenticated access is rate-limited (429); use the HF token. Oracle: the board already fails answer-key access and atif-scans every trajectory; still run our own scan on the online-phase DeepSeek trials.",
+   "next_action": "Build: fetch board_facts trial set at a pinned Space commit, download ~13k model.patch files (~0.5 GB), measure per language with the current analyzer, new board pages per language plus a merged page."
+  },
+  "featurebench": "The same Space also runs FeatureBench (incidents mention answer-key leaks in its images); not yet on its public board. Revisit later."
+ }
+}

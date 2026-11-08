@@ -112,13 +112,17 @@ Under the old all-measured ranking a few failed mass deletions decided Verified'
 
 Keep actionable backlog in [TODO.md](TODO.md). Owner workflow: solve directly and push `main`; do not create GitHub issues or PRs without explicit approval.
 
+### 0. Next: Harness Leaderboard board (found 2026-11-08)
+
+Best new opportunity: the Harness Leaderboard (Hugging Face, Joel Niklaus) ran GLM-5.3 Flash and DeepSeek V4.1 Flash (low/high effort) in 9 coding-agent harnesses, 3 attempts each, on all 111 **DeepSWE v1.1** tasks at our pinned commit `0b9fabbb`, with a public per-trial `model.patch` and verifier reward (~13k scored trials). It fits as its own board ("DeepSWE, harness comparison": which harness writes less code for the same model), never pooled with the Datacurve boards. Layout, outcome rules, preview counts and next steps: `examples/benchmark-discovery/model-battery-refresh-2026-11-08.json` (`new_benchmarks.harness_leaderboard`). Use the HF token (`~/.cache/huggingface/token`); anonymous downloads hit 429 quickly. Reproduce the board's trial set with its own `hlb.scoring.board_facts` at a pinned Space commit, and run `oracle-audit.py`-style checks on the online-phase trials.
+
 ### 1. Add newer models to the existing benchmark battery
 
 **Recommended direction: recent models on supported Python/JS/TS/Go tracks first, not another ranking redesign or Java/Rust expansion.** Start with public exports on an existing board's frozen population and, where possible, the same harness. Cross-harness Live additions remain model + agent configurations, not controlled model-only comparisons. This is a plan, not a claim that new exports have been found.
 
 - Verified includes **GLM-5.1 · EvalScope** (2026-10-13), the only non-mini-SWE-agent row: pinned HF `fxiao0369/GLM51-swebench-replay@5c03de1`, MIT, uploader-reported outcomes. 491/494 nonempty patches measured with 0.5.2-beta at `0aa66df` on Python 3.14.7 (85 had whitespace-stripped final blank context lines restored, recorded per record; 3 errors), 6 empty patches are `no_generation`. Script: `examples/benchmark-discovery/add-glm51-verified.py`. Current reports use `coverage-35.json`, `scores-35.json`, `sensitivity-35.json`; the 34-model files are frozen snapshots. Known issue: Verified `rank_range` comes from the stability report, which does not rank by the solved-only mean.
 
-Latest source search: **2026-10-13**. Both usable finds are now published: GLM-5.1 (Verified) and SWEeper-Bench (PHP board). NVIDIA Open-SWE-Traces: censused 2026-10-14, not usable (see above). Census: `examples/benchmark-discovery/new-source-search-2026-10-13.json`.
+Latest source search: **2026-11-08** (`model-battery-refresh-2026-11-08.json`: no clean new run for an existing board; five oracle rows withheld). Earlier: **2026-10-13**. Both usable finds are now published: GLM-5.1 (Verified) and SWEeper-Bench (PHP board). NVIDIA Open-SWE-Traces: censused 2026-10-14, not usable (see above). Census: `examples/benchmark-discovery/new-source-search-2026-10-13.json`.
 
 Earlier discovery: **2026-10-07** complete GitHub trees for Live, PolyBench and Verified match their stored pins. Complete DeepSWE trials/release/leaderboard hashes are unchanged: 70 configs / 28 model names, Astra has no declared patches; four representative Gemini 3.8 GETs returned 403. This is not a full usable-config patch-availability refresh. GPT-5.2 Codex outcome probes still returned 404. Census: `examples/benchmark-discovery/model-battery-refresh-2026-10-07.json`.
 
