@@ -587,7 +587,7 @@ withSelfRun.sources = [...data.sources, {name: 'Self-run pilot', benchmark: 'sel
   attempts_per_task: 2, population_per_model: '6–20', active: false, self_run: true, board_url: 'index.html',
   report_url: 'https://example.org/self-run', manifest_url: 'https://example.org/plan', manifest_sha256: 'plan', deepswe_commit: 'abc'}];
 load(withSelfRun);
-assert.match(element('source-counts').innerHTML, /Self-run pilot<\/a> — run by me, not ranked/);
+assert.match(element('source-counts').innerHTML, /Self-run pilot<\/a><span class="muted"> · up to \d+ tasks × \d+ attempts — run by me, not ranked/);
 assert.match(element('source-counts').innerHTML, /up to 10 tasks × 2 attempts/);
 assert.match(element('source-evidence').innerHTML, /Plan SHA-256: plan<br>DeepSWE commit: abc/);
 assert.doesNotMatch(graph(), /Delta/); // Not graded: no point on the Solved axis.
@@ -964,7 +964,7 @@ load(mergedPage);
 assert.equal(element('task-picker').hidden, true);
 assert.equal(element('compare').hidden, true);
 assert.match(element('leaderboard').textContent, /— all languages$/);
-assert.match(element('board-intro').textContent, /^2 models on DeepSWE's 34 Python and 3 Go tasks, 4 attempts each\./);
+assert.match(element('board-intro').textContent, data.benchmark?.setups ? / on 34 Python and 3 Go DeepSWE tasks, 3 attempts each\./ : /^2 models on DeepSWE's 34 Python and 3 Go tasks, 4 attempts each\./);
 assert.match(element('language-scope').textContent, /never added across languages/);
 assert.match(element('#board thead').innerHTML, /Vs\. others, all languages[\s\S]*data-sort="lang_python">Python[\s\S]*data-sort="lang_go">Go[\s\S]*Solved[\s\S]*Measured/);
 assert.doesNotMatch(element('#board thead').innerHTML, /Net syntax units, solved/);

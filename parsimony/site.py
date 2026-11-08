@@ -143,12 +143,11 @@ BENCHMARKS = {
                 reference='Reference solution',
                 task_url='https://github.com/datacurve-ai/deep-swe/tree/main/tasks/{task}', task_link='Task on GitHub',
                 results="the Harness Leaderboard's published results", attempts=3,
-                harness_note='Each row is one model in one coding-agent harness: GLM-5.3 Flash and DeepSeek V4.1 Flash, '
-                             'at low and high reasoning effort, in nine harnesses, so the ratio compares harnesses as '
-                             'much as models.',
-                notice="Runs, patches and pass/fail come from Joel Niklaus's Harness Leaderboard (DeepSWE v1.1 tasks, "
-                       'three attempts each; its own exclusions and answer-key checks applied), not checked '
-                       'independently. Never pooled with the DeepSWE boards, which run every model in mini-SWE-agent.'),
+                task_name='DeepSWE', compare_heading='Compare harnesses',
+                setups='36 setups (2 models × low/high effort × 9 harnesses)',
+                harness_note='Each row is one model in one harness, so the ratio compares harnesses as much as models.',
+                notice="From Joel Niklaus's Harness Leaderboard (its pass/fail and exclusions), not rechecked. "
+                       'Separate from the DeepSWE boards, which use mini-SWE-agent only.'),
 }
 
 
@@ -864,7 +863,11 @@ def main():
         data['benchmark'] = BENCHMARKS[args.benchmark]
         track = data.get('measurement_track') or {}
         data['sources'] = published_sources(args.benchmark, None if args.merge else track.get('language') or 'python')
+        # 'GROUP|LABEL=URL' puts the link under its own switcher heading.
         data['nav'] = [dict(zip(('label', 'url'), item.split('=', 1))) for item in args.nav]
+        for item in data['nav']:
+            if '|' in item['label']:
+                item['group'], item['label'] = item['label'].split('|', 1)
         for item in data['nav']:  # the board this page shows is highlighted in the switcher
             item['current'] = item['url'] == Path(args.output).name
         self_run_typical = data.pop('self_run_typical', None)

@@ -85,8 +85,8 @@ body { overflow-x: clip; }
 #graph circle.dim, #graph .point-label.dim { opacity: 0.12; }
 #board tr.self-run td { color: var(--muted); }
 #board tr.self-run-head td { text-align: left; color: var(--muted); font-size: 0.8rem; padding-top: 14px; }
-.source-bar { height: 8px; background: var(--link); margin: 4px 0; }
-.source-row { margin-bottom: 16px; }
+.source-bar { height: 4px; background: var(--link); margin: 2px 0 0; }
+.source-row { margin-bottom: 8px; }
 #source-evidence { overflow-wrap: anywhere; }
 #graph .best-zone { fill: #16a34a; fill-opacity: 0.12; }
 #graph .bars { display: grid; grid-template-columns: minmax(6em, 15em) minmax(0, 1fr) auto; gap: 3px 10px; align-items: center; font: 12px system-ui, sans-serif; color: #000; }
@@ -112,6 +112,7 @@ body { overflow-x: clip; }
 .company-swatch { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
 .company-swatch.fade-swatch { background: #777; }
 #graph-legend:empty { display: none; }
+#graph-tooltip::first-line { font-weight: 700; }
 #graph-tooltip {
   position: fixed; z-index: 1000; pointer-events: none; white-space: pre-line;
   max-width: min(320px, calc(100vw - 16px)); box-sizing: border-box;
@@ -331,31 +332,42 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const maxTasks = Math.max(1, ...sources.map(s => s.tasks));
   const sourceLink = (url, label) => /^(https?:\/\/|\.{0,2}\/(?!\/)|[^:/?#]+\.html(?:[?#]|$))/.test(String(url || ''))
     ? `<a href="${esc(url)}">${esc(label)}</a>` : esc(label);
-  $('source-counts').innerHTML = sources.map(s => `<div class="source-row">${sourceLink(s.board_url, s.name)}${s.self_run ? ' — run by me, not ranked' : s.active ? ' — this board' : ''}<div class="source-bar" style="width:${Number.isFinite(s.tasks) && s.tasks >= 0 ? s.tasks / maxTasks * 100 : 0}%" aria-hidden="true"></div><span>${s.self_run ? `up to ${esc(s.tasks)} tasks × ${esc(s.attempts_per_task)} attempts` : `${esc(s.tasks)} tasks × ${esc(s.attempts_per_task)} attempt${s.attempts_per_task === 1 ? '' : 's'}`}</span></div>`).join('');
+  const family = new Set(sources.filter(s => s.active).map(s => s.benchmark));
+  const sourceRow = s => `<div class="source-row">${sourceLink(s.board_url, s.name)}<span class="muted"> · ${s.self_run ? `up to ${esc(s.tasks)} tasks × ${esc(s.attempts_per_task)} attempts` : `${esc(s.tasks)} tasks × ${esc(s.attempts_per_task)} attempt${s.attempts_per_task === 1 ? '' : 's'}`}${s.self_run ? ' — run by me, not ranked' : s.active ? ' — this board' : ''}</span><div class="source-bar" style="width:${Number.isFinite(s.tasks) && s.tasks >= 0 ? s.tasks / maxTasks * 100 : 0}%" aria-hidden="true"></div></div>`;
+  const own = sources.filter(s => !family.size || family.has(s.benchmark)), rest = sources.filter(s => !own.includes(s));
+  $('source-counts').innerHTML = own.map(sourceRow).join('')
+    + (rest.length ? `<details class="small"><summary>Other boards (${rest.length})</summary>${rest.map(sourceRow).join('')}</details>` : '');
   $('source-evidence').innerHTML = sources.map(s => `<p>${esc(s.name)}: ${sourceLink(s.report_url, 'Report')} · ${sourceLink(s.manifest_url, 'Manifest')}<br>${s.self_run ? 'Plan' : 'Manifest'} SHA-256: ${esc(s.manifest_sha256)}<br>${s.self_run ? `DeepSWE commit: ${esc(s.deepswe_commit)}` : `Dataset SHA-256: ${esc(s.dataset_sha256)}`}</p>`).join('');
   $('task-link').textContent = bench.task_link;
   if ((data.nav || []).length) {
     $('nav').hidden = false;
-    $('nav').innerHTML = '<span class="nav-title">Leaderboard</span>' + data.nav.map((l) => l.current
+    const navGroups = [];
+    data.nav.forEach(l => {
+      const group = l.group || 'Model leaderboards';
+      if (!navGroups.length || navGroups[navGroups.length - 1][0] !== group) navGroups.push([group, []]);
+      navGroups[navGroups.length - 1][1].push(l);
+    });
+    $('nav').innerHTML = navGroups.map(([group, links]) => `<span class="nav-title">${esc(group)}</span>` + links.map((l) => l.current
       ? `<a class="board current" href="${esc(l.url)}" aria-current="page">${esc(l.label)}</a>`
-      : `<a class="board" href="${esc(l.url)}">${esc(l.label)}</a>`).join('')
-      + `<select id="nav-select" aria-label="Leaderboard">${data.nav.map(l => `<option value="${esc(l.url)}"${l.current ? ' selected' : ''}>${esc(l.label)}</option>`).join('')}</select>`;
+      : `<a class="board" href="${esc(l.url)}">${esc(l.label)}</a>`).join('')).join('')
+      + `<select id="nav-select" aria-label="Leaderboard">${navGroups.map(([group, links]) => `<optgroup label="${esc(group)}">${links.map(l => `<option value="${esc(l.url)}"${l.current ? ' selected' : ''}>${esc(l.label)}</option>`).join('')}</optgroup>`).join('')}</select>`;
     $('nav-select').addEventListener('change', e => { location.href = e.target.value; });
   }
   const displayedTasks = data.footprint_tasks || data.tasks;
   const taskCount = new Set(displayedTasks.map((t) => t[0].split('#')[0])).size;
-  const items = bench.attempts > 1 ? `${taskCount} ${bench.name} tasks (${data.population_count || data.task_count} attempts per model)` : `${data.population_count || data.task_count} ${bench.name} tasks`;
+  const items = bench.attempts > 1 ? `${taskCount} ${bench.task_name || bench.name} tasks (${data.population_count || data.task_count} attempts per model)` : `${data.population_count || data.task_count} ${bench.name} tasks`;
   $('board-intro').textContent = `${n} models on ${items}.`;
+  if (bench.compare_heading) $('complexity').textContent = bench.compare_heading;
   // Small boards say so, and point to the 500-task board when it is in the switcher.
   $('task-picker').hidden = !!merged;
   if (merged) {
-    $('board-intro').textContent = `${n} models on ${bench.name}'s ${languages.map(l => `${l.tasks} ${l.name}`).join(', ').replace(/, ([^,]*)$/, ' and $1')} tasks, ${languages[0]?.attempts ?? 4} attempt${(languages[0]?.attempts ?? 4) === 1 ? '' : 's'} each. `
+    $('board-intro').textContent = bench.setups ? `${bench.setups} on ${languages.map(l => `${l.tasks} ${l.name}`).join(', ').replace(/, ([^,]*)$/, ' and $1')} DeepSWE tasks, 3 attempts each. Ratios are per language, then averaged.` : `${n} models on ${bench.name}'s ${languages.map(l => `${l.tasks} ${l.name}`).join(', ').replace(/, ([^,]*)$/, ' and $1')} tasks, ${languages[0]?.attempts ?? 4} attempt${(languages[0]?.attempts ?? 4) === 1 ? '' : 's'} each. `
       + `Each language is compared on its own board; the ratio here averages a model's language ratios, weighted by how many shared tasks each has.`;
     $('language-scope').textContent = `Tests, docs and generated files are left out. Each language is measured on its own board with its own parser; unit counts are never added across languages, only the ratios are combined.`;
   } else if (taskCount < 50) {
     const verified = (data.nav || []).find(l => l.url === 'verified.html' && !l.current);
-    $('board-intro').innerHTML = `${esc(n)} models on ${esc(items)}. Only ${esc(taskCount)} tasks, so the order is rough.`
-      + (verified ? ` <a href="verified.html">SWE-bench Verified</a> has 500 tasks, with older models.` : '');
+    $('board-intro').innerHTML = `${esc(bench.setups || n + ' models')} on ${esc(items)}. Only ${esc(taskCount)} tasks, so the order is rough.`
+      + (verified && !bench.setups ? ` <a href="verified.html">SWE-bench Verified</a> has 500 tasks, with older models.` : '');
   }
   if (data.measurement_track) {
     const language = {javascript: 'JavaScript / JSX and TypeScript', typescript: 'TypeScript / TSX and JavaScript', go: 'Go', php: 'PHP'}[data.measurement_track.language];
@@ -495,7 +507,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       ? [['Model', null], ['Result', null], ['Net syntax units', 'net']]
       : merged ? [['#', null], ['Model', null], ['Vs. others, all languages', 'same_net'], ...languages.map(l => [l.name, 'lang_' + l.key]), ['Solved', 'resolve_rate'], ...(external ? [['AA Intel.', 'aa_intelligence']] : []), ['Measured', 'coverage']]
       : [['#', null], ['Model', null], ...(sameTask ? [['Vs. others, same tasks', 'same_net']] : []), ['Net syntax units, solved (mean)', 'solved_net'], ['Net syntax units, all measured (mean)', 'net'], ['Solved', 'resolve_rate'], ...(external ? [['AA Intel.', 'aa_intelligence']] : []), ['Measured', 'coverage']];
-    document.querySelector('#board thead').innerHTML = '<tr>' + headers.map(([name, key]) => `<th${key ? ` aria-sort="${key === sortKey ? ascending ? 'ascending' : 'descending' : 'none'}"` : ''}${name === 'Model' ? ' class="left"' : ''}>${key ? `<button type="button" data-sort="${key}">${name}</button>` : name}${key && metricInfo(key, true) ? `<button type="button" class="info" data-info="${key}" aria-label="What is ${esc(name)}?">i</button>` : ''}</th>`).join('') + '</tr>';
+    const modelHead = data.models.some(m => m.color_group) ? 'Harness · model' : 'Model';
+    document.querySelector('#board thead').innerHTML = '<tr>' + headers.map(([name, key]) => name === 'Model' ? [modelHead, key] : [name, key]).map(([name, key]) => `<th${key ? ` aria-sort="${key === sortKey ? ascending ? 'ascending' : 'descending' : 'none'}"` : ''}${name === modelHead ? ' class="left"' : ''}>${key ? `<button type="button" data-sort="${key}">${name}</button>` : name}${key && metricInfo(key, true) ? `<button type="button" class="info" data-info="${key}" aria-label="What is ${esc(name)}?">i</button>` : ''}</th>`).join('') + '</tr>';
     const buttons = [...document.querySelectorAll('#board button[data-sort]')];
     if (focusedSort) buttons.find(button => button.dataset.sort === focusedSort)?.focus({preventScroll: true});
     buttons.forEach((button) => button.addEventListener('click', () => {
@@ -533,8 +546,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       const solved = metricValue(m, i, 'resolve_rate');
       const ratioCell = key => `<td title="${esc(rangeNote(m, key))}">${Number.isFinite(metricValue(m, i, key)) ? fmt(metricValue(m, i, key), 2) + '×' : '—'}</td>`;
       const rowAttrs = m.self_run ? ` class="self-run" title="${esc(selfRunNote(m))}"` : unranked(m) ? ` class="partial" style="opacity:${partialOpacity(m)}" title="${esc(unrankedNote(m))}"` : '';
-      if (merged) return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td>${ratioCell('same_net')}${langKeys.map(ratioCell).join('')}<td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td title="${esc(coverageNote(m))}">${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
-      return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(m.name)}</td>${sameTask ? `<td title="${esc(rangeNote(m, 'same_net'))}">${Number.isFinite(m.same_task_net) ? fmt(m.same_task_net, 2) + '×' : '—'}</td>` : ''}<td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.measured_net_mean)}</td><td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td title="${esc(coverageNote(m))}">${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
+      if (merged) return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(barName(m))}</td>${ratioCell('same_net')}${langKeys.map(ratioCell).join('')}<td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td title="${esc(coverageNote(m))}">${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
+      return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(barName(m))}</td>${sameTask ? `<td title="${esc(rangeNote(m, 'same_net'))}">${Number.isFinite(m.same_task_net) ? fmt(m.same_task_net, 2) + '×' : '—'}</td>` : ''}<td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.measured_net_mean)}</td><td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td title="${esc(coverageNote(m))}">${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
     })()).join('');
   }
   function showTask(id) {
@@ -572,7 +585,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   };
   const companyColor = company => companyColors[company] || companyColors.Other;
   const groupOf = m => m.color_group || m.company || 'Other';
-  const barName = m => m.short_name ? `${m.short_name} · ${m.color_group}` : m.name;
+  const barName = m => m.short_name ? `${m.color_group} · ${m.short_name}` : m.name;
+  // Tooltip head: the harness alone on harness boards, then the model and effort.
+  const headName = m => m && m.color_group ? `${m.color_group}\n${m.name.split(' · ')[0]}` : m ? m.name : '';
   // External capability indices replace Solved as the default Y axis when a pinned snapshot is present.
   // With human-fix ratios the chart opens on code vs. the human fix; the table still sorts by rank.
   // A new index version starts with few models scored; open on Solved until at least half have a score.
@@ -872,7 +887,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const span = hi - lo || 1, pct = v => (v - lo) / span * 100;
     const note = r => {
       const m = r.m, total = m.footprint_population_count || data.population_count || data.task_count;
-      return `${m.name}${r.selfRun ? ' · self-run' : ''} (${m.company || 'Other'})\n${metric}: ${units(r.v)}${percent}` +
+      return `${m.color_group ? headName(m) : m.name + (r.selfRun ? ' · self-run' : '') + ` (${m.company || 'Other'})`}\n${metric}: ${units(r.v)}${percent}` +
         (selected ? `\n${labels[selected[2][r.i][6] || selected[2][r.i][0]] || 'unknown'} task attempt` : `\nMeasured ${measuredCount(m) ?? 0}/${denominator(m) ?? 0} solved attempts`) +
         (ratioKeys.includes(key) ? '\n' + rangeNote(m, key) : '') + (r.selfRun ? '\n' + selfRunNote(m) : '');
     };
@@ -1036,7 +1051,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     document.querySelectorAll('#graph circle[data-point]').forEach(circle => {
       const show = event => {
         const p = points[Number(circle.dataset.point)];
-        const text = `${p.name}${p.offscale ? ' (off the chart\'s scale)' : ''}\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${matchNote(p) ? '\n' + matchNote(p) : ''}${p.kind === 'all' ? [...new Set([axes.x, axes.y].filter(k => ratioKeys.includes(k)))].map(k => '\n' + rangeNote(p.m, k)).join('') : ''}${p.selfRun ? '\n' + selfRunNote(p.m) : ''}${p.kind !== 'all' ? '\n' + p.kind + ' task attempt' : ''}`;
+        const text = `${p.m ? headName(p.m) : p.name}${p.offscale ? ' (off the chart\'s scale)' : ''}\n${xLabel}: ${axisFormat(p.x, axes.x)}\n${yLabel}: ${axisFormat(p.y, axes.y)}${matchNote(p) ? '\n' + matchNote(p) : ''}${p.kind === 'all' ? [...new Set([axes.x, axes.y].filter(k => ratioKeys.includes(k)))].map(k => '\n' + rangeNote(p.m, k)).join('') : ''}${p.selfRun ? '\n' + selfRunNote(p.m) : ''}${p.kind !== 'all' ? '\n' + p.kind + ' task attempt' : ''}`;
         showLine(p.m && p.m.line);
         showTooltipAt(circle, event, text);
         focusCompany(p.company);
@@ -1157,6 +1172,6 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   $('task-reset').addEventListener('click', () => showTask(''));
   showTask('');
 
-  $('provenance').textContent = `Analyzer ${data.analyzer_version}${data.measurement_track ? ', units ' + data.measurement_track.unit_version : ''}.`;
+  if (data.analyzer_version) $('provenance').textContent = `Analyzer ${data.analyzer_version}${data.measurement_track ? ', units ' + data.measurement_track.unit_version : ''}.`;
 })();
 </script>

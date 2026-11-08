@@ -23,7 +23,9 @@ NAV=(--nav 'DeepSWE, all languages=index.html' --nav 'DeepSWE Python=python.html
      --nav 'DeepSWE TypeScript=typescript.html' --nav 'DeepSWE Go=go.html' --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html'
      --nav 'Live JavaScript=live-javascript.html' --nav 'Live TypeScript=live-typescript.html' --nav 'Live Go=live-go.html' --nav 'SWEeper PHP=sweeper-php.html'
      --nav 'SWE-Milestone, features=swe-milestone.html' --nav 'PolyBench Python=polybench-python.html'
-     --nav 'DeepSWE, harness comparison=harnesses.html')
+     --nav 'Harness comparison|All languages=harnesses.html' --nav 'Harness comparison|Python=harnesses-python.html'
+     --nav 'Harness comparison|JavaScript=harnesses-javascript.html' --nav 'Harness comparison|TypeScript=harnesses-typescript.html'
+     --nav 'Harness comparison|Go=harnesses-go.html')
 AA=examples/external/artificial-analysis-2026-10-22.json
 # Newer Intelligence Index version (v5.0), shown as an extra axis until it has scored most models.
 AA_LATEST=examples/external/artificial-analysis-2026-11-08.json
