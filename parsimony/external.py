@@ -1,8 +1,8 @@
 """Pinned external capability indices (Artificial Analysis) for website axes; never used for ranking.
 
-`snapshot` fetches the free Artificial Analysis LLM endpoint once, with the key read from the
-AA_API_KEY environment variable (never stored), and writes only the index values of explicitly
-mapped configurations together with the response hash. Unmapped or mismatched configurations stay
+`snapshot` fetches every page of the Free Artificial Analysis language-models endpoint once, with
+the key read from the AA_API_KEY environment variable (never stored), and writes only the index
+values of explicitly mapped configurations together with the hash of the merged pages. Unmapped or mismatched configurations stay
 null, never borrowed from another reasoning effort. Attribution to https://artificialanalysis.ai/ is
 required by the API terms and is carried in the snapshot.
 """
@@ -16,7 +16,8 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-ENDPOINT = 'https://artificialanalysis.ai/api/v2/data/llms/models'
+# Replaces the legacy /api/v2/data/llms/models, retired on 2026-11-04.
+ENDPOINT = 'https://artificialanalysis.ai/api/v2/language/models/free'
 ATTRIBUTION = 'https://artificialanalysis.ai/'
 INDICES = {'aa_intelligence': 'artificial_analysis_intelligence_index',
            'aa_coding': 'artificial_analysis_coding_index'}
@@ -27,6 +28,7 @@ MATCHES = {'exact', 'effort_unlabelled', 'undated_alias'}
 
 
 MAX_RESPONSE_BYTES = 16 * 1024 * 1024
+MAX_PAGES = 50
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -36,14 +38,33 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 def fetch(key):
+    """Fetch all pages and merge them into one response with the same envelope."""
     if not isinstance(key, str) or not key.strip() or any(c in key for c in '\r\n'):
         raise ValueError('invalid AA_API_KEY')
-    request = urllib.request.Request(ENDPOINT, headers={'x-api-key': key, 'User-Agent': 'parsimony'})
-    with urllib.request.build_opener(_NoRedirect()).open(request, timeout=60) as response:
-        raw = response.read(MAX_RESPONSE_BYTES + 1)
-    if len(raw) > MAX_RESPONSE_BYTES:
-        raise ValueError('Artificial Analysis response exceeds size limit')
-    return raw
+    opener = urllib.request.build_opener(_NoRedirect())
+    data, version, size = [], None, 0
+    for page in range(1, MAX_PAGES + 1):
+        request = urllib.request.Request(f'{ENDPOINT}?page={page}',
+                                         headers={'x-api-key': key, 'User-Agent': 'parsimony'})
+        with opener.open(request, timeout=60) as response:
+            raw = response.read(MAX_RESPONSE_BYTES + 1 - size)
+        size += len(raw)
+        if size > MAX_RESPONSE_BYTES:
+            raise ValueError('Artificial Analysis response exceeds size limit')
+        body = _object(json.loads(raw), 'response')
+        if page > 1 and body.get('intelligence_index_version') != version:
+            raise ValueError('intelligence_index_version changed between pages')
+        version = body.get('intelligence_index_version')
+        if not isinstance(body.get('data'), list):
+            raise ValueError('response data must be a list')
+        data.extend(body['data'])
+        pagination = _object(body.get('pagination'), 'response pagination')
+        if pagination.get('page') != page or not isinstance(pagination.get('has_more'), bool):
+            raise ValueError(f'unexpected pagination on page {page}')
+        if not pagination['has_more']:
+            return json.dumps(dict(tier=body.get('tier'), intelligence_index_version=version,
+                                   data=data), indent=1).encode() + b'\n'
+    raise ValueError(f'Artificial Analysis response has more than {MAX_PAGES} pages')
 
 
 def _object(value, label):
@@ -65,8 +86,14 @@ def _index(value, label):
     return value
 
 
-def _response_models(raw):
+def _response(raw):
+    """Return the models by id and the reported Intelligence Index version (None if absent)."""
     response = _object(json.loads(raw), 'response')
+    version = response.get('intelligence_index_version')
+    if version is not None:
+        if type(version) not in (int, float) or not math.isfinite(version) or version <= 0:
+            raise ValueError('intelligence_index_version must be a positive number')
+        version = str(float(version))  # major.minor, e.g. 5 -> '5.0'
     data = response.get('data')
     if not isinstance(data, list):
         raise ValueError('response data must be a list')
@@ -82,11 +109,22 @@ def _response_models(raw):
         for name in INDICES.values():
             _index(evaluations.get(name), f'{aa_id}: {name}')
         models[aa_id] = model
-    return models
+    return models, version
 
 
-def snapshot(mapping, raw, fetched_at):
-    models = _response_models(raw)
+def snapshot(mapping, raw, fetched_at, index_versions=None):
+    # The current API reports the Intelligence Index version; older saved responses do not, so it
+    # can also be recorded from the methodology page at fetch time.
+    index_versions = dict(_object(index_versions or {}, 'index versions'))
+    for key, version in index_versions.items():
+        if key not in INDICES:
+            raise ValueError(f'unknown index {key!r}')
+        _text(version, f'{key}: version')
+    models, api_version = _response(raw)
+    if api_version is not None:
+        if index_versions.setdefault('aa_intelligence', api_version) != api_version:
+            raise ValueError(f'aa_intelligence version {index_versions["aa_intelligence"]!r} '
+                             f'differs from the response ({api_version})')
     _object(mapping, 'mapping')
     entries = _object(mapping.get('configurations'), 'mapping configurations')
     for agent, entry in entries.items():
@@ -117,7 +155,8 @@ def snapshot(mapping, raw, fetched_at):
                                      **{k: model['evaluations'].get(v) for k, v in INDICES.items()})
     return dict(source='Artificial Analysis', attribution=ATTRIBUTION, endpoint=ENDPOINT,
                 fetched_at=fetched_at, response_sha256=hashlib.sha256(raw).hexdigest(),
-                indices=INDICES, configurations=configurations)
+                indices=INDICES, **({'index_versions': index_versions} if index_versions else {}),
+                configurations=configurations)
 
 
 def attach(models, snap):
@@ -132,7 +171,8 @@ def attach(models, snap):
         if entry.get('aa_id') is None and any(entry.get(key) is not None for key in INDICES):
             raise ValueError(f'{agent}: unmapped configuration has index values')
     metadata = dict(source=snap['source'], attribution=snap['attribution'], fetched_at=snap['fetched_at'],
-                    response_sha256=snap['response_sha256'])
+                    response_sha256=snap['response_sha256'],
+                    **({'index_versions': snap['index_versions']} if snap.get('index_versions') else {}))
     for model in models:
         entry = configurations.get(model['agent']) or {}
         for key in INDICES:
@@ -149,6 +189,9 @@ def main():
     snap.add_argument('mapping', help='JSON {"configurations": {agent: {aa_id, match, note} | {aa_id: null, reason}}}')
     snap.add_argument('--output', required=True)
     snap.add_argument('--response', help='use a saved API response instead of fetching')
+    snap.add_argument('--index-version', action='append', default=[], metavar='KEY=VERSION',
+                      help='record an index version from the methodology page, e.g. aa_intelligence=5.0 '
+                           '(the API reports aa_intelligence itself; a different value is an error)')
     listing = sub.add_parser('list', help='print AA ids, names and both indices (for writing the mapping)')
     listing.add_argument('--response', help='use a saved API response instead of fetching')
     args = parser.parse_args()
@@ -166,7 +209,7 @@ def main():
             parser.exit(1, 'error: Artificial Analysis fetch failed\n')
     if args.command == 'list':
         try:
-            response_models = _response_models(raw)
+            response_models, _ = _response(raw)
         except ValueError as exc:
             parser.exit(1, f'error: {exc}\n')
         for m in response_models.values():
@@ -178,7 +221,15 @@ def main():
     if args.response:
         fetched_at = datetime.fromtimestamp(Path(args.response).stat().st_mtime, timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     try:
-        result = snapshot(json.loads(Path(args.mapping).read_text()), raw, fetched_at)
+        versions = {}
+        for item in args.index_version:
+            if '=' not in item:
+                raise ValueError('--index-version takes KEY=VERSION')
+            key, version = item.split('=', 1)
+            if key in versions:
+                raise ValueError(f'--index-version {key!r} given twice')
+            versions[key] = version
+        result = snapshot(json.loads(Path(args.mapping).read_text()), raw, fetched_at, versions)
     except (KeyError, ValueError) as exc:
         parser.exit(1, f'error: {exc}\n')
     Path(args.output).write_text(json.dumps(result, indent=1) + '\n')

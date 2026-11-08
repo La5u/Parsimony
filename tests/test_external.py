@@ -2,11 +2,13 @@ import copy
 import hashlib
 import io
 import json
+import tempfile
 import unittest
 import urllib.request
+from pathlib import Path
 from unittest.mock import patch
 
-from parsimony.external import ENDPOINT, MAX_RESPONSE_BYTES, _NoRedirect, attach, fetch, snapshot
+from parsimony.external import ENDPOINT, MAX_RESPONSE_BYTES, _NoRedirect, attach, fetch, main, snapshot
 
 RAW = json.dumps({'data': [
     {'id': 'a1', 'name': 'Model A (Max)', 'slug': 'model-a', 'release_date': '2026-09-01',
@@ -16,7 +18,28 @@ RAW = json.dumps({'data': [
 ]}).encode()
 
 
+
+def _pages():
+    data = json.loads(RAW)['data']
+    return [json.dumps({'tier': 'free', 'intelligence_index_version': 5.0,
+                        'pagination': {'page': n, 'page_size': 1, 'total_pages': 2, 'has_more': n == 1},
+                        'data': [data[n - 1]]}).encode() for n in (1, 2)]
+
+
 class ExternalTest(unittest.TestCase):
+    def test_duplicate_index_version_cli_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            response = Path(tmp) / 'response.json'
+            response.write_bytes(RAW)
+            argv = ['external', 'snapshot', 'mapping.json', '--output', 'output.json',
+                    '--response', str(response), '--index-version', 'aa_intelligence=5.0',
+                    '--index-version', 'aa_intelligence=6.0']
+            with patch('sys.argv', argv), patch('sys.stderr', new_callable=io.StringIO) as stderr:
+                with self.assertRaises(SystemExit) as exc:
+                    main()
+            self.assertEqual(exc.exception.code, 1)
+            self.assertEqual(stderr.getvalue(), "error: --index-version 'aa_intelligence' given twice\n")
+
     def test_snapshot_keeps_only_mapped_values_and_nulls(self):
         mapping = {'configurations': {
             'agent-a': {'aa_id': 'a1', 'match': 'exact'},
@@ -93,15 +116,41 @@ class ExternalTest(unittest.TestCase):
     def test_fetch_is_bounded_and_sets_headers(self):
         with patch('parsimony.external.urllib.request.build_opener') as build:
             opener = build.return_value
-            opener.open.return_value = io.BytesIO(RAW)
-            self.assertEqual(fetch('secret-test-key'), RAW)
+            opener.open.side_effect = [io.BytesIO(page) for page in _pages()]
+            merged = json.loads(fetch('secret-test-key'))
+            self.assertEqual(merged, {'tier': 'free', 'intelligence_index_version': 5.0,
+                                      'data': json.loads(RAW)['data']})
+            urls = [call.args[0].full_url for call in opener.open.call_args_list]
+            self.assertEqual(urls, [f'{ENDPOINT}?page=1', f'{ENDPOINT}?page=2'])
             request = opener.open.call_args.args[0]
-            self.assertEqual(request.full_url, ENDPOINT)
             self.assertEqual(request.get_header('X-api-key'), 'secret-test-key')
             self.assertEqual(opener.open.call_args.kwargs['timeout'], 60)
             self.assertIsInstance(build.call_args.args[0], _NoRedirect)
-            opener.open.return_value = io.BytesIO(b'x' * (MAX_RESPONSE_BYTES + 1))
+            opener.open.side_effect = [io.BytesIO(b'x' * (MAX_RESPONSE_BYTES + 1))]
             with self.assertRaisesRegex(ValueError, 'size limit'):
+                fetch('secret-test-key')
+
+    def test_fetch_rejects_inconsistent_or_endless_pages(self):
+        first, second = _pages()
+        changed = json.loads(second)
+        changed['intelligence_index_version'] = 5.1
+        skipped = json.loads(second)
+        skipped['pagination']['page'] = 3
+        endless = json.loads(first)
+        cases = [(json.dumps(changed).encode(), 'changed between pages'),
+                 (json.dumps(skipped).encode(), 'unexpected pagination')]
+        with patch('parsimony.external.urllib.request.build_opener') as build:
+            opener = build.return_value
+            for page, message in cases:
+                opener.open.side_effect = [io.BytesIO(first), io.BytesIO(page)]
+                with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
+                    fetch('secret-test-key')
+
+            def page_n(request, timeout):
+                endless['pagination']['page'] = int(request.full_url.rsplit('=', 1)[1])
+                return io.BytesIO(json.dumps(endless).encode())
+            opener.open.side_effect = page_n
+            with self.assertRaisesRegex(ValueError, 'more than'):
                 fetch('secret-test-key')
 
     def test_redirects_cannot_forward_api_key(self):
@@ -121,6 +170,29 @@ class ExternalTest(unittest.TestCase):
                 with self.subTest(key=key), self.assertRaises(ValueError):
                     fetch(key)
             build.assert_not_called()
+
+    def test_index_versions_are_validated_and_carried_to_the_site(self):
+        mapping = {'configurations': {'agent-a': {'aa_id': 'a1', 'match': 'exact'}}}
+        self.assertNotIn('index_versions', snapshot(mapping, RAW, 't'))
+        for versions in [{'aa_unknown': '5.0'}, {'aa_intelligence': ''}, {'aa_intelligence': 5}]:
+            with self.subTest(versions=versions), self.assertRaises(ValueError):
+                snapshot(mapping, RAW, 't', versions)
+        snap = snapshot(mapping, RAW, 't', {'aa_intelligence': '5.0'})
+        self.assertEqual(attach([{'agent': 'agent-a'}], snap)['index_versions'], {'aa_intelligence': '5.0'})
+
+    def test_index_version_is_taken_from_the_response(self):
+        mapping = {'configurations': {'agent-a': {'aa_id': 'a1', 'match': 'exact'}}}
+        response = dict(json.loads(RAW), tier='free', intelligence_index_version=5)
+        raw = json.dumps(response).encode()
+        self.assertEqual(snapshot(mapping, raw, 't')['index_versions'], {'aa_intelligence': '5.0'})
+        self.assertEqual(snapshot(mapping, raw, 't', {'aa_intelligence': '5.0'})['index_versions'],
+                         {'aa_intelligence': '5.0'})
+        with self.assertRaisesRegex(ValueError, 'differs from the response'):
+            snapshot(mapping, raw, 't', {'aa_intelligence': '4.0'})
+        for version in [True, '5.0', 0, float('nan')]:
+            response['intelligence_index_version'] = version
+            with self.subTest(version=version), self.assertRaises(ValueError):
+                snapshot(mapping, json.dumps(response).encode(), 't')
 
     def test_attach_leaves_unmapped_models_null(self):
         snap = snapshot({'configurations': {'agent-a': {'aa_id': 'a1', 'match': 'exact'}}}, RAW, 't')

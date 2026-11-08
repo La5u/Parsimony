@@ -378,6 +378,13 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     $('harness-limit').textContent = `Every model uses the same agent (mini-SWE-agent ${versions[0]}), but the agent still affects how much code gets written.`;
   }
   const external = data.external || null;
+  const intelVersion = external?.index_versions?.aa_intelligence ? ` v${external.index_versions.aa_intelligence}` : '';
+  // A newer index version can sit beside the pinned one as its own axis (data.external_latest).
+  const externalLatest = (external && data.external_latest) || null;
+  const indexLabel = (meta, fallback) => `Artificial Analysis Intelligence Index${meta.index_versions?.aa_intelligence ? ' v' + meta.index_versions.aa_intelligence : fallback}, ${meta.fetched_at.slice(0, 10)}`;
+  const intelLabel = externalLatest ? indexLabel(external, ' (previous version)') : `Artificial Analysis Intelligence Index${intelVersion}`;
+  const latestLabel = externalLatest ? indexLabel(externalLatest, ' (newer version)') : '';
+  const scoredShare = key => data.models.length > 0 && data.models.filter(m => Number.isFinite(m[key])).length >= data.models.length / 2;
   // Owner-run configurations: shown faded in the all-tasks view, never ranked.
   const selfRun = data.self_run_models || [];
   let showSelfRun = true, showOtherHarnesses = false, showOlder = false, weightFilter = 'all';
@@ -421,7 +428,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   }
   if (external) {
     $('external-note').hidden = $('external-help').hidden = false;
-    $('external-note').innerHTML = `The <a href="${esc(external.attribution)}">Artificial Analysis</a> Intelligence Index is from ${esc(external.fetched_at.slice(0, 10))}.`;
+    $('external-note').innerHTML = `The <a href="${esc(external.attribution)}">Artificial Analysis</a> Intelligence Index${esc(intelVersion)} is from ${esc(external.fetched_at.slice(0, 10))}.`
+      + (externalLatest ? ` The newer index${esc(externalLatest.index_versions?.aa_intelligence ? ' v' + externalLatest.index_versions.aa_intelligence : '')} from ${esc(externalLatest.fetched_at.slice(0, 10))} is a separate axis; ${data.models.filter(m => Number.isFinite(m.aa_intelligence_latest)).length} of ${data.models.length} models here have a score in it so far. The two versions use different tests, so their numbers are not comparable.` : '');
   }
   // Same-task comparison (task difficulty): code relative to the other models on the tasks a model solved.
   const sameTask = data.models.some(m => Number.isFinite(m.same_task_net));
@@ -471,7 +479,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         churn: model.measured_churn_mean, net: model.measured_net_mean, solved_net: model.measured_solved_net_mean,
         solved_cx: model.measured_solved_complexity_mean, same_net: model.same_task_net, same_cx: model.same_task_complexity,
         human_net: model.human_task_net,
-        aa_coding: model.aa_coding, aa_intelligence: model.aa_intelligence,
+        aa_coding: model.aa_coding, aa_intelligence: model.aa_intelligence, aa_intelligence_latest: model.aa_intelligence_latest,
         ...Object.fromEntries(languages.map(l => ['lang_' + l.key, model.languages?.[l.key]?.net ?? null]))}[key];
     }
     const cell = selected[2][index];
@@ -562,7 +570,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const companyColor = company => companyColors[company] || companyColors.Other;
   // External capability indices replace Solved as the default Y axis when a pinned snapshot is present.
   // With human-fix ratios the chart opens on code vs. the human fix; the table still sorts by rank.
-  const graphAxes = {all: {x: humanFix ? 'human_net' : defaultKey, y: external ? 'aa_intelligence' : 'resolve_rate'}, task: {x: 'net', y: 'churn'}};
+  // A new index version starts with few models scored; open on Solved until at least half have a score.
+  const defaultY = externalLatest && scoredShare('aa_intelligence_latest') ? 'aa_intelligence_latest'
+    : external && scoredShare('aa_intelligence') ? 'aa_intelligence' : 'resolve_rate';
+  const graphAxes = {all: {x: humanFix ? 'human_net' : defaultKey, y: defaultY}, task: {x: 'net', y: 'churn'}};
   const currentAxes = () => graphAxes[selected ? 'task' : 'all'];
   function axisOptions() {
     const complexity = data.models.some(m => Number.isFinite(m.measured_solved_complexity_mean));
@@ -573,7 +584,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       ...(humanFix ? [{key: 'human_net', label: 'Net syntax units vs. human fix, all languages (×)'}] : []),
       ...languages.map(l => ({key: 'lang_' + l.key, label: `Net syntax units vs. other models, ${l.name} (×)`})),
       {key: 'resolve_rate', label: 'Solved (%)'},
-      ...(external ? [{key: 'aa_intelligence', label: 'Artificial Analysis Intelligence Index'},
+      ...(external ? [{key: 'aa_intelligence', label: intelLabel}, ...(externalLatest ? [{key: 'aa_intelligence_latest', label: latestLabel}] : []),
         {key: 'aa_coding', label: 'Artificial Analysis Coding Index'}] : [])];
     return [...(sameTask ? [{key: 'same_net', label: 'Net syntax units vs. other models, same tasks (×)'},
         {key: 'same_cx', label: 'Decision points vs. other models, same tasks (×)'}] : []),
@@ -581,7 +592,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       {key: 'solved_net', label: 'Net syntax units added, solved (mean)'}, {key: 'net', label: 'Net syntax units added, all measured (mean)'},
       {key: 'resolve_rate', label: 'Solved (%)'},
       ...(complexity ? [{key: 'solved_cx', label: 'Decision points added, solved (mean)'}] : []),
-      ...(external ? [{key: 'aa_intelligence', label: 'Artificial Analysis Intelligence Index'},
+      ...(external ? [{key: 'aa_intelligence', label: intelLabel}, ...(externalLatest ? [{key: 'aa_intelligence_latest', label: latestLabel}] : []),
         {key: 'aa_coding', label: 'Artificial Analysis Coding Index'}] : [])];
   }
   function renderAxisControls() {
@@ -608,6 +619,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       resolve_rate: table ? '' : `Share of attempts the benchmark reports as solved. From ${bench.results}; tests aren't rerun.`,
       coverage: 'Share of solved attempts whose patch could be measured (fetched, applied to the task\'s base commit and parsed). Data coverage, not quality.',
       aa_intelligence: table ? '' : 'Outside capability score from Artificial Analysis, matched by model and reasoning effort. Does not affect rank.',
+      aa_intelligence_latest: 'The newer version of the Artificial Analysis Intelligence Index, matched the same way. Its tests differ from the previous version, so the two scales are not comparable. Models it has not scored yet are left off. Does not affect rank.',
       aa_coding: 'Outside coding score from Artificial Analysis, matched by model and reasoning effort. Does not affect rank.',
     }[key] || '';
   }
@@ -956,7 +968,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${narrow ? 4 : 6}" ${p.m && partialOpacity(p.m) ? ` fill-opacity="${partialOpacity(p.m)}"` : ''} tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('')
       + older.map((p, k) => `<circle data-older="${k}" data-line="${esc(p.m.line)}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'} older" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${narrow ? 4 : 6}" aria-hidden="true" data-company="${esc(p.company)}"></circle>`).join('');
     // Green zone: the half of each axis that is better (lower footprint, higher solved/index).
-    const better = {net: -1, solved_net: -1, solved_cx: -1, cx: -1, same_net: -1, same_cx: -1, human_net: -1, resolve_rate: 1, aa_coding: 1, aa_intelligence: 1, ...Object.fromEntries(langKeys.map(k => [k, -1]))};
+    const better = {net: -1, solved_net: -1, solved_cx: -1, cx: -1, same_net: -1, same_cx: -1, human_net: -1, resolve_rate: 1, aa_coding: 1, aa_intelligence: 1, aa_intelligence_latest: 1, ...Object.fromEntries(langKeys.map(k => [k, -1]))};
     const bx = better[axes.x], by = better[axes.y];
     let zone = '';
     if (bx && by && points.length) {

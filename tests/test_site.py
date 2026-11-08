@@ -53,8 +53,26 @@ class SiteTests(unittest.TestCase):
         self.assertTrue(codex)
         for agent in codex:
             pi = models[agent.replace('_codex_', '_pi_', 1)]
-            self.assertIsNotNone(models[agent]['aa_intelligence'], agent)
-            self.assertEqual(models[agent]['aa_intelligence'], pi['aa_intelligence'])
+            # Mapped, though a new index version may not have scored the model yet.
+            self.assertIsNotNone(models[agent]['aa_match'], agent)
+            for key in ('aa_match', 'aa_name', 'aa_intelligence', 'aa_coding'):
+                self.assertEqual(models[agent][key], pi[key], (agent, key))
+
+    def test_previous_and_newer_intelligence_index_are_separate_axes(self):
+        root = Path(__file__).resolve().parents[1]
+        old = json.loads((root / 'examples/external/artificial-analysis-2026-10-22.json').read_text())['configurations']
+        new = json.loads((root / 'examples/external/artificial-analysis-2026-11-08.json').read_text())['configurations']
+        page = (root / 'site' / 'python.html').read_text()
+        data = json.loads(page.split('<script id="parsimony-data" type="application/json">', 1)[1].split('</script>', 1)[0])
+        self.assertEqual(data['external_latest']['index_versions'], {'aa_intelligence': '5.0'})
+        self.assertNotIn('index_versions', data['external'])
+        for m in data['models']:
+            self.assertEqual(m['aa_intelligence'], (old.get(m['agent']) or {}).get('aa_intelligence'), m['agent'])
+            self.assertEqual(m['aa_coding'], (old.get(m['agent']) or {}).get('aa_coding'), m['agent'])
+            self.assertEqual(m['aa_intelligence_latest'], (new.get(m['agent']) or {}).get('aa_intelligence'), m['agent'])
+        self.assertTrue(any(m['aa_intelligence_latest'] is not None for m in data['models']))
+        template = (root / 'parsimony' / 'template.html').read_text()
+        self.assertIn("key: 'aa_intelligence_latest'", template)
 
     def test_published_sources_active_board(self):
         for benchmark, language, index in [('deepswe', 'python', 0), ('deepswe', 'javascript', 1),

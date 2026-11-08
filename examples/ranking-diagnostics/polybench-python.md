@@ -8,11 +8,10 @@ These diagnostics do not change the website ranking. Lower footprint is not bett
 
 | Configuration | Ratio | Shared tasks | Measured / published successes | Largest task share | Task-drop rank range | Repo-drop rank range |
 |---|---:|---:|---:|---:|---:|---:|
-| GPT-5.6 Sol · Slingshot 3.4.0 | 0.650 | 60 | 64/64 | 0.434 | 1–1 | 1–2 |
-| DeepSeek V4 Flash (max) · Mobile Coder 1.2.4 | 1.013 | 59 | 80/80 | 0.349 | 2–3 | 2–3 |
-| Claude Opus 4.8 · HMigBot | 1.034 | 60 | 69/70 | 0.219 | 2–3 | 2–5 |
-| Claude Opus 5.5 (high) · AiWork.Code | 1.125 | 64 | 80/80 | 0.345 | 4–5 | 1–4 |
-| Claude Opus 5.5 (high) · Jitto Build (Claude Code) | 1.178 | 67 | 97/97 | 0.357 | 4–5 | 4–5 |
+| GPT-5.6 Sol · Slingshot 3.4.0 | 0.658 | 50 | 64/64 | 0.300 | 1–1 | 1–3 |
+| Claude Opus 5.5 (high) · AiWork.Code | 1.054 | 50 | 80/80 | 0.339 | 2–4 | 1–3 |
+| Claude Opus 4.8 · HMigBot | 1.064 | 50 | 69/70 | 0.290 | 2–3 | 2–4 |
+| Claude Opus 5.5 (high) · Jitto Build (Claude Code) | 1.276 | 50 | 97/97 | 0.284 | 3–4 | 2–4 |
 
 Largest task share is the largest absolute per-task peer footprint divided by the total peer footprint; cancellation can make it exceed 1. Unavailable perturbations are counted separately in JSON, not included in rank ranges.
 

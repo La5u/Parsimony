@@ -8,6 +8,7 @@ from parsimony.scoring import out_of_scope, score_records
 
 ROOT = Path(__file__).resolve().parents[1]
 FOLDER = ROOT / 'examples/live-python'
+WITHHELD = FOLDER / 'withheld'  # runs that read their task's upstream fix; kept, but off the board
 
 
 class LivePublicationTests(unittest.TestCase):
@@ -30,15 +31,15 @@ class LivePublicationTests(unittest.TestCase):
                 for child in value:
                     inspect(child)
         for filename, key in groups.items():
-            raw = (FOLDER / (filename + '.jsonl')).read_bytes()
+            raw = ((WITHHELD if filename == 'deepseek-v4.1-flash' else FOLDER) / (filename + '.jsonl')).read_bytes()
             self.assertEqual(hashlib.sha256(raw).hexdigest(), archived[key]['measurement_records_sha256'])
             rows = [json.loads(line) for line in raw.splitlines()]
             self.assertEqual(len(rows), 300)
             self.assertEqual({r['task_id'] for r in rows}, set(panel['tasks']))
             inspect(rows)
             records.extend(rows)
-        for filename in ('gpt-5.5-agav.jsonl', 'claude-opus-5.5-xhigh.jsonl'):
-            records.extend(json.loads(line) for line in (FOLDER / filename).read_text().splitlines())
+        for path in (FOLDER / 'gpt-5.5-agav.jsonl', WITHHELD / 'claude-opus-5.5-xhigh.jsonl'):
+            records.extend(json.loads(line) for line in path.read_text().splitlines())
         actual = score_records(panel, records)
         stored = json.loads((FOLDER / 'scores.json').read_text())['leaderboard']
         self.assertEqual(actual, stored)
@@ -143,7 +144,7 @@ class LivePublicationTests(unittest.TestCase):
         self.assertEqual(release['footprint']['eligible'], 262)
 
     def test_opus55_aiwork_open_network_records_and_release_summary(self):
-        raw = (FOLDER / 'claude-opus-5.5-xhigh.jsonl').read_bytes()
+        raw = (WITHHELD / 'claude-opus-5.5-xhigh.jsonl').read_bytes()
         release = json.loads((ROOT / 'examples/benchmark-discovery/aiwork-opus55-release.json').read_text())
         audit_bytes = (ROOT / 'examples/priority-live/claude_opus_5_5.preimages.json').read_bytes()
         self.assertEqual(hashlib.sha256(raw).hexdigest(), release['records_sha256'])
@@ -169,9 +170,8 @@ class LivePublicationTests(unittest.TestCase):
         self.assertEqual((len(eligible), sum(r['resolved'] for r in eligible)), (287, 213))
         self.assertEqual(release['trajectory_check']['set_aside'], [])
         data = json.loads((FOLDER / 'site-data.json').read_text())
-        model = next(m for m in data['models'] if m['agent'] == 'live-lite-claude-opus-5.5-xhigh-aiwork')
-        self.assertIn('(open network)', model['name'])
-        self.assertIn('open network', data['benchmark']['notice'])
+        self.assertFalse(any(m['agent'] == 'live-lite-claude-opus-5.5-xhigh-aiwork' for m in data['models']))
+        self.assertIn('Claude Opus 5.5 · AiWork.Code', data['benchmark']['notice'])
 
     def test_one_live_board_with_full_population_bounds_and_navigation(self):
         data = json.loads((FOLDER / 'site-data.json').read_text())
@@ -182,8 +182,8 @@ class LivePublicationTests(unittest.TestCase):
         self.assertEqual(data['population_count'], 300)
         self.assertEqual(data['excluded_tasks'], [])
         self.assertEqual(len(data['uncalibrated_tasks']), 62)
-        self.assertEqual({m['company'] for m in data['models']}, {'DeepSeek', 'OpenAI', 'Anthropic'})
-        self.assertEqual(sorted(m['measured_attempts'] for m in data['models']), [262, 276, 287, 287, 288])
+        self.assertEqual({m['company'] for m in data['models']}, {'OpenAI', 'Anthropic'})
+        self.assertEqual(len(data['models']), 3)
         self.assertTrue(all(m['score'] is None and m['rank_range'] for m in data['models']))
         for page in ('index', 'javascript', 'typescript', 'go', 'verified'):
             other = (ROOT / 'site' / (page + '.html')).read_text()

@@ -2,7 +2,14 @@
 
 Website: **[parsimony.lasu.dev/live-typescript.html](https://parsimony.lasu.dev/live-typescript.html)**.
 
-Six public model + agent submissions to [SWE-bench Live](https://swe-bench-live.github.io) MultiLang, on all **111** tasks of its `ts` split. **This compares model + agent setups, not models alone:** each submitter used their own agent (AMI Agent, Sapient Slingshot or Lenovo TianxiCode), and pass/fail is the submitter's own evaluation report, not rechecked here. One attempt per task.
+Five public model + agent submissions to [SWE-bench Live](https://swe-bench-live.github.io) MultiLang, on all **111** tasks of its `ts` split. **This compares model + agent setups, not models alone:** each submitter used their own agent (AMI Agent or Sapient Slingshot), and pass/fail is the submitter's own evaluation report, not rechecked here. One attempt per task.
+
+> **Withheld (2026-11-08): DeepSeek V4.1 Flash · TianxiCode 0.1.486.** SWE-bench-Live closed its
+> pull request ([#64](https://github.com/SWE-bench-Live/submission/pull/64)) unmerged on 2026-11-03:
+> 119 of its 219 JavaScript/TypeScript trajectories use `git show` to read the future fix, 101 of
+> them also the fix's tests. A copied fix measures the human's footprint, not the model's, so the
+> run is off the board. Its records stay in [`withheld/`](withheld/) with unchanged hashes; the
+> sections below describe it as it was published. Audit: [`../benchmark-discovery/oracle-audit-2026-11-08.json`](../benchmark-discovery/oracle-audit-2026-11-08.json).
 
 ## Sources
 
@@ -17,12 +24,11 @@ As on the website: a model's net units added on the tasks it solved, divided by 
 
 | Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
 |---:|---|---:|---|---:|---:|---:|---:|---:|
-| 1 | Claude Sonnet 4.5 · Slingshot 2.6.0 | 0.69× | 0.42–1.00× | 23 | +39.1 | +60.0 | 25.2% | 27/28 |
-| 2 | GPT-5.6 Sol · Slingshot 3.4.0 | 0.81× | 0.43–1.13× | 43 | +130.2 | +130.8 | 63.1% | 66/70 |
-| 3 | Claude Opus 4.6 · AMI Agent 0.7.0 | 0.86× | 0.52–1.22× | 35 | +24.8 | +33.4 | 55.9% | 56/62 |
-| 4 | DeepSeek V4.1 Flash · TianxiCode 0.1.486 | 0.99× | 0.68–1.34× | 37 | +21.7 | +43.7 | 50.5% | 54/56 |
-| 5 | GPT-5.5 · Slingshot 3.0.0 | 1.17× | 0.92–1.51× | 42 | +109.0 | +111.5 | 46.8% | 51/52 |
-| 6 | GPT-5.5 · Slingshot 2.6.0 | 1.38× | 0.97–1.82× | 41 | +107.7 | +113.2 | 41.4% | 45/46 |
+| 1 | Claude Sonnet 4.5 · Slingshot 2.6.0 | 0.70× | 0.46–0.95× | 23 | +39.1 | +60.0 | 25.2% | 27/28 |
+| 2 | GPT-5.6 Sol · Slingshot 3.4.0 | 0.78× | 0.34–1.08× | 34 | +130.2 | +130.8 | 63.1% | 66/70 |
+| 3 | Claude Opus 4.6 · AMI Agent 0.7.0 | 0.80× | 0.51–1.10× | 33 | +24.8 | +33.4 | 55.9% | 56/62 |
+| 4 | GPT-5.5 · Slingshot 3.0.0 | 1.26× | 0.95–1.99× | 33 | +109.0 | +111.5 | 46.8% | 51/52 |
+| 5 | GPT-5.5 · Slingshot 2.6.0 | 1.45× | 0.90–2.23× | 34 | +107.7 | +113.2 | 41.4% | 45/46 |
 
 | Configuration | Submitted | Measured | Upstream grader error | Unverified before-state | Analysis error | Empty patch | Not in the run |
 |---|---:|---:|---:|---:|---:|---:|---:|

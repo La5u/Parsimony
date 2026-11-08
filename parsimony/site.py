@@ -110,13 +110,17 @@ BENCHMARKS = {
                  results='public submitter evaluation reports', attempts=1,
                  harness_note='Each model uses its own agent, so this compares model + agent setups, not models alone.',
                  notice='Model names and pass/fail are reported by the submitters, not checked independently. '
-                        'Claude Opus 5.5 · AiWork.Code ran with open network access, so it could read the '
-                        "project's upstream repository, issues and fixes; its submission is an unmerged pull request."),
+                        "Runs that read their task's own upstream fix are left off: Claude Opus 5.5 · AiWork.Code "
+                        '(withdrawn upstream) and DeepSeek V4.1 Flash · TianxiCode. In 2 of the 14 sample trajectories '
+                        "GPT-5.6 Sol · Slingshot 3.4.0 publishes, it also fetches the task's pull request; its other "
+                        'trajectories are not public.'),
     'live-multilang': dict(name='SWE-bench Live MultiLang', url='https://swe-bench-live.github.io', reference='Reference solution',
                            task_url='https://github.com/{owner}/{repo}/pull/{number}', task_link="Maintainers' pull request",
                            results='public submitter evaluation reports', attempts=1,
                            harness_note='Each model uses its own agent, so this compares model + agent setups, not models alone.',
-                           notice='Model names and pass/fail are reported by the submitters, not checked independently.'),
+                           notice='Model names and pass/fail are reported by the submitters, not checked independently. '
+                                  "DeepSeek V4.1 Flash · TianxiCode is left off: it read its task's own upstream fix in "
+                                  'many trajectories; SWE-bench-Live rejected its JavaScript/TypeScript submission for this.'),
     'sweeper': dict(name='SWEeper-Bench', url='https://sweeperbench.com', reference="Maintainers' fix",
                     task_url='https://github.com/{owner}/{repo}/pull/{number}', task_link="Maintainers' fix",
                     results="SWEeper's browser-agent verdicts (target + preservation)", attempts=1,
@@ -130,9 +134,10 @@ BENCHMARKS = {
                       reference="Maintainers' fix", task_url='https://github.com/{owner}/{repo}/pull/{number}',
                       task_link="Maintainers' pull request", results='public submitter evaluation reports', attempts=1,
                       harness_note='Each model uses its own agent, so this compares model + agent setups, not models alone.',
-                      notice='Results are reported by the submitters, not checked independently. Four runs come from '
+                      notice='Results are reported by the submitters, not checked independently. Three runs come from '
                              'open, unmerged submission pull requests; Jitto Build reports 129 of its 294 resolved '
-                             'patches are near-copies of the reference fix.'),
+                             "patches are near-copies of the reference fix. DeepSeek V4 Flash · Mobile Coder is left off: "
+                             "it fetched its task's own upstream fix in 151 of 382 trajectories."),
 }
 
 
@@ -783,6 +788,17 @@ def render(data, standalone=True, page_name=None):
     return page
 
 
+def attach_external(data, snapshot):
+    """Attach a pinned Artificial Analysis snapshot to the models and self-runs; returns its metadata."""
+    metadata = attach(data['models'], snapshot)
+    # AA scores belong to the model and effort, not the harness: a Codex self-run uses its pi run's entry.
+    configs = snapshot['configurations']
+    aliases = {m['agent']: configs[pi] for m in data.get('self_run_models', [])
+               if m['agent'] not in configs and (pi := m['agent'].replace('_codex_', '_pi_', 1)) in configs}
+    attach(data.get('self_run_models', []), {**snapshot, 'configurations': {**configs, **aliases}})
+    return metadata
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('panel', nargs='?')
@@ -801,6 +817,8 @@ def main():
     parser.add_argument('--self-run', nargs='+', default=[], metavar='JSONL',
                         help='self-run results (examples/self-run/results); plotted faded, never ranked')
     parser.add_argument('--external', help='pinned Artificial Analysis snapshot from parsimony.external; adds axes only')
+    parser.add_argument('--external-latest', help='a newer Artificial Analysis snapshot (e.g. a new Intelligence Index '
+                        'version); its Intelligence Index becomes an extra axis beside --external\'s')
     args = parser.parse_args()
     if bool(args.merge) == bool(args.panel and args.records):
         parser.error('give either a panel and records or --merge boards')
@@ -833,13 +851,15 @@ def main():
                     m['languages'] = {'python': dict(net=m['same_task_net'], net_tasks=m['same_task_net_tasks'],
                                                      complexity=m['same_task_complexity'])}
         if args.external:
-            snapshot = json.loads(Path(args.external).read_text())
-            data['external'] = attach(data['models'], snapshot)
-            # AA scores belong to the model and effort, not the harness: a Codex self-run uses its pi run's entry.
-            configs = snapshot['configurations']
-            aliases = {m['agent']: configs[pi] for m in data.get('self_run_models', [])
-                       if m['agent'] not in configs and (pi := m['agent'].replace('_codex_', '_pi_', 1)) in configs}
-            attach(data.get('self_run_models', []), {**snapshot, 'configurations': {**configs, **aliases}})
+            data['external'] = attach_external(data, json.loads(Path(args.external).read_text()))
+        if args.external_latest:
+            keys = ('aa_intelligence', 'aa_coding', 'aa_match', 'aa_name')
+            everyone = data['models'] + data.get('self_run_models', [])
+            kept = [{k: m.get(k) for k in keys} for m in everyone]
+            data['external_latest'] = attach_external(data, json.loads(Path(args.external_latest).read_text()))
+            for m, previous in zip(everyone, kept):  # only the newer Intelligence Index is added
+                m['aa_intelligence_latest'] = m['aa_intelligence']
+                m.update(previous)
         if args.sensitivity:
             sensitivity = json.loads(Path(args.sensitivity).read_text())
             add_rank_ranges(data['models'], sensitivity)

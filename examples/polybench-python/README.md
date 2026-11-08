@@ -2,11 +2,19 @@
 
 Website: **[parsimony.lasu.dev/polybench-python.html](https://parsimony.lasu.dev/polybench-python.html)**.
 
-[SWE-PolyBench](https://amazon-science.github.io/SWE-PolyBench/) Verified has 382 issue-fix tasks in Java, JavaScript, TypeScript and Python. This board measures the **113 Python tasks**, one attempt per task, from five public submissions.
+[SWE-PolyBench](https://amazon-science.github.io/SWE-PolyBench/) Verified has 382 issue-fix tasks in Java, JavaScript, TypeScript and Python. This board measures the **113 Python tasks**, one attempt per task, from four public submissions (a fifth is withheld, below).
 
 **This compares model + agent setups, not models alone:** each model ran in its submitter's own agent. Model names and pass/fail are the submitters' reports (the SWE-PolyBench evaluator's `<id>_result.json` `resolved` flag), not rechecked here.
 
-**Four of the five runs are open, unmerged submission pull requests** to `amazon-science/SWE-PolyBench`, read at their head commits (the owner approved including them). Only HMigBot (Opus 4.8) is merged upstream. Pull requests can still change or be rejected; this board keeps the pinned heads below.
+**Three of the four runs are open, unmerged submission pull requests** to `amazon-science/SWE-PolyBench`, read at their head commits (the owner approved including them). Only HMigBot (Opus 4.8) is merged upstream. Pull requests can still change or be rejected; this board keeps the pinned heads below.
+
+> **Withheld (2026-11-08): DeepSeek V4 Flash · Mobile Coder 1.2.4.** The SWE-PolyBench maintainer's
+> audit on [PR 40](https://github.com/amazon-science/SWE-PolyBench/pull/40) found the sandbox had
+> open internet access and that 143 trajectories fetch the task's own upstream fix (106 counted
+> resolved); our own scan finds 151 of 382. A copied fix measures the human's footprint, not the
+> model's, so the run is off the board; its records stay in [`withheld/`](withheld/) with unchanged
+> hashes. The same scan of the other four runs' full trajectories finds no task fix fetched: their
+> 3–6 hits each are issue texts or changelog lines that already name the pull request. Audit: [`../benchmark-discovery/oracle-audit-2026-11-08.json`](../benchmark-discovery/oracle-audit-2026-11-08.json).
 
 ## Disclosures
 
@@ -26,11 +34,10 @@ As on the website: a model's net units added on the tasks it solved, divided by 
 
 | Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
 |---:|---|---:|---|---:|---:|---:|---:|---:|
-| 1 | GPT-5.6 Sol · Slingshot 3.4.0 | 0.65× | 0.56–0.86× | 60 | +37.4 | +39.2 | 56.6% | 64/64 |
-| 2 | DeepSeek V4 Flash (max) · Mobile Coder 1.2.4 | 1.01× | 0.78–1.12× | 59 | +38.6 | +31.9 | 70.8% | 80/80 |
-| 3 | Claude Opus 4.8 · HMigBot | 1.03× | 0.85–1.17× | 60 | +36.9 | +50.7 | 61.9% | 69/70 |
-| 4 | Claude Opus 5.5 (high) · AiWork.Code | 1.12× | 0.89–1.31× | 64 | +39.3 | +38.2 | 70.8% | 80/80 |
-| 5 | Claude Opus 5.5 (high) · Jitto Build (Claude Code) | 1.18× | 1.08–1.33× | 67 | +40.9 | +41.8 | 85.8% | 97/97 |
+| 1 | GPT-5.6 Sol · Slingshot 3.4.0 | 0.66× | 0.48–0.80× | 50 | +37.4 | +39.2 | 56.6% | 64/64 |
+| 2 | Claude Opus 5.5 (high) · AiWork.Code | 1.05× | 0.81–1.54× | 50 | +39.3 | +38.2 | 70.8% | 80/80 |
+| 3 | Claude Opus 4.8 · HMigBot | 1.06× | 0.79–1.28× | 50 | +36.9 | +50.7 | 61.9% | 69/70 |
+| 4 | Claude Opus 5.5 (high) · Jitto Build (Claude Code) | 1.28× | 0.99–1.49× | 50 | +40.9 | +41.8 | 85.8% | 97/97 |
 
 Of 565 attempts: **559 measured** (390 passing, 169 failing upstream), 4 empty patches (AiWork 3, Jitto 1: `no_generation`, never zero), 1 analysis error (HMigBot `huggingface__transformers-29449`, an upstream failure: a patched file does not tokenize) and 1 withheld before-state (HMigBot `langchain-ai__langchain-4646`: the patch context differs from the pinned base file, so the touched-file preimage is unverified; its upstream success is kept, its footprint is not measured). No outcome is unknown and no patch is missing. 8 of 113 tasks have no measured passing patch and are uncalibrated for the archived Score. Coverage: [coverage.json](coverage.json); stability: [stability.md](stability.md); ratio diagnostics: [polybench-python.md](../ranking-diagnostics/polybench-python.md).
 

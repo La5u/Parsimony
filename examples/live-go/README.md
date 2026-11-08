@@ -2,9 +2,17 @@
 
 Website: **[parsimony.lasu.dev/live-go.html](https://parsimony.lasu.dev/live-go.html)**.
 
-Seven public submissions to [SWE-bench Live](https://swe-bench-live.github.io) MultiLang on all **138** tasks of its `go` split: six from the same submitter's **AMI Agent**, and **DeepSeek V4.1 Flash · TianxiCode** (Lenovo). The six AMI runs share a harness, so their model differences are less confounded than on the other Live boards, but AMI versions and retry settings differ (below). Pass/fail is the submitter's own evaluation report, not rechecked here. Includes **Qwen3.8-27B**, an open-weight model the submitter self-hosted.
+Six public submissions to [SWE-bench Live](https://swe-bench-live.github.io) MultiLang on all **138** tasks of its `go` split, all from the same submitter's **AMI Agent**. A seventh, **DeepSeek V4.1 Flash · TianxiCode** (Lenovo), is withheld (below). The six AMI runs share a harness, so their model differences are less confounded than on the other Live boards, but AMI versions and retry settings differ (below). Pass/fail is the submitter's own evaluation report, not rechecked here. Includes **Qwen3.8-27B**, an open-weight model the submitter self-hosted.
 
 This is separate from the DeepSWE Go board: different tasks and harness. Never pool them.
+
+> **Withheld (2026-11-08): DeepSeek V4.1 Flash · TianxiCode 0.1.486.** The run is still merged
+> upstream, but its own trajectories fetch the task's upstream pull request (often its `.diff`) in
+> 80 of 138 tasks, 49 of them reported solved; SWE-bench-Live rejected the same agent and model's
+> JavaScript/TypeScript run for this on 2026-11-03. A copied fix measures the human's footprint,
+> not the model's, so it is off the board. Its records stay in [`withheld/`](withheld/) with
+> unchanged hashes; the sections below describe it as it was published. The 10 sample AMI Agent
+> trajectories fetch no task pull request. Audit: [`../benchmark-discovery/oracle-audit-2026-11-08.json`](../benchmark-discovery/oracle-audit-2026-11-08.json).
 
 ## Sources
 
@@ -18,13 +26,12 @@ As on the website: a model's net units added on the tasks it solved, divided by 
 
 | Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
 |---:|---|---:|---|---:|---:|---:|---:|---:|
-| 1 | Claude Haiku 4.5 · AMI Agent 0.7.0 | 0.83× | 0.67–1.06× | 73 | +69.8 | +222.3 | 65.2% | 82/90 |
-| 2 | Claude Opus 4.6 · AMI Agent 0.7.0 | 0.88× | 0.74–1.07× | 81 | +123.6 | +125.0 | 74.6% | 97/103 |
-| 3 | Gemini 3.6 Flash · AMI Agent 0.7.0 | 0.89× | 0.74–1.09× | 68 | +322.2 | +233.0 | 56.5% | 72/78 |
-| 4 | Gemini 3.1 Pro Preview · AMI Agent 0.7.0 | 1.01× | 0.85–1.19× | 61 | +333.4 | +221.1 | 52.2% | 64/72 |
-| 5 | Claude Sonnet 4.6 · AMI Agent 0.7.0 | 1.13× | 0.90–1.34× | 77 | +114.6 | +114.8 | 71.7% | 91/99 |
-| 6 | Qwen3.8-27B · AMI Agent 0.7.2 | 1.24× | 0.95–1.64× | 33 | +81.2 | +69.9 | 29.7% | 39/41 |
-| 7 | DeepSeek V4.1 Flash · TianxiCode 0.1.486 | 1.24× | 0.81–1.51× | 66 | +100.2 | +103.1 | 63.8% | 82/88 |
+| 1 | Claude Haiku 4.5 · AMI Agent 0.7.0 | 0.86× | 0.74–1.02× | 65 | +69.8 | +222.3 | 65.2% | 82/90 |
+| 2 | Claude Opus 4.6 · AMI Agent 0.7.0 | 0.88× | 0.75–1.03× | 69 | +123.6 | +125.0 | 74.6% | 97/103 |
+| 3 | Gemini 3.6 Flash · AMI Agent 0.7.0 | 0.90× | 0.73–1.10× | 61 | +322.2 | +233.0 | 56.5% | 72/78 |
+| 4 | Gemini 3.1 Pro Preview · AMI Agent 0.7.0 | 1.03× | 0.85–1.22× | 60 | +333.4 | +221.1 | 52.2% | 64/72 |
+| 5 | Claude Sonnet 4.6 · AMI Agent 0.7.0 | 1.23× | 0.93–1.56× | 65 | +114.6 | +114.8 | 71.7% | 91/99 |
+| 6 | Qwen3.8-27B · AMI Agent 0.7.2 | 1.48× | 1.12–2.12× | 31 | +81.2 | +69.9 | 29.7% | 39/41 |
 
 | Configuration | Submitted | Measured | Unverified before-state | Empty patch | Retries of failed instances (submitter README) |
 |---|---:|---:|---:|---:|---:|

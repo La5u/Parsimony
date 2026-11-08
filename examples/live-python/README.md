@@ -4,7 +4,24 @@ Website: **[parsimony.lasu.dev/live.html](https://parsimony.lasu.dev/live.html)*
 One published board, using the same layout as the other benchmarks; no preview
 page or alternative solved-only ranking.
 
-> **Open-network run.** Claude Opus 5.5 (xhigh) · AiWork.Code ran with **open network
+> **Withheld runs (2026-11-08).** Two configurations are off the board because their agents
+> read the task's own upstream fix (the "oracle"): **Claude Opus 5.5 (xhigh) · AiWork.Code**,
+> which SWE-bench-Live merged on 2026-10-30 and then withdrew on 2026-11-03 as
+> oracle-contaminated ([revert PR #73](https://github.com/SWE-bench-Live/submission/pull/73)),
+> and **DeepSeek V4.1 Flash · TianxiCode 0.1.423**, still merged upstream, whose own trajectories
+> fetch the task's upstream pull request in 128 of 300 tasks (101 of them reported solved), the
+> same behaviour upstream rejected in its JavaScript/TypeScript run. A copied fix measures the
+> human's footprint, not the model's. Their records stay in [`withheld/`](withheld/) with
+> unchanged hashes; the sections below describe them as they were published. In 2 of the 14
+> sample trajectories that **GPT-5.6 Sol · Slingshot 3.4.0** publishes, it fetches the task's own
+> pull request too; its other trajectories are not public, so it stays, with a notice.
+> Claude Opus 4.8 · AiWork.Code (GitHub blocked) fetched no task pull request in any of its 300
+> trajectories. Audit: [`../benchmark-discovery/oracle-audit-2026-11-08.json`](../benchmark-discovery/oracle-audit-2026-11-08.json).
+>
+> With three configurations left, no task has the three other solvers the same-task ratio
+> needs, so the board lists the plain means unranked until a fourth clean run arrives.
+
+> **Open-network run (withheld since 2026-11-08).** Claude Opus 5.5 (xhigh) · AiWork.Code ran with **open network
 > access**: its submission README says the agent could search the web and read the
 > project's upstream repository, issues, pull requests and commits, and adapt an upstream
 > fix (an in-container probe recorded `github = OPEN`). The same harness's Claude Opus 4.8
@@ -45,13 +62,11 @@ As on the website: a model's net units added on the tasks it solved, divided by 
 
 | Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
 |---:|---|---:|---|---:|---:|---:|---:|---:|
-| 1 | GPT-5.5 · agav 0.2.0-beta.2 | 0.84× | 0.75–0.95× | 155 | +57.5 | +50.4 | 62.0% | 185/186 |
-| 2 | DeepSeek V4.1 Flash · TianxiCode 0.1.423 | 0.89× | 0.78–0.99× | 156 | +54.0 | +50.1 | 68.0% | 202/204 |
-| 3 | GPT-5.6 Sol · Slingshot 3.4.0 | 0.96× | 0.81–1.17× | 147 | +68.2 | +58.1 | 70.3% | 205/211 |
-| 4 | Claude Opus 4.8 · AiWork.Code | 0.98× | 0.76–1.29× | 92 | +58.6 | +54.0 | 34.0% | 102/102 |
-| 5 | Claude Opus 5.5 (xhigh) · AiWork.Code (open network) | 1.33× | 1.09–1.63× | 158 | +77.5 | +68.3 | 71.7% | 213/215 |
+| — | GPT-5.5 · agav 0.2.0-beta.2 | — | — | — | +57.5 | +50.4 | 62.0% | 185/186 |
+| — | Claude Opus 4.8 · AiWork.Code | — | — | — | +58.6 | +54.0 | 34.0% | 102/102 |
+| — | GPT-5.6 Sol · Slingshot 3.4.0 | — | — | — | +68.2 | +58.1 | 70.3% | 205/211 |
 
-Adding the fifth configuration (2026-10-27) changed every ratio: a task counts once 3 of the 4 other models solved it, so far more tasks are shared (73 before), and Sol · Slingshot (now 3rd) and Opus 4.8 (now 4th) swapped places. The all-measured mean includes 85 DeepSeek failures, 83 Slingshot failures, 174 Opus 4.8 AiWork failures, 77 agav failures and 74 Opus 5.5 AiWork failures. Upstream Solved % is separate context. Eligible/population coverage is 287/300, 288/300, 276/300, 262/300 and 287/300. Claude Opus 5.5 / AiWork has mean net units **68.25087108013938** across eligible attempts and **77.45539906103286** over eligible solved attempts; its 295 completed analyses include 8 excluded-only attempts (2 successes, 6 failures), and its 5 empty-patch records have unknown correctness, not failures. GPT-5.5 / agav has mean net units **50.38549618320611** across eligible attempts and **57.52972972972973** over eligible solved attempts only. Its 271 completed full-file analyses (`analysis_status=ok`) include 9 excluded-only attempts (1 success, 8 failures), which are not ranking inputs: successful analysis does not guarantee an in-scope footprint. The 29 empty-patch-only records have unknown correctness and no footprint metrics. Missing footprints are never zero; models without measurements are unranked. Equal values tie.
+Since 2026-11-08 the board has three configurations, so no model has the three other solvers per task that a same-task ratio needs, and the table above lists plain means only. (With five configurations, from 2026-10-27 to 2026-11-08, ratios were 0.84× agav, 0.89× TianxiCode, 0.96× Sol · Slingshot, 0.98× Opus 4.8 and 1.33× Opus 5.5.) The figures below are from the five-configuration board. The all-measured mean includes 85 DeepSeek failures, 83 Slingshot failures, 174 Opus 4.8 AiWork failures, 77 agav failures and 74 Opus 5.5 AiWork failures. Upstream Solved % is separate context. Eligible/population coverage is 287/300, 288/300, 276/300, 262/300 and 287/300. Claude Opus 5.5 / AiWork has mean net units **68.25087108013938** across eligible attempts and **77.45539906103286** over eligible solved attempts; its 295 completed analyses include 8 excluded-only attempts (2 successes, 6 failures), and its 5 empty-patch records have unknown correctness, not failures. GPT-5.5 / agav has mean net units **50.38549618320611** across eligible attempts and **57.52972972972973** over eligible solved attempts only. Its 271 completed full-file analyses (`analysis_status=ok`) include 9 excluded-only attempts (1 success, 8 failures), which are not ranking inputs: successful analysis does not guarantee an in-scope footprint. The 29 empty-patch-only records have unknown correctness and no footprint metrics. Missing footprints are never zero; models without measurements are unranked. Equal values tie.
 
 Passing references and their absence do not restrict footprint data. Task views
 show all recorded tasks and their actual net changes when eligible. The 80/20

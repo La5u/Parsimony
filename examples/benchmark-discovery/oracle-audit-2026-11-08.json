@@ -1,0 +1,851 @@
+{
+ "date": "2026-11-08",
+ "purpose": "Find published runs whose agents read their task's own upstream fix (oracle). A copied fix measures the human's footprint, not the model's.",
+ "method": "examples/benchmark-discovery/oracle-audit.py streams every trajectory file (prompt, patch and metadata files skipped) and counts per task: own_pr_url = a URL to the instance's own upstream PR/issue number (github.com/o/r/pull|issues/N or api repos/o/r/pulls|issues/N); git_show_hash, git_log_all (--all/--remotes/origin/), git_fetch; webfetch_github_pr = any GitHub PR/commit URL. Hits were then read by hand for each kept run. Resolved counts come from the run's results.json success ids (PolyBench has per-instance result files, not read). Nothing downloaded is stored.",
+ "upstream_events": {
+  "live_pr_60_withdrawn": "SWE-bench-Live merged AiWork.Code + Claude Opus 5.5 (Lite) on 2026-10-30 and reverted it on 2026-11-03 (PR #73) as oracle-contaminated: trajectories read future fixing commits / target PR diffs.",
+  "live_pr_64_rejected": "TianxiCode + DeepSeek V4.1 Flash JS/TS closed unmerged 2026-11-03: maintainers found git show of future fixes in 119/219 trajectories (101 also oracle tests).",
+  "live_pr_61_rejected": "wescode / deepseek-flash (Live verified split; no Parsimony board) closed 2026-11-03 for the same reason.",
+  "polybench_pr_40_audit": "Maintainer audit 2026-09-21: open internet; 143/382 trajectories fetch the exact upstream PR/commit, 106 of them resolved. PR still open, not accepted."
+ },
+ "runs": {
+  "go-tianxi": {
+   "board": "Live Go",
+   "configuration": "DeepSeek V4.1 Flash \u00b7 TianxiCode 0.1.486",
+   "source": "SWE-bench-Live/submission@18865f4c178a3d191cd4b13aaac1b30580daded2",
+   "path": "submissions/multilang/go/tianxi/",
+   "summary": {
+    "prefix": "submissions/multilang/go/tianxi/",
+    "trajectory_files": 276,
+    "instances": 138,
+    "resolved_known": 88,
+    "own_pr_url": {
+     "instances": 80,
+     "resolved": 49
+    },
+    "git_show_hash": {
+     "instances": 60,
+     "resolved": 41
+    },
+    "git_log_all": {
+     "instances": 74,
+     "resolved": 46
+    },
+    "git_fetch": {
+     "instances": 21,
+     "resolved": 16
+    },
+    "webfetch_github_pr": {
+     "instances": 103,
+     "resolved": 63
+    },
+    "any_strong": {
+     "instances": 121,
+     "resolved": 74
+    }
+   },
+   "own_pr_url_instances": [
+    "0xERR0R__blocky-2016",
+    "IBM__sarama-3258",
+    "TecharoHQ__anubis-881",
+    "bpg__terraform-provider-proxmox-2122",
+    "caddyserver__caddy-7189",
+    "caddyserver__caddy-7567",
+    "cadence-workflow__cadence-7182",
+    "cert-manager__cert-manager-7866",
+    "chenhg5__cc-connect-567",
+    "coze-dev__coze-loop-462",
+    "crowdsecurity__crowdsec-3744",
+    "cucumber__godog-695",
+    "envoyproxy__gateway-6372",
+    "envoyproxy__gateway-8521",
+    "evcc-io__evcc-28765",
+    "gastownhall__beads-2992",
+    "github__gh-aw-22943",
+    "github__gh-aw-24043",
+    "github__gh-aw-24521",
+    "github__gh-aw-26074",
+    "github__gh-aw-26689",
+    "github__gh-aw-27242",
+    "github__github-mcp-server-869",
+    "go-task__task-2716",
+    "go-vikunja__vikunja-2574",
+    "gohugoio__hugo-14657",
+    "gohugoio__hugo-14685",
+    "gohugoio__hugo-14733",
+    "gohugoio__hugo-14741",
+    "gohugoio__hugo-14742",
+    "google__go-github-3653",
+    "graphql-go__graphql-727",
+    "influxdata__telegraf-18556",
+    "influxdata__telegraf-18640",
+    "istio__istio-56962",
+    "jesseduffield__lazygit-4750",
+    "karmada-io__karmada-7365",
+    "kedacore__keda-6888",
+    "kedacore__keda-6901",
+    "knative__eventing-8611",
+    "kube-vip__kube-vip-1505",
+    "kubernetes-sigs__controller-runtime-3247",
+    "kubernetes-sigs__controller-runtime-3494",
+    "kubernetes-sigs__kubebuilder-5559",
+    "kubernetes-sigs__kueue-8597",
+    "kubernetes-sigs__kueue-9866",
+    "kubernetes__kops-17519",
+    "kubernetes__kops-18146",
+    "kubernetes__kops-18152",
+    "kubernetes__kube-state-metrics-2926",
+    "kyverno__kyverno-15561",
+    "libp2p__go-libp2p-3306",
+    "lima-vm__lima-3812",
+    "lima-vm__lima-3923",
+    "moby__moby-50281",
+    "modelcontextprotocol__registry-321",
+    "moonD4rk__HackBrowserData-571",
+    "nats-io__nats-server-7089",
+    "nginx__kubernetes-ingress-8119",
+    "oauth2-proxy__oauth2-proxy-2524",
+    "oauth2-proxy__oauth2-proxy-3374",
+    "ollama__ollama-11509",
+    "open-telemetry__opentelemetry-collector-contrib-41929",
+    "open-telemetry__opentelemetry-collector-contrib-42164",
+    "open-telemetry__opentelemetry-collector-contrib-46272",
+    "open-telemetry__opentelemetry-ebpf-profiler-734",
+    "open-telemetry__opentelemetry-go-6393",
+    "open-telemetry__opentelemetry-go-6962",
+    "open-telemetry__opentelemetry-go-8133",
+    "open-telemetry__opentelemetry-go-contrib-7607",
+    "open-telemetry__opentelemetry-operator-4245",
+    "openfga__openfga-2598",
+    "ossf__scorecard-4728",
+    "rook__rook-16336",
+    "rqlite__rqlite-2190",
+    "slack-go__slack-1471",
+    "sustainable-computing-io__kepler-2277",
+    "tikv__pd-9618",
+    "tmc__langchaingo-1350",
+    "vmware-tanzu__velero-9059"
+   ],
+   "decision": "withheld"
+  },
+  "lite-tianxi": {
+   "board": "Live Python",
+   "configuration": "DeepSeek V4.1 Flash \u00b7 TianxiCode 0.1.423",
+   "source": "SWE-bench-Live/submission@18865f4c178a3d191cd4b13aaac1b30580daded2",
+   "path": "submissions/lite/tianxicode/",
+   "summary": {
+    "prefix": "submissions/lite/tianxicode/",
+    "trajectory_files": 600,
+    "instances": 300,
+    "resolved_known": 213,
+    "own_pr_url": {
+     "instances": 128,
+     "resolved": 101
+    },
+    "git_show_hash": {
+     "instances": 217,
+     "resolved": 149
+    },
+    "git_log_all": {
+     "instances": 231,
+     "resolved": 160
+    },
+    "git_fetch": {
+     "instances": 59,
+     "resolved": 46
+    },
+    "webfetch_github_pr": {
+     "instances": 192,
+     "resolved": 146
+    },
+    "any_strong": {
+     "instances": 281,
+     "resolved": 198
+    }
+   },
+   "own_pr_url_instances": [
+    "arviz-devs__arviz-2413",
+    "aws-cloudformation__cfn-lint-3779",
+    "aws-cloudformation__cfn-lint-3798",
+    "aws-cloudformation__cfn-lint-3855",
+    "aws-cloudformation__cfn-lint-3866",
+    "aws-cloudformation__cfn-lint-3982",
+    "beetbox__beets-5457",
+    "beetbox__beets-5495",
+    "beetbox__beets-5682",
+    "bridgecrewio__checkov-6895",
+    "conan-io__conan-17092",
+    "conan-io__conan-17102",
+    "conan-io__conan-17117",
+    "conan-io__conan-17123",
+    "conan-io__conan-17129",
+    "conan-io__conan-17132",
+    "conan-io__conan-17266",
+    "conan-io__conan-17292",
+    "conan-io__conan-17302",
+    "conan-io__conan-17366",
+    "conan-io__conan-17382",
+    "conan-io__conan-17514",
+    "conan-io__conan-17517",
+    "conan-io__conan-17520",
+    "conan-io__conan-17819",
+    "conan-io__conan-17917",
+    "conan-io__conan-17967",
+    "conan-io__conan-18028",
+    "cyclotruc__gitingest-115",
+    "deepset-ai__haystack-8489",
+    "deepset-ai__haystack-8525",
+    "deepset-ai__haystack-8619",
+    "deepset-ai__haystack-8725",
+    "deepset-ai__haystack-8940",
+    "deepset-ai__haystack-8969",
+    "deepset-ai__haystack-8973",
+    "deepset-ai__haystack-8981",
+    "deepset-ai__haystack-8992",
+    "deepset-ai__haystack-8993",
+    "deepset-ai__haystack-8997",
+    "deepset-ai__haystack-9027",
+    "deepset-ai__haystack-9066",
+    "delgan__loguru-1297",
+    "dynaconf__dynaconf-1238",
+    "falconry__falcon-2419",
+    "feast-dev__feast-5036",
+    "flexget__flexget-4244",
+    "fonttools__fonttools-3682",
+    "huggingface__smolagents-405",
+    "instructlab__instructlab-2526",
+    "instructlab__instructlab-2548",
+    "instructlab__instructlab-2825",
+    "instructlab__instructlab-2927",
+    "ipython__ipython-14695",
+    "ipython__ipython-14798",
+    "iterative__dvc-10711",
+    "joke2k__faker-2162",
+    "jupyterlab__jupyter-ai-1022",
+    "jupyterlab__jupyter-ai-1125",
+    "jupyterlab__jupyter-ai-1294",
+    "kedro-org__kedro-4580",
+    "keras-team__keras-20534",
+    "keras-team__keras-21072",
+    "koxudaxi__datamodel-code-generator-2259",
+    "koxudaxi__datamodel-code-generator-2327",
+    "koxudaxi__datamodel-code-generator-2349",
+    "kozea__weasyprint-2398",
+    "kozea__weasyprint-2405",
+    "matplotlib__matplotlib-28933",
+    "matplotlib__matplotlib-29258",
+    "matplotlib__matplotlib-29388",
+    "matplotlib__matplotlib-29431",
+    "matplotlib__matplotlib-29537",
+    "matplotlib__matplotlib-29689",
+    "matplotlib__matplotlib-29721",
+    "modelcontextprotocol__python-sdk-222",
+    "privacyidea__privacyidea-4223",
+    "privacyidea__privacyidea-4251",
+    "projectmesa__mesa-2418",
+    "pvlib__pvlib-python-2249",
+    "pvlib__pvlib-python-2400",
+    "pybamm-team__pybamm-4644",
+    "pybamm-team__pybamm-4816",
+    "pydata__xarray-9586",
+    "pydata__xarray-9765",
+    "pydata__xarray-9971",
+    "pydata__xarray-9974",
+    "pypsa__pypsa-1091",
+    "pypsa__pypsa-1112",
+    "pypsa__pypsa-1172",
+    "pypsa__pypsa-1195",
+    "python-babel__babel-1163",
+    "python-babel__babel-1164",
+    "python-babel__babel-1194",
+    "python-control__python-control-1142",
+    "python-telegram-bot__python-telegram-bot-4626",
+    "reata__sqllineage-661",
+    "reata__sqllineage-694",
+    "reflex-dev__reflex-4129",
+    "reflex-dev__reflex-4347",
+    "reflex-dev__reflex-4371",
+    "reflex-dev__reflex-4510",
+    "reflex-dev__reflex-4711",
+    "reflex-dev__reflex-4717",
+    "reflex-dev__reflex-4720",
+    "reflex-dev__reflex-5039",
+    "run-llama__llama_deploy-330",
+    "run-llama__llama_deploy-372",
+    "run-llama__llama_deploy-438",
+    "run-llama__llama_deploy-458",
+    "shapely__shapely-2224",
+    "shapely__shapely-2255",
+    "sissbruecker__linkding-971",
+    "sissbruecker__linkding-984",
+    "sphinx-doc__sphinx-12975",
+    "sphinx-doc__sphinx-13253",
+    "sphinx-doc__sphinx-13318",
+    "stanford-crfm__helm-3467",
+    "stanfordnlp__dspy-1801",
+    "streamlink__streamlink-6242",
+    "streamlink__streamlink-6328",
+    "streamlink__streamlink-6381",
+    "streamlink__streamlink-6439",
+    "tox-dev__tox-3409",
+    "wemake-services__wemake-python-styleguide-3117",
+    "wireservice__csvkit-1281",
+    "yt-dlp__yt-dlp-11425",
+    "yt-dlp__yt-dlp-12714"
+   ],
+   "decision": "withheld"
+  },
+  "lite-aiwork48": {
+   "board": "Live Python",
+   "configuration": "Claude Opus 4.8 \u00b7 AiWork.Code",
+   "source": "SWE-bench-Live/submission@18865f4c178a3d191cd4b13aaac1b30580daded2",
+   "path": "submissions/lite/aiwork-code/20260909-opus-4-8-xhigh/",
+   "summary": {
+    "prefix": "submissions/lite/aiwork-code/20260909-opus-4-8-xhigh/",
+    "trajectory_files": 300,
+    "instances": 300,
+    "resolved_known": 102,
+    "own_pr_url": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "git_show_hash": {
+     "instances": 43,
+     "resolved": 19
+    },
+    "git_log_all": {
+     "instances": 39,
+     "resolved": 20
+    },
+    "git_fetch": {
+     "instances": 4,
+     "resolved": 3
+    },
+    "webfetch_github_pr": {
+     "instances": 27,
+     "resolved": 10
+    },
+    "any_strong": {
+     "instances": 51,
+     "resolved": 21
+    }
+   },
+   "own_pr_url_instances": [],
+   "decision": "kept: no task PR fetched; git show/log hits read local past commits (spot-checked)"
+  },
+  "lite-sling34": {
+   "board": "Live Python",
+   "configuration": "GPT-5.6 Sol \u00b7 Slingshot 3.4.0 (14 sample trajectories only)",
+   "source": "SWE-bench-Live/submission@18865f4c178a3d191cd4b13aaac1b30580daded2",
+   "path": "submissions/lite/sapient-slingshot-agent/v3.4.0/",
+   "summary": {
+    "prefix": "submissions/lite/sapient-slingshot-agent/v3.4.0/",
+    "trajectory_files": 14,
+    "instances": 14,
+    "resolved_known": 211,
+    "own_pr_url": {
+     "instances": 2,
+     "resolved": 2
+    },
+    "git_show_hash": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "git_log_all": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "git_fetch": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "webfetch_github_pr": {
+     "instances": 5,
+     "resolved": 5
+    },
+    "any_strong": {
+     "instances": 2,
+     "resolved": 2
+    }
+   },
+   "own_pr_url_instances": [
+    "instructlab__instructlab-2585",
+    "pvlib__pvlib-python-2249"
+   ],
+   "decision": "kept with notice: instructlab-2585 fetches its PR via the GitHub API, pvlib-python-2249 cites its PR; rest not public"
+  },
+  "lite-agav": {
+   "board": "Live Python",
+   "configuration": "GPT-5.5 \u00b7 agav (3 sample trajectories)",
+   "source": "SWE-bench-Live/submission@18865f4c178a3d191cd4b13aaac1b30580daded2",
+   "path": "submissions/lite/agav/",
+   "summary": {
+    "prefix": "submissions/lite/agav/",
+    "trajectory_files": 3,
+    "instances": 3,
+    "resolved_known": 186,
+    "own_pr_url": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "git_show_hash": {
+     "instances": 1,
+     "resolved": 1
+    },
+    "git_log_all": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "git_fetch": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "webfetch_github_pr": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "any_strong": {
+     "instances": 1,
+     "resolved": 1
+    }
+   },
+   "own_pr_url_instances": [],
+   "decision": "kept"
+  },
+  "go-ami": {
+   "board": "Live Go",
+   "configuration": "AMI Agent (10 sample trajectories)",
+   "source": "SWE-bench-Live/submission@18865f4c178a3d191cd4b13aaac1b30580daded2",
+   "path": "submissions/multilang/go/ami-agent/",
+   "summary": {
+    "prefix": "submissions/multilang/go/ami-agent/",
+    "trajectory_files": 10,
+    "instances": 10,
+    "resolved_known": 119,
+    "own_pr_url": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "git_show_hash": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "git_log_all": {
+     "instances": 1,
+     "resolved": 1
+    },
+    "git_fetch": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "webfetch_github_pr": {
+     "instances": 1,
+     "resolved": 1
+    },
+    "any_strong": {
+     "instances": 1,
+     "resolved": 1
+    }
+   },
+   "own_pr_url_instances": [],
+   "decision": "kept"
+  },
+  "jsts-samples": {
+   "board": "Live JS/TS",
+   "configuration": "AMI Agent and Slingshot (20 sample trajectories)",
+   "source": "SWE-bench-Live/submission@18865f4c178a3d191cd4b13aaac1b30580daded2",
+   "path": "submissions/multilang/js_ts/",
+   "summary": {
+    "prefix": "submissions/multilang/js_ts/",
+    "trajectory_files": 20,
+    "instances": 20,
+    "resolved_known": 164,
+    "own_pr_url": {
+     "instances": 1,
+     "resolved": 0
+    },
+    "git_show_hash": {
+     "instances": 1,
+     "resolved": 0
+    },
+    "git_log_all": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "git_fetch": {
+     "instances": 3,
+     "resolved": 0
+    },
+    "webfetch_github_pr": {
+     "instances": 5,
+     "resolved": 2
+    },
+    "any_strong": {
+     "instances": 2,
+     "resolved": 0
+    }
+   },
+   "own_pr_url_instances": [
+    "stdlib-js__stdlib-5735"
+   ],
+   "decision": "kept"
+  },
+  "pb40": {
+   "board": "PolyBench Python",
+   "configuration": "DeepSeek V4 Flash \u00b7 Mobile Coder 1.2.4",
+   "source": "WilliamRocketRen/SWE-PolyBench@46905351979ebe9da1d0d82c0fff2871daddaf85",
+   "path": "evaluation/PBVerified/20260901_mobile-coder_deepseek-v4-flash/",
+   "summary": {
+    "prefix": "evaluation/PBVerified/20260901_mobile-coder_deepseek-v4-flash/",
+    "trajectory_files": 382,
+    "instances": 382,
+    "resolved_known": 0,
+    "own_pr_url": {
+     "instances": 151,
+     "resolved": 0
+    },
+    "git_show_hash": {
+     "instances": 13,
+     "resolved": 0
+    },
+    "git_log_all": {
+     "instances": 83,
+     "resolved": 0
+    },
+    "git_fetch": {
+     "instances": 1,
+     "resolved": 0
+    },
+    "webfetch_github_pr": {
+     "instances": 277,
+     "resolved": 0
+    },
+    "any_strong": {
+     "instances": 197,
+     "resolved": 0
+    }
+   },
+   "own_pr_url_instances": [
+    "apache__dubbo-3622",
+    "apache__dubbo-4567",
+    "apache__dubbo-4678",
+    "apache__dubbo-5356",
+    "apache__dubbo-6498",
+    "apache__dubbo-8414",
+    "apache__rocketmq-4122",
+    "apache__rocketmq-5037",
+    "apache__rocketmq-7346",
+    "apache__rocketmq-7426",
+    "apache__rocketmq-7532",
+    "apache__rocketmq-7563",
+    "apache__rocketmq-7745",
+    "apache__rocketmq-7964",
+    "apolloconfig__apollo-1894",
+    "apolloconfig__apollo-4207",
+    "apolloconfig__apollo-4464",
+    "apolloconfig__apollo-4568",
+    "coder__code-server-3277",
+    "coder__code-server-6278",
+    "google__gson-2060",
+    "google__gson-2071",
+    "google__gson-2167",
+    "google__gson-2420",
+    "google__gson-2479",
+    "huggingface__transformers-13491",
+    "huggingface__transformers-13693",
+    "huggingface__transformers-13919",
+    "huggingface__transformers-15473",
+    "huggingface__transformers-15843",
+    "huggingface__transformers-16198",
+    "huggingface__transformers-19590",
+    "huggingface__transformers-21345",
+    "huggingface__transformers-21969",
+    "huggingface__transformers-22158",
+    "huggingface__transformers-22458",
+    "huggingface__transformers-23223",
+    "huggingface__transformers-25765",
+    "huggingface__transformers-26164",
+    "huggingface__transformers-27114",
+    "huggingface__transformers-27463",
+    "huggingface__transformers-27663",
+    "huggingface__transformers-29449",
+    "huggingface__transformers-29675",
+    "huggingface__transformers-29688",
+    "huggingface__transformers-30899",
+    "huggingface__transformers-30964",
+    "huggingface__transformers-3716",
+    "huggingface__transformers-4759",
+    "huggingface__transformers-7374",
+    "huggingface__transformers-7562",
+    "huggingface__transformers-8435",
+    "huggingface__transformers-8747",
+    "keras-team__keras-18553",
+    "keras-team__keras-18975",
+    "keras-team__keras-19484",
+    "keras-team__keras-19641",
+    "keras-team__keras-19838",
+    "keras-team__keras-19863",
+    "keras-team__keras-19915",
+    "keras-team__keras-19924",
+    "keras-team__keras-19937",
+    "keras-team__keras-20002",
+    "langchain-ai__langchain-19331",
+    "langchain-ai__langchain-20064",
+    "langchain-ai__langchain-3367",
+    "langchain-ai__langchain-4009",
+    "langchain-ai__langchain-5450",
+    "langchain-ai__langchain-5609",
+    "microsoft__vscode-110094",
+    "microsoft__vscode-113837",
+    "microsoft__vscode-127071",
+    "microsoft__vscode-132628",
+    "microsoft__vscode-135197",
+    "microsoft__vscode-135805",
+    "microsoft__vscode-148971",
+    "microsoft__vscode-157682",
+    "microsoft__vscode-160342",
+    "microsoft__vscode-164396",
+    "microsoft__vscode-189223",
+    "mrdoob__three.js-20991",
+    "mui__material-ui-11858",
+    "mui__material-ui-11987",
+    "mui__material-ui-12968",
+    "mui__material-ui-13430",
+    "mui__material-ui-13534",
+    "mui__material-ui-13778",
+    "mui__material-ui-14364",
+    "mui__material-ui-14391",
+    "mui__material-ui-15526",
+    "mui__material-ui-15534",
+    "mui__material-ui-18796",
+    "mui__material-ui-19794",
+    "mui__material-ui-19849",
+    "mui__material-ui-24105",
+    "mui__material-ui-24213",
+    "mui__material-ui-24742",
+    "mui__material-ui-26098",
+    "mui__material-ui-26623",
+    "mui__material-ui-26746",
+    "mui__material-ui-26807",
+    "mui__material-ui-27312",
+    "mui__material-ui-28186",
+    "mui__material-ui-34138",
+    "mui__material-ui-34158",
+    "mui__material-ui-36971",
+    "prettier__prettier-11000",
+    "prettier__prettier-11637",
+    "prettier__prettier-361",
+    "prettier__prettier-459",
+    "prettier__prettier-4667",
+    "prettier__prettier-6604",
+    "prettier__prettier-8046",
+    "prettier__prettier-9850",
+    "serverless__serverless-2434",
+    "serverless__serverless-2842",
+    "serverless__serverless-3534",
+    "serverless__serverless-3804",
+    "serverless__serverless-5571",
+    "serverless__serverless-5640",
+    "serverless__serverless-5842",
+    "serverless__serverless-6447",
+    "serverless__serverless-6827",
+    "serverless__serverless-6987",
+    "serverless__serverless-7102",
+    "serverless__serverless-7277",
+    "serverless__serverless-7374",
+    "serverless__serverless-8159",
+    "sveltejs__svelte-1231",
+    "sveltejs__svelte-1310",
+    "sveltejs__svelte-1923",
+    "sveltejs__svelte-2185",
+    "sveltejs__svelte-3151",
+    "sveltejs__svelte-3394",
+    "sveltejs__svelte-3403",
+    "sveltejs__svelte-3451",
+    "sveltejs__svelte-3702",
+    "sveltejs__svelte-3749",
+    "sveltejs__svelte-4146",
+    "sveltejs__svelte-4332",
+    "sveltejs__svelte-4454",
+    "sveltejs__svelte-5850",
+    "sveltejs__svelte-630",
+    "sveltejs__svelte-6414",
+    "sveltejs__svelte-6759",
+    "sveltejs__svelte-6941",
+    "sveltejs__svelte-728",
+    "sveltejs__svelte-738",
+    "sveltejs__svelte-7422",
+    "trinodb__trino-2768",
+    "yt-dlp__yt-dlp-5195"
+   ],
+   "decision": "withheld (also maintainer audit on PR 40: 143 own-fix fetches, 106 resolved)"
+  },
+  "pb44": {
+   "board": "PolyBench Python",
+   "configuration": "GPT-5.6 Sol \u00b7 Slingshot 3.4.0",
+   "source": "sanjuatps/SWE-PolyBench-S1@2c177685c6bf424badb6c3722aaf8c778a178a08",
+   "path": "evaluation/PBVerified/20261006_sapientslingshot_gpt-5.6-sol/",
+   "summary": {
+    "prefix": "evaluation/PBVerified/20261006_sapientslingshot_gpt-5.6-sol/",
+    "trajectory_files": 382,
+    "instances": 382,
+    "resolved_known": 0,
+    "own_pr_url": {
+     "instances": 3,
+     "resolved": 0
+    },
+    "git_show_hash": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "git_log_all": {
+     "instances": 1,
+     "resolved": 0
+    },
+    "git_fetch": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "webfetch_github_pr": {
+     "instances": 81,
+     "resolved": 0
+    },
+    "any_strong": {
+     "instances": 4,
+     "resolved": 0
+    }
+   },
+   "own_pr_url_instances": [
+    "apache__rocketmq-4122",
+    "huggingface__transformers-19590",
+    "prettier__prettier-8046"
+   ],
+   "decision": "kept: own-PR hits are issue text / changelog"
+  },
+  "pb46": {
+   "board": "PolyBench Python",
+   "configuration": "Claude Opus 5.5 \u00b7 Jitto Build",
+   "source": "charliefrantowski/SWE-PolyBench@30150b6f06d8e2acfdba897fe473726515baff92",
+   "path": "evaluation/PBVerified/20261010_jitto-build_claude-opus-5-5/",
+   "summary": {
+    "prefix": "evaluation/PBVerified/20261010_jitto-build_claude-opus-5-5/",
+    "trajectory_files": 382,
+    "instances": 382,
+    "resolved_known": 0,
+    "own_pr_url": {
+     "instances": 6,
+     "resolved": 0
+    },
+    "git_show_hash": {
+     "instances": 3,
+     "resolved": 0
+    },
+    "git_log_all": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "git_fetch": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "webfetch_github_pr": {
+     "instances": 34,
+     "resolved": 0
+    },
+    "any_strong": {
+     "instances": 9,
+     "resolved": 0
+    }
+   },
+   "own_pr_url_instances": [
+    "apache__rocketmq-4122",
+    "apolloconfig__apollo-4207",
+    "apolloconfig__apollo-4464",
+    "apolloconfig__apollo-4568",
+    "google__gson-2420",
+    "huggingface__transformers-19590"
+   ],
+   "decision": "kept: own-PR hits are issue text / changelog edits"
+  },
+  "pb47": {
+   "board": "PolyBench Python",
+   "configuration": "Claude Opus 5.5 \u00b7 AiWork.Code",
+   "source": "x4vierli/SWE-PolyBench@d2b1f885a66387fa8ad5d670aa1d690c41965a4e",
+   "path": "evaluation/PBVerified/20261021_aiwork-code_claude-opus-5-5/",
+   "summary": {
+    "prefix": "evaluation/PBVerified/20261021_aiwork-code_claude-opus-5-5/",
+    "trajectory_files": 382,
+    "instances": 382,
+    "resolved_known": 0,
+    "own_pr_url": {
+     "instances": 3,
+     "resolved": 0
+    },
+    "git_show_hash": {
+     "instances": 9,
+     "resolved": 0
+    },
+    "git_log_all": {
+     "instances": 13,
+     "resolved": 0
+    },
+    "git_fetch": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "webfetch_github_pr": {
+     "instances": 38,
+     "resolved": 0
+    },
+    "any_strong": {
+     "instances": 22,
+     "resolved": 0
+    }
+   },
+   "own_pr_url_instances": [
+    "apache__rocketmq-4122",
+    "google__gson-2420",
+    "huggingface__transformers-19590"
+   ],
+   "decision": "kept: own-PR hits are issue text"
+  },
+  "pbmain": {
+   "board": "PolyBench Python",
+   "configuration": "Claude Opus 4.8 \u00b7 HMigBot",
+   "source": "amazon-science/SWE-PolyBench@e7062f4a848ca7775bc1c1313f7aa419bd6a3ec1",
+   "path": "evaluation/PBVerified/20260623_migbot_claude-opus-4-8/",
+   "summary": {
+    "prefix": "evaluation/PBVerified/20260623_migbot_claude-opus-4-8/",
+    "trajectory_files": 382,
+    "instances": 382,
+    "resolved_known": 0,
+    "own_pr_url": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "git_show_hash": {
+     "instances": 7,
+     "resolved": 0
+    },
+    "git_log_all": {
+     "instances": 8,
+     "resolved": 0
+    },
+    "git_fetch": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "webfetch_github_pr": {
+     "instances": 0,
+     "resolved": 0
+    },
+    "any_strong": {
+     "instances": 12,
+     "resolved": 0
+    }
+   },
+   "own_pr_url_instances": [],
+   "decision": "kept"
+  }
+ }
+}

@@ -23,6 +23,8 @@ NAV=(--nav 'DeepSWE, all languages=index.html' --nav 'DeepSWE Python=python.html
      --nav 'Live JavaScript=live-javascript.html' --nav 'Live TypeScript=live-typescript.html' --nav 'Live Go=live-go.html' --nav 'SWEeper PHP=sweeper-php.html'
      --nav 'SWE-Milestone, features=swe-milestone.html' --nav 'PolyBench Python=polybench-python.html')
 AA=examples/external/artificial-analysis-2026-10-22.json
+# Newer Intelligence Index version (v5.0), shown as an extra axis until it has scored most models.
+AA_LATEST=examples/external/artificial-analysis-2026-11-08.json
 
 LANGS=(python javascript typescript)
 if [ "$OFFLINE" = 0 ]; then
@@ -41,26 +43,28 @@ for lang in "${LANGS[@]}"; do
   [ "$lang" = python ] && EXTRA=(--self-run examples/self-run/results/*.jsonl)
   [ "$lang" = go ] && E=$GO EXTRA=(--sensitivity-report examples/deepswe-go-v2/release-1.0/sensitivity.md)
   python -m parsimony.site "$E/score-panel.json" "$E/"*.jsonl --sensitivity "$E/sensitivity.json" \
-    --benchmark deepswe "${NAV[@]}" --output "$OUT/$PAGE.html" --external "$AA" "${EXTRA[@]}"
+    --benchmark deepswe "${NAV[@]}" --output "$OUT/$PAGE.html" --external "$AA" --external-latest "$AA_LATEST" "${EXTRA[@]}"
 done
 
 if [ "$OFFLINE" = 0 ]; then
   # Same-task ratios of the four DeepSWE language boards combined; raw units are never pooled.
   python -m parsimony.site --merge python=examples/deepswe-python --merge javascript=examples/deepswe-javascript \
     --merge typescript=examples/deepswe-typescript --merge go="$GO" --benchmark deepswe "${NAV[@]}" \
-    --output "$OUT/index.html" --external "$AA" --self-run examples/self-run/results/*.jsonl
+    --output "$OUT/index.html" --external "$AA" --external-latest "$AA_LATEST" --self-run examples/self-run/results/*.jsonl
 fi
 
 V=examples/mini-swe-agent-500
 python -m parsimony.site "$V/score-panel.json" "$V/"*.jsonl --sensitivity "$V/sensitivity-35.json" \
   --benchmark verified "${NAV[@]}" --output "$OUT/verified.html" \
-  --external examples/external/artificial-analysis-2026-10-22-verified.json
+  --external examples/external/artificial-analysis-2026-10-22-verified.json \
+  --external-latest examples/external/artificial-analysis-2026-11-08-verified.json
 
 L=examples/live-python
 DATA=$L/site-data.json
 [ "$OUT" = site ] || DATA=$OUT/live-data.json  # tests require the committed copy to match site/live.html
-python -m parsimony.site "$L/score-panel.json" "$L/deepseek-v4.1-flash.jsonl" "$L/gpt-5.6-sol.jsonl" \
-  "$L/claude-opus-4.8.jsonl" "$L/gpt-5.5-agav.jsonl" "$L/claude-opus-5.5-xhigh.jsonl" --sensitivity "$L/stability.json" --benchmark live \
+# Runs that read their task's upstream fix are in $L/withheld/ and off the board (README).
+python -m parsimony.site "$L/score-panel.json" "$L/gpt-5.6-sol.jsonl" \
+  "$L/claude-opus-4.8.jsonl" "$L/gpt-5.5-agav.jsonl" --sensitivity "$L/stability.json" --benchmark live \
   "${NAV[@]}" --output "$OUT/live.html" --data "$DATA"
 
 S=examples/sweeper-php
