@@ -44,3 +44,7 @@ E=examples/sweeper-php
 report sweeper-php "$E/score-panel.json" "$E/"sweeper-*.jsonl
 E=examples/polybench-python
 report polybench-python "$E/score-panel.json" "$E/"polybench-*.jsonl
+for lang in python javascript typescript go; do
+  E=examples/hlb-deepswe-$lang
+  report hlb-deepswe-$lang "$E/score-panel.json" "$E/"*_*.jsonl
+done

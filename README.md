@@ -54,6 +54,7 @@ Each benchmark and language has its own board, since unit counts can't be compar
 | [Live Go](https://parsimony.lasu.dev/live-go.html) | SWE-bench Live MultiLang | 7 | 138 × 1 | 0.10.0-beta | [examples/live-go](examples/live-go/README.md) |
 | [SWEeper PHP](https://parsimony.lasu.dev/sweeper-php.html) | SWEeper-Bench | 15 | 128 × 1 | 0.10.0-beta | [examples/sweeper-php](examples/sweeper-php/README.md) |
 | [PolyBench Python](https://parsimony.lasu.dev/polybench-python.html) | SWE-PolyBench Verified | 5 | 113 × 1 | 0.10.0-beta | [examples/polybench-python](examples/polybench-python/README.md) |
+| [DeepSWE, harness comparison](https://parsimony.lasu.dev/harnesses.html) | DeepSWE (Harness Leaderboard runs) | 36 setups | 106 × 3 | 0.10.0-beta | [examples/hlb-deepswe](examples/hlb-deepswe/README.md) |
 | [SWE-Milestone, features](https://parsimony.lasu.dev/swe-milestone.html) (Go, TypeScript, Python) | SWE-Milestone | 10 | 60 × 1 | 0.10.0-beta | [Go](examples/swe-milestone-go/README.md), [TypeScript](examples/swe-milestone-typescript/README.md), [Python](examples/swe-milestone-python/README.md) |
 
 Each data directory holds one JSONL file per model with every attempt's measurement, the artifact hashes it came from and the frozen task population. The front page and the DeepSWE Python page also show a few newer models I ran myself (Python only) on 3–10 tasks ([my runs](examples/self-run/README.md)); they're faded and not ranked.

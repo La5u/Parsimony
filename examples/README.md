@@ -18,6 +18,7 @@ Every directory is frozen: records are never edited or relabelled, and changed m
 | [live-multilang](live-multilang/README.md) | Before-state audits for the Live JS/TS/Go boards (metadata only) | — |
 | [sweeper-php](sweeper-php/README.md) | SWEeper-Bench PHP, 15 model + agent configurations × 128 tasks | 0.10.0-beta |
 | [polybench-python](polybench-python/README.md) | SWE-PolyBench Verified Python, 5 model + agent configurations × 113 tasks (4 from open submission PRs) | 0.10.0-beta |
+| [hlb-deepswe](hlb-deepswe/README.md) (+ `hlb-deepswe-{python,javascript,typescript,go}`) | DeepSWE harness comparison (Harness Leaderboard): 2 models × 2 efforts × 9 harnesses, 106 tasks × 3 attempts | 0.10.0-beta |
 | [self-run](self-run/README.md) | Maintainer-run and self-graded newer models on 10 DeepSWE Python tasks (unranked) | 0.5.2-beta |
 | [external](external/) | Pinned Artificial Analysis snapshot and model mapping for the DeepSWE chart axis | – |
 

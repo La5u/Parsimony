@@ -48,6 +48,8 @@ class RebuildScriptTests(unittest.TestCase):
                     self.assertNotIn('--output ' + str(output / 'index.html'), commands)
                     for name in ('python', 'javascript', 'typescript', 'verified', 'live',
                                  'sweeper-php', 'live-javascript', 'live-typescript', 'live-go', 'swe-milestone',
-                                 'polybench-python'):
+                                 'polybench-python', 'harnesses-python', 'harnesses-javascript', 'harnesses-typescript'):
                         self.assertIn('--output ' + str(output / (name + '.html')), commands)
-                    self.assertEqual(len(commands.splitlines()), 11)
+                    for name in ('harnesses-go', 'harnesses'):  # the harness comparison's Go and combined pages
+                        self.assertNotIn('--output ' + str(output / (name + '.html')), commands)
+                    self.assertEqual(len(commands.splitlines()), 14)

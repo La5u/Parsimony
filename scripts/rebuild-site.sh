@@ -4,7 +4,8 @@
 #   scripts/rebuild-site.sh [OUT_DIR] [--offline]
 #
 # OUT_DIR defaults to site/. The Go page needs a checksum-bound scalar asset that is downloaded
-# from a GitHub release; --offline skips that page and the all-languages DeepSWE page (index.html) built from it. After rebuilding into site/, `git status`
+# from a GitHub release; --offline skips that page and the all-languages DeepSWE page (index.html) built from it,
+# and likewise the harness comparison's Go and all-languages pages. After rebuilding into site/, `git status`
 # should show no changes unless the template, site.py or data changed.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -21,7 +22,8 @@ mkdir -p "$OUT"
 NAV=(--nav 'DeepSWE, all languages=index.html' --nav 'DeepSWE Python=python.html' --nav 'DeepSWE JavaScript=javascript.html'
      --nav 'DeepSWE TypeScript=typescript.html' --nav 'DeepSWE Go=go.html' --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html'
      --nav 'Live JavaScript=live-javascript.html' --nav 'Live TypeScript=live-typescript.html' --nav 'Live Go=live-go.html' --nav 'SWEeper PHP=sweeper-php.html'
-     --nav 'SWE-Milestone, features=swe-milestone.html' --nav 'PolyBench Python=polybench-python.html')
+     --nav 'SWE-Milestone, features=swe-milestone.html' --nav 'PolyBench Python=polybench-python.html'
+     --nav 'DeepSWE, harness comparison=harnesses.html')
 AA=examples/external/artificial-analysis-2026-10-22.json
 # Newer Intelligence Index version (v5.0), shown as an extra axis until it has scored most models.
 AA_LATEST=examples/external/artificial-analysis-2026-11-08.json
@@ -35,7 +37,7 @@ if [ "$OFFLINE" = 0 ]; then
   cp examples/deepswe-go-v2/release-1.0/sensitivity.json "$GO/sensitivity.json"
   LANGS+=(go)
 else
-  printf '%s\n' 'Offline rebuild: skipping DeepSWE go.html and index.html; existing copies are left unchanged, and missing copies are not created.' >&2
+  printf '%s\n' 'Offline rebuild: skipping DeepSWE go.html and index.html (and the harness comparison harnesses-go.html and harnesses.html); existing copies are left unchanged, and missing copies are not created.' >&2
 fi
 
 for lang in "${LANGS[@]}"; do
@@ -84,6 +86,21 @@ done
 # SWE-Milestone feature work: Go, TypeScript and Python boards combined by same-task ratios, as on index.html.
 python -m parsimony.site --merge go=examples/swe-milestone-go --merge typescript=examples/swe-milestone-typescript \
   --merge python=examples/swe-milestone-python --benchmark milestone "${NAV[@]}" --output "$OUT/swe-milestone.html"
+
+# Harness Leaderboard: the same two models in nine harnesses on the DeepSWE tasks. Its own boards, never pooled
+# with the DeepSWE pages above; Go needs the languages extra like the DeepSWE Go page.
+HLB_LANGS=(python javascript typescript)
+[ "$OFFLINE" = 0 ] && HLB_LANGS+=(go)
+for lang in "${HLB_LANGS[@]}"; do
+  H=examples/hlb-deepswe-$lang
+  python -m parsimony.site "$H/score-panel.json" "$H/"*_*.jsonl --sensitivity "$H/sensitivity.json" \
+    --benchmark hlb "${NAV[@]}" --output "$OUT/harnesses-$lang.html"
+done
+if [ "$OFFLINE" = 0 ]; then
+  python -m parsimony.site --merge python=examples/hlb-deepswe-python --merge javascript=examples/hlb-deepswe-javascript \
+    --merge typescript=examples/hlb-deepswe-typescript --merge go=examples/hlb-deepswe-go --benchmark hlb "${NAV[@]}" \
+    --output "$OUT/harnesses.html"
+fi
 
 # Ranking diagnostics come from the same scalars; rebuild them with the pages so the two never drift apart.
 if [ "$OUT" = site ]; then

@@ -22,15 +22,16 @@ class SiteTests(unittest.TestCase):
         root = Path(__file__).resolve().parent.parent
         sources = published_sources('deepswe', root=root)
         *sources, self_run = sources  # the owner-run pilot is listed last, never as a frozen board
-        self.assertEqual([s['tasks'] for s in sources], [34, 5, 35, 34, 500, 300, 108, 111, 138, 128, 30, 18, 12, 113])
-        self.assertEqual([s['population_per_model'] for s in sources], [136, 20, 140, 136, 500, 300, 108, 111, 138, 128, 30, 18, 12, 113])
-        self.assertEqual([s['attempts_per_task'] for s in sources], [4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+        self.assertEqual([s['tasks'] for s in sources], [34, 5, 35, 34, 500, 300, 108, 111, 138, 128, 30, 18, 12, 113, 33, 5, 35, 33])
+        self.assertEqual([s['population_per_model'] for s in sources], [136, 20, 140, 136, 500, 300, 108, 111, 138, 128, 30, 18, 12, 113, 99, 15, 105, 99])
+        self.assertEqual([s['attempts_per_task'] for s in sources], [4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3])
         self.assertIn('/examples/deepswe-go-v2/', sources[3]['manifest_url'])
         go_population = json.loads((root / 'examples/deepswe-go-v2/population.json').read_bytes())
         self.assertEqual(go_population['measurement_track']['unit_version'], 'tree-sitter-go-units-v2')
         self.assertEqual([s['board_url'] for s in sources],
                          ['python.html', 'javascript.html', 'typescript.html', 'go.html', 'verified.html', 'live.html', 'live-javascript.html', 'live-typescript.html', 'live-go.html', 'sweeper-php.html',
-                          'swe-milestone.html', 'swe-milestone.html', 'swe-milestone.html', 'polybench-python.html'])
+                          'swe-milestone.html', 'swe-milestone.html', 'swe-milestone.html', 'polybench-python.html',
+                          'harnesses-python.html', 'harnesses-javascript.html', 'harnesses-typescript.html', 'harnesses-go.html'])
         plan = (root / 'examples/self-run/plan.json').read_bytes()
         self.assertTrue(self_run['self_run'])
         self.assertFalse(self_run['active'])
@@ -98,7 +99,7 @@ class SiteTests(unittest.TestCase):
             manifest = json.loads(path.read_bytes())
             manifest['tasks'].pop(next(iter(manifest['tasks'])))
             path.write_text(json.dumps(manifest))
-            with self.assertRaisesRegex(ValueError, 'four attempts'):
+            with self.assertRaisesRegex(ValueError, '4 attempts'):
                 published_sources('live', root=temporary)
 
     def test_build_and_render(self):

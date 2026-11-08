@@ -11,6 +11,7 @@ from pathlib import Path
 from .benchmark import read_jsonl
 from .deepswe import cluster, display_name
 from .external import attach
+from . import hlb
 from .scoring import UNCALIBRATED, VERSION, measured, out_of_scope, quantile, score_records
 
 TEMPLATE = Path(__file__).resolve().parent / 'template.html'
@@ -138,6 +139,16 @@ BENCHMARKS = {
                              'open, unmerged submission pull requests; Jitto Build reports 129 of its 294 resolved '
                              "patches are near-copies of the reference fix. DeepSeek V4 Flash · Mobile Coder is left off: "
                              "it fetched its task's own upstream fix in 151 of 382 trajectories."),
+    'hlb': dict(name='DeepSWE, harness comparison', url='https://huggingface.co/spaces/joelniklaus/harness-leaderboard',
+                reference='Reference solution',
+                task_url='https://github.com/datacurve-ai/deep-swe/tree/main/tasks/{task}', task_link='Task on GitHub',
+                results="the Harness Leaderboard's published results", attempts=3,
+                harness_note='Each row is one model in one coding-agent harness: GLM-5.3 Flash and DeepSeek V4.1 Flash, '
+                             'at low and high reasoning effort, in nine harnesses, so the ratio compares harnesses as '
+                             'much as models.',
+                notice="Runs, patches and pass/fail come from Joel Niklaus's Harness Leaderboard (DeepSWE v1.1 tasks, "
+                       'three attempts each; its own exclusions and answer-key checks applied), not checked '
+                       'independently. Never pooled with the DeepSWE boards, which run every model in mini-SWE-agent.'),
 }
 
 
@@ -160,6 +171,10 @@ def published_sources(benchmark, language='python', root=None):
         ('SWE-Milestone · TypeScript', 'milestone', 'typescript', 'swe-milestone-typescript', 'population-manifest.json', 'swe-milestone.html'),
         ('SWE-Milestone · Python', 'milestone', 'python', 'swe-milestone-python', 'population-manifest.json', 'swe-milestone.html'),
         ('SWE-PolyBench Verified · Python', 'polybench', 'python', 'polybench-python', 'population-manifest.json', 'polybench-python.html'),
+        ('DeepSWE harnesses · Python', 'hlb', 'python', 'hlb-deepswe-python', 'population.json', 'harnesses-python.html'),
+        ('DeepSWE harnesses · JavaScript', 'hlb', 'javascript', 'hlb-deepswe-javascript', 'population.json', 'harnesses-javascript.html'),
+        ('DeepSWE harnesses · TypeScript', 'hlb', 'typescript', 'hlb-deepswe-typescript', 'population.json', 'harnesses-typescript.html'),
+        ('DeepSWE harnesses · Go', 'hlb', 'go', 'hlb-deepswe-go', 'population.json', 'harnesses-go.html'),
     ]
     sources = []
     for name, key, lang, directory, filename, board_url in boards:
@@ -167,16 +182,16 @@ def published_sources(benchmark, language='python', root=None):
         raw = (root / path).read_bytes()
         manifest = json.loads(raw)
         tasks = manifest['tasks']
-        attempts = 4 if key == 'deepswe' else 1
-        if key == 'deepswe':
+        attempts = BENCHMARKS[key]['attempts']
+        if attempts > 1:
             groups = {}
             for task in tasks:
                 base, separator, attempt = task.rpartition('#')
                 if not separator or not base:
                     raise ValueError(f'{path}: invalid attempt ID {task!r}')
                 groups.setdefault(base, set()).add(attempt)
-            if any(ids != {'1', '2', '3', '4'} for ids in groups.values()):
-                raise ValueError(f'{path}: each task must have four attempts (#1–#4)')
+            if any(ids != {str(k) for k in range(1, attempts + 1)} for ids in groups.values()):
+                raise ValueError(f'{path}: each task must have {attempts} attempts (#1–#{attempts})')
             count = len(groups)
         else:
             count = len(tasks)
@@ -204,6 +219,8 @@ def published_sources(benchmark, language='python', root=None):
 def label(agent):
     if agent.startswith('deepswe-'):
         return display_name(agent)
+    if agent.startswith(hlb.PREFIX):
+        return hlb.display_name(agent)
     short = PREFIX.sub('', agent)
     return NAMES.get(short, short)
 
