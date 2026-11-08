@@ -165,7 +165,7 @@ The population and panel are frozen; do not overwrite them when adding entrants.
 A new reference pool requires a separately named snapshot.
 
 ```sh
-RECORDS='examples/live-python/deepseek-v4.1-flash.jsonl examples/live-python/gpt-5.6-sol.jsonl examples/live-python/claude-opus-4.8.jsonl examples/live-python/gpt-5.5-agav.jsonl examples/live-python/claude-opus-5.5-xhigh.jsonl'
+RECORDS='examples/live-python/withheld/deepseek-v4.1-flash.jsonl examples/live-python/gpt-5.6-sol.jsonl examples/live-python/claude-opus-4.8.jsonl examples/live-python/gpt-5.5-agav.jsonl examples/live-python/withheld/claude-opus-5.5-xhigh.jsonl'
 python -m parsimony.scoring score examples/live-python/score-panel.json $RECORDS \
   --output /tmp/live-scores.json
 cmp examples/live-python/scores.json /tmp/live-scores.json
@@ -189,7 +189,7 @@ for phase in inventory audit measure; do   # measure needs this checkout committ
   PYTHONPATH=/path/to/worktree-at-de63300 python examples/benchmark-discovery/run-priority-live.py \
     --output-dir $D --phase $phase --cohort claude_opus_5_5
 done
-cmp $D/claude_opus_5_5.records.jsonl examples/live-python/claude-opus-5.5-xhigh.jsonl
+cmp $D/claude_opus_5_5.records.jsonl examples/live-python/withheld/claude-opus-5.5-xhigh.jsonl
 PYTHONPATH=. python examples/benchmark-discovery/review-aiwork-opus55-live.py --external-dir $D \
   --output examples/benchmark-discovery/aiwork-opus55-release.json
 python -m parsimony.release audit examples/live-python/population-manifest.json $RECORDS \
