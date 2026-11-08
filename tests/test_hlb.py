@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from parsimony import hlb
-from parsimony.site import BENCHMARKS, label, published_sources
+from parsimony.site import BENCHMARKS, color_group, label, published_sources
 from tests.test_deepswe import TOML, FakeCache
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -22,6 +22,11 @@ class HarnessLeaderboardTests(unittest.TestCase):
         self.assertEqual(hlb.display_name('hlb-deepswe_glm-5.3-flash_high_claude-code'), 'GLM-5.3 Flash (high) · Claude Code')
         self.assertEqual(label('hlb-deepswe_deepseek-v4.1-flash_low_mini-swe-agent'), 'DeepSeek V4.1 Flash (low) · mini-SWE-agent')
         self.assertEqual(hlb.setup_id('deepseek-ai/DeepSeek-V4.1-Flash', 'low', 'pi'), 'deepseek-v4.1-flash_low_pi')
+
+    def test_rows_are_colored_by_harness_with_a_short_chart_label(self):
+        self.assertEqual(color_group('hlb-deepswe_deepseek-v4.1-flash_low_mini-swe-agent'),
+                         dict(color_group='mini-SWE-agent', short_name='DeepSeek low'))
+        self.assertEqual(color_group('deepswe-python_claude-opus'), {})
 
     def test_dataset_keeps_scored_tasks_of_one_language_with_three_attempts(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -193,7 +193,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   </details>
   <p class="small" id="ratio-note" hidden></p>
   <p class="small muted" id="graph-legend"></p>
-  <div class="small" id="company-legend" aria-label="Model companies"></div>
+  <div class="small" id="company-legend" aria-label="Colors"></div>
   <div id="graph" aria-label="Comparison of selected metrics per model"></div>
   <p class="small" id="export-controls"><button type="button" id="export-png">Download chart (PNG)</button> <button type="button" id="copy-png" hidden>Copy image</button> <span class="muted" id="export-status" role="status" aria-live="polite"></span></p>
   <div class="small" id="graph-tooltip" role="tooltip" hidden></div>
@@ -710,9 +710,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const companyColors = {
     'Anthropic': '#d97757', 'OpenAI': '#000000', 'Google': '#34a853', 'DeepSeek': '#2756bd',
     'Alibaba': '#e59215', 'xAI': '#8b5cf6', 'Z.ai': '#c94eaf', 'Moonshot AI': '#00a6b2',
-    'MiniMax': '#dc5263', 'Meta': '#6366f1', 'Mistral AI': '#b18a00', 'Other': '#64748b'
+    'MiniMax': '#dc5263', 'Meta': '#6366f1', 'Mistral AI': '#b18a00', 'Other': '#64748b',
+    // Harness comparison boards color by harness (color_group) instead of the model's company.
+    'Claude Code': '#d97757', 'Codex': '#000000', 'Qwen Code': '#e6b800', 'Kimi Code': '#00a6b2',
+    'pi': '#34a853', 'OpenCode': '#2756bd', 'Hermes': '#8b5cf6', 'mini-SWE-agent': '#dc2626', 'OpenClaw': '#7c4a1e'
   };
   const companyColor = company => companyColors[company] || companyColors.Other;
+  const groupOf = m => m.color_group || m.company || 'Other';
+  const barName = m => m.short_name ? `${m.short_name} · ${m.color_group}` : m.name;
   // External capability indices replace Solved as the default Y axis when a pinned snapshot is present.
   // With human-fix ratios the chart opens on code vs. the human fix; the table still sorts by rank.
   // A new index version starts with few models scored; open on Solved until at least half have a score.
@@ -1005,7 +1010,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       ? `${metric}.`
       : 'No data for this view.';
     showRatioNote([key]);
-    $('company-legend').innerHTML = [...new Set(rows.map(r => r.m.company || 'Other'))].sort().map(company =>
+    $('company-legend').innerHTML = [...new Set(rows.map(r => groupOf(r.m)))].sort((a, b) => a.localeCompare(b)).map(company =>
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('')
       + fadeLegend(rows.some(r => !r.latest && !r.selfRun), rows.some(r => r.selfRun));
     const lo = Math.min(0, ...rows.map(r => r.v)), hi = Math.max(0, ...rows.map(r => r.v));
@@ -1020,8 +1025,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     $('graph').innerHTML = `<div class="bars" role="list" aria-label="${esc(metric)} per model, ${footprint ? 'smallest' : 'largest'} first">` + rows.map((r, k) =>
       (k === firstSelfRun ? `<div class="bar-group" role="presentation">${runsLabel}: ${selfRunTasks} tasks only, so not comparable with the bars above</div>` : '') +
       `<div class="bar-row${r.latest ? '' : ' older'}${r.selfRun ? ' self-run' : ''}" role="listitem" tabindex="0" data-bar="${k}" aria-label="${esc(note(r).replace(/\n/g, '; '))}">` +
-      `<span class="bar-name">${esc(r.m.name)}</span>` +
-      `<span class="bar-track">${lo < 0 ? `<span class="bar-zero" style="left:${pct(0)}%"></span>` : ''}<span class="bar" style="left:${pct(Math.min(0, r.v))}%;width:${Math.abs(r.v) / span * 100}%;background:${companyColor(r.m.company || 'Other')}"></span></span>` +
+      `<span class="bar-name">${esc(barName(r.m))}</span>` +
+      `<span class="bar-track">${lo < 0 ? `<span class="bar-zero" style="left:${pct(0)}%"></span>` : ''}<span class="bar" style="left:${pct(Math.min(0, r.v))}%;width:${Math.abs(r.v) / span * 100}%;background:${companyColor(groupOf(r.m))}"></span></span>` +
       `<span class="bar-value">${units(r.v)}${percent}</span></div>`).join('') + '</div>';
     document.querySelectorAll('#graph [data-bar]').forEach(row => {
       const show = event => showTooltipAt(row, event, note(rows[Number(row.dataset.bar)]));
@@ -1039,10 +1044,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const xLabel = options.find(o => o.key === axes.x).label, yLabel = options.find(o => o.key === axes.y).label;
     const axisFormat = (value, key) => ratioKeys.includes(key) ? fmt(value, 2) + '×' : fmt(value) + (['resolve_rate', 'coverage'].includes(key) ? '%' : '');
     const shown = data.models.map((m, i) => ({x: metricValue(m, i, axes.x), y: metricValue(m, i, axes.y),
-      name: m.name, company: m.company || 'Other', count: measuredCount(m), match: m.aa_match, latest: m.latest !== false,
+      name: m.name, company: groupOf(m), count: measuredCount(m), match: m.aa_match, latest: m.latest !== false,
       kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : (selected[2][i][6] || selected[2][i][0]) === 'r' ? 'resolved' : 'unknown') : 'all', i, m}))
       .concat(selected ? [] : activeSelfRun().map(m => ({x: metricValue(m, -1, axes.x), y: metricValue(m, -1, axes.y), name: m.name,
-        company: m.company || 'Other', count: measuredCount(m), match: m.aa_match, latest: true, kind: 'all', i: -1, m, selfRun: true})))
+        company: groupOf(m), count: measuredCount(m), match: m.aa_match, latest: true, kind: 'all', i: -1, m, selfRun: true})))
       .filter(p => matchesWeight(p.m) && Number.isFinite(p.x) && Number.isFinite(p.y));
     // Hidden older generations don't fit the axes; they are drawn invisibly and shown while their line is hovered.
     const onChart = newestShown(shown);
@@ -1054,7 +1059,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const unmatched = usesExternalAxis() ? data.models.filter(m => matchesWeight(m) && (showOlder || m.latest !== false) && [currentAxes().x, currentAxes().y].some(k => k.startsWith('aa_') && m[k] == null)).length : 0;
     $('aa-missing').textContent = unmatched ? ` ${unmatched} model${unmatched > 1 ? 's have' : ' has'} no score, so ${unmatched > 1 ? 'they are' : 'it is'} not on this chart.` : '';
     showRatioNote([currentAxes().x, currentAxes().y]);
-    $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort().map(company =>
+    $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort((a, b) => a.localeCompare(b)).map(company =>
       `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('')
       + fadeLegend(points.some(p => !p.latest && !p.selfRun), points.some(p => p.selfRun))
       + (hiddenOlder.length ? '<span class="hover-hint">Hover a point for its older generations</span>' : '');
@@ -1108,7 +1113,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const usesExternal = [axes.x, axes.y].some(k => k.startsWith('aa_'));
     const matchNote = p => usesExternal && p.match && p.match !== 'exact'
       ? {effort_unlabelled: 'Artificial Analysis entry has no effort label', undated_alias: 'undated model ID matched to the Artificial Analysis snapshot'}[p.match] : '';
-    const pointLabel = p => `${p.name} (${p.company}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; off the chart\'s scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + (p.count ?? 0) + '/' + (denominator(p.m) ?? 0) + ' solved attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}${p.m && unranked(p.m) ? '; ' + unrankedNote(p.m) : ''}`;
+    const pointLabel = p => `${p.name} (${p.m.company || 'Other'}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; off the chart\'s scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + (p.count ?? 0) + '/' + (denominator(p.m) ?? 0) + ' solved attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}${p.m && unranked(p.m) ? '; ' + unrankedNote(p.m) : ''}`;
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
     const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${narrow ? 4 : 6}" ${p.m && partialOpacity(p.m) ? ` fill-opacity="${partialOpacity(p.m)}"` : ''} tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('')
       + older.map((p, k) => `<circle data-older="${k}" data-line="${esc(p.m.line)}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'} older" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${narrow ? 4 : 6}" aria-hidden="true" data-company="${esc(p.company)}"></circle>`).join('');
@@ -1125,14 +1130,14 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const labelled = points;
     labelled.forEach(p => {
       // Full names keep the reasoning effort, e.g. 'GPT-6 Sol (high)'.
-      const text = p.name + (p.offscale ? ' (off-scale)' : '');
+      const text = (p.m.short_name || p.name) + (p.offscale ? ' (off-scale)' : '');
       overlays.push(`<span class="point-label${p.latest ? '' : ' older-label'}${p.selfRun ? ' self-run-label' : ''}" data-point="${points.indexOf(p)}" data-company="${esc(p.company)}" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(text)}</span>`);
     });
     older.forEach((p, k) => overlays.push(`<span class="point-label older-label" data-older="${k}" data-line="${esc(p.m.line)}" data-company="${esc(p.company)}" aria-hidden="true" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(p.name)}</span>`));
     const scale = ($('graph').clientWidth || W) / W;
     const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
     $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its company. Each model line's newest generation is labelled; hovering a point shows that line's older generations, lighter, and Show older generations adds them all. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other companies fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(${Math.max(16, L - 20 - 7 * yTickChars)} ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its ${data.models.some(m => m.color_group) ? 'harness' : 'company'}. Each model line's newest generation is labelled; hovering a point shows that line's older generations, lighter, and Show older generations adds them all. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other ${data.models.some(m => m.color_group) ? 'harnesses' : 'companies'} fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(${Math.max(16, L - 20 - 7 * yTickChars)} ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
     // Labels sit near their point without covering other labels or points; ranked, current models choose first.
     const graphWidth = $('graph').clientWidth, graphHeight = $('graph').clientHeight;
     const labels = [...document.querySelectorAll('#graph .point-label[data-point]')];

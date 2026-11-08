@@ -41,6 +41,18 @@ def display_name(agent, setups=None):
     return f'{name} ({effort}) · {HARNESSES.get(harness, harness)}'
 
 
+def harness_name(agent):
+    """'hlb-deepswe_glm-5.3-flash_high_claude-code' -> 'Claude Code' (the board's color group)."""
+    harness = agent.removeprefix(PREFIX).split('_')[2]
+    return HARNESSES.get(harness, harness)
+
+
+def short_name(agent):
+    """Chart label without the harness, which the color shows: 'GLM high', 'DeepSeek low'."""
+    model, effort, _ = agent.removeprefix(PREFIX).split('_')
+    return f"{next((v for k, v in MODELS.items() if k.split('/')[1].lower() == model), model).split('-')[0].split(' ')[0]} {effort}"
+
+
 def setup_id(model, effort, harness):
     return f"{model.split('/')[1].lower()}_{effort}_{harness}"
 

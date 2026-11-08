@@ -225,6 +225,13 @@ def label(agent):
     return NAMES.get(short, short)
 
 
+def color_group(agent):
+    """Harness comparison rows are colored by harness, with a short chart label (the model and effort)."""
+    if agent.startswith(hlb.PREFIX):
+        return dict(color_group=hlb.harness_name(agent), short_name=hlb.short_name(agent))
+    return {}
+
+
 def company(agent):
     """Model developer, not the agent harness or hosting provider."""
     name = label(agent).lower()
@@ -502,6 +509,7 @@ def build(panel, records, draws=2000, seed=42):
                              if t['status'] == 'failed' and t['score'] is not None) / len(entry['tasks'])
         models.append(dict(
             agent=entry['agent'], name=label(entry['agent']), company=company(entry['agent']), score=entry['score'],
+            **color_group(entry['agent']),
             footprint_population_count=max(len(population_tasks), max((r.get('benchmark_tasks', len(population_tasks))
                                                            for r in group.values()), default=len(population_tasks))),
             measured_attempts=len(measured_metrics),
@@ -655,7 +663,7 @@ def build_merged(boards, draws=2000, seed=42):
                               attempts=board['population_count'] // tasks, models=len(board['models'])))
         for m in board['models']:
             entry = models.setdefault(m['agent'], dict(
-                agent=m['agent'], name=m['name'], company=m['company'], languages={}, pairs=({}, {}, {}),
+                agent=m['agent'], name=m['name'], company=m['company'], **color_group(m['agent']), languages={}, pairs=({}, {}, {}),
                 upstream_solved_attempts=0, measured_solved_attempts=0, footprint_population_count=0))
             for k in (0, 1):
                 entry['pairs'][k][language] = same_task_pairs(per_model[m['agent']], typical, k)

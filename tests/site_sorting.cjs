@@ -8,7 +8,7 @@ delete data.external; // Pages built with --external are checked separately belo
 delete data.self_run_models; // Likewise for self-run points.
 delete data.merged; // The all-languages DeepSWE page is checked on its own fixture at the end.
 // Same-task fields are tested on their own fixture below; the base fixture is the plain-mean board.
-const base = Object.fromEntries(Object.entries(data.models[0]).filter(([key]) => !key.startsWith('same_task') && !key.startsWith('human_task') && !key.includes('complexity') && !['latest', 'line'].includes(key)));
+const base = Object.fromEntries(Object.entries(data.models[0]).filter(([key]) => !key.startsWith('same_task') && !key.startsWith('human_task') && !key.includes('complexity') && !['latest', 'line', 'color_group', 'short_name'].includes(key)));
 data.models = [
   {...base, agent: 'alpha', footprint_population_count: 4, measured_churn_mean: 4, name: 'Alpha', score: 10, lower: 4, upper: 16, ci: [1, 90], resolve_rate: .8,
     company: 'Anthropic', latest: true, measured_net_mean: -2, measured_solved_net_mean: 7, measured_attempts: 4, measured_solved_attempts: 2, upstream_solved_attempts: 4, rank_range: [1, 2]},
