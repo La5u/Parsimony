@@ -81,6 +81,10 @@ body { overflow-x: clip; }
 #graph .tick { fill: #000; font: 12px system-ui, sans-serif; }
 #graph circle { stroke: none; cursor: pointer; }
 #graph .older { fill-opacity: 0.70; }
+#graph .spoke { stroke-width: 1; stroke-opacity: 0.45; transition: opacity 0.15s; }
+#graph .spoke.dim { opacity: 0.12; }
+#graph circle.hub { stroke: #fff; stroke-width: 1.5; }
+#graph .point-label.hub-label { font-weight: 700; font-size: 11px; line-height: 13px; }
 #graph .point-label { position: absolute; font: 400 8px system-ui, sans-serif; color: #000; white-space: nowrap; pointer-events: none; transform: translate(10px,-50%); line-height: 10px; }
 #graph .point-label.older-label { opacity: 0.75; }
 #graph [data-line]:not(.line-shown) { visibility: hidden; }
@@ -1095,7 +1099,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
 
     // Narrow screens draw at their real width (text stays 12px) and a taller shape, so points spread out.
     const narrow = $('graph').clientWidth > 0 && $('graph').clientWidth < 600;
-    const pointR = narrow ? 4 : 6;
+    // Harness boards: small setup dots, joined by spokes to one labelled average dot per harness.
+    const grouped = !selected && data.models.some(m => m.color_group);
+    const pointR = grouped ? (narrow ? 3 : 4) : (narrow ? 4 : 6);
     const W = narrow ? Math.max(300, $('graph').clientWidth) : 720, H = narrow ? Math.round(W * 1.15) : 440, R = narrow ? 12 : 30, T = 18, B = 52;
     let L;
     const excludedAxes = [];
@@ -1137,6 +1143,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       p.px = sx(p.x);
       p.py = sy(p.y);
     }
+    const hubs = grouped ? [...new Set(points.map(p => p.company))].map(company => {
+      const own = points.filter(p => p.company === company);
+      return {company, own, latest: true, hub: true, px: own.reduce((a, p) => a + p.px, 0) / own.length, py: own.reduce((a, p) => a + p.py, 0) / own.length};
+    }) : [];
     // Older generations outside the fitted axes stay hidden even on hover.
     const older = hiddenOlder.map(p => ({...p, px: sx(p.x), py: sy(p.y)})).filter(p => p.x >= xmin && p.x <= xmax && p.y >= ymin && p.y <= ymax);
     const ticks = (lo, hi, axis) => { const {values, digits} = roundTicks(lo, hi); return values.map(v => axis === 'x' ? `<line class="axis" x1="${sx(v)}" y1="${H-B}" x2="${sx(v)}" y2="${H-B+4}"/><text class="tick" text-anchor="middle" x="${sx(v)}" y="${H-B+19}">${tickLabel(v, axes.x, digits)}</text>` : `<line class="axis" x1="${L-4}" y1="${sy(v)}" x2="${L}" y2="${sy(v)}"/><text class="tick" text-anchor="end" x="${L-8}" y="${sy(v)+4}">${tickLabel(v, axes.y, digits)}</text>`).join(''); };
@@ -1145,8 +1155,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       ? {effort_unlabelled: 'Artificial Analysis entry has no effort label', undated_alias: 'undated model ID matched to the Artificial Analysis snapshot'}[p.match] : '';
     const pointLabel = p => `${p.name} (${p.m.company || 'Other'}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; off the chart\'s scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + (p.count ?? 0) + '/' + (denominator(p.m) ?? 0) + ' solved attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}${p.m && unranked(p.m) ? '; ' + unrankedNote(p.m) : ''}`;
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
-    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${pointR}" ${p.m && partialOpacity(p.m) ? ` fill-opacity="${partialOpacity(p.m)}"` : ''} tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('')
-      + older.map((p, k) => `<circle data-older="${k}" data-line="${esc(p.m.line)}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'} older" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${pointR}" aria-hidden="true" data-company="${esc(p.company)}"></circle>`).join('');
+    const circles = hubs.map(h => h.own.map(p => `<line class="spoke" x1="${h.px}" y1="${h.py}" x2="${p.px}" y2="${p.py}" stroke="${companyColor(h.company)}" data-company="${esc(h.company)}"/>`).join('')).join('')
+      + points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${pointR}" ${p.m && partialOpacity(p.m) ? ` fill-opacity="${partialOpacity(p.m)}"` : ''} tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('')
+      + older.map((p, k) => `<circle data-older="${k}" data-line="${esc(p.m.line)}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'} older" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${pointR}" aria-hidden="true" data-company="${esc(p.company)}"></circle>`).join('')
+      + hubs.map(h => `<circle class="hub" cx="${h.px}" cy="${h.py}" r="${narrow ? 5 : 7}" fill="${companyColor(h.company)}" aria-hidden="true" data-company="${esc(h.company)}"></circle>`).join('');
     // Green zone: the half of each axis that is better (lower footprint, higher solved/index).
     const better = {net: -1, solved_net: -1, solved_cx: -1, cx: -1, same_net: -1, same_cx: -1, human_net: -1, resolve_rate: 1, aa_coding: 1, aa_intelligence: 1, aa_intelligence_latest: 1, ...Object.fromEntries(langKeys.map(k => [k, -1]))};
     const bx = better[axes.x], by = better[axes.y];
@@ -1157,26 +1169,26 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     }
     // All labels share a fixed CSS-pixel offset from the actual point.
     const overlays = [];
-    const labelled = points;
-    labelled.forEach(p => {
-      // Full names keep the reasoning effort, e.g. 'GPT-6 Sol (high)'.
-      const text = (p.m.short_name || p.name) + (p.offscale ? ' (off-scale)' : '');
-      overlays.push(`<span class="point-label${p.latest ? '' : ' older-label'}${p.selfRun ? ' self-run-label' : ''}" data-point="${points.indexOf(p)}" data-company="${esc(p.company)}" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(text)}</span>`);
+    const labelled = grouped ? hubs : points;
+    labelled.forEach((p, k) => {
+      // Full names keep the reasoning effort, e.g. 'GPT-6 Sol (high)'; harness boards label each harness's average.
+      const text = p.hub ? p.company : (p.m.short_name || p.name) + (p.offscale ? ' (off-scale)' : '');
+      overlays.push(`<span class="point-label${p.hub ? ' hub-label' : ''}${p.latest ? '' : ' older-label'}${p.selfRun ? ' self-run-label' : ''}" data-point="${k}" data-company="${esc(p.company)}" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(text)}</span>`);
     });
     older.forEach((p, k) => overlays.push(`<span class="point-label older-label" data-older="${k}" data-line="${esc(p.m.line)}" data-company="${esc(p.company)}" aria-hidden="true" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(p.name)}</span>`));
     const scale = ($('graph').clientWidth || W) / W;
     const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
     $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
-    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">One point per model, colored by its ${data.models.some(m => m.color_group) ? 'harness' : 'company'}. Each model line's newest generation is labelled; hovering a point shows that line's older generations, lighter, and Show older generations adds them all. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other ${data.models.some(m => m.color_group) ? 'harnesses' : 'companies'} fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(${Math.max(16, L - 20 - 7 * yTickChars)} ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    $('graph').innerHTML = `<svg viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">${grouped ? 'One small point per setup (model and effort), colored by harness; the large labelled point is each harness\'s average, joined to its setups.' : `One point per model, colored by its ${data.models.some(m => m.color_group) ? 'harness' : 'company'}.`} Each model line's newest generation is labelled; hovering a point shows that line's older generations, lighter, and Show older generations adds them all. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other ${data.models.some(m => m.color_group) ? 'harnesses' : 'companies'} fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(${Math.max(16, L - 20 - 7 * yTickChars)} ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
     // Labels sit near their point without covering other labels or points; ranked, current models choose first.
     const graphWidth = $('graph').clientWidth, graphHeight = $('graph').clientHeight;
     const labels = [...document.querySelectorAll('#graph .point-label[data-point]')];
     if (graphWidth && graphHeight && labels.length) {
-      const at = label => points[Number(label.dataset.point)];
+      const at = label => labelled[Number(label.dataset.point)];
       const order = labels.map((l, i) => i).sort((a, b) => (!!at(labels[a]).selfRun - !!at(labels[b]).selfRun) || (at(labels[b]).latest - at(labels[a]).latest));
       const xy = p => ({x: p.px / W * graphWidth, y: p.py / H * graphHeight});
       const offsets = placeLabelBoxes(order.map(i => xy(at(labels[i]))), order.map(i => ({w: labels[i].offsetWidth, h: labels[i].offsetHeight})),
-        points.map(xy), 6 * graphWidth / W, graphWidth, graphHeight,
+        points.concat(hubs).map(xy), (grouped ? 7 : 6) * graphWidth / W, graphWidth, graphHeight,
         // The rotated Y axis title.
         [{x: 0, y: T / H * graphHeight, w: (Math.max(16, L - 20 - 7 * yTickChars) + 8) * graphWidth / W, h: (H - T - B) / H * graphHeight}]);
       order.forEach((i, k) => { labels[i].style.transform = `translate(${offsets[k].dx}px, ${offsets[k].dy}px)`; });
