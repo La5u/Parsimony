@@ -13,6 +13,8 @@
 
 As on the website: a setup's net units added on the tasks it solved, divided by what the other setups added on those same tasks (0.8× = 20% less code), per language, then averaged over languages weighted by shared tasks. Only tasks solved by at least 3 other setups count; a setup needs 15 such tasks.
 
+This table is the peer ratio. The website now ranks by the ratio to the human fix (`docs/method.md`), so its order differs.
+
 | Rank | Model | Vs. others, same tasks | 95% range | Tasks | Solved | Measured |
 |---:|---|---:|---|---:|---:|---:|
 | 1 | GLM-5.3 Flash (low) · Codex | 0.85× | 0.81–0.90× | 54 | 27.4% | 82/87 |

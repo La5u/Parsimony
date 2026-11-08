@@ -92,7 +92,6 @@ body { overflow-x: clip; }
 .source-bar { height: 4px; background: var(--link); margin: 2px 0 0; }
 .source-row { margin-bottom: 8px; }
 #source-evidence { overflow-wrap: anywhere; }
-#graph .best-zone { fill: #16a34a; fill-opacity: 0.12; }
 #graph .bars { display: grid; grid-template-columns: minmax(6em, 15em) minmax(0, 1fr) auto; gap: 3px 10px; align-items: center; font: 12px system-ui, sans-serif; color: #000; }
 #graph .bar-row { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; column-gap: inherit; cursor: pointer; }
 @media (max-width: 600px) { #graph .bars { grid-template-columns: minmax(0, 8.5em) minmax(0, 1fr) auto; gap: 3px 6px; font-size: 11px; } }
@@ -402,10 +401,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const intelVersion = external?.index_versions?.aa_intelligence ? ` v${external.index_versions.aa_intelligence}` : '';
   // A newer index version can sit beside the pinned one as its own axis (data.external_latest).
   const externalLatest = (external && data.external_latest) || null;
-  const indexLabel = (meta, fallback) => `Artificial Analysis Intelligence Index${meta.index_versions?.aa_intelligence ? ' v' + meta.index_versions.aa_intelligence : fallback}, ${meta.fetched_at.slice(0, 10)}`;
-  const intelLabel = externalLatest ? indexLabel(external, ' (previous version)') : `Artificial Analysis Intelligence Index${intelVersion}`;
+  const indexLabel = (meta, fallback) => `AA Intelligence Index${meta.index_versions?.aa_intelligence ? ' v' + meta.index_versions.aa_intelligence : fallback}`;
+  const intelLabel = externalLatest ? indexLabel(external, ' (previous)') : `AA Intelligence Index${intelVersion}`;
   const latestLabel = externalLatest ? indexLabel(externalLatest, ' (newer version)') : '';
-  const scoredShare = key => data.models.length > 0 && data.models.filter(m => Number.isFinite(m[key])).length >= data.models.length / 2;
   // Owner-run configurations: shown faded in the all-tasks view, never ranked.
   const selfRun = data.self_run_models || [];
   let showSelfRun = true, showOtherHarnesses = false, showOlder = false, weightFilter = 'all';
@@ -455,7 +453,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   // Same-task comparison (task difficulty): code relative to the other models on the tasks a model solved.
   const sameTask = data.models.some(m => Number.isFinite(m.same_task_net));
   const humanFix = data.models.some(m => Number.isFinite(m.human_task_net));
-  const rankValue = m => unranked(m) ? null : sameTask ? m.same_task_net : netMean(m);
+  const rankValue = m => unranked(m) ? null : humanFix ? m.human_task_net : sameTask ? m.same_task_net : netMean(m);
   const rankOf = m => Number.isFinite(rankValue(m)) ? 1 + data.models.filter(other =>
     Number.isFinite(rankValue(other)) && rankValue(other) < rankValue(m)).length : null;
   // One sentence above the chart whenever an axis is a same-task ratio, so 0.8× reads without opening help.
@@ -471,11 +469,16 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     (older ? '<span><span class="company-swatch fade-swatch" style="opacity:0.7" aria-hidden="true"></span>Lighter: older generation</span>' : '')
     + (selfRun ? '<span><span class="company-swatch fade-swatch" style="opacity:0.35" aria-hidden="true"></span>Faintest: ' + runsLabel.toLowerCase() + ', not ranked</span>' : '');
   const ratioKeys = ['same_net', 'same_cx', 'human_net', ...langKeys], footprintKeys = ['net', 'solved_net', 'churn', 'solved_cx', 'cx', ...ratioKeys];
-  const defaultKey = sameTask ? 'same_net' : 'solved_net';
+  const primaryKey = humanFix ? 'human_net' : 'same_net', primaryName = humanFix ? 'Vs. human fix' : 'Vs. others';
+  const defaultKey = humanFix || sameTask ? primaryKey : 'solved_net';
   if (sameTask) {
     $('rank-help').textContent = 'Some tasks need much more code than others, and models solve different tasks. So each model is ranked by the code it added on the tasks it solved, divided by what the other models added on those same tasks: 0.8× means 20% less code than they wrote. Only tasks solved by at least 3 other models count, and totals are compared, so tasks where everyone writes a lot weigh more than small ones. "Net syntax units added (mean)" is the plain average and also includes failed attempts. Decision points (added branches, loops and functions) are compared the same way.' + (data.min_rank_tasks ? ` A model needs at least ${data.min_rank_tasks} such tasks to be ranked; with fewer it is listed faded at the end.` : '');
   }
-  if (merged) {
+  const humanHelp = 'Ranked by the code a model added on the tasks it solved, divided by what the human fix added on those tasks; totals are compared. 0.8× = 20% less code than the human fix.';
+  if (humanFix && !merged) $('rank-help').textContent = humanHelp + (data.min_rank_tasks ? ` Models with fewer than ${data.min_rank_tasks} comparable tasks are listed faded at the end.` : '');
+  if (merged && humanFix) {
+    $('rank-help').textContent = `${humanHelp} This page averages each language's ratio, weighted by shared tasks. Models with fewer than ${data.min_rank_tasks} shared tasks are listed faded at the end.`;
+  } else if (merged) {
     $('rank-help').textContent = `Each language board ranks models by the code they added on the tasks they solved, divided by what the other models added on those same tasks: 0.8× means 20% less code. This page averages each model's ${languages.map(l => l.name).join(', ')} ratios, weighting each language by the model's shared tasks there, so a language with few tasks counts little. Unit counts differ between languages and are never added together. The 95% range resamples tasks within each language. A model needs at least ${data.min_rank_tasks} shared tasks across languages to be ranked; with fewer it is listed faded at the end.`;
   }
   const languageOf = key => languages.find(l => 'lang_' + l.key === key);
@@ -483,7 +486,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     : key === 'human_net' ? [m.human_task_net_ci, m.human_task_net_tasks] : [m.same_task_net_ci, m.same_task_net_tasks];
   const rangeNote = (m, key) => {
     if (languageOf(key)) {
-      const count = m.languages?.[languageOf(key).key]?.net_tasks ?? 0;
+      const count = m.languages?.[languageOf(key).key]?.[humanFix ? 'human_tasks' : 'net_tasks'] ?? 0;
       return `${languageOf(key).name} board: ${count} shared task${count === 1 ? '' : 's'}`;
     }
     const [ci, count] = ratioOf(m, key);
@@ -501,7 +504,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
         solved_cx: model.measured_solved_complexity_mean, same_net: model.same_task_net, same_cx: model.same_task_complexity,
         human_net: model.human_task_net,
         aa_coding: model.aa_coding, aa_intelligence: model.aa_intelligence, aa_intelligence_latest: model.aa_intelligence_latest,
-        ...Object.fromEntries(languages.map(l => ['lang_' + l.key, model.languages?.[l.key]?.net ?? null]))}[key];
+        ...Object.fromEntries(languages.map(l => ['lang_' + l.key, model.languages?.[l.key]?.[humanFix ? 'human' : 'net'] ?? null]))}[key];
     }
     const cell = selected[2][index];
     const eligible = cell.length > 7 ? cell[7] : ['r', 'f', 'c'].includes(cell[0]);
@@ -514,8 +517,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       .find(button => button === document.activeElement)?.dataset.sort;
     const headers = selected
       ? [['Model', null], ['Result', null], ['Net syntax units', 'net']]
-      : merged ? [['#', null], ['Model', null], ['Vs. others, all languages', 'same_net'], ...languages.map(l => [l.name, 'lang_' + l.key]), ['Solved', 'resolve_rate'], ...(external ? [['AA Intel.', 'aa_intelligence']] : []), ['Measured', 'coverage']]
-      : [['#', null], ['Model', null], ...(sameTask ? [['Vs. others, same tasks', 'same_net']] : []), ['Net syntax units, solved (mean)', 'solved_net'], ['Net syntax units, all measured (mean)', 'net'], ['Solved', 'resolve_rate'], ...(external ? [['AA Intel.', 'aa_intelligence']] : []), ['Measured', 'coverage']];
+      : merged ? [['#', null], ['Model', null], [primaryName + ', all languages', primaryKey], ...languages.map(l => [l.name, 'lang_' + l.key]), ['Solved', 'resolve_rate'], ...(external ? [['AA Intel.', 'aa_intelligence']] : []), ['Measured', 'coverage']]
+      : [['#', null], ['Model', null], ...(humanFix || sameTask ? [[primaryName + ', same tasks', primaryKey]] : []), ['Net syntax units, solved (mean)', 'solved_net'], ['Net syntax units, all measured (mean)', 'net'], ['Solved', 'resolve_rate'], ...(external ? [['AA Intel.', 'aa_intelligence']] : []), ['Measured', 'coverage']];
     const modelHead = data.models.some(m => m.color_group) ? 'Harness · model' : 'Model';
     document.querySelector('#board thead').innerHTML = '<tr>' + headers.map(([name, key]) => name === 'Model' ? [modelHead, key] : [name, key]).map(([name, key]) => `<th${key ? ` aria-sort="${key === sortKey ? ascending ? 'ascending' : 'descending' : 'none'}"` : ''}${name === modelHead ? ' class="left"' : ''}>${key ? `<button type="button" data-sort="${key}">${name}</button>` : name}${key && metricInfo(key, true) ? `<button type="button" class="info" data-info="${key}" aria-label="What is ${esc(name)}?">i</button>` : ''}</th>`).join('') + '</tr>';
     const buttons = [...document.querySelectorAll('#board button[data-sort]')];
@@ -555,8 +558,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       const solved = metricValue(m, i, 'resolve_rate');
       const ratioCell = key => `<td title="${esc(rangeNote(m, key))}">${Number.isFinite(metricValue(m, i, key)) ? fmt(metricValue(m, i, key), 2) + '×' : '—'}</td>`;
       const rowAttrs = m.self_run ? ` class="self-run" title="${esc(selfRunNote(m))}"` : unranked(m) ? ` class="partial" style="opacity:${partialOpacity(m)}" title="${esc(unrankedNote(m))}"` : '';
-      if (merged) return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${hasIcons ? badge(groupOf(m)) : ''}${esc(barName(m))}</td>${ratioCell('same_net')}${langKeys.map(ratioCell).join('')}<td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td title="${esc(coverageNote(m))}">${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
-      return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${hasIcons ? badge(groupOf(m)) : ''}${esc(barName(m))}</td>${sameTask ? `<td title="${esc(rangeNote(m, 'same_net'))}">${Number.isFinite(m.same_task_net) ? fmt(m.same_task_net, 2) + '×' : '—'}</td>` : ''}<td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.measured_net_mean)}</td><td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td title="${esc(coverageNote(m))}">${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
+      if (merged) return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${hasIcons ? badge(groupOf(m)) : ''}${esc(barName(m))}</td>${ratioCell(primaryKey)}${langKeys.map(ratioCell).join('')}<td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td title="${esc(coverageNote(m))}">${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
+      return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${hasIcons ? badge(groupOf(m)) : ''}${esc(barName(m))}</td>${humanFix || sameTask ? ratioCell(primaryKey) : ''}<td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.measured_net_mean)}</td><td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td title="${esc(coverageNote(m))}">${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
     })()).join('');
   }
   function showTask(id) {
@@ -603,14 +606,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const badge = (group, size = 14) => hasIcons
     ? `<svg class="logo-badge" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="${companyColor(group)}"/>${iconAt(group, 12, 12, 12)}</svg>`
     : `<span class="company-swatch" style="background:${companyColor(group)}" aria-hidden="true"></span>`;
-  const barName = m => m.short_name ? `${m.color_group} · ${m.short_name}` : m.name;
+  const shortRelease = name => name.replace(/ · DeepSWE 1\.0$/, '');
+  const barName = m => m.short_name ? `${m.color_group} · ${m.short_name}` : shortRelease(m.name);
   // Tooltip head: the harness alone on harness boards, then the model and effort.
   const headName = m => m && m.color_group ? `${m.color_group}\n${m.name.split(' · ')[0]}` : m ? m.name : '';
-  // External capability indices replace Solved as the default Y axis when a pinned snapshot is present.
-  // With human-fix ratios the chart opens on code vs. the human fix; the table still sorts by rank.
-  // A new index version starts with few models scored; open on Solved until at least half have a score.
-  const defaultY = externalLatest && scoredShare('aa_intelligence_latest') ? 'aa_intelligence_latest'
-    : external && scoredShare('aa_intelligence') ? 'aa_intelligence' : 'resolve_rate';
+  const defaultY = 'resolve_rate';
   const graphAxes = {all: {x: humanFix ? 'human_net' : defaultKey, y: defaultY}, task: {x: 'net', y: 'churn'}};
   const currentAxes = () => graphAxes[selected ? 'task' : 'all'];
   function axisOptions() {
@@ -620,10 +620,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     if (merged) return [{key: 'same_net', label: 'Net syntax units vs. other models, all languages (×)'},
       {key: 'same_cx', label: 'Decision points vs. other models, all languages (×)'},
       ...(humanFix ? [{key: 'human_net', label: 'Net syntax units vs. human fix, all languages (×)'}] : []),
-      ...languages.map(l => ({key: 'lang_' + l.key, label: `Net syntax units vs. other models, ${l.name} (×)`})),
+      ...languages.map(l => ({key: 'lang_' + l.key, label: `Net syntax units vs. ${humanFix ? 'human fix' : 'other models'}, ${l.name} (×)`})),
       {key: 'resolve_rate', label: 'Solved (%)'},
       ...(external ? [{key: 'aa_intelligence', label: intelLabel}, ...(externalLatest ? [{key: 'aa_intelligence_latest', label: latestLabel}] : []),
-        {key: 'aa_coding', label: 'Artificial Analysis Coding Index'}] : [])];
+        {key: 'aa_coding', label: 'AA Coding Index'}] : [])];
     return [...(sameTask ? [{key: 'same_net', label: 'Net syntax units vs. other models, same tasks (×)'},
         {key: 'same_cx', label: 'Decision points vs. other models, same tasks (×)'}] : []),
       ...(humanFix ? [{key: 'human_net', label: 'Net syntax units vs. human fix, same tasks (×)'}] : []),
@@ -631,7 +631,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       {key: 'resolve_rate', label: 'Solved (%)'},
       ...(complexity ? [{key: 'solved_cx', label: 'Decision points added, solved (mean)'}] : []),
       ...(external ? [{key: 'aa_intelligence', label: intelLabel}, ...(externalLatest ? [{key: 'aa_intelligence_latest', label: latestLabel}] : []),
-        {key: 'aa_coding', label: 'Artificial Analysis Coding Index'}] : [])];
+        {key: 'aa_coding', label: 'AA Coding Index'}] : [])];
   }
   function renderAxisControls() {
     for (const axis of ['x', 'y']) {
@@ -645,7 +645,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const net = 'Net syntax units: units added − units removed, i.e. how much the code grew. Negative means it shrank.';
     const cx = 'Decision points: new functions, branches, loops, exception handlers and extra and/or operands. They count paths through the code, not its size: 50 units of straight-line code add 0.';
     const vsOthers = 'on the tasks this model solved, divided by what the other models added on those same tasks (totals, so big tasks weigh more). 1× = the same, 0.8× = 20% less.';
-    if (key.startsWith('lang_')) return `Net syntax units ${vsOthers} ${units}`;
+    if (key.startsWith('lang_')) return `Net syntax units ${humanFix ? 'on the tasks this model solved, divided by what the human fix added on those tasks. 1× = the same, 0.8× = 20% less.' : vsOthers} ${units}`;
     return {
       net: `${net} ${selected ? 'For this attempt.' : 'Mean over every measured attempt, failed ones included.'} ${units}`,
       solved_net: `${net} Mean over solved attempts. ${units}`,
@@ -1014,27 +1014,19 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${pointR}" ${p.m && partialOpacity(p.m) ? ` fill-opacity="${partialOpacity(p.m)}"` : ''} tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('')
       + older.map((p, k) => `<circle data-older="${k}" data-line="${esc(p.m.line)}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'} older" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${pointR}" aria-hidden="true" data-company="${esc(p.company)}"></circle>`).join('')
       + hubs.map((h, k) => `<circle class="hub" data-hub="${k}" cx="${h.px}" cy="${h.py}" r="${narrow ? 4 : 5}" fill="${companyColor(h.company)}" tabindex="0" aria-label="${esc(h.company)}: average of ${h.own.length} setups; ${xLabel}: ${axisFormat(h.x, axes.x)}, ${yLabel}: ${axisFormat(h.y, axes.y)}" aria-describedby="graph-tooltip" data-company="${esc(h.company)}"></circle>`).join('');
-    // Green zone: the half of each axis that is better (lower footprint, higher solved/index).
-    const better = {net: -1, solved_net: -1, solved_cx: -1, cx: -1, same_net: -1, same_cx: -1, human_net: -1, resolve_rate: 1, aa_coding: 1, aa_intelligence: 1, aa_intelligence_latest: 1, ...Object.fromEntries(langKeys.map(k => [k, -1]))};
-    const bx = better[axes.x], by = better[axes.y];
-    let zone = '';
-    if (bx && by && points.length && !grouped) {
-      const pw = W - L - R, ph = H - T - B, zx = bx < 0 ? L : L + pw / 2, zy = by > 0 ? T : T + ph / 2;
-      zone = `<rect class="best-zone" x="${zx}" y="${zy}" width="${pw / 2}" height="${ph / 2}"/>`;
-    }
     // All labels share a fixed CSS-pixel offset from the actual point.
     const overlays = [];
     const labelled = grouped ? hubs : points;
     labelled.forEach((p, k) => {
       // Full names keep the reasoning effort, e.g. 'GPT-6 Sol (high)'; harness boards label each harness's average.
-      const text = p.hub ? p.company : (p.m.short_name || p.name) + (p.offscale ? ' (off-scale)' : '');
+      const text = p.hub ? p.company : (p.m.short_name || shortRelease(p.name)) + (p.offscale ? ' (off-scale)' : '');
       overlays.push(`<span class="point-label${p.hub ? ' hub-label' : ''}${p.latest ? '' : ' older-label'}${p.selfRun ? ' self-run-label' : ''}" data-point="${k}" data-company="${esc(p.company)}" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(text)}</span>`);
     });
     older.forEach((p, k) => overlays.push(`<span class="point-label older-label" data-older="${k}" data-line="${esc(p.m.line)}" data-company="${esc(p.company)}" aria-hidden="true" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(p.name)}</span>`));
     const scale = ($('graph').clientWidth || W) / W;
     const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
     $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
-    $('graph').innerHTML = `<svg${grouped ? ' class="grouped"' : ''} viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">${grouped ? 'One small point per setup (model and effort), colored by harness; the larger labelled point is each harness\'s average.' : `One point per model, colored by its ${data.models.some(m => m.color_group) ? 'harness' : 'company'}.`} Each model line's newest generation is labelled; hovering a point shows that line's older generations, lighter, and Show older generations adds them all. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other ${data.models.some(m => m.color_group) ? 'harnesses' : 'companies'} fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${zone}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(${Math.max(16, L - 20 - 7 * yTickChars)} ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    $('graph').innerHTML = `<svg${grouped ? ' class="grouped"' : ''} viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">${grouped ? 'One small point per setup (model and effort), colored by harness; the larger labelled point is each harness\'s average.' : `One point per model, colored by its ${data.models.some(m => m.color_group) ? 'harness' : 'company'}.`} Each model line's newest generation is labelled; hovering a point shows that line's older generations, lighter, and Show older generations adds them all. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other ${data.models.some(m => m.color_group) ? 'harnesses' : 'companies'} fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(${Math.max(16, L - 20 - 7 * yTickChars)} ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
     // Labels sit near their point without covering other labels or points; ranked, current models choose first.
     const graphWidth = $('graph').clientWidth, graphHeight = $('graph').clientHeight;
     const labels = [...document.querySelectorAll('#graph .point-label[data-point]')];

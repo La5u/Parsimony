@@ -140,7 +140,7 @@ BENCHMARKS = {
                              'open, unmerged submission pull requests; Jitto Build reports 129 of its 294 resolved '
                              "patches are near-copies of the reference fix. DeepSeek V4 Flash · Mobile Coder is left off: "
                              "it fetched its task's own upstream fix in 151 of 382 trajectories."),
-    'hlb': dict(name='DeepSWE, harness comparison', url='https://huggingface.co/spaces/joelniklaus/harness-leaderboard',
+    'hlb': dict(name='Harness comparison', url='https://huggingface.co/spaces/joelniklaus/harness-leaderboard',
                 reference='Reference solution',
                 task_url='https://github.com/datacurve-ai/deep-swe/tree/main/tasks/{task}', task_link='Task on GitHub',
                 results="the Harness Leaderboard's published results", attempts=3,
@@ -174,10 +174,10 @@ def published_sources(benchmark, language='python', root=None):
         ('SWE-Milestone · TypeScript', 'milestone', 'typescript', 'swe-milestone-typescript', 'population-manifest.json', 'swe-milestone.html'),
         ('SWE-Milestone · Python', 'milestone', 'python', 'swe-milestone-python', 'population-manifest.json', 'swe-milestone.html'),
         ('SWE-PolyBench Verified · Python', 'polybench', 'python', 'polybench-python', 'population-manifest.json', 'polybench-python.html'),
-        ('DeepSWE harnesses · Python', 'hlb', 'python', 'hlb-deepswe-python', 'population.json', 'harnesses-python.html'),
-        ('DeepSWE harnesses · JavaScript', 'hlb', 'javascript', 'hlb-deepswe-javascript', 'population.json', 'harnesses-javascript.html'),
-        ('DeepSWE harnesses · TypeScript', 'hlb', 'typescript', 'hlb-deepswe-typescript', 'population.json', 'harnesses-typescript.html'),
-        ('DeepSWE harnesses · Go', 'hlb', 'go', 'hlb-deepswe-go', 'population.json', 'harnesses-go.html'),
+        ('Harness comparison · Python', 'hlb', 'python', 'hlb-deepswe-python', 'population.json', 'harnesses-python.html'),
+        ('Harness comparison · JavaScript', 'hlb', 'javascript', 'hlb-deepswe-javascript', 'population.json', 'harnesses-javascript.html'),
+        ('Harness comparison · TypeScript', 'hlb', 'typescript', 'hlb-deepswe-typescript', 'population.json', 'harnesses-typescript.html'),
+        ('Harness comparison · Go', 'hlb', 'go', 'hlb-deepswe-go', 'population.json', 'harnesses-go.html'),
     ]
     sources = []
     for name, key, lang, directory, filename, board_url in boards:
@@ -672,7 +672,8 @@ def build_merged(boards, draws=2000, seed=42):
                 entry['pairs'][k][language] = same_task_pairs(per_model[m['agent']], typical, k)
             if human:
                 entry['pairs'][2][language] = human_pairs(per_model[m['agent']], human)
-            entry['languages'][language] = dict(net=m['same_task_net'], net_tasks=m['same_task_net_tasks'],
+            entry['languages'][language] = dict(net=m['same_task_net'], net_tasks=m['same_task_net_tasks'], human=m.get('human_task_net'),
+                                                human_tasks=m.get('human_task_net_tasks'),
                                                 complexity=m['same_task_complexity'])
             entry['upstream_solved_attempts'] += m['upstream_solved_attempts']
             entry['measured_solved_attempts'] += m['measured_solved_attempts']

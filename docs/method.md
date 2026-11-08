@@ -19,6 +19,8 @@ The parsing and scope details below describe Python. Other language tracks have 
 
 ## Website ranking: same-task net ratio v1
 
+**Boards with human reference fixes (DeepSWE, SWE-bench Verified, SWE-Milestone and the harness comparison) now rank and open on the same calculation against the human fix instead of the other models:** the model's net units on its solved tasks divided by the human fix's net units on those tasks, as a ratio of sums. Live, PolyBench and SWEeper have no human ratio and keep the peer ratio below. Inclusion in the ranking (the minimum task count, and being present in every language) is still decided by the peer ratio. Offline diagnostics and `rank_ci_95` still describe the peer ratio. A low solve rate is not penalized: models that solve few tasks are compared only on those.
+
 The website ranking is separate from the CLI median leaderboard above and the archived experimental score below. Its implementation is in `parsimony/site.py` (`solved_by_task`, `same_task_pairs`, `same_task`, and `merged_ratio`).
 
 For each model and base task:

@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — Website ranks against the human fix — 2026-11-08
+
+**Site only; no measurements changed.** Boards with human reference fixes rank and sort by net syntax units vs. the human fix on the same solved tasks (peer ratio stays a chart axis); boards without one keep the peer ratio. Charts open on Solved (AA indices stay selectable), the Solved axis fits the data, and the green "better" zone is gone. See `docs/method.md`.
+
 ## Unreleased — DeepSWE harness comparison (Harness Leaderboard) — 2026-11-08
 
 **Data.** New board `site/harnesses.html` (all languages) with per-language pages `harnesses-{python,javascript,typescript,go}.html` (`examples/hlb-deepswe*/`): Joel Niklaus's Harness Leaderboard runs GLM-5.3 Flash and DeepSeek V4.1 Flash, low and high effort, in nine coding-agent harnesses on the 111 DeepSWE v1.1 tasks (commit `0b9fabbb`, as on the DeepSWE boards), three attempts each, and publishes every trial's patch and reward. The 36 setups use exactly the trials and outcomes its public board (v0.1.1, Space `a1b2bee9`) scores, frozen in `examples/hlb-deepswe/trials.json` by `examples/benchmark-discovery/hlb-board-trials.py` (a port of its selection; all 36 setups match its published counts). 106 tasks are measured (Rust's 5 are not): 11,433 of 11,448 items at `3e213a1` (0.10.0-beta). Codex (0.91× averaged over its four setups) and Qwen Code (0.93×) write the least code, mini-SWE-agent (1.12×) and OpenClaw (1.12×) the most. Never pooled with the DeepSWE boards. Every page's navigation and Sources list gain the board. **Importer.** `parsimony.hlb` (`dataset`, `analyze`); panels reuse `parsimony.deepswe panel`; `published_sources` takes the attempt count per benchmark (3 here, 4 on DeepSWE). Ranking diagnostics cover the four new boards.

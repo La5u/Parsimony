@@ -265,8 +265,7 @@ assert.match(html, /older-label \{ opacity: 0\.75/);
 assert.match(graph(), /<circle data-point="1" data-model="Beta" class="all-point"/);
 assert.match(graph(), /<circle data-point="0" data-model="Alpha" class="all-point"/);
 assert.equal(element('older-toggle-label').hidden, true); // no older generations on this board
-// Lower net units and higher solved are better: the green zone sits in the top-left corner.
-assert.match(graph(), new RegExp(`<rect class="best-zone" x="${left()}" y="18"`));
+assert.doesNotMatch(graph(), /best-zone/);
 assert.equal(element('graph-legend').textContent, '');
 assert.doesNotMatch(element('company-legend').innerHTML, /Lighter: older generation|older generations/);
 assert.equal(element('ratio-note').hidden, true);
@@ -275,7 +274,6 @@ assert.equal(element('graph-y').value, 'resolve_rate'); // Measured is a table c
 assert.doesNotMatch(graph(), /<polyline/);
 
 element('graph-y').listeners.change({target: {value: 'resolve_rate'}});
-assert.match(graph(), /best-zone/);
 assert.match(graph(), /aria-describedby="plot-desc"/);
 assert.doesNotMatch(graph(), /<title\b/); // Native SVG titles would create a second, delayed tooltip.
 assert.match(graph(), /tabindex="0"/);
@@ -562,8 +560,9 @@ Object.assign(withExternal.models[0], {aa_coding: 70, aa_intelligence: 40, aa_ma
 Object.assign(withExternal.models[1], {aa_coding: 60, aa_intelligence: 30, aa_match: 'effort_unlabelled'});
 Object.assign(withExternal.models[2], {aa_coding: null, aa_intelligence: null, aa_match: null});
 load(withExternal);
-assert.equal(element('graph-y').value, 'aa_intelligence');
-assert.match(element('graph-y').innerHTML, /Artificial Analysis Coding Index/);
+assert.equal(element('graph-y').value, 'resolve_rate'); // Solved is the default; AA stays selectable.
+axis('y', 'aa_intelligence');
+assert.match(element('graph-y').innerHTML, /AA Coding Index/);
 assert.match(element('graph-y').innerHTML, /value="resolve_rate"/);
 assert(rows().every(row => [...row.matchAll(/<td\b/g)].length === 7));
 assert.match(element('#board thead').innerHTML, /AA Intel\./);
@@ -578,6 +577,7 @@ axis('y', 'aa_intelligence');
 const noGamma = structuredClone(withExternal);
 noGamma.models[2].measured_solved_net_mean = 1;
 load(noGamma);
+axis('y', 'aa_intelligence');
 assert.match(element('aa-missing').textContent, /1 model has no score, so it is not on this chart\./);
 // Self-run configurations are faded, explained on hover, listed unranked and absent from task views.
 const withSelfRun = structuredClone(data);
@@ -777,10 +777,11 @@ externalOutcomes.external = structuredClone(withExternal.external);
 for (const m of externalOutcomes.models) Object.assign(m, {aa_intelligence: 50, aa_coding: 60});
 load(externalOutcomes);
 assert.equal(element('graph-x').value, 'solved_net');
-assert.equal(element('graph-y').value, 'aa_intelligence');
+assert.equal(element('graph-y').value, 'resolve_rate'); // Solved is the default; AA stays selectable.
+axis('y', 'aa_intelligence');
 assert.doesNotMatch(graph(), /data-model="Gamma"|Delta/);
 axis('x', 'aa_coding');
-assert.match(graph(), /Artificial Analysis Coding Index: 60.0/);
+assert.match(graph(), /AA Coding Index: 60.0/);
 assert.match(graph(), /data-model="Gamma"/); // External-only axes need no footprint measurement.
 load(gradedSelfRun, 'https://example.org/index.html?chart=bar&selfrun=0');
 assert.equal(element('chart-type').value, 'bar');
@@ -973,12 +974,12 @@ assert.match(element('#board tbody').innerHTML, /^<tr><td>1<\/td><td class="left
 assert.deepEqual(element('graph-x').innerHTML.match(/value="[^"]+"/g), ['value="same_net"', 'value="same_cx"', 'value="lang_python"', 'value="lang_go"', 'value="resolve_rate"']);
 axis('x', 'lang_go');
 assert.match(element('ratio-note').textContent, /^×: net syntax units added vs\. other models/);
-// With human-fix ratios the combined page offers the human axis too; it never changes rank.
+// With human-fix ratios the combined page ranks by them.
 const mergedHuman = structuredClone(mergedPage);
 Object.assign(mergedHuman.models[1], {human_task_net: 0.7, human_task_net_ci: [0.6, 0.8], human_task_net_tasks: 20});
 load(mergedHuman);
 assert.match(element('graph-x').innerHTML, /value="human_net">Net syntax units vs\. human fix, all languages \(×\)/);
-assert.match(element('#board tbody').innerHTML, /^<tr><td>1<\/td><td class="left">Alpha/);
+assert.match(element('#board tbody').innerHTML, /^<tr><td>1<\/td><td class="left">Beta/);
 axis('y', 'human_net');
 assert.match(graph(), /0\.70×/);
 load(mergedPage);
