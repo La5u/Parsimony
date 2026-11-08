@@ -177,6 +177,7 @@ class LivePublicationTests(unittest.TestCase):
         data = json.loads((FOLDER / 'site-data.json').read_text())
         html = (ROOT / 'site/live.html').read_text()
         embedded = json.loads(re.search(r'type="application/json">(.*?)</script>', html, re.S)[1])
+        embedded.pop('icons')  # logos are added when the page is rendered, not stored with the data
         self.assertEqual(embedded, data)
         self.assertEqual(data['task_count'], 300)
         self.assertEqual(data['population_count'], 300)

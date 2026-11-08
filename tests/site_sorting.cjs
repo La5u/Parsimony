@@ -7,6 +7,7 @@ const data = JSON.parse(html.match(/type="application\/json">([\s\S]*?)<\/script
 delete data.external; // Pages built with --external are checked separately below.
 delete data.self_run_models; // Likewise for self-run points.
 delete data.merged; // The all-languages DeepSWE page is checked on its own fixture at the end.
+delete data.icons; // Logos (tests/test_hlb.py) would prefix every name cell.
 // Same-task fields are tested on their own fixture below; the base fixture is the plain-mean board.
 const base = Object.fromEntries(Object.entries(data.models[0]).filter(([key]) => !key.startsWith('same_task') && !key.startsWith('human_task') && !key.includes('complexity') && !['latest', 'line', 'color_group', 'short_name'].includes(key)));
 data.models = [

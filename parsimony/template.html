@@ -81,8 +81,8 @@ body { overflow-x: clip; }
 #graph [data-line]:not(.line-shown) { visibility: hidden; }
 #graph .self-run { fill-opacity: 0.35; }
 #graph .point-label.self-run-label { opacity: 0.45; }
-#graph circle, #graph .point-label { transition: opacity 0.15s; }
-#graph circle.dim, #graph .point-label.dim { opacity: 0.12; }
+#graph circle, #graph .point-logo, #graph .point-label { transition: opacity 0.15s; }
+#graph circle.dim, #graph .point-logo.dim, #graph .point-label.dim { opacity: 0.12; }
 #board tr.self-run td { color: var(--muted); }
 #board tr.self-run-head td { text-align: left; color: var(--muted); font-size: 0.8rem; padding-top: 14px; }
 .source-bar { height: 4px; background: var(--link); margin: 2px 0 0; }
@@ -111,6 +111,7 @@ body { overflow-x: clip; }
 #company-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.78rem; color: var(--muted); }
 .company-swatch { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
 .company-swatch.fade-swatch { background: #777; }
+.logo-badge { vertical-align: -2px; margin-right: 4px; flex: none; }
 #graph-legend:empty { display: none; }
 #graph-tooltip::first-line { font-weight: 700; }
 #graph-tooltip {
@@ -298,6 +299,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   <footer class="small muted">
     <p id="provenance"></p>
     <p>Code and data: <a href="https://github.com/La5u/Parsimony">github.com/La5u/Parsimony</a></p>
+    <p>Logos: <a href="https://github.com/lobehub/lobe-icons">LobeHub Icons</a> (MIT); trademarks of their owners.</p>
     <p>Contact: <a href="mailto:lasushin@proton.me">lasushin@proton.me</a></p>
   </footer>
 </main>
@@ -546,8 +548,8 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       const solved = metricValue(m, i, 'resolve_rate');
       const ratioCell = key => `<td title="${esc(rangeNote(m, key))}">${Number.isFinite(metricValue(m, i, key)) ? fmt(metricValue(m, i, key), 2) + '×' : '—'}</td>`;
       const rowAttrs = m.self_run ? ` class="self-run" title="${esc(selfRunNote(m))}"` : unranked(m) ? ` class="partial" style="opacity:${partialOpacity(m)}" title="${esc(unrankedNote(m))}"` : '';
-      if (merged) return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(barName(m))}</td>${ratioCell('same_net')}${langKeys.map(ratioCell).join('')}<td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td title="${esc(coverageNote(m))}">${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
-      return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${esc(barName(m))}</td>${sameTask ? `<td title="${esc(rangeNote(m, 'same_net'))}">${Number.isFinite(m.same_task_net) ? fmt(m.same_task_net, 2) + '×' : '—'}</td>` : ''}<td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.measured_net_mean)}</td><td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td title="${esc(coverageNote(m))}">${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
+      if (merged) return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${hasIcons ? badge(groupOf(m)) : ''}${esc(barName(m))}</td>${ratioCell('same_net')}${langKeys.map(ratioCell).join('')}<td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td title="${esc(coverageNote(m))}">${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
+      return `<tr${rowAttrs}><td>${m.self_run ? '—' : rankOf(m) ?? '—'}</td><td class="left">${hasIcons ? badge(groupOf(m)) : ''}${esc(barName(m))}</td>${sameTask ? `<td title="${esc(rangeNote(m, 'same_net'))}">${Number.isFinite(m.same_task_net) ? fmt(m.same_task_net, 2) + '×' : '—'}</td>` : ''}<td>${fmt(m.measured_solved_net_mean)}</td><td>${fmt(m.measured_net_mean)}</td><td>${solved == null ? '—' : fmt(solved) + '%'}</td>${external ? `<td>${fmt(m.aa_intelligence)}</td>` : ''}<td title="${esc(coverageNote(m))}">${denominator(m) == null ? '—' : `${measuredCount(m) ?? 0}/${denominator(m)}`}</td></tr>`;
     })()).join('');
   }
   function showTask(id) {
@@ -578,13 +580,22 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const companyColors = {
     'Anthropic': '#d97757', 'OpenAI': '#000000', 'Google': '#34a853', 'DeepSeek': '#2756bd',
     'Alibaba': '#e59215', 'xAI': '#8b5cf6', 'Z.ai': '#c94eaf', 'Moonshot AI': '#00a6b2',
-    'MiniMax': '#dc5263', 'Meta': '#6366f1', 'Mistral AI': '#b18a00', 'Other': '#64748b',
+    'MiniMax': '#dc5263', 'Meta': '#6366f1', 'Mistral AI': '#b18a00', 'Xiaomi': '#ff6900', 'Other': '#64748b',
     // Harness comparison boards color by harness (color_group) instead of the model's company.
     'Claude Code': '#d97757', 'Codex': '#000000', 'Qwen Code': '#e6b800', 'Kimi Code': '#00a6b2',
     'pi': '#34a853', 'OpenCode': '#2756bd', 'Hermes': '#8b5cf6', 'mini-SWE-agent': '#dc2626', 'OpenClaw': '#7c4a1e'
   };
   const companyColor = company => companyColors[company] || companyColors.Other;
   const groupOf = m => m.color_group || m.company || 'Other';
+  // Logos (LobeHub icons, MIT; parsimony/icons.json): white on the group's color. Groups without one keep a plain dot.
+  const icons = data.icons || {};
+  const hasIcons = Object.keys(icons).length > 0;
+  const iconPaths = (group, fill) => (icons[group]?.paths || []).map(d => `<path fill="${fill}" fill-rule="evenodd" d="${esc(d)}"/>`).join('');
+  const iconAt = (group, cx, cy, r, attrs = '') => icons[group]
+    ? `<g pointer-events="none" aria-hidden="true" transform="translate(${cx - r * 0.62} ${cy - r * 0.62}) scale(${r * 1.24 / 24})"${attrs}>${iconPaths(group, '#fff')}</g>` : '';
+  const badge = (group, size = 14) => hasIcons
+    ? `<svg class="logo-badge" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="${companyColor(group)}"/>${iconAt(group, 12, 12, 12)}</svg>`
+    : `<span class="company-swatch" style="background:${companyColor(group)}" aria-hidden="true"></span>`;
   const barName = m => m.short_name ? `${m.color_group} · ${m.short_name}` : m.name;
   // Tooltip head: the harness alone on harness boards, then the model and effort.
   const headName = m => m && m.color_group ? `${m.color_group}\n${m.name.split(' · ')[0]}` : m ? m.name : '';
@@ -881,7 +892,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       : 'No data for this view.';
     showRatioNote([key]);
     $('company-legend').innerHTML = [...new Set(rows.map(r => groupOf(r.m)))].sort((a, b) => a.localeCompare(b)).map(company =>
-      `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('')
+      `<span>${badge(company)}${esc(company)}</span>`).join('')
       + fadeLegend(rows.some(r => !r.latest && !r.selfRun), rows.some(r => r.selfRun));
     const lo = Math.min(0, ...rows.map(r => r.v)), hi = Math.max(0, ...rows.map(r => r.v));
     const span = hi - lo || 1, pct = v => (v - lo) / span * 100;
@@ -895,7 +906,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     $('graph').innerHTML = `<div class="bars" role="list" aria-label="${esc(metric)} per model, ${footprint ? 'smallest' : 'largest'} first">` + rows.map((r, k) =>
       (k === firstSelfRun ? `<div class="bar-group" role="presentation">${runsLabel}: ${selfRunTasks} tasks only, so not comparable with the bars above</div>` : '') +
       `<div class="bar-row${r.latest ? '' : ' older'}${r.selfRun ? ' self-run' : ''}" role="listitem" tabindex="0" data-bar="${k}" aria-label="${esc(note(r).replace(/\n/g, '; '))}">` +
-      `<span class="bar-name">${esc(barName(r.m))}</span>` +
+      `<span class="bar-name">${hasIcons ? badge(groupOf(r.m)) : ''}${esc(barName(r.m))}</span>` +
       `<span class="bar-track">${lo < 0 ? `<span class="bar-zero" style="left:${pct(0)}%"></span>` : ''}<span class="bar" style="left:${pct(Math.min(0, r.v))}%;width:${Math.abs(r.v) / span * 100}%;background:${companyColor(groupOf(r.m))}"></span></span>` +
       `<span class="bar-value">${units(r.v)}${percent}</span></div>`).join('') + '</div>';
     document.querySelectorAll('#graph [data-bar]').forEach(row => {
@@ -930,12 +941,13 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     $('aa-missing').textContent = unmatched ? ` ${unmatched} model${unmatched > 1 ? 's have' : ' has'} no score, so ${unmatched > 1 ? 'they are' : 'it is'} not on this chart.` : '';
     showRatioNote([currentAxes().x, currentAxes().y]);
     $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort((a, b) => a.localeCompare(b)).map(company =>
-      `<span><span class="company-swatch" style="background:${companyColor(company)}" aria-hidden="true"></span>${esc(company)}</span>`).join('')
+      `<span>${badge(company)}${esc(company)}</span>`).join('')
       + fadeLegend(points.some(p => !p.latest && !p.selfRun), points.some(p => p.selfRun))
       + (hiddenOlder.length ? '<span class="hover-hint">Hover a point for its older generations</span>' : '');
 
     // Narrow screens draw at their real width (text stays 12px) and a taller shape, so points spread out.
     const narrow = $('graph').clientWidth > 0 && $('graph').clientWidth < 600;
+    const pointR = hasIcons ? (narrow ? 6 : 9) : (narrow ? 4 : 6);
     const W = narrow ? Math.max(300, $('graph').clientWidth) : 720, H = narrow ? Math.round(W * 1.15) : 440, R = narrow ? 12 : 30, T = 18, B = 52;
     let L;
     const excludedAxes = [];
@@ -985,8 +997,10 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       ? {effort_unlabelled: 'Artificial Analysis entry has no effort label', undated_alias: 'undated model ID matched to the Artificial Analysis snapshot'}[p.match] : '';
     const pointLabel = p => `${p.name} (${p.m.company || 'Other'}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; off the chart\'s scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + (p.count ?? 0) + '/' + (denominator(p.m) ?? 0) + ' solved attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}${p.m && unranked(p.m) ? '; ' + unrankedNote(p.m) : ''}`;
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
-    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${narrow ? 4 : 6}" ${p.m && partialOpacity(p.m) ? ` fill-opacity="${partialOpacity(p.m)}"` : ''} tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('')
-      + older.map((p, k) => `<circle data-older="${k}" data-line="${esc(p.m.line)}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'} older" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${narrow ? 4 : 6}" aria-hidden="true" data-company="${esc(p.company)}"></circle>`).join('');
+    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${pointR}" ${p.m && partialOpacity(p.m) ? ` fill-opacity="${partialOpacity(p.m)}"` : ''} tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`
+        + iconAt(p.company, p.px, p.py, pointR, ` class="point-logo${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" data-company="${esc(p.company)}"`)).join('')
+      + older.map((p, k) => `<circle data-older="${k}" data-line="${esc(p.m.line)}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'} older" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${pointR}" aria-hidden="true" data-company="${esc(p.company)}"></circle>`
+        + iconAt(p.company, p.px, p.py, pointR, ` class="point-logo older" data-line="${esc(p.m.line)}" data-company="${esc(p.company)}"`)).join('');
     // Green zone: the half of each axis that is better (lower footprint, higher solved/index).
     const better = {net: -1, solved_net: -1, solved_cx: -1, cx: -1, same_net: -1, same_cx: -1, human_net: -1, resolve_rate: 1, aa_coding: 1, aa_intelligence: 1, aa_intelligence_latest: 1, ...Object.fromEntries(langKeys.map(k => [k, -1]))};
     const bx = better[axes.x], by = better[axes.y];
@@ -1016,7 +1030,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       const order = labels.map((l, i) => i).sort((a, b) => (!!at(labels[a]).selfRun - !!at(labels[b]).selfRun) || (at(labels[b]).latest - at(labels[a]).latest));
       const xy = p => ({x: p.px / W * graphWidth, y: p.py / H * graphHeight});
       const offsets = placeLabelBoxes(order.map(i => xy(at(labels[i]))), order.map(i => ({w: labels[i].offsetWidth, h: labels[i].offsetHeight})),
-        points.map(xy), 6 * graphWidth / W, graphWidth, graphHeight,
+        points.map(xy), Math.max(6, pointR) * graphWidth / W, graphWidth, graphHeight,
         // The rotated Y axis title.
         [{x: 0, y: T / H * graphHeight, w: (Math.max(16, L - 20 - 7 * yTickChars) + 8) * graphWidth / W, h: (H - T - B) / H * graphHeight}]);
       order.forEach((i, k) => { labels[i].style.transform = `translate(${offsets[k].dx}px, ${offsets[k].dy}px)`; });
@@ -1026,7 +1040,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       for (const line of new Set(older.map(p => p.m.line))) {
         const group = olderLabels.filter(l => l.dataset.line === line);
         const groupOffsets = placeLabelBoxes(group.map(l => xy(older[Number(l.dataset.older)])), group.map(l => ({w: l.offsetWidth, h: l.offsetHeight})),
-          points.map(xy).concat(older.filter(p => p.m.line === line).map(xy)), 6 * graphWidth / W, graphWidth, graphHeight, taken);
+          points.map(xy).concat(older.filter(p => p.m.line === line).map(xy)), Math.max(6, pointR) * graphWidth / W, graphWidth, graphHeight, taken);
         group.forEach((l, k) => { l.style.transform = `translate(${groupOffsets[k].dx}px, ${groupOffsets[k].dy}px)`; });
       }
     }

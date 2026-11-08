@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from parsimony import hlb
-from parsimony.site import BENCHMARKS, color_group, label, published_sources
+from parsimony.site import BENCHMARKS, color_group, label, published_sources, render
 from tests.test_deepswe import TOML, FakeCache
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -27,6 +27,13 @@ class HarnessLeaderboardTests(unittest.TestCase):
         self.assertEqual(color_group('hlb-deepswe_deepseek-v4.1-flash_low_mini-swe-agent'),
                          dict(color_group='mini-SWE-agent', short_name='DeepSeek low'))
         self.assertEqual(color_group('deepswe-python_claude-opus'), {})
+
+    def test_pages_embed_only_the_logos_of_their_color_groups(self):
+        page = render(dict(models=[dict(agent='a', company='Anthropic'), dict(agent='b', company='Other'),
+                                   dict(agent='c', company='Z.ai', color_group='Codex')]))
+        data = json.loads(page.split('type="application/json">', 1)[1].split('</script>', 1)[0])
+        self.assertEqual(sorted(data['icons']), ['Anthropic', 'Codex'])
+        self.assertTrue(all(set(i) == {'viewBox', 'paths'} for i in data['icons'].values()))
 
     def test_dataset_keeps_scored_tasks_of_one_language_with_three_attempts(self):
         with tempfile.TemporaryDirectory() as tmp:

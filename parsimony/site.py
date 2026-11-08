@@ -15,6 +15,7 @@ from . import hlb
 from .scoring import UNCALIBRATED, VERSION, measured, out_of_scope, quantile, score_records
 
 TEMPLATE = Path(__file__).resolve().parent / 'template.html'
+ICONS = Path(__file__).resolve().parent / 'icons.json'
 CUSTOM_JS = Path(__file__).resolve().parent.parent / 'site' / 'custom-benchmark.js'
 SITE_URL = 'https://parsimony.lasu.dev'
 PREFIX = re.compile(r'^\d{8}_mini-v[\d.]+[_-]')
@@ -787,6 +788,10 @@ def add_rank_ranges(models, sensitivity):
 
 
 def render(data, standalone=True, page_name=None):
+    # Logos for the color groups on this page (companies, or harnesses on the harness boards).
+    icons = json.loads(ICONS.read_text())['icons']
+    shown = {m.get('color_group') or m.get('company') for m in data.get('models', []) + data.get('self_run_models', [])}
+    data = dict(data, icons={g: dict(viewBox=i['viewBox'], paths=i['paths']) for g, i in sorted(icons.items()) if g in shown})
     # Escape '<' so no data string can close the embedding <script> element.
     payload = json.dumps(data, separators=(',', ':')).replace('<', '\\u003c')
     custom_js = CUSTOM_JS.read_text()
