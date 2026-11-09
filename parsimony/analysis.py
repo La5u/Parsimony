@@ -129,6 +129,11 @@ def implementation(path: str, language='python') -> bool:
     # A top-level testing/ directory is a test suite (pytest); nested ones such as
     # sympy/testing/ or lib/matplotlib/testing/ are shipped library code.
     if language != 'python':
+        # Effect's dtslint/ directory and *.tst.ts files are type tests.
+        if language == 'typescript' and ('dtslint' in parts or p.name.endswith(('.tst.ts', '.tst.tsx'))):
+            return False
+        if language == 'rust' and (p.name == 'tests.rs' or {'benches', 'target'}.intersection(parts)):
+            return False
         # PHPUnit test classes are named *Test.php; match case so Latest.php stays implementation.
         if language == 'php' and PurePosixPath(path).stem.endswith('Test'):
             return False
@@ -543,6 +548,8 @@ def measure(patch: str, get_source=None, language='python') -> dict:
         raise ValueError(f'unsupported language: {language}')
     measurement_track = languages.track(language)
     if language != 'python' and get_source is None:
+        if language == 'rust':
+            raise ValueError('Rust track requires full-file base sources, not patch-only estimates')
         if language == 'php':
             raise ValueError('PHP track requires full-file base sources, not patch-only estimates')
         raise ValueError('JavaScript, TypeScript and Go tracks require full-file base sources, not patch-only estimates')
@@ -567,8 +574,9 @@ def measure(patch: str, get_source=None, language='python') -> dict:
             continue
         # A new file at the repository root is an agent's scratch script (reproduce_issue.py
         # and the like), not part of the fix: library code lives in packages, and no
-        # maintainer fix in SWE-bench Verified adds one.
-        if language == 'python' and f.old == '/dev/null' and '/' not in path:
+        # maintainer fix in SWE-bench Verified adds one. JavaScript and TypeScript agents leave
+        # the same kind of script (since analyzer 0.11).
+        if language in ('python', 'javascript', 'typescript') and f.old == '/dev/null' and '/' not in path:
             excluded.append(path)
             continue
         if not f.hunks:

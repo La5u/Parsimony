@@ -41,12 +41,13 @@ class ExtensionTests(unittest.TestCase):
     def test_extensions_and_unsupported_tracks(self):
         self.assertIsNone(track("python"))
         with self.assertRaises(ValueError):
-            track("rust")
+            track("ruby")
         for path, language in (("x.js", "javascript"), ("x.jsx", "javascript"), ("x.mjs", "javascript"),
                                ("x.cjs", "javascript"), ("x.ts", "typescript"), ("x.tsx", "typescript"),
-                               ("x.mts", "typescript"), ("x.cts", "typescript"), ("x.go", "go"), ("x.py", "python")):
+                               ("x.mts", "typescript"), ("x.cts", "typescript"), ("x.go", "go"),
+                               ("x.py", "python"), ("x.rs", "rust")):
             self.assertEqual(extension_language(path), language)
-        self.assertIsNone(extension_language("x.rs"))
+        self.assertIsNone(extension_language("x.rb"))
 
 
 class GoSourceBindingTests(unittest.TestCase):

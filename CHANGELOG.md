@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — Analyzer 0.11.0-beta: Rust track and JS/TS scope — 2026-11-09
+
+**Analyzer.** New Rust measurement track `tree-sitter-rust-units-v1` (Tree-sitter 0.26.0 with `tree-sitter-rust==0.24.0`, `.rs`); no Rust board is published yet. JavaScript and TypeScript scope changes: new files at the repository root are excluded as scratch scripts, as already done for Python, and TypeScript `dtslint/` directories and `*.tst.ts(x)` type tests are excluded. **Records from earlier analyzer versions are not changed by this entry and must not be pooled with 0.11 records.**
+
 ## Unreleased — OpenCode 2 on the harness boards — 2026-11-09
 
 **Data.** The DeepSWE harness boards gain OpenCode 2.2.6 as its own harness, "OpenCode 2", beside OpenCode 1.19.0: 4 new setups, 40 in total, from the Harness Leaderboard's public board at Space commit `c60b5e2e`, frozen in `examples/hlb-deepswe/trials-opencode-2.json`. Scored and passed counts match the public board for all four. Measured with analyzer `0.10.0-beta` at commit `3e213a1`, like the other 36. Their passing patches join the reference pool, so the panels, scores and sensitivity reports were regenerated and existing peer ratios moved slightly.

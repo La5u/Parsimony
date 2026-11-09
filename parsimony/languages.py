@@ -1,7 +1,7 @@
-"""Optional coding-unit backends for JavaScript, TypeScript, Go and PHP.
+"""Optional coding-unit backends for JavaScript, TypeScript, Go, PHP and Rust.
 
 JavaScript and TypeScript use the official TypeScript parser (pinned npm package,
-run by Node through ``typescript_units.cjs``); Go and PHP use Tree-sitter. These
+run by Node through ``typescript_units.cjs``); Go, PHP and Rust use Tree-sitter. These
 syntax-derived counts are not semantic complexity and are not comparable across
 languages or backends. Dependencies are deliberately loaded lazily.
 """
@@ -17,9 +17,10 @@ from importlib import metadata
 from pathlib import Path
 from threading import Lock
 
-SUPPORTED = ("python", "javascript", "typescript", "go", "php")
+SUPPORTED = ("python", "javascript", "typescript", "go", "php", "rust")
 UNIT_VERSION = "tree-sitter-go-units-v2"
 PHP_UNIT_VERSION = "tree-sitter-php-units-v1"
+RUST_UNIT_VERSION = "tree-sitter-rust-units-v1"
 GO_GRAMMAR_URL = "https://codeload.github.com/botanica-consulting/tree-sitter-go/tar.gz/97cacdcb9e1e699f7b3dfed21386da60ed6e63cd"
 GO_GRAMMAR_SHA256 = "c653dd381ce89f883393f6d4db7aa1f27772dad79cc932c0f3aff5b15dc9b588"
 GO_EOF_POLICY = "append-one-lf-if-nonempty-without-final-lf-v1"
@@ -29,12 +30,13 @@ _PINS = {
     "tree-sitter-go": "0.25.0",
 }
 _PHP_PINS = {"tree-sitter": "0.26.0", "tree-sitter-php": "0.25.1"}
+_RUST_PINS = {"tree-sitter": "0.26.0", "tree-sitter-rust": "0.24.0"}
 TYPESCRIPT_PIN = "5.9.3"
 _WORKER = Path(__file__).with_name("typescript_units.cjs")
 _EXTENSIONS = {
     ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript",
     ".ts": "typescript", ".tsx": "typescript", ".mts": "typescript", ".cts": "typescript",
-    ".go": "go", ".py": "python", ".php": "php", ".phtml": "php",
+    ".go": "go", ".py": "python", ".php": "php", ".phtml": "php", ".rs": "rust",
 }
 # Pure syntax containers and expression wrappers do not represent useful units.
 _WRAPPERS = {
@@ -116,6 +118,18 @@ def _php_versions():
     wrong = [f"{name}=={pin} (found {actual[name]})" for name, pin in _PHP_PINS.items() if actual[name] != pin]
     if wrong:
         raise ValueError(f"Tree-sitter PHP backend requires exact versions: {', '.join(wrong)}; install: {install}")
+    return actual
+
+
+def _rust_versions():
+    install = "python -m pip install tree-sitter==0.26.0 tree-sitter-rust==0.24.0"
+    try:
+        actual = {name: metadata.version(name) for name in _RUST_PINS}
+    except metadata.PackageNotFoundError as exc:
+        raise ValueError(f"Tree-sitter Rust backend dependency missing; install exact pins: {install}") from exc
+    wrong = [f"{name}=={pin} (found {actual[name]})" for name, pin in _RUST_PINS.items() if actual[name] != pin]
+    if wrong:
+        raise ValueError(f"Tree-sitter Rust backend requires exact versions: {', '.join(wrong)}; install: {install}")
     return actual
 
 
@@ -219,6 +233,8 @@ def track(language):
                 "versions": {"typescript": TYPESCRIPT_PIN}}
     if language == "php":
         return {"language": language, "unit_version": PHP_UNIT_VERSION, "versions": _php_versions()}
+    if language == "rust":
+        return {"language": language, "unit_version": RUST_UNIT_VERSION, "versions": _rust_versions()}
     return {"language": language, "unit_version": UNIT_VERSION, "versions": _versions(),
             "grammar_sha256": GO_GRAMMAR_SHA256, "eof_policy": GO_EOF_POLICY}
 
@@ -264,11 +280,17 @@ def parse(source, path):
             raise ValueError(f"invalid or recovered {language} syntax: {response['error']}")
         return CompilerParsed(language, _rows(response["units"]), _rows(response["plain"]),
                               _rows(response["tokens"]), tuple(response["structure"]))
-    _php_versions() if language == "php" else _versions()
+    if language == "rust":
+        _rust_versions()
+    else:
+        _php_versions() if language == "php" else _versions()
     from tree_sitter import Language, Parser
     if language == "php":
         import tree_sitter_php as grammar
         parser = Parser(Language(grammar.language_php()))
+    elif language == "rust":
+        import tree_sitter_rust as grammar
+        parser = Parser(Language(grammar.language()))
     else:
         import tree_sitter_go as grammar
         parser = Parser(Language(grammar.language()))
@@ -330,10 +352,136 @@ def _unit_label(node, keep_values, source, language="go"):
     return label + ("[" + ",".join(terminals) + "]" if terminals else "")
 
 
+# Keep Rust's grammar-specific rules separate from the frozen Go/PHP walkers.
+_RUST_COMMENTS = {"line_comment", "block_comment", "shebang"}
+_RUST_MODIFIERS = {"visibility_modifier", "function_modifiers", "mutable_specifier"}
+_RUST_BLOCKS = {"block", "declaration_list", "field_declaration_list", "ordered_field_declaration_list",
+                "enum_variant_list", "match_block"}
+_RUST_WRAPPERS = {"source_file", "expression_statement", "parenthesized_expression", "arguments",
+                  "parameters", "type_arguments", "type_parameters", "closure_parameters", "else_clause",
+                  "token_tree"} | (_RUST_BLOCKS - {"block"}) | _RUST_MODIFIERS
+_RUST_ATOMS = {"string_literal", "raw_string_literal", "char_literal", "integer_literal", "float_literal",
+               "boolean_literal"}
+_RUST_BRANCHES = {"if_expression", "match_arm", "for_expression", "while_expression", "loop_expression",
+                  "try_expression"}
+_RUST_FUNCTIONS = {"function_item", "function_signature_item", "closure_expression"}
+_RUST_PUNCTUATION = {'(', ')', '{', '}', '[', ']', ',', ';', '.'}
+
+
+def _rust_cfg_test(attribute, source):
+    """Recognize only a direct #[cfg(test)], ignoring whitespace and comments."""
+    leaves = []
+    stack = [attribute]
+    while stack:
+        node = stack.pop()
+        if node.type in _RUST_COMMENTS:
+            continue
+        if not node.children:
+            leaves.append(source[node.start_byte:node.end_byte])
+        else:
+            stack.extend(reversed(node.children))
+    return leaves == [b'#', b'[', b'cfg', b'(', b'test', b')', b']']
+
+
+def _rust_children(node, source):
+    # Outer attributes are siblings of the item they annotate in this grammar.
+    # Buffer them so both a test module and its attributes disappear together.
+    pending = []
+    for child in node.children:
+        if child.type in _RUST_COMMENTS:
+            continue
+        if child.type == "attribute_item":
+            pending.append(child)
+            continue
+        if child.type != "mod_item" or not any(_rust_cfg_test(attr, source) for attr in pending):
+            yield from pending
+            yield child
+        pending = []
+    yield from pending
+
+
+def _rust_walk(parsed, atoms=False, blocks=False):
+    """Preorder nodes, macro-token context and optional block-end events."""
+    stack = [(parsed.tree.root_node, False, False)]
+    while stack:
+        node, in_tokens, end = stack.pop()
+        if node.type in _RUST_COMMENTS:
+            continue
+        yield node, in_tokens, end
+        if end:
+            continue
+        if blocks and node.type in _RUST_BLOCKS:
+            stack.append((node, in_tokens, True))
+        if atoms and node.type in _RUST_ATOMS:
+            continue
+        in_tokens = in_tokens or node.type == "token_tree"
+        stack.extend((child, in_tokens, False) for child in reversed(list(_rust_children(node, parsed.source))))
+
+
+def _rust_unit_lines(parsed, keep_values):
+    pairs = []
+    for node, in_tokens, end in _rust_walk(parsed, atoms=True, blocks=True):
+        if end:
+            pairs.append((bisect_right(parsed.line_starts, node.end_byte), "EndBlock"))
+            continue
+        if node.type in _RUST_WRAPPERS:
+            continue
+        if in_tokens and not node.is_named:
+            # Macro token trees are opaque syntax. Preserve every exposed token,
+            # including delimiters/punctuation, without interpreting or expanding it.
+            label = f"token:{node.type}"
+        elif not node.is_named:
+            continue
+        elif node.type in _RUST_ATOMS:
+            value = parsed.source[node.start_byte:node.end_byte].decode('utf-8', 'replace')
+            label = f"{node.type}:{value}" if keep_values else node.type
+        else:
+            label = _label(node, keep_values, parsed.source)
+            terminals = []
+            for child in node.children:
+                if child.type in _RUST_MODIFIERS and not child.children:
+                    terminals.append(parsed.source[child.start_byte:child.end_byte].decode('utf-8', 'replace'))
+                    continue
+                children = child.children if child.type in _RUST_MODIFIERS else [child]
+                terminals.extend(part.type for part in children
+                                 if not part.is_named and part.type not in _RUST_PUNCTUATION)
+            if terminals:
+                label += "[" + ",".join(terminals) + "]"
+        pairs.append((bisect_right(parsed.line_starts, node.start_byte), label))
+    return _rows(pairs)
+
+
+def _rust_token_lines(parsed):
+    pairs = []
+    for node, in_tokens, _ in _rust_walk(parsed, atoms=True):
+        if node.type == "source_file":
+            continue
+        if node.type in _RUST_ATOMS or (not node.children and
+                (node.is_named or in_tokens or node.type not in _RUST_PUNCTUATION)):
+            value = parsed.source[node.start_byte:node.end_byte].decode('utf-8', 'replace')
+            pairs.append((bisect_right(parsed.line_starts, node.start_byte), f"{node.type}:{value}"))
+    return _rows(pairs)
+
+
+def _rust_structure(parsed):
+    count = branches = 0
+    for node, in_tokens, _ in _rust_walk(parsed):
+        if node.is_named:
+            count += 1
+            if not in_tokens:
+                branches += node.type in _RUST_FUNCTIONS
+                branches += node.type in _RUST_BRANCHES
+                if node.type == "binary_expression":
+                    branches += sum(child.type in {"&&", "||"} for child in node.children)
+    return count, branches
+
+
 def unit_lines(parsed, keep_values=True):
     """Return preorder syntax units grouped by source row, with block-end markers."""
     if isinstance(parsed, CompilerParsed):
         return parsed.units if keep_values else parsed.plain
+    if parsed.language == "rust":
+        return _rust_unit_lines(parsed, keep_values)
     php = parsed.language == "php"
     wrappers = _WRAPPERS | _PHP_WRAPPERS if php else _WRAPPERS
     blocks = _BLOCKS | _PHP_BLOCKS if php else _BLOCKS
@@ -370,6 +518,8 @@ def token_lines(parsed):
     """Normalized significant lexical leaves, grouped by source row."""
     if isinstance(parsed, CompilerParsed):
         return parsed.tokens
+    if parsed.language == "rust":
+        return _rust_token_lines(parsed)
     php = parsed.language == "php"
     result = []
     stack = [parsed.tree.root_node]
@@ -396,6 +546,8 @@ def structure(parsed):
     """Return named-node count and a simple branch-count cyclomatic proxy."""
     if isinstance(parsed, CompilerParsed):
         return parsed.structure
+    if parsed.language == "rust":
+        return _rust_structure(parsed)
     php = parsed.language == "php"
     branches_set = _BRANCHES | _PHP_BRANCHES if php else _BRANCHES
     functions = _FUNCTIONS | _PHP_FUNCTIONS if php else _FUNCTIONS

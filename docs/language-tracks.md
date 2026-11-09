@@ -1,4 +1,4 @@
-# Optional JavaScript, TypeScript, Go and PHP tracks
+# Optional JavaScript, TypeScript, Go, PHP and Rust tracks
 
 Analyzer **0.9.0-beta** (stricter shared patch parsing; units unchanged since 0.8) measures JavaScript and TypeScript with the **official TypeScript parser** and Go with a source-pinned Tree-sitter grammar. The 0.8 Go track is **`tree-sitter-go-units-v2`**; frozen 0.6 Go measurements remain historical `tree-sitter-units-v1` records until replaced by a separately validated full-cohort release. Python still uses the standard-library AST and needs no runtime dependencies. The scoring formula is unchanged: footprint credit for passing patches and footprint penalties for explicitly failed patches, averaged over the frozen score-panel tasks; unavailable measurements remain bounds.
 
@@ -10,12 +10,12 @@ Use the same Python version for every record in a comparison (the existing board
 
 ```sh
 uv venv --python 3.14.7 .venv
-uv pip install --python .venv/bin/python -e '.[languages]'   # Tree-sitter runtime + Go/PHP grammars
+uv pip install --python .venv/bin/python -e '.[languages]'   # Tree-sitter runtime + Go/PHP/Rust grammars
 npm ci                                                       # JavaScript/TypeScript: typescript@5.9.3 (Node.js)
 .venv/bin/python -m unittest discover -s tests -q
 ```
 
-Dependencies load lazily. A missing Node.js, a missing or different `typescript` version, or missing/different Go grammar source fails with installation guidance rather than falling back to invented counts.
+Dependencies load lazily. A missing Node.js, a missing or different `typescript` version, a missing/different PHP or Rust grammar version, or missing/different Go grammar source fails with installation guidance rather than falling back to invented counts.
 
 ### Go v2 source pin and EOF policy
 
@@ -31,6 +31,18 @@ Named syntax nodes count except pure containers, expression/argument wrappers, c
 
 Scope includes `.php` and `.phtml`; `.inc` remains excluded because it is ambiguous across languages. Root entry points count. Shared test/vendor/docs/build/generated exclusions apply, plus case-insensitive `Test.php`/`Test.phtml` suffixes and `tests.php`/`tests.phtml`. Explicit generated headers recognize `//`, `/* ... */` and `#`, including a comment following `<?php` on the same line; only the base file can exclude a patch. Existing Python, JavaScript/TypeScript and Go unit versions and rules are unchanged.
 
+### Rust v1
+
+Rust uses `tree-sitter==0.26.0` and the exact pin `tree-sitter-rust==0.24.0`, available in `.[languages]`. The track is `tree-sitter-rust-units-v1` and records both parser versions. It requires full-file sources and rejects error/recovered trees, including syntax errors in excluded inline test modules. Parsing bytes are unchanged: there is no Go archive binding or EOF normalization.
+
+As in PHP, units are named syntax nodes minus comments and pure wrappers. Rust wrappers are the source file, expression statements, parentheses, argument/parameter/type-argument/type-parameter/closure-parameter lists, declaration/field/enum-variant/match body lists, `else` clauses, token-tree containers and modifier nodes. Blocks count and blocks plus declaration/field/enum-variant/match bodies receive `EndBlock` markers. Operators, keywords and modifiers fold into parent labels. Names and literal spellings are significant; strings, raw strings, characters and numeric/boolean literals are single units, without units for their fragments or escapes. Literal spellings (including raw-string delimiters and numeric suffixes) are not canonicalized.
+
+A macro invocation counts as a call (`macro_invocation`), plus its name/path and the tokens exposed by the grammar. Token-tree containers add no units; their exposed named syntax and anonymous tokens, including delimiters and punctuation, count. Comments and whitespace do not count. Macro definitions follow the same named-node rules and token-tree treatment. **Macros are never expanded**: their generated implementation, branches and functions are unavailable. Attribute token trees use the same token rules. Complexity counts function definitions/signatures, closures, `if`, each match arm (including a wildcard arm), `for`/`while`/`loop`, `?`, and short-circuit `&&`/`||`; opaque macro tokens add no decisions.
+
+Scope is `.rs` only (case-insensitive, like the existing extension lookup). Shared test/vendor/docs/build/generated exclusions apply. Rust additionally excludes `benches/` and `target/`, plus `tests.rs`; the shared rules already exclude `tests/`, `examples/` and `*_test.rs`. Directory exclusions apply at any depth, including inside nested crates, and depend only on paths. **`build.rs` counts as implementation**: existing non-Python tracks exclude a directory named `build`, not files with a build-related basename. Generated-file detection uses the existing non-Python comment-header rules, and only the base file can exclude a patch; adding a generated header cannot hide edits.
+
+Inline modules with a direct outer `#[cfg(test)]` attribute are excluded together with their attributes and descendants from units, tokens and structural diagnostics. Recognition uses parsed attribute tokens, tolerating whitespace, comments, visibility and other outer attributes. Limits: compound conditions such as `cfg(any(test, ...))`, `cfg_attr`, test functions outside such modules, and unannotated modules named `tests` remain counted; no cfg evaluation, module resolution, Cargo feature analysis or macro expansion occurs. Other languages' units and scope rules are unchanged.
+
 ## The same small measurement pipeline
 
 1. Apply the unified diff strictly to the exact base-commit files, without executing anything.
@@ -45,18 +57,18 @@ Go tree traversal uses byte offsets and Python-computed line starts, avoiding a 
 
 ## Scope and provenance
 
-- JavaScript: `.js`, `.jsx`, `.mjs`, `.cjs`; TypeScript: `.ts`, `.tsx`, `.mts`, `.cts`; Go: `.go`; PHP: `.php`, `.phtml`.
+- JavaScript: `.js`, `.jsx`, `.mjs`, `.cjs`; TypeScript: `.ts`, `.tsx`, `.mts`, `.cts`; Go: `.go`; PHP: `.php`, `.phtml`; Rust: `.rs`.
 - **JS- and TS-labelled task tracks both measure JS and TS implementation files**: projects mix them, and DeepSWE labels its KaTeX task JavaScript although its reference fix is TypeScript. The file extension selects the script kind; TSX and JSX are parsed as such. Go and Python remain separate scopes.
 - Exclude test/spec/benchmark paths and filenames, dependency/vendor/build/docs/generated directories, TypeScript declaration files, generated protobuf Go files, minified JS, and explicit generated headers in the **base** file. An agent cannot hide edits by adding a generated header.
-- New root-level JS/TS/Go/PHP files count: root Go packages and JS/TS/PHP entry points are normal implementation. The existing Python-only scratch-file rule is unchanged.
-- Each non-Python record, its metrics, frozen population and score panel identify the `measurement_track`: task language, unit version (`typescript-compiler-units-v1` for JavaScript/TypeScript, `tree-sitter-go-units-v2` for current Go, `tree-sitter-php-units-v1` for PHP) and exact parser versions/source/EOF policy where applicable. Freeze, scoring, sensitivity, stability and coverage reject incompatible tracks. Do not relabel existing records with a newer analyzer version or pool them with new measurements.
+- New root-level JS/TS/Go/PHP/Rust files count: root Go packages, Rust sources/build scripts and JS/TS/PHP entry points are normal implementation. The existing Python-only scratch-file rule is unchanged.
+- Each non-Python record, its metrics, frozen population and score panel identify the `measurement_track`: task language, unit version (`typescript-compiler-units-v1` for JavaScript/TypeScript, `tree-sitter-go-units-v2` for current Go, `tree-sitter-php-units-v1` for PHP, `tree-sitter-rust-units-v1` for Rust) and exact parser versions/source/EOF policy where applicable. Freeze, scoring, sensitivity, stability and coverage reject incompatible tracks. Do not relabel existing records with a newer analyzer version or pool them with new measurements.
 - A track is chosen by dataset metadata, never inferred from whether an individual attempt passed. All attempts in that population remain records. A task without any measured passing reference cannot calibrate the current score and is explicitly absent from the score panel, not silently called a failure.
 
 ## DeepSWE workflow
 
 The commands below describe the **historical 0.6 Go release** and must be run at its pinned analyzer revision with stock `tree-sitter-go==0.25.0`. Current 0.8 measurements require a new population/panel name and the v2 track; never use a v0.6 label for v2 measurements. `examples/benchmark-discovery/remeasure-go.py` prepares hash-bound inputs and requires a clean explicit analyzer identity for full-cohort remeasurement.
 
-The task snapshot already used by the Python board has 35 TypeScript, 34 Go and 5 JavaScript tasks: **74 additional tasks / 296 attempts per model**. Python plus these tracks covers 108 of 113 task definitions; Rust remains unsupported.
+The task snapshot already used by the Python board has 35 TypeScript, 34 Go and 5 JavaScript tasks: **74 additional tasks / 296 attempts per model**. Python plus these historical tracks covers 108 of 113 task definitions. Rust is now supported by the analyzer, but this historical release did not measure it.
 
 ```sh
 git clone https://github.com/datacurve-ai/deep-swe /tmp/deep-swe
