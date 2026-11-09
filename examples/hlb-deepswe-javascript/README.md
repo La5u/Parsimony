@@ -1,11 +1,13 @@
-# DeepSWE, harness comparison: JavaScript (5 tasks × 3 attempts, 36 setups)
+# DeepSWE, harness comparison: JavaScript (5 tasks × 3 attempts, 40 setups)
 
-The JavaScript tasks of the [harness comparison](../hlb-deepswe/README.md): GLM-5.3 Flash and DeepSeek V4.1 Flash, low and high effort, in nine coding-agent harnesses, from Joel Niklaus's Harness Leaderboard. Method, sources, caveats and reproduction are in that README; this folder is the JavaScript board ([page](../../site/harnesses-javascript.html)). Only 5 tasks, so the order is rough and there are few 95% ranges.
+The JavaScript tasks of the [harness comparison](../hlb-deepswe/README.md): GLM-5.3 Flash and DeepSeek V4.1 Flash, low and high effort, in ten coding-agent harnesses (OpenCode 1.19.0 and 2.2.6 separately), from Joel Niklaus's Harness Leaderboard. Method, sources, caveats and reproduction are in that README; this folder is the JavaScript board ([page](../../site/harnesses-javascript.html)). Only 5 tasks, so the order is rough and there are few 95% ranges.
 
 - Dataset (items with reference solutions) SHA256 `0d7e1fbbef85f316e0a2b398833fd5f63fd8f17a281c8856b6e8e439afcdd80f`; analyzer `0.10.0-beta`, commit `3e213a1`.
-- SHA256: [population.json](population.json) `3247b719…`, [score-panel.json](score-panel.json) `c1abf332…`, [scores.json](scores.json) `4df40c34…`, [coverage.json](coverage.json) `8021054e…`, [sensitivity.json](sensitivity.json) `d383375d…`.
+- SHA256: [population.json](population.json) `3247b719…`, [score-panel.json](score-panel.json) `c1f8f3c2…`, [scores.json](scores.json) `9d9d13b3…`, [coverage.json](coverage.json) `12c23d24…`, [sensitivity.json](sensitivity.json) `b0f494be…`.
 
 ## Ranking (same tasks)
+
+This table predates the OpenCode 2.2.6 setups (36 setups); the 40-setup ranking is on the [website](https://parsimony.lasu.dev/harnesses-javascript.html) and in [scores.json](scores.json).
 
 | Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
 |---:|---|---:|---|---:|---:|---:|---:|---:|

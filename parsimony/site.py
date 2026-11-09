@@ -146,9 +146,9 @@ BENCHMARKS = {
                 results="the Harness Leaderboard's published results", attempts=3,
                 task_name='DeepSWE', compare_heading='Compare harnesses', credit="Joel Niklaus's Harness Leaderboard",
                 og_image='og-harnesses.png?v=2026-11-08',
-                og_alt='Scatterplot of two models in nine coding harnesses on DeepSWE tasks: net code added vs. the human fix, '
+                og_alt='Scatterplot of two models in ten coding harnesses on DeepSWE tasks: net code added vs. the human fix, '
                        'versus solve rate, one logo per harness',
-                setups='36 setups (2 models × low/high effort × 9 harnesses)',
+                setups='40 setups (2 models × low/high effort × 10 harnesses, counting OpenCode 1.19 and 2.2 separately)',
                 harness_note='Each row is one model in one harness, so the ratio compares harnesses as much as models.',
                 notice="From Joel Niklaus's Harness Leaderboard (its pass/fail and exclusions), not rechecked. "
                        'Separate from the DeepSWE boards, which use mini-SWE-agent only.'),

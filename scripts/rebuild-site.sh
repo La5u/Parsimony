@@ -89,7 +89,7 @@ done
 python -m parsimony.site --merge go=examples/swe-milestone-go --merge typescript=examples/swe-milestone-typescript \
   --merge python=examples/swe-milestone-python --benchmark milestone "${NAV[@]}" --output "$OUT/swe-milestone.html"
 
-# Harness Leaderboard: the same two models in nine harnesses on the DeepSWE tasks. Its own boards, never pooled
+# Harness Leaderboard: the same two models in ten harnesses (OpenCode 1.19 and 2.2 counted separately) on the DeepSWE tasks. Its own boards, never pooled
 # with the DeepSWE pages above; Go needs the languages extra like the DeepSWE Go page.
 HLB_LANGS=(python javascript typescript)
 [ "$OFFLINE" = 0 ] && HLB_LANGS+=(go)

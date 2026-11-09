@@ -1,11 +1,13 @@
-# DeepSWE, harness comparison: Python (33 tasks × 3 attempts, 36 setups)
+# DeepSWE, harness comparison: Python (33 tasks × 3 attempts, 40 setups)
 
-The Python tasks of the [harness comparison](../hlb-deepswe/README.md): GLM-5.3 Flash and DeepSeek V4.1 Flash, low and high effort, in nine coding-agent harnesses, from Joel Niklaus's Harness Leaderboard. Method, sources, caveats and reproduction are in that README; this folder is the Python board ([page](../../site/harnesses-python.html)).
+The Python tasks of the [harness comparison](../hlb-deepswe/README.md): GLM-5.3 Flash and DeepSeek V4.1 Flash, low and high effort, in ten coding-agent harnesses (OpenCode 1.19.0 and 2.2.6 separately), from Joel Niklaus's Harness Leaderboard. Method, sources, caveats and reproduction are in that README; this folder is the Python board ([page](../../site/harnesses-python.html)).
 
 - Dataset (items with reference solutions) SHA256 `faa57641002ef71ea2fb114a8e31b877cea62cf27b268c63845cb0f52791cc2d`; analyzer `0.10.0-beta`, commit `3e213a1`.
-- SHA256: [population.json](population.json) `1304ebda…`, [score-panel.json](score-panel.json) `49432ecd…`, [scores.json](scores.json) `129e138a…`, [coverage.json](coverage.json) `0a5e3a0b…`, [sensitivity.json](sensitivity.json) `3b505174…`.
+- SHA256: [population.json](population.json) `1304ebda…`, [score-panel.json](score-panel.json) `6f8c828c…`, [scores.json](scores.json) `928c965f…`, [coverage.json](coverage.json) `38ca42e0…`, [sensitivity.json](sensitivity.json) `bd5a1088…`.
 
 ## Ranking (same tasks)
+
+This table predates the OpenCode 2.2.6 setups (36 setups); the 40-setup ranking is on the [website](https://parsimony.lasu.dev/harnesses-python.html) and in [scores.json](scores.json).
 
 | Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
 |---:|---|---:|---|---:|---:|---:|---:|---:|

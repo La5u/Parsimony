@@ -1,6 +1,6 @@
 # Same-task net ratio diagnostics
 
-Panel: `hlb-deepswe-v1.1-javascript-36-pooled-80-20` · `same-task-net-diagnostics-v1`
+Panel: `hlb-deepswe-v1.1-javascript-40-pooled-80-20` · `same-task-net-diagnostics-v1`
 
 These diagnostics do not change the website ranking. Lower footprint is not better coding quality.
 
@@ -8,42 +8,46 @@ These diagnostics do not change the website ranking. Lower footprint is not bett
 
 | Configuration | Ratio | Shared tasks | Measured / published successes | Largest task share | Task-drop rank range | Repo-drop rank range |
 |---|---:|---:|---:|---:|---:|---:|
-| GLM-5.3 Flash (high) · Codex | 0.775 | 4 | 6/6 | 0.292 | 1–10 | 1–10 |
-| GLM-5.3 Flash (low) · pi | 0.809 | 4 | 7/7 | 0.290 | 1–8 | 1–8 |
-| GLM-5.3 Flash (low) · Qwen Code | 0.834 | 3 | 5/5 | 0.404 | 3–6 | 4–6 |
-| DeepSeek V4.1 Flash (low) · Qwen Code | 0.842 | 4 | 10/10 | 0.509 | 3–6 | 3–7 |
-| DeepSeek V4.1 Flash (high) · Codex | 0.858 | 5 | 11/11 | 0.427 | 4–9 | 6–8 |
-| GLM-5.3 Flash (low) · Hermes | 0.860 | 3 | 6/6 | 0.404 | 2–18 | 3–18 |
-| DeepSeek V4.1 Flash (high) · Claude Code | 0.867 | 5 | 11/11 | 0.429 | 2–18 | 2–18 |
-| DeepSeek V4.1 Flash (high) · Qwen Code | 0.867 | 4 | 9/9 | 0.508 | 3–16 | 3–16 |
-| DeepSeek V4.1 Flash (low) · OpenCode | 0.867 | 4 | 9/9 | 0.489 | 3–12 | 3–12 |
-| DeepSeek V4.1 Flash (low) · pi | 0.877 | 5 | 10/10 | 0.430 | 1–24 | 1–24 |
-| GLM-5.3 Flash (low) · Kimi Code | 0.878 | 2 | 3/3 | 0.584 | 3–26 | 4–26 |
-| DeepSeek V4.1 Flash (high) · pi | 0.880 | 5 | 12/12 | 0.429 | 5–22 | 5–22 |
-| DeepSeek V4.1 Flash (low) · Hermes | 0.891 | 5 | 13/13 | 0.429 | 7–23 | 9–23 |
-| GLM-5.3 Flash (low) · Claude Code | 0.910 | 4 | 7/7 | 0.289 | 9–19 | 9–19 |
-| DeepSeek V4.1 Flash (low) · Claude Code | 0.915 | 5 | 10/10 | 0.429 | 8–25 | 8–25 |
-| GLM-5.3 Flash (low) · Codex | 0.918 | 3 | 4/4 | 0.406 | 2–29 | 2–29 |
-| DeepSeek V4.1 Flash (high) · OpenCode | 0.923 | 5 | 10/10 | 0.427 | 12–21 | 12–21 |
-| DeepSeek V4.1 Flash (low) · Codex | 0.926 | 4 | 9/9 | 0.510 | 13–19 | 13–19 |
-| GLM-5.3 Flash (high) · Kimi Code | 0.946 | 4 | 7/7 | 0.288 | 11–24 | 11–24 |
-| GLM-5.3 Flash (high) · Qwen Code | 0.973 | 4 | 8/8 | 0.487 | 14–23 | 14–23 |
-| GLM-5.3 Flash (high) · Claude Code | 0.979 | 4 | 10/10 | 0.507 | 9–25 | 9–25 |
-| DeepSeek V4.1 Flash (low) · mini-SWE-agent | 0.983 | 5 | 13/13 | 0.431 | 15–31 | 15–31 |
-| GLM-5.3 Flash (low) · OpenClaw | 0.993 | 3 | 5/5 | 0.402 | 16–29 | 16–29 |
-| DeepSeek V4.1 Flash (high) · Hermes | 0.996 | 5 | 11/11 | 0.426 | 20–25 | 20–27 |
-| GLM-5.3 Flash (high) · Hermes | 1.029 | 4 | 9/9 | 0.288 | 20–30 | 20–30 |
-| DeepSeek V4.1 Flash (low) · Kimi Code | 1.047 | 5 | 11/11 | 0.429 | 21–32 | 21–32 |
-| GLM-5.3 Flash (low) · OpenCode | 1.056 | 2 | 2/2 | 0.581 | 18–31 | 18–31 |
-| GLM-5.3 Flash (high) · OpenCode | 1.072 | 1 | 2/2 | 1.000 | 27–31 | 27–31 |
-| GLM-5.3 Flash (low) · mini-SWE-agent | 1.075 | 4 | 9/9 | 0.288 | 25–33 | 25–33 |
-| DeepSeek V4.1 Flash (high) · mini-SWE-agent | 1.076 | 5 | 14/14 | 0.430 | 22–33 | 22–33 |
-| GLM-5.3 Flash (high) · pi | 1.077 | 4 | 9/9 | 0.504 | 10–32 | 10–32 |
-| GLM-5.3 Flash (high) · mini-SWE-agent | 1.078 | 4 | 11/11 | 0.290 | 26–32 | 20–32 |
-| DeepSeek V4.1 Flash (low) · OpenClaw | 1.366 | 3 | 6/6 | 0.401 | 28–34 | 28–34 |
-| DeepSeek V4.1 Flash (high) · Kimi Code | 1.442 | 4 | 10/10 | 0.497 | 17–34 | 17–34 |
-| GLM-5.3 Flash (high) · OpenClaw | 1.552 | 1 | 1/1 | 1.000 | 34–36 | 33–36 |
-| DeepSeek V4.1 Flash (high) · OpenClaw | 2.115 | 4 | 6/6 | 0.490 | 35–36 | 35–36 |
+| GLM-5.3 Flash (low) · OpenCode 2 | 0.771 | 3 | 7/7 | 0.405 | 1–5 | 1–5 |
+| GLM-5.3 Flash (high) · Codex | 0.781 | 4 | 6/6 | 0.291 | 1–11 | 1–11 |
+| GLM-5.3 Flash (low) · pi | 0.816 | 4 | 7/7 | 0.289 | 2–9 | 2–9 |
+| GLM-5.3 Flash (low) · Qwen Code | 0.847 | 3 | 5/5 | 0.405 | 5–7 | 5–7 |
+| DeepSeek V4.1 Flash (low) · Qwen Code | 0.851 | 4 | 10/10 | 0.511 | 6–7 | 6–8 |
+| DeepSeek V4.1 Flash (high) · Codex | 0.864 | 5 | 11/11 | 0.428 | 4–10 | 7–10 |
+| DeepSeek V4.1 Flash (low) · OpenCode | 0.869 | 4 | 9/9 | 0.487 | 4–13 | 4–13 |
+| DeepSeek V4.1 Flash (high) · Claude Code | 0.873 | 5 | 11/11 | 0.429 | 3–21 | 3–21 |
+| GLM-5.3 Flash (low) · Hermes | 0.873 | 3 | 6/6 | 0.406 | 3–20 | 4–20 |
+| DeepSeek V4.1 Flash (high) · Qwen Code | 0.877 | 4 | 9/9 | 0.510 | 4–17 | 4–17 |
+| DeepSeek V4.1 Flash (low) · pi | 0.883 | 5 | 10/10 | 0.430 | 1–28 | 1–28 |
+| GLM-5.3 Flash (low) · Kimi Code | 0.883 | 2 | 3/3 | 0.581 | 4–27 | 5–27 |
+| DeepSeek V4.1 Flash (high) · pi | 0.887 | 5 | 12/12 | 0.429 | 5–26 | 5–26 |
+| DeepSeek V4.1 Flash (low) · Hermes | 0.897 | 5 | 13/13 | 0.429 | 8–27 | 10–27 |
+| GLM-5.3 Flash (low) · Claude Code | 0.917 | 4 | 7/7 | 0.288 | 10–21 | 10–21 |
+| DeepSeek V4.1 Flash (low) · Claude Code | 0.922 | 5 | 10/10 | 0.429 | 9–29 | 9–29 |
+| DeepSeek V4.1 Flash (high) · OpenCode | 0.929 | 5 | 10/10 | 0.427 | 13–23 | 13–23 |
+| DeepSeek V4.1 Flash (high) · OpenCode 2 | 0.931 | 5 | 11/11 | 0.428 | 15–20 | 16–20 |
+| GLM-5.3 Flash (low) · Codex | 0.932 | 3 | 4/4 | 0.407 | 2–33 | 2–33 |
+| DeepSeek V4.1 Flash (low) · Codex | 0.935 | 4 | 9/9 | 0.512 | 13–24 | 13–24 |
+| GLM-5.3 Flash (high) · Kimi Code | 0.953 | 4 | 7/7 | 0.288 | 12–27 | 12–27 |
+| GLM-5.3 Flash (high) · Qwen Code | 0.975 | 4 | 8/8 | 0.485 | 16–26 | 16–26 |
+| DeepSeek V4.1 Flash (low) · OpenCode 2 | 0.981 | 5 | 13/13 | 0.427 | 21–25 | 20–25 |
+| GLM-5.3 Flash (high) · OpenCode 2 | 0.983 | 4 | 9/9 | 0.509 | 9–31 | 9–31 |
+| GLM-5.3 Flash (high) · Claude Code | 0.989 | 4 | 10/10 | 0.509 | 11–29 | 11–29 |
+| DeepSeek V4.1 Flash (low) · mini-SWE-agent | 0.990 | 5 | 13/13 | 0.430 | 16–35 | 16–35 |
+| DeepSeek V4.1 Flash (high) · Hermes | 1.002 | 5 | 11/11 | 0.426 | 23–28 | 23–29 |
+| GLM-5.3 Flash (low) · OpenClaw | 1.008 | 3 | 5/5 | 0.404 | 18–33 | 18–33 |
+| GLM-5.3 Flash (high) · Hermes | 1.037 | 4 | 9/9 | 0.287 | 22–34 | 22–34 |
+| DeepSeek V4.1 Flash (low) · Kimi Code | 1.054 | 5 | 11/11 | 0.429 | 23–36 | 23–36 |
+| GLM-5.3 Flash (low) · OpenCode | 1.062 | 2 | 2/2 | 0.578 | 20–35 | 20–35 |
+| GLM-5.3 Flash (high) · OpenCode | 1.070 | 1 | 2/2 | 1.000 | 31–34 | 31–34 |
+| DeepSeek V4.1 Flash (high) · mini-SWE-agent | 1.083 | 5 | 14/14 | 0.430 | 26–37 | 26–37 |
+| GLM-5.3 Flash (low) · mini-SWE-agent | 1.083 | 4 | 9/9 | 0.287 | 28–37 | 28–37 |
+| GLM-5.3 Flash (high) · mini-SWE-agent | 1.085 | 4 | 11/11 | 0.289 | 30–36 | 26–36 |
+| GLM-5.3 Flash (high) · pi | 1.087 | 4 | 9/9 | 0.507 | 14–36 | 14–36 |
+| DeepSeek V4.1 Flash (low) · OpenClaw | 1.372 | 3 | 6/6 | 0.408 | 31–39 | 31–38 |
+| DeepSeek V4.1 Flash (high) · Kimi Code | 1.452 | 4 | 10/10 | 0.501 | 19–38 | 19–38 |
+| GLM-5.3 Flash (high) · OpenClaw | 1.566 | 1 | 1/1 | 1.000 | 38–40 | 37–40 |
+| DeepSeek V4.1 Flash (high) · OpenClaw | 2.122 | 4 | 6/6 | 0.495 | 39–40 | 39–40 |
 
 Largest task share is the largest absolute per-task peer footprint divided by the total peer footprint; cancellation can make it exceed 1. Unavailable perturbations are counted separately in JSON, not included in rank ranges.
 

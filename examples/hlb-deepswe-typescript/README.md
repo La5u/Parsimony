@@ -1,11 +1,13 @@
-# DeepSWE, harness comparison: TypeScript (35 tasks × 3 attempts, 36 setups)
+# DeepSWE, harness comparison: TypeScript (35 tasks × 3 attempts, 40 setups)
 
-The TypeScript tasks of the [harness comparison](../hlb-deepswe/README.md): GLM-5.3 Flash and DeepSeek V4.1 Flash, low and high effort, in nine coding-agent harnesses, from Joel Niklaus's Harness Leaderboard. Method, sources, caveats and reproduction are in that README; this folder is the TypeScript board ([page](../../site/harnesses-typescript.html)).
+The TypeScript tasks of the [harness comparison](../hlb-deepswe/README.md): GLM-5.3 Flash and DeepSeek V4.1 Flash, low and high effort, in ten coding-agent harnesses (OpenCode 1.19.0 and 2.2.6 separately), from Joel Niklaus's Harness Leaderboard. Method, sources, caveats and reproduction are in that README; this folder is the TypeScript board ([page](../../site/harnesses-typescript.html)).
 
 - Dataset (items with reference solutions) SHA256 `2f1b3486539845cc3319dc4ed52353c1c7dab4413825293ab171c71a22ddc189`; analyzer `0.10.0-beta`, commit `3e213a1`.
-- SHA256: [population.json](population.json) `791bacce…`, [score-panel.json](score-panel.json) `251524c3…`, [scores.json](scores.json) `359777b3…`, [coverage.json](coverage.json) `85d577d0…`, [sensitivity.json](sensitivity.json) `3a68a0c3…`.
+- SHA256: [population.json](population.json) `791bacce…`, [score-panel.json](score-panel.json) `472cde71…`, [scores.json](scores.json) `4f4235ab…`, [coverage.json](coverage.json) `1e03570b…`, [sensitivity.json](sensitivity.json) `14c1c007…`.
 
 ## Ranking (same tasks)
+
+This table predates the OpenCode 2.2.6 setups (36 setups); the 40-setup ranking is on the [website](https://parsimony.lasu.dev/harnesses-typescript.html) and in [scores.json](scores.json).
 
 | Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
 |---:|---|---:|---|---:|---:|---:|---:|---:|

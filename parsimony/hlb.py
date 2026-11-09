@@ -30,7 +30,7 @@ SPACE = 'https://huggingface.co/spaces/joelniklaus/harness-leaderboard'
 ATTEMPTS = 3
 PREFIX = 'hlb-deepswe_'
 MODELS = {'zai-org/GLM-5.3-Flash': 'GLM-5.3 Flash', 'deepseek-ai/DeepSeek-V4.1-Flash': 'DeepSeek V4.1 Flash'}
-HARNESSES = {'claude-code': 'Claude Code', 'codex': 'Codex', 'pi': 'pi', 'opencode': 'OpenCode', 'hermes': 'Hermes',
+HARNESSES = {'claude-code': 'Claude Code', 'codex': 'Codex', 'pi': 'pi', 'opencode': 'OpenCode', 'opencode-2': 'OpenCode 2', 'hermes': 'Hermes',
              'mini-swe-agent': 'mini-SWE-agent', 'kimi-code': 'Kimi Code', 'qwen-code': 'Qwen Code', 'openclaw': 'OpenClaw'}
 
 

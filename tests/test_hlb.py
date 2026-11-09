@@ -22,6 +22,7 @@ class HarnessLeaderboardTests(unittest.TestCase):
         self.assertEqual(hlb.display_name('hlb-deepswe_glm-5.3-flash_high_claude-code'), 'GLM-5.3 Flash (high) · Claude Code')
         self.assertEqual(label('hlb-deepswe_deepseek-v4.1-flash_low_mini-swe-agent'), 'DeepSeek V4.1 Flash (low) · mini-SWE-agent')
         self.assertEqual(hlb.setup_id('deepseek-ai/DeepSeek-V4.1-Flash', 'low', 'pi'), 'deepseek-v4.1-flash_low_pi')
+        self.assertEqual(label('hlb-deepswe_glm-5.3-flash_low_opencode-2'), 'GLM-5.3 Flash (low) · OpenCode 2')
 
     def test_rows_are_colored_by_harness_with_a_short_chart_label(self):
         self.assertEqual(color_group('hlb-deepswe_deepseek-v4.1-flash_low_mini-swe-agent'),
@@ -66,8 +67,11 @@ class HarnessLeaderboardTests(unittest.TestCase):
 
     def test_frozen_trials_have_three_scored_attempts_and_a_patch_each(self):
         trials = json.loads((ROOT / 'examples/hlb-deepswe/trials.json').read_text())
+        added = json.loads((ROOT / 'examples/hlb-deepswe/trials-opencode-2.json').read_text())
         self.assertEqual(len(trials['setups']), 36)
-        for name, setup in trials['setups'].items():
+        self.assertEqual(len(added['setups']), 4)
+        self.assertEqual({s['harness_version'] for s in added['setups'].values()}, {'2.2.6'})
+        for name, setup in {**trials['setups'], **added['setups']}.items():
             self.assertEqual(name, hlb.setup_id(setup['model'], setup['reasoning_effort'], setup['harness']))
             self.assertIn(setup['harness'], hlb.HARNESSES)
             per_task = {}
