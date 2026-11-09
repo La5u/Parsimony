@@ -1,6 +1,10 @@
+import shutil
 import unittest
+from pathlib import Path
 
 from parsimony.analysis import implementation, measure
+
+HAS_PARSER = bool(shutil.which('node')) and (Path(__file__).resolve().parent.parent / 'node_modules/typescript').exists()
 
 
 NEW_ROOT = """diff --git a/scratch.ts b/scratch.ts
@@ -22,6 +26,7 @@ class JavaScriptTypeScriptScopeTests(unittest.TestCase):
         self.assertTrue(implementation('src/first.ts', 'typescript'))
         self.assertTrue(implementation('src/dtslintish.ts', 'typescript'))
 
+    @unittest.skipUnless(HAS_PARSER, 'needs Node.js and npm ci')
     def test_new_root_script_is_excluded(self):
         for language in ('javascript', 'typescript'):
             name = 'scratch.ts' if language == 'typescript' else 'scratch.js'
