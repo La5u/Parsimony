@@ -6,7 +6,7 @@
 
 - Tasks: `datacurve-ai/deep-swe` at `0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea`.
 - Release `v1.1`, fresh-cache run index SHA256 `310cb428fe8914cff21b8edcb0b17256884efca55666bd6d6646d223c77d2ce6`. Same 26 configurations as the Python board; [refresh evidence](../deepswe-python/refresh-2026-09-28.json). Gemini 3.8 and GPT-6 Astra artifacts are still unavailable; no model outcomes were invented.
-- Analyzer **0.7.0-beta**, clean measurement commit `ca37c314d84d1d5949e2080077c6afc30b916394`, Python **3.14.7**. Dataset SHA256 `c03deb677cef4101524071ec7c83ba044b153f8dce96590c75bb3c9c179f54c7`.
+- Analyzer **0.11.0-beta**, clean measurement commit `e12a096f6e3413b1a9a2aaa2e6b5fb4ab85ac0a7`, Python **3.14.8** (remeasured 2026-11-10; before: 0.7.0-beta at `ca37c31`, Python 3.14.7). All 5,320 records were remeasured. Changes: 44 records lose `dtslint/` / `*.tst.ts` type tests, 73 lose new root-level JS/TS scratch scripts, and 5 attempts that failed analysis on an invalid scratch script are now measured. Every other record is unchanged, and pass/fail is unchanged. Dataset SHA256 `c03deb677cef4101524071ec7c83ba044b153f8dce96590c75bb3c9c179f54c7`.
 - Unit track `typescript-compiler-units-v1`: the official TypeScript parser, `typescript@5.9.3`, syntax only. The 0.6.0-beta Tree-sitter records (`tree-sitter-units-v1`) were replaced, not mixed; they were last present at commit `ca37c31` and their raw counts are not comparable. [Why the parser changed](../../docs/archive/typescript-parser-investigation.md). [Rules and limitations](../../docs/language-tracks.md).
 - [Population](population.json) contains every attempt; [coverage audit](coverage.json) validates the original dataset, record completeness, base commits and analyzer commit. [Score panel](score-panel.json), [scores](scores.json), [stability](sensitivity.md).
 
@@ -57,44 +57,44 @@ As on the website: a model's net units added on the tasks it solved, divided by 
 
 | Rank | Model | Vs. others, same tasks | 95% range | Tasks | Net units, solved (mean) | Net units, all measured (mean) | Solved | Measured |
 |---:|---|---:|---|---:|---:|---:|---:|---:|
-| 1 | Kimi K2.7 Code | 0.82× | 0.77–0.87× | 19 | +1,695.8 | +2,034.2 | 27.9% | 38/39 |
-| 2 | Gemini 3.5 Flash (high) | 0.83× | 0.74–0.92× | 20 | +1,909.1 | +2,058.0 | 36.4% | 47/51 |
-| 3 | Claude Fable 5 (xhigh) | 0.85× | 0.80–0.90× | 29 | +2,078.7 | +2,078.2 | 63.6% | 83/89 |
-| 4 | Claude Opus 4.8 (max) | 0.85× | 0.81–0.89× | 22 | +2,062.2 | +2,014.3 | 45.7% | 61/64 |
-| 5 | MiMo V2.5 Pro · DeepSWE 1.0 | 0.89× | 0.84–0.94× | 15 | +1,657.4 | +2,063.4 | 25.7% | 32/36 |
-| 6 | GLM-5.2 (max) | 0.89× | 0.84–0.95× | 27 | +1,975.1 | +1,932.6 | 43.6% | 58/61 |
-| 7 | Claude Sonnet 4.6 (high) | 0.90× | 0.84–0.96× | 16 | +1,981.0 | +2,150.7 | 31.4% | 40/44 |
-| 7 | Claude Sonnet 5 (max) | 0.90× | 0.82–0.99× | 25 | +2,122.0 | +2,013.9 | 49.3% | 62/69 |
-| 9 | Kimi K3 (max) | 0.93× | 0.89–0.98× | 27 | +2,226.0 | +2,142.5 | 60.0% | 77/84 |
-| 10 | Gemini 3.6 Flash (high) | 0.96× | 0.89–1.03× | 23 | +2,296.7 | +2,272.9 | 40.7% | 55/57 |
-| 11 | Grok 4.6 (medium) | 0.96× | 0.91–1.01× | 24 | +2,395.7 | +2,392.0 | 57.9% | 73/81 |
-| 12 | Qwen3.8 Max (xhigh) | 0.96× | 0.92–1.00× | 27 | +2,278.2 | +2,367.9 | 53.6% | 68/75 |
-| 13 | DeepSeek V4 Flash (max) | 0.97× | 0.92–1.03× | 24 | +2,258.0 | +2,408.6 | 52.1% | 66/73 |
-| 14 | Claude Opus 4.6 (max) · DeepSWE 1.0 | 0.98× | 0.85–1.16× | 16 | +1,965.0 | +2,165.6 | 31.4% | 40/44 |
-| 14 | GLM-5.3 (max) | 0.98× | 0.90–1.07× | 26 | +2,480.9 | +2,362.1 | 60.7% | 80/85 |
+| 1 | Kimi K2.7 Code | 0.82× | 0.77–0.88× | 19 | +1,695.8 | +2,031.7 | 27.9% | 38/39 |
+| 2 | Gemini 3.5 Flash (high) | 0.83× | 0.74–0.93× | 20 | +1,909.1 | +2,058.0 | 36.4% | 47/51 |
+| 3 | Claude Fable 5 (xhigh) | 0.85× | 0.80–0.90× | 29 | +2,075.7 | +2,076.3 | 63.6% | 83/89 |
+| 3 | Claude Opus 4.8 (max) | 0.85× | 0.82–0.89× | 22 | +2,062.2 | +2,011.9 | 45.7% | 61/64 |
+| 5 | MiMo V2.5 Pro · DeepSWE 1.0 | 0.89× | 0.84–0.94× | 15 | +1,657.4 | +2,060.0 | 25.7% | 32/36 |
+| 5 | GLM-5.2 (max) | 0.89× | 0.84–0.94× | 27 | +1,969.9 | +1,929.7 | 43.6% | 58/61 |
+| 7 | Claude Sonnet 5 (max) | 0.91× | 0.82–1.00× | 25 | +2,122.0 | +2,004.2 | 49.3% | 62/69 |
+| 7 | Claude Sonnet 4.6 (high) | 0.91× | 0.84–0.96× | 16 | +1,981.0 | +2,093.0 | 31.4% | 40/44 |
+| 7 | Claude Opus 4.6 (max) · DeepSWE 1.0 | 0.91× | 0.83–1.02× | 16 | +1,843.3 | +2,125.6 | 31.4% | 40/44 |
+| 10 | Kimi K3 (max) | 0.93× | 0.89–0.98× | 27 | +2,226.0 | +2,136.9 | 60.0% | 77/84 |
+| 11 | Gemini 3.6 Flash (high) | 0.96× | 0.89–1.04× | 23 | +2,296.7 | +2,272.1 | 40.7% | 55/57 |
+| 11 | Grok 4.6 (medium) | 0.96× | 0.91–1.01× | 24 | +2,395.7 | +2,390.8 | 57.9% | 73/81 |
+| 11 | Qwen3.8 Max (xhigh) | 0.96× | 0.93–1.01× | 27 | +2,278.2 | +2,367.2 | 53.6% | 68/75 |
+| 14 | DeepSeek V4 Flash (max) | 0.97× | 0.92–1.03× | 24 | +2,255.2 | +2,403.4 | 52.1% | 66/73 |
+| 15 | GLM-5.3 (max) | 0.98× | 0.90–1.07× | 26 | +2,480.9 | +2,360.1 | 60.7% | 80/85 |
 | 16 | Grok 4.5 (high) | 0.99× | 0.90–1.09× | 25 | +2,185.1 | +2,364.5 | 48.6% | 61/68 |
-| 17 | GLM-5.3 Flash (max) | 0.99× | 0.95–1.04× | 26 | +2,325.3 | +2,419.1 | 51.4% | 68/72 |
-| 18 | Claude Opus 4.7 (max) · DeepSWE 1.0 | 1.00× | 0.94–1.07× | 27 | +2,332.2 | +2,533.7 | 52.1% | 70/73 |
-| 19 | MiniMax M3 · DeepSWE 1.0 | 1.03× | 0.93–1.14× | 18 | +2,000.8 | +2,514.6 | 22.9% | 28/32 |
-| 20 | GPT-5.6 Terra (max) | 1.03× | 0.96–1.10× | 29 | +2,567.5 | +2,542.2 | 65.0% | 84/91 |
-| 21 | DeepSeek V4 Pro (max) | 1.03× | 0.99–1.09× | 27 | +2,432.8 | +2,692.8 | 61.4% | 81/86 |
-| 22 | GPT-5.6 Sol (max) | 1.05× | 0.97–1.14× | 29 | +2,751.5 | +2,544.4 | 65.7% | 88/92 |
-| 23 | Claude Opus 5 (max) | 1.05× | 1.00–1.10× | 28 | +2,538.9 | +2,569.5 | 62.9% | 82/88 |
-| 24 | GPT-5.6 Luna (max) | 1.05× | 0.99–1.12× | 27 | +2,437.3 | +2,676.5 | 57.9% | 77/81 |
-| 25 | Gemini 3.7 Flash (medium) | 1.09× | 1.04–1.15× | 26 | +2,814.1 | +2,662.2 | 61.4% | 82/86 |
-| 26 | GPT-5.5 (xhigh) | 1.11× | 1.03–1.22× | 28 | +2,709.7 | +2,669.8 | 62.1% | 82/87 |
-| 27 | GPT-5.4 (xhigh) | 1.13× | 1.05–1.20× | 25 | +2,843.9 | +2,828.4 | 50.0% | 66/70 |
-| 28 | Muse Spark 1.2 (xhigh) | 1.30× | 1.19–1.40× | 24 | +2,891.4 | +3,247.3 | 50.7% | 67/71 |
-| 29 | Muse Spark 1.1 (xhigh) | 1.37× | 1.22–1.55× | 25 | +2,845.5 | +3,364.8 | 48.6% | 63/68 |
-| — | Gemini 3 Flash Preview · DeepSWE 1.0 | 0.76× | — | 4 | +1,554.6 | +1,204.9 | 3.6% | 5/5 |
-| — | Gemini 3.1 Pro Preview (high) | 0.81× | 0.66–0.91× | 8 | +1,447.5 | +1,441.7 | 12.1% | 16/17 |
-| — | GLM-5.1 · DeepSWE 1.0 | 0.91× | 0.84–0.98× | 13 | +1,428.1 | +2,224.9 | 22.9% | 30/32 |
-| — | Grok Build 0.1 · DeepSWE 1.0 | 0.95× | 0.77–1.15× | 6 | +1,905.2 | +2,018.7 | 11.4% | 14/16 |
-| — | Kimi K2.6 · DeepSWE 1.0 | 0.96× | 0.83–1.09× | 12 | +1,474.8 | +1,986.3 | 20.0% | 28/28 |
-| — | GPT-5.4 mini (xhigh) · DeepSWE 1.0 | 1.02× | 0.89–1.15× | 9 | +1,934.0 | +2,295.8 | 12.1% | 14/17 |
-| — | Qwen3.6 Plus · DeepSWE 1.0 | 1.25× | — | 2 | +2,249.0 | +2,147.9 | 1.4% | 2/2 |
-| — | Claude Haiku 4.5 · DeepSWE 1.0 | — | — | — | — | +1,445.1 | 0.0% | 0/0 |
-| — | MiniMax M2.7 · DeepSWE 1.0 | — | — | — | — | +1,782.7 | 0.0% | 0/0 |
+| 16 | GLM-5.3 Flash (max) | 0.99× | 0.95–1.04× | 26 | +2,320.6 | +2,416.0 | 51.4% | 68/72 |
+| 18 | Claude Opus 4.7 (max) · DeepSWE 1.0 | 1.00× | 0.94–1.07× | 27 | +2,332.2 | +2,533.2 | 52.1% | 70/73 |
+| 19 | MiniMax M3 · DeepSWE 1.0 | 1.03× | 0.93–1.15× | 18 | +2,000.8 | +2,514.6 | 22.9% | 28/32 |
+| 19 | GPT-5.6 Terra (max) | 1.03× | 0.96–1.10× | 29 | +2,565.4 | +2,535.2 | 65.0% | 84/91 |
+| 21 | DeepSeek V4 Pro (max) | 1.04× | 0.99–1.09× | 27 | +2,432.8 | +2,692.8 | 61.4% | 81/86 |
+| 22 | GPT-5.6 Sol (max) | 1.05× | 0.97–1.14× | 29 | +2,744.5 | +2,533.8 | 65.7% | 88/92 |
+| 22 | Claude Opus 5 (max) | 1.05× | 1.00–1.10× | 28 | +2,534.5 | +2,563.1 | 62.9% | 82/88 |
+| 24 | GPT-5.6 Luna (max) | 1.06× | 1.00–1.13× | 27 | +2,437.3 | +2,676.5 | 57.9% | 77/81 |
+| 25 | Gemini 3.7 Flash (medium) | 1.09× | 1.04–1.15× | 26 | +2,814.1 | +2,660.3 | 61.4% | 82/86 |
+| 26 | GPT-5.5 (xhigh) | 1.11× | 1.03–1.22× | 28 | +2,705.5 | +2,666.0 | 62.1% | 82/87 |
+| 27 | GPT-5.4 (xhigh) | 1.13× | 1.05–1.20× | 25 | +2,836.2 | +2,821.1 | 50.0% | 66/70 |
+| 28 | Muse Spark 1.2 (xhigh) | 1.31× | 1.20–1.41× | 24 | +2,891.4 | +3,247.3 | 50.7% | 67/71 |
+| 29 | Muse Spark 1.1 (xhigh) | 1.37× | 1.23–1.55× | 25 | +2,845.5 | +3,364.8 | 48.6% | 63/68 |
+| — | Claude Haiku 4.5 · DeepSWE 1.0 | — | — | 0 | — | +1,445.1 | 0.0% | 0/0 |
+| — | GLM-5.1 · DeepSWE 1.0 | 0.91× | 0.84–0.98× | 13 | +1,428.1 | +2,223.1 | 22.9% | 30/32 |
+| — | GPT-5.4 mini (xhigh) · DeepSWE 1.0 | 1.02× | 0.89–1.15× | 9 | +1,934.0 | +2,288.5 | 12.1% | 14/17 |
+| — | Gemini 3 Flash Preview · DeepSWE 1.0 | 0.76× | — | 4 | +1,554.6 | +1,201.7 | 3.6% | 5/5 |
+| — | Gemini 3.1 Pro Preview (high) | 0.80× | 0.63–0.90× | 8 | +1,424.8 | +1,342.1 | 12.1% | 16/17 |
+| — | Grok Build 0.1 · DeepSWE 1.0 | 0.95× | 0.77–1.15× | 6 | +1,905.2 | +1,935.3 | 11.4% | 14/16 |
+| — | Kimi K2.6 · DeepSWE 1.0 | 0.91× | 0.82–1.01× | 12 | +1,428.1 | +1,975.5 | 20.0% | 28/28 |
+| — | MiniMax M2.7 · DeepSWE 1.0 | — | — | 0 | — | +1,753.3 | 0.0% | 0/0 |
+| — | Qwen3.6 Plus · DeepSWE 1.0 | 1.26× | — | 2 | +2,249.0 | +2,170.4 | 1.4% | 2/2 |
 
 ## Reproduce
 
@@ -111,7 +111,7 @@ E=examples/deepswe-typescript
 $PY -m parsimony.release audit "$E/population.json" "$E/"*.jsonl \
   --dataset /tmp/typescript.jsonl --output /tmp/typescript-coverage.json
 # Freeze into a NEW path after obtaining the complete records, rather than overwriting the panel:
-$PY -m parsimony.deepswe panel "$E/"*.jsonl --name deepswe-v1.1-typescript-26-pooled-80-20-v0.7 --output /tmp/typescript-panel.json
+$PY -m parsimony.deepswe panel "$E/"*.jsonl --name deepswe-v1.1-typescript-38-pooled-80-20-v0.11 --output /tmp/typescript-panel.json
 $PY -m parsimony.scoring score "$E/score-panel.json" "$E/"*.jsonl --output /tmp/typescript-scores.json
 $PY -m parsimony.stability "$E/score-panel.json" "$E/"*.jsonl --output /tmp/typescript-sensitivity.json
 $PY -m parsimony.site "$E/score-panel.json" "$E/"*.jsonl --benchmark deepswe \
