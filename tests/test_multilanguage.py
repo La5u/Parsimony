@@ -94,8 +94,8 @@ class GoV2MeasurementTests(unittest.TestCase):
 class LanguageMeasurementTests(unittest.TestCase):
     def test_added_root_files_are_measured(self):
         for language, path, text in [('go', 'main.go', 'package main\nfunc main() {}\n'),
-                                     ('javascript', 'index.js', 'const value = 1;\n'),
-                                     ('typescript', 'index.ts', 'const value: number = 1;\n')]:
+                                     ('javascript', 'src/index.js', 'const value = 1;\n'),
+                                     ('typescript', 'src/index.ts', 'const value: number = 1;\n')]:
             m = measure(diff('', text, path), lambda _: '', language=language)
             self.assertGreater(m['units_added'], 0)
             self.assertEqual(m['units_deleted'], 0)
