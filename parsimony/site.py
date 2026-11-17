@@ -804,7 +804,7 @@ def base_model_name(name):
 def attach_release_dates(models):
     dates = json.loads(RELEASE_DATES.read_text())['dates']
     for model in models:
-        value = dates.get(base_model_name(model['name']), {}).get('date')
+        value = dates.get(base_model_name(model.get('name', '')), {}).get('date')
         model['release_date'] = date.fromisoformat(value).isoformat() if value else None
 
 
