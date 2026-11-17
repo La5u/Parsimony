@@ -633,21 +633,21 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     const complexity = data.models.some(m => Number.isFinite(m.measured_solved_complexity_mean));
     if (selected) return [{key: 'net', label: 'Net syntax units added'}, {key: 'churn', label: 'Churn'},
       ...(complexity ? [{key: 'cx', label: 'Decision points added'}] : [])];
-    if (merged) return [...release, {key: 'same_net', label: 'Net syntax units vs. other models, all languages (×)'},
+    if (merged) return [{key: 'same_net', label: 'Net syntax units vs. other models, all languages (×)'},
       {key: 'same_cx', label: 'Decision points vs. other models, all languages (×)'},
       ...(humanFix ? [{key: 'human_net', label: 'Net syntax units vs. human fix, all languages (×)'}] : []),
       ...languages.map(l => ({key: 'lang_' + l.key, label: `Net syntax units vs. ${humanFix ? 'human fix' : 'other models'}, ${l.name} (×)`})),
       {key: 'resolve_rate', label: 'Solved (%)'},
       ...(external ? [{key: 'aa_intelligence', label: intelLabel}, ...(externalLatest ? [{key: 'aa_intelligence_latest', label: latestLabel}] : []),
-        {key: 'aa_coding', label: 'AA Coding Index'}] : [])];
-    return [...release, ...(sameTask ? [{key: 'same_net', label: 'Net syntax units vs. other models, same tasks (×)'},
+        {key: 'aa_coding', label: 'AA Coding Index'}] : []), ...release];
+    return [...(sameTask ? [{key: 'same_net', label: 'Net syntax units vs. other models, same tasks (×)'},
         {key: 'same_cx', label: 'Decision points vs. other models, same tasks (×)'}] : []),
       ...(humanFix ? [{key: 'human_net', label: 'Net syntax units vs. human fix, same tasks (×)'}] : []),
       {key: 'solved_net', label: 'Net syntax units added, solved (mean)'}, {key: 'net', label: 'Net syntax units added, all measured (mean)'},
       {key: 'resolve_rate', label: 'Solved (%)'},
       ...(complexity ? [{key: 'solved_cx', label: 'Decision points added, solved (mean)'}] : []),
       ...(external ? [{key: 'aa_intelligence', label: intelLabel}, ...(externalLatest ? [{key: 'aa_intelligence_latest', label: latestLabel}] : []),
-        {key: 'aa_coding', label: 'AA Coding Index'}] : [])];
+        {key: 'aa_coding', label: 'AA Coding Index'}] : []), ...release];
   }
   function renderAxisControls() {
     for (const axis of ['x', 'y']) {

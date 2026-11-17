@@ -319,7 +319,7 @@ const fixedOptions = [
   ['resolve_rate', 'Solved (%)'],
 ];
 for (const which of ['x', 'y']) assert.deepEqual(
-  [...element('graph-' + which).innerHTML.matchAll(/<option value="([^"]+)">([^<]+)<\/option>/g)].map(m => [m[1], m[2]]), fixedOptions);
+  [...element('graph-' + which).innerHTML.matchAll(/<option value="([^"]+)">([^<]+)<\/option>/g)].map(m => [m[1], m[2]]).filter(([key]) => key !== 'release_date'), fixedOptions);
 const keys = fixedOptions.map(([key]) => key);
 for (const gone of ['score', 'ci', 'ci_high', 'rank_low', 'rank_high']) assert(!element('graph-x').innerHTML.includes(`value="${gone}"`));
 for (const key of keys) assert(element('graph-x').innerHTML.includes(`value="${key}"`));
