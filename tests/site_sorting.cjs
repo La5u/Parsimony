@@ -1005,3 +1005,112 @@ assert.match(element('self-run-note').textContent, /^My and contributed runs: mo
 assert.equal(element('self-run-toggle-text').textContent, 'Show my and contributed runs');
 load(cropped);
 assert.equal(element('task-picker').hidden, false);
+
+// Release dates are numeric chart axes on ordinary, merged and harness boards, never task axes.
+{
+  const dated = structuredClone(data);
+  dated.models[0].release_date = '2026-03-12';
+  dated.models[0].name = 'Claude Opus 4.6 (max) · DeepSWE 1.0';
+  dated.models[1].release_date = '2025-01-01';
+  dated.models[2].release_date = null;
+  load(dated);
+  assert.match(element('graph-x').innerHTML, /value="release_date"/);
+  axis('x', 'release_date');
+  assert.match(graph(), /Release date: Mar 2026/);
+  assert.doesNotMatch(graph(), /data-model="Gamma"/);
+  assert.equal(element('release-missing').textContent, '2 of 3 models have a release date.');
+  assert.equal(element('shade-corner').disabled, true);
+  assert.equal(element('show-frontier').disabled, true);
+  assert.match(element('show-frontier').title, /release date has none/);
+  task('org__repo-1');
+  assert.doesNotMatch(element('graph-x').innerHTML, /release_date/);
+  for (const fixture of [mergedPage, {...dated, models: dated.models.map(m => ({...m, color_group: 'Codex'}))}]) {
+    const board = structuredClone(fixture);
+    board.models[0].release_date = '2026-03-12'; board.models[1].release_date = '2025-01-01';
+    load(board);
+    assert.match(element('graph-y').innerHTML, /value="release_date"/);
+  }
+  dated.models[1].release_date = null;
+  load(dated);
+  assert.doesNotMatch(element('graph-x').innerHTML, /release_date/);
+}
+// Legend hiding affects chart and bars, keeps table rows, refits axes and survives navigation.
+{
+  const stored = new Map();
+  browser.sessionStorage = {getItem: k => stored.get(k), setItem: (k, v) => stored.set(k, v)};
+  const clickGroup = group => element('company-legend').listeners.click({target: {closest: () => ({
+    dataset: {group}, hasAttribute: () => group == null,
+  })}});
+  load(data);
+  const before = graph().match(/data-x-domain="([^"]*)"/)[1];
+  clickGroup('Anthropic');
+  assert.doesNotMatch(graph(), /data-model="Alpha"/);
+  assert.match(element('company-legend').innerHTML, /data-group="Anthropic" aria-pressed="false"/);
+  assert.match(element('company-legend').innerHTML, /Show all/);
+  assert.deepEqual(names(), ['Beta', 'Alpha', 'Gamma']);
+  assert.notEqual(graph().match(/data-x-domain="([^"]*)"/)[1], before);
+  axis('x', 'net');
+  assert.doesNotMatch(graph(), /data-model="Alpha"/);
+  element('chart-type').listeners.change({target: {value: 'bar'}});
+  assert.deepEqual(barNames(), ['Beta']);
+  load(data, 'https://example.org/another-board.html');
+  assert.doesNotMatch(graph(), /data-model="Alpha"/);
+  clickGroup();
+  assert.match(graph(), /data-model="Alpha"/);
+  const harness = structuredClone(data);
+  harness.models.forEach(m => { m.color_group = m.company; });
+  load(harness); clickGroup('OpenAI');
+  assert.doesNotMatch(graph(), /data-model="Beta"/);
+  clickGroup();
+  delete browser.sessionStorage;
+}
+// Collapsing always takes the first ten of the full sorted list, including unranked/self-run rows.
+{
+  const many = structuredClone(data);
+  many.models = Array.from({length: 12}, (_, i) => ({...data.models[0], agent: `m${i}`, name: `Model ${i}`, measured_solved_net_mean: i}));
+  many.self_run_models = [{...many.models[0], name: 'Self', self_run: true, tasks: 2, harness: 'Codex'}];
+  load(many);
+  assert.equal(names().length, 10);
+  assert.equal(element('board-expand').textContent, 'Show all 13 models');
+  assert.equal(element('board-expand').attributes['aria-expanded'], 'false');
+  doc.querySelectorAll('#board button[data-sort]').find(b => b.dataset.sort === 'solved_net').listeners.click();
+  assert.equal(names()[0], 'Model 11');
+  assert.equal(names().length, 10);
+  element('board-expand').listeners.click();
+  assert.equal((element('#board tbody').innerHTML.match(/<tr(?: class="self-run"[^>]*)?>/g) || []).length, 13);
+  assert.match(element('#board tbody').innerHTML, /Self<\/td>/);
+  assert.equal(element('board-expand').textContent, 'Show top 10');
+  assert.equal(element('board-expand').attributes['aria-expanded'], 'true');
+  element('board-expand').listeners.click();
+  assert.equal(names().length, 10);
+  delete many.self_run_models;
+  load(many);
+  assert.equal(names().length, 12);
+  assert.equal(element('board-expand').hidden, true);
+}
+// Pareto dominance handles ties, all four direction combinations, and empty sets.
+{
+  const source = html.match(/\/\/ pareto:start\n([\s\S]*?)\/\/ pareto:end/)[1];
+  const frontier = vm.runInNewContext(`${source}; paretoFrontier`);
+  const points = [{x: 1, y: 2}, {x: 1, y: 2}, {x: 2, y: 1}, {x: 2, y: 2}, {x: 0, y: 0}];
+  assert.deepEqual(Array.from(frontier(points, -1, 1), p => points.indexOf(p)), [0, 1, 4]);
+  assert.deepEqual(Array.from(frontier(points, 1, -1), p => points.indexOf(p)), [2, 4]);
+  assert.deepEqual(Array.from(frontier(points, 1, 1), p => points.indexOf(p)), [3]);
+  assert.deepEqual(Array.from(frontier(points, -1, -1), p => points.indexOf(p)), [4]);
+  assert.equal(frontier([], -1, 1).length, 0);
+  element('shade-corner').checked = element('show-frontier').checked = false;
+  load(data);
+  assert.doesNotMatch(graph(), /class="best-corner"|class="frontier"/);
+  element('shade-corner').checked = true;
+  element('shade-corner').listeners.change();
+  assert.match(graph(), /class="best-corner"/);
+  assert.match(graph(), /Better on both/);
+  element('show-frontier').checked = true;
+  element('show-frontier').listeners.change();
+  assert.match(graph(), /class="frontier"/);
+  // Alpha has more code and more solves: neither point dominates the other.
+  axis('x', 'net'); // Alpha now dominates Beta on both axes.
+  assert.match(graph(), /data-model="Beta"[^>]*class="[^"]* dominated"/);
+  assert.doesNotMatch(graph(), /data-model="Alpha"[^>]*class="[^"]* dominated"/);
+}
+console.log('Release date, legend visibility, table collapse and Pareto checks passed');

@@ -86,6 +86,7 @@ body { overflow-x: clip; }
 #graph .self-run { fill-opacity: 0.35; }
 #graph .point-label.self-run-label { opacity: 0.45; }
 #graph circle, #graph .point-label { transition: opacity 0.15s; }
+#graph .dominated { opacity: 0.25; }
 #graph circle.dim, #graph .point-label.dim { opacity: 0.12; }
 #board tr.self-run td { color: var(--muted); }
 #board tr.self-run-head td { text-align: left; color: var(--muted); font-size: 0.8rem; padding-top: 14px; }
@@ -109,8 +110,10 @@ body { overflow-x: clip; }
 #self-run-toggle-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
 #harness-toggle-label:not([hidden]), #older-toggle-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
 #weight-filter-label:not([hidden]) { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; }
-#self-run-toggle, #harness-toggle, #older-toggle { width: auto; min-width: 0; padding: 0; margin: 0; border: initial; flex: none; }
+#shade-corner, #show-frontier, #self-run-toggle, #harness-toggle, #older-toggle { width: auto; min-width: 0; padding: 0; margin: 0; border: initial; flex: none; }
 #weight-filter { width: auto; max-width: 12em; }
+#company-legend button[aria-pressed="false"] { opacity: .4; text-decoration: line-through; }
+#company-legend button { font: inherit; color: inherit; }
 #company-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.78rem; color: var(--muted); }
 .company-swatch { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
 .company-swatch.fade-swatch { background: #777; }
@@ -188,7 +191,9 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
      </select></label></p>
   <p id="axis-controls"><label for="graph-x" id="graph-x-label">X axis</label> <select id="graph-x" aria-label="X axis metric"></select><button type="button" class="info" id="graph-x-info" aria-label="What does the X axis metric mean?">i</button>
      <span id="graph-y-control"><label for="graph-y">Y axis</label> <select id="graph-y" aria-label="Y axis metric"></select><button type="button" class="info" id="graph-y-info" aria-label="What does the Y axis metric mean?">i</button></span></p>
+  <p class="small"><label><input type="checkbox" id="shade-corner"> Shade best corner</label> <label><input type="checkbox" id="show-frontier"> Show frontier</label></p>
   </details>
+  <p class="small muted" id="release-missing" hidden></p>
   <p class="small" id="ratio-note" hidden></p>
   <p class="small muted" id="graph-legend"></p>
   <div class="small" id="company-legend" aria-label="Colors"></div>
@@ -232,6 +237,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       </thead>
       <tbody></tbody>
     </table>
+    <button type="button" id="board-expand" aria-expanded="false" hidden></button>
   </div>
   <p class="small" id="task-footer" hidden><a id="task-link" href="#">Maintainers' pull request</a></p>
   <p class="small muted" id="feedback">Missing a model? <a id="request-model" href="https://github.com/La5u/Parsimony/issues/new?template=model-request.yml">Request it</a>. A number looks wrong? <a id="report-number" href="https://github.com/La5u/Parsimony/issues/new?template=number-looks-wrong.yml">Report it</a>. Have spare API credits? <a href="https://github.com/La5u/Parsimony/blob/main/CONTRIBUTING.md#contributed-runs">Run a model on the tasks</a>.</p>
@@ -497,9 +503,13 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const labels = {r: 'solved', f: 'failed', u: 'unknown', m: 'not measured', n: 'no attempt', e: 'empty patch', o: 'out of scope', c: 'no passing reference'};
   let selected = null, sortKey = defaultKey, ascending = true;
   $('task-ids').innerHTML = displayedTasks.map((t) => `<option value="${esc(t[0])}">`).join('');
+  let boardExpanded = false;
+  $('board-expand').addEventListener('click', () => { boardExpanded = !boardExpanded; renderBoard(); });
+  const releaseValue = m => m.release_date ? Date.parse(m.release_date + 'T00:00:00Z') : null;
+  const dateFormat = value => new Date(value).toLocaleDateString('en-US', {month: 'short', year: 'numeric', timeZone: 'UTC'});
   function metricValue(model, index, key) {
     if (!selected) {
-      return {resolve_rate: model.resolve_rate == null ? null : model.resolve_rate * 100,
+      return {release_date: releaseValue(model), resolve_rate: model.resolve_rate == null ? null : model.resolve_rate * 100,
         coverage: denominator(model) > 0 ? measuredCount(model) / denominator(model) * 100 : null,
         churn: model.measured_churn_mean, net: model.measured_net_mean, solved_net: model.measured_solved_net_mean,
         solved_cx: model.measured_solved_complexity_mean, same_net: model.same_task_net, same_cx: model.same_task_complexity,
@@ -548,7 +558,11 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       $('weight-note').hidden = false;
       $('weight-note').textContent = `Showing ${count} ${kind} model${count === 1 ? '' : 's'}. Rank is among every model on this board; hiding rows does not recompute it.`;
     }
-    document.querySelector('#board tbody').innerHTML = models.map(({m, i}, k) => (k === models.length - extra.length && extra.length
+    const collapse = models.length > 12;
+    $('board-expand').hidden = !collapse;
+    $('board-expand').textContent = boardExpanded ? 'Show top 10' : `Show all ${models.length} models`;
+    $('board-expand').setAttribute('aria-expanded', String(boardExpanded));
+    document.querySelector('#board tbody').innerHTML = (collapse && !boardExpanded ? models.slice(0, 10) : models).map(({m, i}, k) => (k === models.length - extra.length && extra.length
       ? `<tr class="self-run-head"><td colspan="${headers.length}">${runsLabel} · not ranked, ${selfRunTasks} tasks</td></tr>` : '') + (() => {
       if (selected) {
         const c = selected[2][i];
@@ -615,17 +629,18 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   const graphAxes = {all: {x: humanFix ? 'human_net' : defaultKey, y: defaultY}, task: {x: 'net', y: 'churn'}};
   const currentAxes = () => graphAxes[selected ? 'task' : 'all'];
   function axisOptions() {
+    const release = data.models.filter(m => Number.isFinite(releaseValue(m))).length >= 2 ? [{key: 'release_date', label: 'Release date'}] : [];
     const complexity = data.models.some(m => Number.isFinite(m.measured_solved_complexity_mean));
     if (selected) return [{key: 'net', label: 'Net syntax units added'}, {key: 'churn', label: 'Churn'},
       ...(complexity ? [{key: 'cx', label: 'Decision points added'}] : [])];
-    if (merged) return [{key: 'same_net', label: 'Net syntax units vs. other models, all languages (×)'},
+    if (merged) return [...release, {key: 'same_net', label: 'Net syntax units vs. other models, all languages (×)'},
       {key: 'same_cx', label: 'Decision points vs. other models, all languages (×)'},
       ...(humanFix ? [{key: 'human_net', label: 'Net syntax units vs. human fix, all languages (×)'}] : []),
       ...languages.map(l => ({key: 'lang_' + l.key, label: `Net syntax units vs. ${humanFix ? 'human fix' : 'other models'}, ${l.name} (×)`})),
       {key: 'resolve_rate', label: 'Solved (%)'},
       ...(external ? [{key: 'aa_intelligence', label: intelLabel}, ...(externalLatest ? [{key: 'aa_intelligence_latest', label: latestLabel}] : []),
         {key: 'aa_coding', label: 'AA Coding Index'}] : [])];
-    return [...(sameTask ? [{key: 'same_net', label: 'Net syntax units vs. other models, same tasks (×)'},
+    return [...release, ...(sameTask ? [{key: 'same_net', label: 'Net syntax units vs. other models, same tasks (×)'},
         {key: 'same_cx', label: 'Decision points vs. other models, same tasks (×)'}] : []),
       ...(humanFix ? [{key: 'human_net', label: 'Net syntax units vs. human fix, same tasks (×)'}] : []),
       {key: 'solved_net', label: 'Net syntax units added, solved (mean)'}, {key: 'net', label: 'Net syntax units added, all measured (mean)'},
@@ -659,6 +674,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       coverage: 'Share of solved attempts whose patch could be measured (fetched, applied to the task\'s base commit and parsed). Data coverage, not quality.',
       aa_intelligence: table ? '' : 'Outside capability score from Artificial Analysis, matched by model and reasoning effort. Does not affect rank.',
       aa_intelligence_latest: 'The newer version of the Artificial Analysis Intelligence Index, matched the same way. Its tests differ from the previous version, so the two scales are not comparable. Models it has not scored yet are left off. Does not affect rank.',
+      release_date: 'First public release (API or preview) of the underlying model, from vendor announcements. Does not affect rank.',
       aa_coding: 'Outside coding score from Artificial Analysis, matched by model and reasoning effort. Does not affect rank.',
     }[key] || '';
   }
@@ -675,7 +691,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
   // Export: the chart as drawn (SVG, HTML labels and bars, legends) painted onto a 2× canvas.
   async function chartCanvas() {
     const scale = 2, pad = 16, graph = $('graph');
-    const parts = ['ratio-note', 'graph-legend', 'company-legend', 'graph'].map($).filter(el => !el.hidden && el.offsetHeight);
+    const parts = ['release-missing', 'ratio-note', 'graph-legend', 'company-legend', 'graph'].map($).filter(el => !el.hidden && el.offsetHeight);
     // Hidden older generations and the hover hint are interactive only, so they stay out of the image.
     const skip = el => getComputedStyle(el).visibility === 'hidden' || !!el.closest('.hover-hint');
     const rects = parts.flatMap(el => [el, ...el.querySelectorAll('*')]).filter(el => !skip(el)).map(el => el.getBoundingClientRect()).filter(r => r.width || r.height);
@@ -881,10 +897,37 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     tooltip.style.left = `${place[0]}px`;
     tooltip.style.top = `${place[1]}px`;
   }
+  const hiddenGroups = new Set();
+  try { for (const group of JSON.parse(window.sessionStorage?.getItem('hidden-groups') || '[]')) hiddenGroups.add(group); } catch (e) {}
+  const groupVisible = m => !hiddenGroups.has(groupOf(m));
+  function renderCompanyLegend(models, extra = '') {
+    const groups = [...new Set(models.map(groupOf))].sort((a, b) => a.localeCompare(b));
+    $('company-legend').innerHTML = groups.map(group => `<button type="button" data-group="${esc(group)}" aria-pressed="${!hiddenGroups.has(group)}">${badge(group)}${esc(group)}</button>`).join('')
+      + (hiddenGroups.size ? '<button type="button" data-reset-groups>Show all</button>' : '') + extra;
+  }
+  $('company-legend').addEventListener('click', event => {
+    const button = event.target.closest?.('button');
+    if (!button) return;
+    if (button.hasAttribute('data-reset-groups')) hiddenGroups.clear();
+    else if (button.dataset.group != null) {
+      const group = button.dataset.group;
+      hiddenGroups.has(group) ? hiddenGroups.delete(group) : hiddenGroups.add(group);
+    } else return;
+    try { window.sessionStorage?.setItem('hidden-groups', JSON.stringify([...hiddenGroups])); } catch (e) {}
+    renderGraph();
+  });
+  const direction = key => footprintKeys.includes(key) ? -1 : ['resolve_rate', 'coverage', 'aa_coding', 'aa_intelligence', 'aa_intelligence_latest'].includes(key) ? 1 : 0;
+  // pareto:start
+  function paretoFrontier(points, dx, dy) {
+    return points.filter(p => !points.some(q => dx * q.x >= dx * p.x && dy * q.y >= dy * p.y
+      && (dx * q.x > dx * p.x || dy * q.y > dy * p.y)));
+  }
+  // pareto:end
+  for (const id of ['shade-corner', 'show-frontier']) $(id).addEventListener('change', renderGraph);
   function renderBars() {
     // Bars show the X-axis metric; footprints smallest first, percentages and indices largest first.
     const key = currentAxes().x, footprint = footprintKeys.includes(key);
-    const units = v => v.toLocaleString('en-US', {maximumFractionDigits: ratioKeys.includes(key) ? 2 : 1}).replace('-', '−');
+    const units = v => key === 'release_date' ? dateFormat(v) : v.toLocaleString('en-US', {maximumFractionDigits: ratioKeys.includes(key) ? 2 : 1}).replace('-', '−');
     const percent = ['resolve_rate', 'coverage'].includes(key) ? '%' : ratioKeys.includes(key) ? '×' : '';
     let rows = data.models.map((m, i) => ({m, i, v: metricValue(m, i, key), latest: m.latest !== false}))
       .concat(selected ? [] : activeSelfRun().map(m => ({m, i: -1, v: metricValue(m, -1, key), latest: true, selfRun: true})))
@@ -893,15 +936,13 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     rows = rows.filter(r => onChart(r.m)).sort((a, b) => (footprint ? a.v - b.v : b.v - a.v) || a.m.name.localeCompare(b.m.name));
     // Self-run means cover only their own task subset, so they get their own group, never interleaved.
     rows.sort((a, b) => !!a.selfRun - !!b.selfRun);
-    const firstSelfRun = rows.findIndex(r => r.selfRun);
+
     const metric = axisOptions().find(o => o.key === key).label + (selected ? ' in this attempt' : '');
-    $('graph-legend').textContent = rows.length
-      ? `${metric}.`
-      : 'No data for this view.';
     showRatioNote([key]);
-    $('company-legend').innerHTML = [...new Set(rows.map(r => groupOf(r.m)))].sort((a, b) => a.localeCompare(b)).map(company =>
-      `<span>${badge(company)}${esc(company)}</span>`).join('')
-      + fadeLegend(rows.some(r => !r.latest && !r.selfRun), rows.some(r => r.selfRun));
+    renderCompanyLegend(rows.map(r => r.m), fadeLegend(rows.some(r => !r.latest && !r.selfRun), rows.some(r => r.selfRun)));
+    rows = rows.filter(r => groupVisible(r.m));
+    $('graph-legend').textContent = rows.length ? `${metric}.` : 'No data for this view.';
+    const firstSelfRun = rows.findIndex(r => r.selfRun);
     const lo = Math.min(0, ...rows.map(r => r.v)), hi = Math.max(0, ...rows.map(r => r.v));
     const span = hi - lo || 1, pct = v => (v - lo) / span * 100;
     const note = r => {
@@ -928,10 +969,18 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     lastWidth = $('graph').clientWidth;
     $('graph-y-control').hidden = chartType === 'bar';
     $('graph-x-label').textContent = chartType === 'bar' ? 'Metric' : 'X axis';
+    const directed = direction(currentAxes().x) && direction(currentAxes().y);
+    for (const id of ['shade-corner', 'show-frontier']) {
+      $(id).disabled = !directed || chartType === 'bar';
+      $(id).title = !directed ? 'Both axes need a better direction; release date has none.' : chartType === 'bar' ? 'Available on the scatter chart.' : '';
+    }
+    const dated = data.models.filter(m => Number.isFinite(releaseValue(m))).length;
+    $('release-missing').hidden = selected || !Object.values(currentAxes()).includes('release_date');
+    $('release-missing').textContent = `${dated} of ${data.models.length} models have a release date.`;
     if (chartType === 'bar') return renderBars();
     const axes = currentAxes(), options = axisOptions();
     const xLabel = options.find(o => o.key === axes.x).label, yLabel = options.find(o => o.key === axes.y).label;
-    const axisFormat = (value, key) => ratioKeys.includes(key) ? fmt(value, 2) + '×' : fmt(value) + (['resolve_rate', 'coverage'].includes(key) ? '%' : '');
+    const axisFormat = (value, key) => key === 'release_date' ? dateFormat(value) : ratioKeys.includes(key) ? fmt(value, 2) + '×' : fmt(value) + (['resolve_rate', 'coverage'].includes(key) ? '%' : '');
     const shown = data.models.map((m, i) => ({x: metricValue(m, i, axes.x), y: metricValue(m, i, axes.y),
       name: m.name, company: groupOf(m), count: measuredCount(m), match: m.aa_match, latest: m.latest !== false,
       kind: selected ? ((selected[2][i][6] || selected[2][i][0]) === 'f' ? 'failed' : (selected[2][i][6] || selected[2][i][0]) === 'r' ? 'resolved' : 'unknown') : 'all', i, m}))
@@ -940,18 +989,16 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       .filter(p => matchesWeight(p.m) && Number.isFinite(p.x) && Number.isFinite(p.y));
     // Hidden older generations don't fit the axes; they are drawn invisibly and shown while their line is hovered.
     const onChart = newestShown(shown);
-    const hiddenOlder = shown.filter(p => !onChart(p.m));
-    const points = shown.filter(p => onChart(p.m));
+    const hiddenOlder = shown.filter(p => groupVisible(p.m) && !onChart(p.m));
+    const points = shown.filter(p => groupVisible(p.m) && onChart(p.m));
     $('graph-legend').textContent = points.length
       ? (selected ? 'Status on hover.' : '')
       : 'No data for this view.';
     const unmatched = usesExternalAxis() ? data.models.filter(m => matchesWeight(m) && (showOlder || m.latest !== false) && [currentAxes().x, currentAxes().y].some(k => k.startsWith('aa_') && m[k] == null)).length : 0;
     $('aa-missing').textContent = unmatched ? ` ${unmatched} model${unmatched > 1 ? 's have' : ' has'} no score, so ${unmatched > 1 ? 'they are' : 'it is'} not on this chart.` : '';
     showRatioNote([currentAxes().x, currentAxes().y]);
-    $('company-legend').innerHTML = [...new Set(points.map(p => p.company))].sort((a, b) => a.localeCompare(b)).map(company =>
-      `<span>${badge(company)}${esc(company)}</span>`).join('')
-      + fadeLegend(points.some(p => !p.latest && !p.selfRun), points.some(p => p.selfRun))
-      + (hiddenOlder.length ? '<span class="hover-hint">Hover a point for its older generations</span>' : '');
+    renderCompanyLegend(shown.map(p => p.m), fadeLegend(points.some(p => !p.latest && !p.selfRun), points.some(p => p.selfRun))
+      + (hiddenOlder.length ? '<span class="hover-hint">Hover a point for its older generations</span>' : ''));
 
     // Narrow screens draw at their real width (text stays 12px) and a taller shape, so points spread out.
     const narrow = $('graph').clientWidth > 0 && $('graph').clientWidth < 600;
@@ -985,7 +1032,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       for (let k = Math.ceil(lo / step - 1e-9); k * step <= hi + step * 1e-9; k++) out.push(+(k * step).toFixed(digits));
       return {values: out, digits};
     };
-    const tickLabel = (v, key, digits) => v.toLocaleString('en-US', {minimumFractionDigits: digits, maximumFractionDigits: digits}).replace('-', '−') + (['resolve_rate', 'coverage'].includes(key) ? '%' : ratioKeys.includes(key) ? '×' : '');
+    const tickLabel = (v, key, digits) => key === 'release_date' ? dateFormat(v) : v.toLocaleString('en-US', {minimumFractionDigits: digits, maximumFractionDigits: digits}).replace('-', '−') + (['resolve_rate', 'coverage'].includes(key) ? '%' : ratioKeys.includes(key) ? '×' : '');
     // The left margin fits the widest y tick label (about 7 units per 12px character), widened
     // when a point left of the fitted x range is plotted to scale so it stays inside the chart.
     const yTickChars = (({values, digits}) => Math.max(2, ...values.map(v => tickLabel(v, axes.y, digits).length)))(roundTicks(ymin, ymax));
@@ -998,6 +1045,20 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       p.offscale = p.x < xmin || p.x > xmax || p.y < ymin || p.y > ymax;
       p.px = sx(p.x);
       p.py = sy(p.y);
+    }
+    const dx = direction(axes.x), dy = direction(axes.y);
+    const frontier = directed && $('show-frontier').checked ? paretoFrontier(points, dx, dy) : points;
+    const median = values => { const v = values.sort((a, b) => a - b), i = Math.floor(v.length / 2); return v.length % 2 ? v[i] : (v[i - 1] + v[i]) / 2; };
+    let decoration = '';
+    if (directed && $('shade-corner').checked && points.length) {
+      const mx = sx(median(points.map(p => p.x))), my = sy(median(points.map(p => p.y)));
+      const bx = dx < 0 ? L : W - R, by = dy > 0 ? T : H - B;
+      decoration += `<rect class="best-corner" x="${Math.min(mx, bx)}" y="${Math.min(my, by)}" width="${Math.abs(mx - bx)}" height="${Math.abs(my - by)}" fill="#34a853" fill-opacity="0.10"/><text x="${Math.min(mx, bx) + 6}" y="${Math.min(my, by) + 14}" font-size="10" fill="#000">Better on both</text>`;
+    }
+    if (directed && $('show-frontier').checked && frontier.length) {
+      const sorted = [...frontier].sort((a, b) => a.x - b.x || a.y - b.y);
+      const path = sorted.map((p, i) => i ? `H${p.px}V${p.py}` : `M${p.px},${p.py}`).join('');
+      decoration += `<path class="frontier" d="${path}" fill="none" stroke="#555" stroke-width="1.5"/>`;
     }
     const hubs = grouped ? [...new Set(points.map(p => p.company))].map(company => {
       const own = points.filter(p => p.company === company);
@@ -1012,7 +1073,7 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
       ? {effort_unlabelled: 'Artificial Analysis entry has no effort label', undated_alias: 'undated model ID matched to the Artificial Analysis snapshot'}[p.match] : '';
     const pointLabel = p => `${p.name} (${p.m.company || 'Other'}): ${p.kind === 'all' ? 'all-task view' : p.kind + ' task attempt'}; ${xLabel}: ${axisFormat(p.x, axes.x)}, ${yLabel}: ${axisFormat(p.y, axes.y)}${p.offscale ? '; off the chart\'s scale' : ''}${matchNote(p) ? '; ' + matchNote(p) : ''}${p.kind === 'all' ? '; measured ' + (p.count ?? 0) + '/' + (denominator(p.m) ?? 0) + ' solved attempts' : ''}${p.selfRun ? '; ' + selfRunNote(p.m) : ''}${p.m && unranked(p.m) ? '; ' + unrankedNote(p.m) : ''}`;
     // Newest generations are drawn last (on top) at full color; earlier ones are faded.
-    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${pointR}" ${p.m && partialOpacity(p.m) ? ` fill-opacity="${partialOpacity(p.m)}"` : ''} tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('')
+    const circles = points.map((p, i) => [p, i]).sort((a, b) => a[0].latest - b[0].latest).map(([p, i]) => `<circle data-point="${i}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'}${p.latest ? '' : ' older'}${p.selfRun ? ' self-run' : ''}${frontier.includes(p) ? '' : ' dominated'}" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${pointR}" ${p.m && partialOpacity(p.m) ? ` fill-opacity="${partialOpacity(p.m)}"` : ''} tabindex="0" aria-label="${esc(pointLabel(p))}" aria-describedby="graph-tooltip" data-company="${esc(p.company)}"></circle>`).join('')
       + older.map((p, k) => `<circle data-older="${k}" data-line="${esc(p.m.line)}" data-model="${esc(p.name)}" class="${p.kind === 'all' ? 'all-point' : p.kind + '-point'} older" fill="${companyColor(p.company)}" cx="${p.px}" cy="${p.py}" r="${pointR}" aria-hidden="true" data-company="${esc(p.company)}"></circle>`).join('')
       + hubs.map((h, k) => `<circle class="hub" data-hub="${k}" cx="${h.px}" cy="${h.py}" r="${narrow ? 4 : 5}" fill="${companyColor(h.company)}" tabindex="0" aria-label="${esc(h.company)}: average of ${h.own.length} setups; ${xLabel}: ${axisFormat(h.x, axes.x)}, ${yLabel}: ${axisFormat(h.y, axes.y)}" aria-describedby="graph-tooltip" data-company="${esc(h.company)}"></circle>`).join('');
     // All labels share a fixed CSS-pixel offset from the actual point.
@@ -1021,13 +1082,13 @@ footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule);
     labelled.forEach((p, k) => {
       // Full names keep the reasoning effort, e.g. 'GPT-6 Sol (high)'; harness boards label each harness's average.
       const text = p.hub ? p.company : (p.m.short_name || shortRelease(p.name)) + (p.offscale ? ' (off-scale)' : '');
-      overlays.push(`<span class="point-label${p.hub ? ' hub-label' : ''}${p.latest ? '' : ' older-label'}${p.selfRun ? ' self-run-label' : ''}" data-point="${k}" data-company="${esc(p.company)}" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(text)}</span>`);
+      overlays.push(`<span class="point-label${p.hub ? ' hub-label' : ''}${p.latest ? '' : ' older-label'}${p.selfRun ? ' self-run-label' : ''}${p.hub || frontier.includes(p) ? '' : ' dominated'}" data-point="${k}" data-company="${esc(p.company)}" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(text)}</span>`);
     });
     older.forEach((p, k) => overlays.push(`<span class="point-label older-label" data-older="${k}" data-line="${esc(p.m.line)}" data-company="${esc(p.company)}" aria-hidden="true" style="left:${p.px / W * 100}%;top:${p.py / H * 100}%">${esc(p.name)}</span>`));
     const scale = ($('graph').clientWidth || W) / W;
     const overflow = Math.max(0, ...points.map(p => (p.py + 7 - H) * scale), ...labelled.map(p => (p.py - H) * scale + 5));
     $('graph').style.marginBottom = `${overflow > 0 ? overflow + 16 : 0}px`;
-    $('graph').innerHTML = `<svg${grouped ? ' class="grouped"' : ''} viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">${grouped ? 'One small point per setup (model and effort), colored by harness; the larger labelled point is each harness\'s average.' : `One point per model, colored by its ${data.models.some(m => m.color_group) ? 'harness' : 'company'}.`} Each model line's newest generation is labelled; hovering a point shows that line's older generations, lighter, and Show older generations adds them all. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other ${data.models.some(m => m.color_group) ? 'harnesses' : 'companies'} fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(${Math.max(16, L - 20 - 7 * yTickChars)} ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
+    $('graph').innerHTML = `<svg${grouped ? ' class="grouped"' : ''} viewBox="0 0 ${W} ${H}" data-x-domain="${xmin},${xmax}" data-y-domain="${ymin},${ymax}" role="img" aria-label="${esc(yLabel)} versus ${esc(xLabel)}" aria-describedby="plot-desc"><desc id="plot-desc">${grouped ? 'One small point per setup (model and effort), colored by harness; the larger labelled point is each harness\'s average.' : `One point per model, colored by its ${data.models.some(m => m.color_group) ? 'harness' : 'company'}.`} Each model line's newest generation is labelled; hovering a point shows that line's older generations, lighter, and Show older generations adds them all. Axes use the selected numeric table values. Hover, focus or tap a point for its name, attempt status and both selected values; other ${data.models.some(m => m.color_group) ? 'harnesses' : 'companies'} fade. Points outside fitted axes are plotted to scale.</desc><line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="axis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>${decoration}${ticks(xmin,xmax,'x')}${ticks(ymin,ymax,'y')}${circles}<text class="tick" text-anchor="middle" x="${(L+W-R)/2}" y="${H-8}">${xLabel}</text><text class="tick" text-anchor="middle" transform="translate(${Math.max(16, L - 20 - 7 * yTickChars)} ${(T+H-B)/2}) rotate(-90)">${yLabel}</text></svg>${overlays.join('')}`;
     // Labels sit near their point without covering other labels or points; ranked, current models choose first.
     const graphWidth = $('graph').clientWidth, graphHeight = $('graph').clientHeight;
     const labels = [...document.querySelectorAll('#graph .point-label[data-point]')];

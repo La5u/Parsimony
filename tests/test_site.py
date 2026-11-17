@@ -12,12 +12,31 @@ from unittest import mock
 
 from parsimony.scoring import freeze
 from parsimony.benchmark import read_jsonl
-from parsimony.site import (add_rank_ranges, build, build_merged, company, generation_ranks, label, main, merged_ratio, min_rank_tasks,
+from parsimony.site import (add_rank_ranges, attach_release_dates, base_model_name, build, build_merged, company, generation_ranks, label, main, merged_ratio, min_rank_tasks,
                             newest_generation, open_weight, published_sources, render)
 from tests.test_scoring import record
 
 
 class SiteTests(unittest.TestCase):
+    def test_release_dates(self):
+        for name in ['Claude Opus 4.6 (max) · DeepSWE 1.0', 'Claude Opus 4.6 (high)', 'Claude Opus 4.6']:
+            self.assertEqual(base_model_name(name), 'Claude Opus 4.6')
+        dates = {'dates': {'Claude Opus 4.6': {'date': '2026-03-12', 'source': 'https://example.org'},
+                           'Unknown': {'date': None, 'source': ''}}}
+        models = [{'name': name} for name in ['Claude Opus 4.6 (max) · DeepSWE 1.0', 'Unknown', 'Absent']]
+        with mock.patch('parsimony.site.RELEASE_DATES') as path:
+            path.read_text.return_value = json.dumps(dates)
+            attach_release_dates(models)
+            self.assertEqual([m['release_date'] for m in models], ['2026-03-12', None, None])
+            records = [record()]
+            data = build(freeze(records, 'release-date-test'), records, draws=10)
+            self.assertIn('release_date', data['models'][0])
+            merged = build_merged([('python', freeze(records, 'release-date-test'), records)], draws=10)
+            self.assertIn('release_date', merged['models'][0])
+            rendered = render({'models': models, 'self_run_models': [{'name': 'Claude Opus 4.6 (high)'}]})
+            payload = json.loads(rendered.split('type="application/json">')[1].split('</script>')[0])
+            self.assertEqual(payload['self_run_models'][0]['release_date'], '2026-03-12')
+
     def test_published_sources_counts_and_hashes(self):
         root = Path(__file__).resolve().parent.parent
         sources = published_sources('deepswe', root=root)

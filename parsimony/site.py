@@ -1,5 +1,6 @@
 """Build the static results website from a frozen panel and measured JSONL (offline)."""
 import argparse
+from datetime import date
 import hashlib
 from html import escape
 import json
@@ -15,6 +16,7 @@ from . import hlb
 from .scoring import UNCALIBRATED, VERSION, measured, out_of_scope, quantile, score_records
 
 TEMPLATE = Path(__file__).resolve().parent / 'template.html'
+RELEASE_DATES = Path(__file__).resolve().parent.parent / 'examples/external/model-release-dates.json'
 ICONS = Path(__file__).resolve().parent / 'icons.json'
 CUSTOM_JS = Path(__file__).resolve().parent.parent / 'site' / 'custom-benchmark.js'
 SITE_URL = 'https://parsimony.lasu.dev'
@@ -563,6 +565,7 @@ def build(panel, records, draws=2000, seed=42):
         m['latest'] = m['name'] in newest
         # The chart shows each line's newest plotted generation and reveals older ones on hover.
         m['line'], m['generation_rank'] = generation(m['name'])[0], ranks[m['name']]
+    attach_release_dates(models)
     annotate_open_weight(models)
     order = [m['agent'] for m in models]
     scored_by_agent = {entry['agent']: entry['tasks'] for entry in board}
@@ -709,6 +712,7 @@ def build_merged(boards, draws=2000, seed=42):
         m['latest'] = m['name'] in newest
         # The chart shows each line's newest plotted generation and reveals older ones on hover.
         m['line'], m['generation_rank'] = generation(m['name'])[0], ranks[m['name']]
+    attach_release_dates(ordered)
     annotate_open_weight(ordered)
     return dict(merged=dict(languages=languages), ranking_metric='same-task-net-ratio-merged-v1',
                 min_rank_tasks=min_rank_tasks(sum(lang['tasks'] for lang in languages)),
@@ -779,6 +783,7 @@ def self_run_models(records, task_typical=None):
         if names.count(m['name']) > 1:
             m['name'] += f" · {m['harness']}"
             m['alternative_harness'] = m['harness'] != 'Codex'  # the site shows Codex by default
+    attach_release_dates(models)
     annotate_open_weight(models)
     return models
 
@@ -791,7 +796,20 @@ def add_rank_ranges(models, sensitivity):
         model['rank_range'] = list(entry['rank_ci_95']) if entry else None
 
 
+def base_model_name(name):
+    """Release identity ignores harness and reasoning effort."""
+    return re.sub(r' \([^()]*\)$', '', name.split(' · ')[0]).strip()
+
+
+def attach_release_dates(models):
+    dates = json.loads(RELEASE_DATES.read_text())['dates']
+    for model in models:
+        value = dates.get(base_model_name(model['name']), {}).get('date')
+        model['release_date'] = date.fromisoformat(value).isoformat() if value else None
+
+
 def render(data, standalone=True, page_name=None):
+    attach_release_dates(data.get('models', []) + data.get('self_run_models', []))
     # Logos for the color groups on this page (companies, or harnesses on the harness boards).
     icons = json.loads(ICONS.read_text())['icons']
     shown = {m.get('color_group') or m.get('company') for m in data.get('models', []) + data.get('self_run_models', [])}
