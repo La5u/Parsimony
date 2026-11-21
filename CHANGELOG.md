@@ -2,6 +2,10 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — SWE-bench Multilingual boards — 2026-11-21
+
+**New boards: SWE-bench Multilingual Go, JavaScript, TypeScript and PHP** (`parsimony.multilingual`; 42/28/15/43 tasks, tracks assigned per repository). 17 setups each: SWE-bench's 14 published mini-SWE-agent runs (its pass/fail; patches from the S3 logs, Gemini 3.5 Flash's own log repository, or the trajectory's submission) and Rusta 1.0.0's runs of DeepSeek V4.1 Flash, GLM-5.3 and Kimi K2.8 Preview (its own pass/fail; oracle scan clean). Measured at `3cadbda`. Rust, Java, C/C++ and Ruby tasks are left out. Longtail-SWE was also checked: none of its 13 languages has a measurement track.
+
 ## Unreleased — Harness Leaderboard 0.1.11 and GPT-6 Astra on Live Go — 2026-11-21
 
 **Harness boards rebuilt** from the Harness Leaderboard's v0.1.11 `results/` export (its own list of scored trials, so the port of its scoring code is no longer needed; `examples/benchmark-discovery/hlb-results-trials.py`): 65 setups instead of 40. New harnesses Grok Build, fx, oh-my-pi and DeepSeek Harness; OpenClaw 2026.11.1; OpenCode 1.19.0 dropped (OpenCode is now 2.2.6 only); re-run Hermes, Kimi Code, OpenClaw and Qwen Code cells; new model Ripple-65B Preview in all 13 harnesses (Flint left out: too few solves). All four languages remeasured at analyzer 0.11.0-beta, commit `635dfc1`: 20,670 items, 20,660 measured.

@@ -23,6 +23,8 @@ NAV=(--nav 'DeepSWE, all languages=index.html' --nav 'DeepSWE Python=python.html
      --nav 'DeepSWE TypeScript=typescript.html' --nav 'DeepSWE Go=go.html' --nav 'SWE-bench Verified=verified.html' --nav 'Live Python=live.html'
      --nav 'Live JavaScript=live-javascript.html' --nav 'Live TypeScript=live-typescript.html' --nav 'Live Go=live-go.html' --nav 'SWEeper PHP=sweeper-php.html'
      --nav 'SWE-Milestone, features=swe-milestone.html' --nav 'PolyBench Python=polybench-python.html'
+     --nav 'Multilingual|Go=multilingual-go.html' --nav 'Multilingual|JavaScript=multilingual-javascript.html'
+     --nav 'Multilingual|TypeScript=multilingual-typescript.html' --nav 'Multilingual|PHP=multilingual-php.html'
      --nav 'Harness comparison|All languages=harnesses.html' --nav 'Harness comparison|Python=harnesses-python.html'
      --nav 'Harness comparison|JavaScript=harnesses-javascript.html' --nav 'Harness comparison|TypeScript=harnesses-typescript.html'
      --nav 'Harness comparison|Go=harnesses-go.html')
@@ -83,6 +85,15 @@ for lang in javascript typescript go; do
   M=examples/live-$lang
   python -m parsimony.site "$M/score-panel.json" "$M/"*-*.jsonl --sensitivity "$M/stability.json" \
     --benchmark live-multilang "${NAV[@]}" --output "$OUT/live-$lang.html"
+done
+
+# SWE-bench Multilingual: 14 mini-SWE-agent runs plus 3 Rusta runs, one board per supported track.
+ML_LANGS=(javascript typescript php)
+[ "$OFFLINE" = 0 ] && ML_LANGS+=(go)
+for lang in "${ML_LANGS[@]}"; do
+  M=examples/multilingual-$lang
+  python -m parsimony.site "$M/score-panel.json" "$M/"*_*.jsonl "$M/"rusta-*.jsonl --sensitivity "$M/stability.json" \
+    --benchmark multilingual "${NAV[@]}" --output "$OUT/multilingual-$lang.html"
 done
 
 # SWE-Milestone feature work: Go, TypeScript and Python boards combined by same-task ratios, as on index.html.

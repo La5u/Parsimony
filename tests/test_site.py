@@ -41,15 +41,16 @@ class SiteTests(unittest.TestCase):
         root = Path(__file__).resolve().parent.parent
         sources = published_sources('deepswe', root=root)
         *sources, self_run = sources  # the owner-run pilot is listed last, never as a frozen board
-        self.assertEqual([s['tasks'] for s in sources], [34, 5, 35, 34, 500, 300, 108, 111, 138, 128, 30, 18, 12, 113, 33, 5, 35, 33])
-        self.assertEqual([s['population_per_model'] for s in sources], [136, 20, 140, 136, 500, 300, 108, 111, 138, 128, 30, 18, 12, 113, 99, 15, 105, 99])
-        self.assertEqual([s['attempts_per_task'] for s in sources], [4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3])
+        self.assertEqual([s['tasks'] for s in sources], [34, 5, 35, 34, 500, 300, 108, 111, 138, 128, 30, 18, 12, 113, 42, 28, 15, 43, 33, 5, 35, 33])
+        self.assertEqual([s['population_per_model'] for s in sources], [136, 20, 140, 136, 500, 300, 108, 111, 138, 128, 30, 18, 12, 113, 42, 28, 15, 43, 99, 15, 105, 99])
+        self.assertEqual([s['attempts_per_task'] for s in sources], [4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3])
         self.assertIn('/examples/deepswe-go-v2/', sources[3]['manifest_url'])
         go_population = json.loads((root / 'examples/deepswe-go-v2/population.json').read_bytes())
         self.assertEqual(go_population['measurement_track']['unit_version'], 'tree-sitter-go-units-v2')
         self.assertEqual([s['board_url'] for s in sources],
                          ['python.html', 'javascript.html', 'typescript.html', 'go.html', 'verified.html', 'live.html', 'live-javascript.html', 'live-typescript.html', 'live-go.html', 'sweeper-php.html',
                           'swe-milestone.html', 'swe-milestone.html', 'swe-milestone.html', 'polybench-python.html',
+                          'multilingual-go.html', 'multilingual-javascript.html', 'multilingual-typescript.html', 'multilingual-php.html',
                           'harnesses-python.html', 'harnesses-javascript.html', 'harnesses-typescript.html', 'harnesses-go.html'])
         plan = (root / 'examples/self-run/plan.json').read_bytes()
         self.assertTrue(self_run['self_run'])

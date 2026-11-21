@@ -48,8 +48,9 @@ class RebuildScriptTests(unittest.TestCase):
                     self.assertNotIn('--output ' + str(output / 'index.html'), commands)
                     for name in ('python', 'javascript', 'typescript', 'verified', 'live',
                                  'sweeper-php', 'live-javascript', 'live-typescript', 'live-go', 'swe-milestone',
-                                 'polybench-python', 'harnesses-python', 'harnesses-javascript', 'harnesses-typescript'):
+                                 'polybench-python', 'harnesses-python', 'harnesses-javascript', 'harnesses-typescript',
+                                 'multilingual-javascript', 'multilingual-typescript', 'multilingual-php'):
                         self.assertIn('--output ' + str(output / (name + '.html')), commands)
-                    for name in ('harnesses-go', 'harnesses'):  # the harness comparison's Go and combined pages
+                    for name in ('harnesses-go', 'harnesses', 'multilingual-go'):  # Go pages need the Go grammar
                         self.assertNotIn('--output ' + str(output / (name + '.html')), commands)
-                    self.assertEqual(len(commands.splitlines()), 14)
+                    self.assertEqual(len(commands.splitlines()), 17)

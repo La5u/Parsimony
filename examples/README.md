@@ -18,6 +18,10 @@ Every directory is frozen: records are never edited or relabelled, and changed m
 | [live-multilang](live-multilang/README.md) | Before-state audits for the Live JS/TS/Go boards (metadata only) | — |
 | [sweeper-php](sweeper-php/README.md) | SWEeper-Bench PHP, 15 model + agent configurations × 128 tasks | 0.10.0-beta |
 | [polybench-python](polybench-python/README.md) | SWE-PolyBench Verified Python, 5 model + agent configurations × 113 tasks (4 from open submission PRs) | 0.10.0-beta |
+| [multilingual-go](multilingual-go/README.md) | SWE-bench Multilingual Go, 17 model + agent setups × 42 tasks | 0.11.0-beta |
+| [multilingual-javascript](multilingual-javascript/README.md) | SWE-bench Multilingual JavaScript, 17 model + agent setups × 28 tasks | 0.11.0-beta |
+| [multilingual-typescript](multilingual-typescript/README.md) | SWE-bench Multilingual TypeScript, 17 model + agent setups × 15 tasks | 0.11.0-beta |
+| [multilingual-php](multilingual-php/README.md) | SWE-bench Multilingual PHP, 17 model + agent setups × 43 tasks | 0.11.0-beta |
 | [hlb-deepswe](hlb-deepswe/README.md) (+ `hlb-deepswe-{python,javascript,typescript,go}`) | DeepSWE harness comparison (Harness Leaderboard v0.1.11): 3 models, 13 harnesses, 65 setups, 106 tasks × 3 attempts | 0.11.0-beta |
 | [self-run](self-run/README.md) | Maintainer-run and self-graded newer models on 10 DeepSWE Python tasks (unranked) | 0.5.2-beta |
 | [external](external/) | Pinned Artificial Analysis snapshot and model mapping for the DeepSWE chart axis | – |

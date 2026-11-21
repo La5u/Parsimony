@@ -143,6 +143,13 @@ BENCHMARKS = {
                              'open, unmerged submission pull requests; Jitto Build reports 129 of its 294 resolved '
                              "patches are near-copies of the reference fix. DeepSeek V4 Flash · Mobile Coder is left off: "
                              "it fetched its task's own upstream fix in 151 of 382 trajectories."),
+    'multilingual': dict(name='SWE-bench Multilingual', url='https://www.swebench.com/multilingual.html',
+                         reference="Maintainers' fix", task_url='https://github.com/{owner}/{repo}/pull/{number}',
+                         task_link="Maintainers' pull request", results="SWE-bench's published results and Rusta's export",
+                         attempts=1,
+                         harness_note='Most rows use mini-SWE-agent; the three Rusta rows use their own agent.',
+                         notice='Pass/fail as published by SWE-bench (mini-SWE-agent runs) and by Rusta (its own export), '
+                                'not rechecked. Tracks are assigned per repository; Rust, Java, C/C++ and Ruby tasks are left out.'),
     'hlb': dict(name='Harness comparison', url='https://huggingface.co/spaces/joelniklaus/harness-leaderboard',
                 reference='Reference solution',
                 task_url='https://github.com/datacurve-ai/deep-swe/tree/main/tasks/{task}', task_link='Task on GitHub',
@@ -178,6 +185,10 @@ def published_sources(benchmark, language='python', root=None):
         ('SWE-Milestone · TypeScript', 'milestone', 'typescript', 'swe-milestone-typescript', 'population-manifest.json', 'swe-milestone.html'),
         ('SWE-Milestone · Python', 'milestone', 'python', 'swe-milestone-python', 'population-manifest.json', 'swe-milestone.html'),
         ('SWE-PolyBench Verified · Python', 'polybench', 'python', 'polybench-python', 'population-manifest.json', 'polybench-python.html'),
+        ('SWE-bench Multilingual · Go', 'multilingual', 'go', 'multilingual-go', 'population.json', 'multilingual-go.html'),
+        ('SWE-bench Multilingual · JavaScript', 'multilingual', 'javascript', 'multilingual-javascript', 'population.json', 'multilingual-javascript.html'),
+        ('SWE-bench Multilingual · TypeScript', 'multilingual', 'typescript', 'multilingual-typescript', 'population.json', 'multilingual-typescript.html'),
+        ('SWE-bench Multilingual · PHP', 'multilingual', 'php', 'multilingual-php', 'population.json', 'multilingual-php.html'),
         ('Harness comparison · Python', 'hlb', 'python', 'hlb-deepswe-python', 'population.json', 'harnesses-python.html'),
         ('Harness comparison · JavaScript', 'hlb', 'javascript', 'hlb-deepswe-javascript', 'population.json', 'harnesses-javascript.html'),
         ('Harness comparison · TypeScript', 'hlb', 'typescript', 'hlb-deepswe-typescript', 'population.json', 'harnesses-typescript.html'),
