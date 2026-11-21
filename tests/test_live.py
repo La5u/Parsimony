@@ -661,6 +661,15 @@ class LiveJSONLayoutTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'success count'):
             _result_categories(result)
 
+    def test_task_listed_as_both_error_and_incomplete_is_incomplete(self):
+        # HarnessOpt schema (Live Go PR 78): a task whose image never started is in error_ids and incomplete_ids.
+        result = dict(total_instances=2, submitted_instances=2, completed_instances=1, resolved_instances=1,
+                      completed_ids=['a__a-1'], resolved_ids=['a__a-1'], unresolved_ids=[], submitted_ids=['a__a-1', 'b__b-2'],
+                      error_instances=1, error_ids=['b__b-2'], incomplete_ids=['b__b-2'], empty_patch_ids=['b__b-2'],
+                      empty_patch_instances=1, language='go', dataset='SWE-bench-Live/MultiLang', split='go', schema_version=2)
+        categories = _result_categories(result)
+        self.assertEqual((categories['error'], categories['incomplete']), (set(), {'b__b-2'}))
+
     def test_ami_v2_without_completed_ids_uses_outcome_lists(self):
         # Actual AMI JS/TS schema: no completed_ids; completed_instances must match the outcome lists.
         result = dict(total_instances=3, completed_instances=2, resolved_instances=1,

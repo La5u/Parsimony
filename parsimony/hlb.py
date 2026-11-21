@@ -29,16 +29,18 @@ BUCKET = 'https://huggingface.co/buckets/joelniklaus/harness-leaderboard/resolve
 SPACE = 'https://huggingface.co/spaces/joelniklaus/harness-leaderboard'
 ATTEMPTS = 3
 PREFIX = 'hlb-deepswe_'
-MODELS = {'zai-org/GLM-5.3-Flash': 'GLM-5.3 Flash', 'deepseek-ai/DeepSeek-V4.1-Flash': 'DeepSeek V4.1 Flash'}
-HARNESSES = {'claude-code': 'Claude Code', 'codex': 'Codex', 'pi': 'pi', 'opencode': 'OpenCode', 'opencode-2': 'OpenCode 2', 'hermes': 'Hermes',
-             'mini-swe-agent': 'mini-SWE-agent', 'kimi-code': 'Kimi Code', 'qwen-code': 'Qwen Code', 'openclaw': 'OpenClaw'}
+MODELS = {'zai-org/GLM-5.3-Flash': 'GLM-5.3 Flash', 'deepseek-ai/DeepSeek-V4.1-Flash': 'DeepSeek V4.1 Flash',
+          'ricursiveAI/Ripple-65B-Preview': 'Ripple-65B Preview'}
+HARNESSES = {'claude-code': 'Claude Code', 'codex': 'Codex', 'pi': 'pi', 'opencode': 'OpenCode', 'hermes': 'Hermes',
+             'mini-swe-agent': 'mini-SWE-agent', 'kimi-code': 'Kimi Code', 'qwen-code': 'Qwen Code', 'openclaw': 'OpenClaw',
+             'oh-my-pi': 'oh-my-pi', 'deepseek-harness': 'DeepSeek Harness', 'grok-build': 'Grok Build', 'fx': 'fx'}
 
 
 def display_name(agent, setups=None):
-    """'hlb-deepswe_glm-5.3-flash_high_claude-code' -> 'GLM-5.3 Flash (high) · Claude Code'."""
+    """'hlb-deepswe_glm-5.3-flash_high_claude-code' -> 'GLM-5.3 Flash (high) · Claude Code'; no effort for 'default'."""
     model, effort, harness = agent.removeprefix(PREFIX).split('_')
     name = next((v for k, v in MODELS.items() if k.split('/')[1].lower() == model), model)
-    return f'{name} ({effort}) · {HARNESSES.get(harness, harness)}'
+    return f"{name}{'' if effort == 'default' else f' ({effort})'} · {HARNESSES.get(harness, harness)}"
 
 
 def harness_name(agent):
@@ -50,7 +52,8 @@ def harness_name(agent):
 def short_name(agent):
     """Chart label without the harness, which the color shows: 'GLM high', 'DeepSeek low'."""
     model, effort, _ = agent.removeprefix(PREFIX).split('_')
-    return f"{next((v for k, v in MODELS.items() if k.split('/')[1].lower() == model), model).split('-')[0].split(' ')[0]} {effort}"
+    name = next((v for k, v in MODELS.items() if k.split('/')[1].lower() == model), model).split('-')[0].split(' ')[0]
+    return name if effort == 'default' else f'{name} {effort}'
 
 
 def setup_id(model, effort, harness):

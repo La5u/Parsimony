@@ -1,0 +1,83 @@
+{
+ "date": "2026-11-21",
+ "method": "Public metadata only: DeepSWE artifact hashes and release probes, upstream commit/PR listings (SWE-bench experiments, SWE-bench-Live submission, PolyBench), Hugging Face revisions (MultiLang, SWE-bench-Live, DeepSWE 1.0 archive, SWE-Milestone, Harness Leaderboard Space and results/), a trajectory oracle scan of Live PR 78 (oracle-audit-2026-11-21.json), and a web search (Sol 6.2) for new models and benchmarks. Downloads in .scratch/ only; no paid runs; nobody contacted.",
+ "deepswe": {
+  "artifact_sha256_prefixes": {
+   "trials.json": "310cb428fe8914cf",
+   "leaderboard-live.json": "a7c15d66288fd249",
+   "release.json": "3ed793db158e1d13"
+  },
+  "unchanged_since": "2026-10-27",
+  "newer_releases_probed": {
+   "v1.2": 404,
+   "v1.3": 404,
+   "v2": 404,
+   "v2.0": 404,
+   "v1.1.1": 404,
+   "v1.2.0": 404
+  },
+  "github": "datacurve-ai/deep-swe main still 0b9fabbb63b9",
+  "release_1_0_archive": "datacurve/deep-swe-leaderboard still 0618ccdd613e",
+  "verdict": "No new configuration."
+ },
+ "swe_bench_verified": {
+  "main": "40f164d5b8f1 (unchanged)",
+  "new_prs": {
+   "519/522": "affine-uum8d-s4, claims 500/500 (100%) on Verified: not credible as a clean run; not reviewed further",
+   "523": "OneCode Ziwei Governance + DeepSeek-v4.1-Flash: closed",
+   "others": "Lite-only submissions (LifeGraph, ISHA, noriai): not a Parsimony population"
+  },
+  "benzi": "PR 507 unchanged",
+  "verdict": "Nothing importable."
+ },
+ "swe_bench_live": {
+  "main": "501f80da7097 (2026-11-16)",
+  "events": {
+   "76": "HarnessOpt + GPT-6.1 Sol Go closed unmerged 2026-11-16 (10/138)",
+   "74": "DuMate + DeepSeek V4.1 Flash Lite: still open, still withheld (oracle, 2026-11-08)"
+  },
+  "candidates": {
+   "78": {
+    "title": "HarnessOpt-Codex + gpt-6-astra, MultiLang Go",
+    "head": "laniusnan/submission@aa2600f77a340b34ae34cb8cbc3060cbadb23042",
+    "counts": "138 submitted, 42 resolved (local official-compatible evaluation), 95 unresolved, 1 never ran (image unpack), 8 empty patches",
+    "oracle_scan": "own task PR URL in 3/137 trajectories (1 solved: the issue text links a related PR), git fetch in 15 (1 solved: reads CONTRIBUTING.md), no git show of hashes, no git log --all on solved tasks; flagged solved trajectories read by hand: issue links, CHANGELOG and go.mod comments only",
+    "verdict": "Imported on the Live Go board (unmerged PR, pinned head; submitter-reported outcomes)."
+   }
+  },
+  "datasets": {
+   "MultiLang": "eb09c2e5db (unchanged)",
+   "SWE-bench-Live": "babb27e45e (unchanged)"
+  },
+  "verdict": "One new run (GPT-6 Astra, Live Go)."
+ },
+ "polybench": {
+  "submission": "9c836c5",
+  "prs": "#44, #46, #47 updated 2026-11-18..20 without new commits (#46 head 30150b6, #47 828dadd); #46 and #47 already on the board or withheld",
+  "verdict": "Nothing new."
+ },
+ "sweeper": {
+  "verdict": "Not rechecked (unchanged on 2026-11-08 since 2026-10-16)."
+ },
+ "swe_milestone": {
+  "head": "7064a6427a (2026-08-26)",
+  "verdict": "Unchanged."
+ },
+ "harness_leaderboard": {
+  "space": "3cf8a20805cbe6bccad1c34db2287aa76487df8e (v0.1.11, 2026-11-21)",
+  "results": "results/ (published since v0.1.9): trials.csv.gz sha256 f61691290dafe891e7edcfb947fea4125a05f588066015b13442ce1d55fc2701, hashed in results/index.json",
+  "changes": "New released harnesses: Grok Build 1.0.77, fx 0.0.16, oh-my-pi 18.18.3, DeepSeek Harness 0.2.2-rc.1; OpenClaw now 2026.11.1; OpenCode 1.19.0 dropped (2.2.6 only); Hermes, Kimi Code, OpenClaw and some Qwen Code cells re-run (different trials); new models Ripple-65B Preview and Flint in all 13 harnesses.",
+  "verdict": "Board rebuilt from v0.1.11 results/: 65 setups (GLM-5.3 Flash and DeepSeek V4.1 Flash low/high, Ripple-65B Preview; 13 harnesses each). Flint left out (1-36 of 333 attempts solved per harness)."
+ },
+ "new_models": {
+  "source": "web search 2026-11-21 (Sol 6.2; release pages not individually verified)",
+  "notes": "Claude Fable/Mythos 5.2, Gemini 4 Carbon/Hydrogen/Neon, Qwen4-Max, GPT-6.2 Astra/Sol, MAI Code 2, Inkling 2: none with public per-task patches on a Parsimony population."
+ },
+ "new_benchmarks": {
+  "leads": {
+   "rusta-swe-bench-multilingual": "devscriptor.com/benchmarks, predictions and per-task outcomes for DeepSeek V4.1 Flash, GLM-5.3, Kimi K2.8 Preview on SWE-bench Multilingual (would be a new board; Java/Rust need analyzers)",
+   "longtail-swe": "huggingface.co/datasets/nebius/Longtail-SWE-trajectories: per-attempt diffs and resolved flags (historical task versions, some diffs redacted)"
+  },
+  "verdict": "Leads only; new boards need an owner decision."
+ }
+}

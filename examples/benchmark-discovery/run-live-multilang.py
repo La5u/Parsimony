@@ -46,7 +46,9 @@ COHORTS += [(f'{name}_go', f'multilang/go/ami-agent/{path}', agent, model, 'go',
 LATER_REVISIONS = {'tianxicode_deepseek_v4_1_flash_go': '641b727c8a5e3e5d0af08a348e632b12c3f11aef',
                    # Unmerged PR 64 (wei64), pinned at its head commit; served by the upstream repo's raw URLs.
                    'tianxicode_deepseek_v4_1_flash_js': '8275820e4fd36720d5281ce73e8fc5beb16fb404',
-                   'tianxicode_deepseek_v4_1_flash_ts': '8275820e4fd36720d5281ce73e8fc5beb16fb404'}
+                   'tianxicode_deepseek_v4_1_flash_ts': '8275820e4fd36720d5281ce73e8fc5beb16fb404',
+                   # Unmerged PR 78 (laniusnan), pinned at its head commit; oracle scan clean (oracle-audit-2026-11-21.json).
+                   'harnessopt_codex_gpt_6_astra_go': 'aa2600f77a340b34ae34cb8cbc3060cbadb23042'}
 PATCH_DISAGREEMENTS = {'tianxicode_deepseek_v4_1_flash_go': {
     'akuity__kargo-4687', 'caddyserver__caddy-7189', 'chenhg5__cc-connect-303',
     'cucumber__godog-695', 'envoyproxy__gateway-8521', 'github__gh-aw-22943',
@@ -59,6 +61,8 @@ PATCH_DISAGREEMENTS = {'tianxicode_deepseek_v4_1_flash_go': {
 }}
 COHORTS += [('tianxicode_deepseek_v4_1_flash_go', 'multilang/go/tianxi/deepseek-flash', 'TianxiCode 0.1.486',
              'DeepSeek V4.1 Flash', 'go', 'live-multilang-deepseek-v4.1-flash-tianxicode-0.1.486')]
+COHORTS += [('harnessopt_codex_gpt_6_astra_go', 'multilang/go/harnessopt-codex/gpt-6-astra', 'HarnessOpt-Codex (Codex 0.166.0)',
+             'GPT-6 Astra (high)', 'go', 'live-multilang-gpt-6-astra-harnessopt-codex')]
 # One run covers both JS and TS (one preds.json/results.json); each board imports its own split and
 # sets the other split's tasks aside (outside_dataset_count), as with the cross-language runs.
 COMBINED_SPLITS = {'tianxicode_deepseek_v4_1_flash_js', 'tianxicode_deepseek_v4_1_flash_ts'}

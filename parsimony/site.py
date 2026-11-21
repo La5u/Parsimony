@@ -56,6 +56,7 @@ NAMES = {'claude-4-6-opus': 'Claude Opus 4.6', 'claude-4-5-sonnet-high': 'Claude
          'live-multilang-gemini-3.6-flash-ami-agent-0.7.0': 'Gemini 3.6 Flash · AMI Agent 0.7.0',
          'live-multilang-qwen3.8-27b-ami-agent-0.7.2': 'Qwen3.8-27B · AMI Agent 0.7.2',
          'live-multilang-deepseek-v4.1-flash-tianxicode-0.1.486': 'DeepSeek V4.1 Flash · TianxiCode 0.1.486',
+         'live-multilang-gpt-6-astra-harnessopt-codex': 'GPT-6 Astra (high) · HarnessOpt-Codex',
          'live-multilang-claude-4-5-sonnet-claudecode': 'Claude Sonnet 4.5 · Claude Code',
          'live-multilang-deepseek-v3.1-terminus-claudecode': 'DeepSeek V3.1 Terminus · Claude Code',
          'live-multilang-deepseek-v4-pro-claudecode': 'DeepSeek V4 Pro · Claude Code',
@@ -147,10 +148,11 @@ BENCHMARKS = {
                 task_url='https://github.com/datacurve-ai/deep-swe/tree/main/tasks/{task}', task_link='Task on GitHub',
                 results="the Harness Leaderboard's published results", attempts=3,
                 task_name='DeepSWE', compare_heading='Compare harnesses', credit="Joel Niklaus's Harness Leaderboard",
-                og_image='og-harnesses.png?v=2026-11-08',
-                og_alt='Scatterplot of two models in ten coding harnesses on DeepSWE tasks: net code added vs. the human fix, '
+                og_image='og-harnesses.png?v=2026-11-21',
+                og_alt='Scatterplot of three models in thirteen coding harnesses on DeepSWE tasks: net code added vs. the human fix, '
                        'versus solve rate, one logo per harness',
-                setups='40 setups (2 models × low/high effort × 10 harnesses, counting OpenCode 1.19 and 2.2 separately)',
+                setups='65 setups (GLM-5.3 Flash and DeepSeek V4.1 Flash at low/high effort, and Ripple-65B Preview, '
+                       'each in 13 harnesses)',
                 harness_note='Each row is one model in one harness, so the ratio compares harnesses as much as models.',
                 notice="From Joel Niklaus's Harness Leaderboard (its pass/fail and exclusions), not rechecked. "
                        'Separate from the DeepSWE boards, which use mini-SWE-agent only.'),

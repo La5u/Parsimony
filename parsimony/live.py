@@ -118,6 +118,11 @@ def _result_categories(result: dict) -> dict[str, set[str]]:
             count_key = source + '_instances'
             result[category] = (result[count_key] if count_key in result else
                                 len(value) if isinstance(value, list) else None)
+        both = set(result['error_ids'] or []) & set(result['incomplete_ids'] or [])
+        if both:
+            # HarnessOpt (Live Go PR 78) lists a task that never ran as both error and incomplete: it is incomplete.
+            result['error_ids'] = [x for x in result['error_ids'] if x not in both]
+            result['error'] = len(result['error_ids'])
         if 'submitted_ids' not in result:
             lists = [result[category + '_ids'] for category in CATEGORIES]
             if any(not isinstance(ids, list) or any(not isinstance(x, str) for x in ids) for ids in lists):

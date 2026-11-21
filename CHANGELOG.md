@@ -2,6 +2,14 @@
 
 Analyzer versions change measurements. **Never pool or compare records from different analyzer versions**, and never relabel old records.
 
+## Unreleased — Harness Leaderboard 0.1.11 and GPT-6 Astra on Live Go — 2026-11-21
+
+**Harness boards rebuilt** from the Harness Leaderboard's v0.1.11 `results/` export (its own list of scored trials, so the port of its scoring code is no longer needed; `examples/benchmark-discovery/hlb-results-trials.py`): 65 setups instead of 40. New harnesses Grok Build, fx, oh-my-pi and DeepSeek Harness; OpenClaw 2026.11.1; OpenCode 1.19.0 dropped (OpenCode is now 2.2.6 only); re-run Hermes, Kimi Code, OpenClaw and Qwen Code cells; new model Ripple-65B Preview in all 13 harnesses (Flint left out: too few solves). All four languages remeasured at analyzer 0.11.0-beta, commit `635dfc1`: 20,670 items, 20,660 measured.
+
+**Live Go: GPT-6 Astra (high) · HarnessOpt-Codex** from unmerged SWE-bench-Live PR 78 (42/138 solved, submitter-evaluated), measured at the board's `9dd189a`, scored against the frozen panel. Oracle scan clean (`oracle-audit-2026-11-21.json`). The Live importer now treats a task listed as both error and incomplete as incomplete (this run's never-started task).
+
+**Discovery** (`model-battery-refresh-2026-11-21.json`): nothing else importable; new-board leads (SWE-bench Multilingual export, Longtail-SWE) noted for an owner decision.
+
 ## Unreleased — Analyzer 0.11.0-beta: Rust track and JS/TS scope — 2026-11-09
 
 **Analyzer.** New Rust measurement track `tree-sitter-rust-units-v1` (Tree-sitter 0.26.0 with `tree-sitter-rust==0.24.0`, `.rs`); no Rust board is published yet. JavaScript and TypeScript scope changes: new files at the repository root are excluded as scratch scripts, as already done for Python, and TypeScript `dtslint/` directories and `*.tst.ts(x)` type tests are excluded. **Records from earlier analyzer versions are not changed by this entry and must not be pooled with 0.11 records.**
