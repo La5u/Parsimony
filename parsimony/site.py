@@ -12,7 +12,7 @@ from pathlib import Path
 from .benchmark import read_jsonl
 from .deepswe import cluster, display_name
 from .external import attach
-from . import hlb
+from . import hlb, multilingual
 from .scoring import UNCALIBRATED, VERSION, measured, out_of_scope, quantile, score_records
 
 TEMPLATE = Path(__file__).resolve().parent / 'template.html'
@@ -228,6 +228,8 @@ def label(agent):
         return display_name(agent)
     if agent.startswith(hlb.PREFIX):
         return hlb.display_name(agent)
+    if agent.startswith(multilingual.PREFIX):
+        return multilingual.display_name(agent)
     short = PREFIX.sub('', agent)
     return NAMES.get(short, short)
 
