@@ -28,6 +28,10 @@ EXPERIMENTS_COMMIT = '40f164d5b8f1d249bf95a6df8b74b577fd8e519d'
 EXPERIMENTS_PATH = f'{EXPERIMENTS_COMMIT}/evaluation/multilingual'
 EXPERIMENTS = f'https://raw.githubusercontent.com/SWE-bench/experiments/{EXPERIMENTS_PATH}'
 BUCKET = 'https://swe-bench-submissions.s3.amazonaws.com/multilingual'
+# Entries whose logs live in their own GitHub repository (metadata.yaml), pinned here.
+LOG_REPOS = {'20260902_mini-v2.4.6_gemini-3-5-flash':
+             'https://raw.githubusercontent.com/SWE-bench/20260902_mini-v2.4.6_gemini-3-5-flash/'
+             '8dcca98587e7f698753903e3b1747eb5dc013cb1/logs'}
 RUSTA_URL = ('https://github.com/vladimirpesic/devscriptor-web/releases/download/swe-bench-multilingual/'
              'rusta-devscriptor-swe-bench-multilingual.tar.gz')
 RUSTA_SHA256 = '3adc3cbeed472b3a8d9cf9e633a6dae6a6ff81276ec7f0874135861674473d52'
@@ -119,7 +123,7 @@ def _official(entry, cache):
     raw = cache.get(metadata_url)
     model, version = _mini_metadata(raw)
     outcomes, digest = fetch_json(cache, results_url)
-    patch_base = f'{BUCKET}/{entry}/logs'
+    patch_base = LOG_REPOS.get(entry, f'{BUCKET}/{entry}/logs')
     submission_url = f'https://github.com/SWE-bench/experiments/tree/{EXPERIMENTS_PATH}/{entry}'
     provenance = dict(layout='multilingual-mini-v1', submission_url=submission_url, ref=EXPERIMENTS_COMMIT,
                       experiments_commit=EXPERIMENTS_COMMIT, prediction_url=patch_base, prediction_sha256=None,
@@ -183,6 +187,13 @@ def load_submission(entry, cache, items, rusta_dir=None, rusta_tarball=None):
         else:
             locations[item] = f"{provenance['prediction_url']}/{task}/patch.diff"
             patch = fetch_patch(cache, locations[item])
+            if patch is None and entry not in LOG_REPOS:
+                # Some entries publish no logs/; their trajectories carry the submitted diff.
+                url = f'{BUCKET}/{entry}/trajs/{task}/{task}.traj.json'
+                raw = fetch_patch(cache, url)
+                if raw is not None:
+                    locations[item] = url + '#info.submission'
+                    patch = json.loads(raw).get('info', {}).get('submission')
         if patch and patch.strip():
             predictions[item] = patch
         else:

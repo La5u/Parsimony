@@ -72,8 +72,16 @@ class MultilingualTests(unittest.TestCase):
         self.assertIn(ml.EXPERIMENTS_COMMIT, sub['provenance']['results_url'])
         self.assertEqual(sub['provenance']['harness_version'], '2.0.0a0')
         self.assertEqual(sub['provenance']['reported_model'], 'Claude 4.6 Opus')
-        self.assertEqual(len(cache.requested), 5)
+        self.assertEqual(len(cache.requested), 6)  # c also tries its trajectory
         self.assertEqual(label(sub['agent']), 'Claude Opus 4.6 · mini-SWE-agent 2.0')
+
+    def test_missing_log_patch_falls_back_to_trajectory_submission(self):
+        cache = official_cache({'a': dict(resolved=True)}, {})
+        url = f'{ml.BUCKET}/{ENTRY}/trajs/a/a.traj.json'
+        cache.files[url] = json.dumps(dict(info=dict(submission='diff t'))).encode()
+        sub = ml.load_submission(ENTRY, cache, {'a#1'})
+        self.assertEqual(sub['predictions'], {'a#1': 'diff t'})
+        self.assertEqual(sub['prediction_locations'], {'a#1': url + '#info.submission'})
 
     def test_rusta_submission_reads_local_results_and_verifies_optional_archive(self):
         with tempfile.TemporaryDirectory() as tmp:
